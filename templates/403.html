@@ -1,0 +1,8 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+{% block bodyclass %}{{ block.super }} dashboard{% endblock %}
+{% block breadcrumbs %}{% endblock %}
+{% block content %}
+        <h1>Permission denied</h1>
+        <p>Nice try, you are not allowed to do that.</p>
+{% endblock %}

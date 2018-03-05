@@ -1,0 +1,494 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin
+from django.forms import TextInput
+from django.core.exceptions import PermissionDenied
+from django.db import models
+from djangoql.admin import DjangoQLSearchMixin
+from simple_history.admin import SimpleHistoryAdmin
+from import_export.admin import ExportActionModelAdmin
+
+from django.contrib import messages
+from django.core.urlresolvers import reverse
+from django.http import HttpResponseRedirect
+from django.core.mail import send_mail
+
+import pygsheets
+import os
+
+from django.contrib.admin import AdminSite
+from django.views.decorators.cache import never_cache
+from django.utils.text import capfirst
+from django.urls import NoReverseMatch, reverse
+from django.apps import apps
+from django.utils.translation import ugettext as _, ugettext_lazy
+
+#Create a custom admin site
+
+class MyAdminSite(AdminSite):
+    
+    # Text to put at the end of each page's <title>.
+    site_title = ugettext_lazy('Ulrich Lab Intranet')
+
+    # Text to put in each page's <h1>.
+    site_header = ugettext_lazy('Ulrich Lab Intranet')
+
+    # Text to put at the top of the admin index page.
+    index_title = ugettext_lazy('Ulrich Lab Intranet')
+
+    # URL for the "View site" link at the top of each admin page.
+    site_url = '/'
+    
+    def _build_app_dict(self, request, label=None):
+        """
+        Builds the app dictionary. Takes an optional label parameters to filter
+        models of a specific app.
+        """
+        app_dict = {}
+
+        if label:
+            models = {
+                m: m_a for m, m_a in self._registry.items()
+                if m._meta.app_label == label
+            }
+        else:
+            models = self._registry
+
+        for model, model_admin in models.items():
+            app_label = model._meta.app_label
+
+            has_module_perms = model_admin.has_module_permission(request)
+            if not has_module_perms:
+                continue
+
+            perms = model_admin.get_model_perms(request)
+
+            # Check whether user has any perm for this module.
+            # If so, add the module to the model_list.
+            if True not in perms.values():
+                continue
+
+            info = (app_label, model._meta.model_name)
+            model_dict = {
+                'name': capfirst(model._meta.verbose_name_plural),
+                'object_name': model._meta.object_name,
+                'perms': perms,
+                'objts':model.objects.all(), #added this to pull objects records from model (NZ)
+            }
+            if perms.get('change'):
+                try:
+                    model_dict['admin_url'] = reverse('admin:%s_%s_changelist' % info, current_app=self.name)
+                except NoReverseMatch:
+                    pass
+            if perms.get('add'):
+                try:
+                    model_dict['add_url'] = reverse('admin:%s_%s_add' % info, current_app=self.name)
+                except NoReverseMatch:
+                    pass
+
+            if app_label in app_dict:
+                app_dict[app_label]['models'].append(model_dict)
+            else:
+                app_dict[app_label] = {
+                    'name': apps.get_app_config(app_label).verbose_name,
+                    'app_label': app_label,
+                    'app_url': reverse(
+                        'admin:app_list',
+                        kwargs={'app_label': app_label},
+                        current_app=self.name,
+                    ),
+                    'has_module_perms': has_module_perms,
+                    'models': [model_dict],
+                }
+
+                
+        if label:
+            return app_dict.get(label)
+        return app_dict
+
+#Instantiate custom admin site
+my_admin_site = MyAdminSite()
+
+class PageStrain(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin, admin.ModelAdmin):
+    list_display = ('id', 'name', 'mating_type','created_by',)
+    list_display_links = ('id', )
+    list_per_page = 25
+    formfield_overrides = {
+        models.CharField: {'widget': TextInput(attrs={'size':'93'})},
+    }
+    
+    def save_model(self, request, obj, form, change): 
+        if obj.pk == None:
+            obj.created_by = request.user
+            obj.save()
+        else:
+            if request.user.is_superuser or request.user == obj.created_by or request.user.groups.filter(name='Lab manager').exists():
+                obj.save()
+            else:
+                raise PermissionDenied
+    
+    def get_readonly_fields(self, request, obj=None):
+        if obj:
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
+                return ['name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parental_strain',
+        'construction', 'modification', 'plasmids', 'selection', 'phenotype', 'background', 'received_from',
+        'use', 'note', 'reference','created_date_time', 'last_changed_date_time', 'created_by',]
+            else:
+                return ['created_date_time', 'last_changed_date_time',]
+        else:
+            return ['created_date_time', 'last_changed_date_time',]
+    
+    def add_view(self,request,extra_content=None):
+        self.fields = ('name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parental_strain',
+        'construction', 'modification', 'plasmids', 'selection', 'phenotype', 'background', 'received_from',
+        'use', 'note', 'reference',)
+        return super(PageStrain,self).add_view(request)
+
+    def change_view(self,request,object_id,extra_content=None):
+        self.fields = ('name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parental_strain',
+        'construction', 'modification', 'plasmids', 'selection', 'phenotype', 'background', 'received_from',
+        'use', 'note', 'reference', 'created_date_time', 'last_changed_date_time', 'created_by',)
+        return super(PageStrain,self).change_view(request,object_id)
+
+class PagePlasmid(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin, admin.ModelAdmin):
+    list_display = ('id', 'name', 'selection', 'get_plasmid_short_name', 'created_by',)
+    list_display_links = ('id', )
+    list_per_page = 25
+    formfield_overrides = {
+    models.CharField: {'widget': TextInput(attrs={'size':'93'})},
+    }
+    
+    def save_model(self, request, obj, form, change): 
+        if obj.pk == None:
+            obj.created_by = request.user
+            obj.save()
+        else:
+            if request.user.is_superuser or request.user == obj.created_by or request.user.groups.filter(name='Lab manager').exists():
+                obj.save()
+            else:
+                raise PermissionDenied
+                
+    def get_readonly_fields(self, request, obj=None):
+        if obj:
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
+                return ['name', 'other_name', 'parent_vector', 'selection', 'use', 'construction_feature', 'received_from', 'note', 
+                'reference', 'plasmid_map', 'created_date_time', 'last_changed_date_time', 'created_by',]
+            else:
+                return ['created_date_time', 'last_changed_date_time',]
+        else:
+            return ['created_date_time', 'last_changed_date_time',]
+    
+    def add_view(self,request,extra_content=None):
+        self.fields = ('name', 'other_name', 'parent_vector', 'selection', 'use', 'construction_feature', 'received_from', 'note', 
+                'reference', 'plasmid_map',)
+        return super(PagePlasmid,self).add_view(request)
+
+    def change_view(self,request,object_id,extra_content=None):
+        self.fields = ('name', 'other_name', 'parent_vector', 'selection', 'use', 'construction_feature', 'received_from', 'note', 
+                'reference', 'plasmid_map', 'created_date_time', 'last_changed_date_time', 'created_by',)
+        return super(PagePlasmid,self).change_view(request,object_id)
+        
+    def get_plasmid_short_name(self, instance):
+        if instance.plasmid_map:
+            return '<a href="%s">%s</a>' % ('/uploads/' + str(instance.plasmid_map), 'Download')
+        else:
+            return ''
+    get_plasmid_short_name.allow_tags = True
+    get_plasmid_short_name.short_description = 'Plasmid map'
+
+    
+class PageOligo(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin, admin.ModelAdmin):
+    list_display = ('id', 'name','sequence', 'restriction_site','created_by')
+    list_display_links = ('id',)
+    list_per_page = 25
+    formfield_overrides = {
+    models.CharField: {'widget': TextInput(attrs={'size':'93'})},
+    }
+    def save_model(self, request, obj, form, change): 
+        if obj.pk == None:
+            obj.created_by = request.user
+            obj.save()
+        else:
+            if request.user.is_superuser or request.user == obj.created_by or request.user.groups.filter(name='Lab manager').exists():
+                obj.save()
+            else:
+                raise PermissionDenied
+    
+    def get_readonly_fields(self, request, obj=None):
+        if obj:
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
+                return ['name','sequence', 'use', 'gene', 'restriction_site', 'description', 'comment', 'created_date_time', 'last_changed_date_time', 'created_by',]
+            else:
+                return ['created_date_time', 'last_changed_date_time',]
+        else:
+            return ['created_date_time', 'last_changed_date_time',]
+    
+    def add_view(self,request,extra_content=None):
+        self.fields = ('name','sequence', 'use', 'gene', 'restriction_site', 'description', 'comment', )
+        return super(PageOligo,self).add_view(request)
+
+    def change_view(self,request,object_id,extra_content=None):
+        self.fields = ('name','sequence', 'use', 'gene', 'restriction_site', 'description', 'comment', 'created_date_time', 'last_changed_date_time', 'created_by',)
+        return super(PageOligo,self).change_view(request,object_id)
+
+class PagePombeStrain(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin, admin.ModelAdmin):
+    list_display = ('id', 'genotype', 'auxotrophic_marker', 'mating_type',)
+    list_display_links = ('id', )
+    list_per_page = 25
+    formfield_overrides = {
+    models.CharField: {'widget': TextInput(attrs={'size':'93'})},
+    }
+    
+    def save_model(self, request, obj, form, change): 
+        if obj.pk == None:
+            obj.created_by = request.user
+            obj.save()
+        else:
+            if request.user.is_superuser or request.user == obj.created_by or request.user.groups.filter(name='Lab manager').exists():
+                obj.save()
+            else:
+                raise PermissionDenied
+    
+    def get_readonly_fields(self, request, obj=None):
+        if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
+            if obj:
+                return ['box_number', 'parental_strain', 'mating_type', 'auxotrophic_marker', 'genotype',
+        'phenotype', 'received_from', 'comment', 'created_date_time', 'last_changed_date_time', 'created_by',]
+            else:
+                return ['created_date_time', 'last_changed_date_time',]
+        else:
+            return ['created_date_time', 'last_changed_date_time',]
+
+    def add_view(self,request,extra_content=None):
+        self.fields = ('box_number', 'parental_strain', 'mating_type', 'auxotrophic_marker', 'genotype',
+        'phenotype', 'received_from', 'comment', )
+        return super(PagePombeStrain,self).add_view(request)
+
+    def change_view(self,request,object_id,extra_content=None):
+        self.fields = ('box_number', 'parental_strain', 'mating_type', 'auxotrophic_marker', 'genotype',
+        'phenotype', 'received_from', 'comment', 'created_date_time', 'last_changed_date_time', 'created_by',)
+        return super(PagePombeStrain,self).change_view(request,object_id)
+        
+class PageNzPlasmid(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin, admin.ModelAdmin):
+    list_display = ('id', 'name', 'selection', 'get_plasmid_short_name','created_by',)
+    list_display_links = ('id', )
+    list_per_page = 25
+    formfield_overrides = {
+    models.CharField: {'widget': TextInput(attrs={'size':'93'})},
+    }
+    
+    def save_model(self, request, obj, form, change): 
+        if obj.pk == None:
+            obj.created_by = request.user
+            obj.save()
+        else:
+            if request.user.is_superuser or request.user == obj.created_by or request.user.groups.filter(name='Lab manager').exists():
+                obj.save()
+            else:
+                raise PermissionDenied
+                
+    def get_readonly_fields(self, request, obj=None):
+        if obj:
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
+                return ['name', 'other_name', 'parent_vector', 'selection', 'use', 'construction_feature', 'received_from', 'note', 
+                'reference', 'plasmid_map', 'created_date_time', 'last_changed_date_time', 'created_by',]
+            else:
+                return ['created_date_time', 'last_changed_date_time',]
+        else:
+            return ['created_date_time', 'last_changed_date_time',]
+    
+    def add_view(self,request,extra_content=None):
+        self.fields = ('name', 'other_name', 'parent_vector', 'selection', 'use', 'construction_feature', 'received_from', 'note', 
+                'reference', 'plasmid_map',)
+        return super(PageNzPlasmid,self).add_view(request)
+
+    def change_view(self,request,object_id,extra_content=None):
+        self.fields = ('name', 'other_name', 'parent_vector', 'selection', 'use', 'construction_feature', 'received_from', 'note', 
+                'reference', 'plasmid_map', 'created_date_time', 'last_changed_date_time', 'created_by',)
+        return super(PageNzPlasmid,self).change_view(request,object_id)
+        
+    def get_plasmid_short_name(self, instance):
+        if instance.plasmid_map:
+            return '<a href="%s">%s</a>' % ('/uploads/' + str(instance.plasmid_map), 'Download')
+        else:
+            return ''
+    get_plasmid_short_name.allow_tags = True
+    get_plasmid_short_name.short_description = 'Plasmid map'
+
+class PageEcoliStrain(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin, admin.ModelAdmin):
+    list_display = ('id', 'name', 'resistance', 'use','purpose')
+    list_display_links = ('id', )
+    list_per_page = 25
+    formfield_overrides = {
+    models.CharField: {'widget': TextInput(attrs={'size':'93'})},
+    }
+    
+    def save_model(self, request, obj, form, change): 
+        if obj.pk == None:
+            obj.created_by = request.user
+            obj.save()
+        else:
+            if request.user.is_superuser or request.user == obj.created_by or request.user.groups.filter(name='Lab manager').exists():
+                obj.save()
+            else:
+                raise PermissionDenied
+                
+    def get_readonly_fields(self, request, obj=None):
+        if obj:
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
+                return ['name', 'resistance', 'genotype', 'supplier', 'use', 'purpose', 'note',
+                'created_date_time', 'last_changed_date_time', 'created_by',]
+            else:
+                return ['created_date_time', 'last_changed_date_time',]
+        else:
+            return ['created_date_time', 'last_changed_date_time',]
+    
+    def add_view(self,request,extra_content=None):
+        self.fields = ('name', 'resistance', 'genotype', 'supplier', 'use', 'purpose', 'note',)
+        return super(PageEcoliStrain,self).add_view(request)
+
+    def change_view(self,request,object_id,extra_content=None):
+        self.fields = ('name', 'resistance', 'genotype', 'supplier', 'use', 'purpose', 'note',
+                'created_date_time', 'last_changed_date_time', 'created_by',)
+        return super(PageEcoliStrain,self).change_view(request,object_id) 
+
+class PageMammalianLine(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin, admin.ModelAdmin):
+    list_display = ('id', 'name', 'box_name', 'created_by')
+    list_display_links = ('id', )
+    list_per_page = 25
+    formfield_overrides = {
+    models.CharField: {'widget': TextInput(attrs={'size':'93'})},
+    }
+    
+    def save_model(self, request, obj, form, change): 
+        if obj.pk == None:
+            obj.created_by = request.user
+            obj.save()
+        else:
+            if request.user.is_superuser or request.user == obj.created_by or request.user.groups.filter(name='Lab manager').exists():
+                obj.save()
+            else:
+                raise PermissionDenied
+                
+    def get_readonly_fields(self, request, obj=None):
+        if obj:
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
+                return ['name', 'box_name', 'alternative_name', 'organism', 'cell_type_tissue', 'culture_type', 'growth_condition',
+                'freezing_medium', 'received_from', 'description_comment','created_date_time', 'last_changed_date_time', 'created_by',]
+            else:
+                return ['created_date_time', 'last_changed_date_time',]
+        else:
+            return ['created_date_time', 'last_changed_date_time',]
+    
+    def add_view(self,request,extra_content=None):
+        self.fields = ('name', 'box_name', 'alternative_name', 'organism', 'cell_type_tissue', 'culture_type', 'growth_condition',
+                'freezing_medium', 'received_from', 'description_comment',)
+        return super(PageMammalianLine,self).add_view(request)
+
+    def change_view(self,request,object_id,extra_content=None):
+        self.fields = ('name', 'box_name', 'alternative_name', 'organism', 'cell_type_tissue', 'culture_type', 'growth_condition',
+                'freezing_medium', 'received_from', 'description_comment','created_date_time', 'last_changed_date_time', 'created_by',)
+        return super(PageMammalianLine,self).change_view(request,object_id) 
+
+class PageAntibody(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin, admin.ModelAdmin):
+    list_display = ('id', 'name', 'catalogue_number', 'species_isotype', 'clone', 'location', 'get_sheet_short_name')
+    list_display_links = ('id', )
+    list_per_page = 25
+    ordering = ('name',)
+    formfield_overrides = {
+    models.CharField: {'widget': TextInput(attrs={'size':'93'})},
+    }
+    
+    def save_model(self, request, obj, form, change): 
+        if obj.pk == None:
+            obj.created_by = request.user
+            obj.save()
+        else:
+            if request.user.groups.filter(name='Guest').exists():
+                raise PermissionDenied
+            else:
+                obj.save()
+    
+    def get_readonly_fields(self, request, obj=None):
+        if obj:
+            if request.user.groups.filter(name='Guest').exists():
+                return ['name', 'species_isotype', 'clone', 'received_from', 'catalogue_number', 'info_sheet',
+                'location', 'application', 'description_comment','info_sheet', 'created_by']
+            else:
+                return ['created_date_time', 'last_changed_date_time',]
+        else:
+            return ['created_date_time', 'last_changed_date_time',]
+    
+    def add_view(self,request,extra_content=None):
+        self.fields = ('name', 'species_isotype', 'clone', 'received_from', 'catalogue_number', 'location', 'application',
+                'description_comment', 'info_sheet',)
+        return super(PageAntibody,self).add_view(request)
+    
+    def change_view(self,request,object_id,extra_content=None):
+        self.fields = ('name', 'species_isotype', 'clone', 'received_from', 'catalogue_number', 'location', 'application',
+                'description_comment', 'info_sheet',)
+        return super(PageAntibody,self).change_view(request,object_id)
+        
+    def get_sheet_short_name(self, instance):
+        if instance.info_sheet:
+            return '<a href="%s">%s</a>' % ('/uploads/' + str(instance.info_sheet), 'Download')
+        else:
+            return ''
+    get_sheet_short_name.allow_tags = True
+    get_sheet_short_name.short_description = 'Info Sheet'
+
+from .models import strain as collection_management_strain
+from .models import plasmid as collection_management_plasmid
+from .models import oligo as collection_management_oligo
+from .models import pombe_strain as collection_management_pombe_strain
+from .models import nz_plasmid as collection_management_nz_plasmid
+from .models import ecoli_strain as collection_management_ecoli_strain
+from .models import mammalian_line as collection_management_mammalian_line
+from .models import antibody as collection_management_antibody
+
+my_admin_site.register(collection_management_strain, PageStrain)
+my_admin_site.register(collection_management_plasmid, PagePlasmid)
+my_admin_site.register(collection_management_oligo, PageOligo)
+my_admin_site.register(collection_management_pombe_strain, PagePombeStrain)
+my_admin_site.register(collection_management_nz_plasmid, PageNzPlasmid)
+my_admin_site.register(collection_management_ecoli_strain, PageEcoliStrain)
+my_admin_site.register(collection_management_mammalian_line, PageMammalianLine)
+my_admin_site.register(collection_management_antibody, PageAntibody)
+
+from laboratory_management.models import url as laboratory_management_url
+from laboratory_management.models import category as laboratory_management_category
+from laboratory_management.admin import PageUrl as laboratory_management_PageUrl
+from laboratory_management.admin import PageCategory as laboratory_management_PageCategory
+
+my_admin_site.register(laboratory_management_url, laboratory_management_PageUrl)
+my_admin_site.register(laboratory_management_category, laboratory_management_PageCategory)
+
+from pages.models import protocol as pages_protocol
+from pages.admin import PageProtocol as pages_PageProtocol
+
+my_admin_site.register(pages_protocol, pages_PageProtocol)
+
+from order_management.models import order as order_management_protocol
+from order_management.models import cost_unit as order_cost_unit
+from order_management.models import location as order_location
+from order_management.admin import PageOrder as laboratory_management_PageOrder
+from order_management.admin import PageCostUnit as laboratory_management_PageCostUnit
+from order_management.admin import PageLocation as laboratory_management_PageLocation
+
+my_admin_site.register(order_management_protocol, laboratory_management_PageOrder)
+my_admin_site.register(order_cost_unit, laboratory_management_PageCostUnit)
+my_admin_site.register(order_location, laboratory_management_PageLocation)
+
+from django.contrib.auth.models import Group, User
+from django.contrib.auth.admin import GroupAdmin, UserAdmin
+
+my_admin_site.register(Group, GroupAdmin)
+my_admin_site.register(User, UserAdmin)
+
+from user_management.models import lab_user as user_management_lab_user
+from user_management.admin import UserAdmin as user_management_UserAdmin
+
+my_admin_site.unregister(User)
+my_admin_site.register(User, user_management_UserAdmin)
+

@@ -1,0 +1,34 @@
+.djangoql-completion {
+  position: absolute;
+  display: none;
+  border: solid 1px #ccc;
+  border-radius: 4px;
+  background: white;
+  min-width: 183px;
+  font-size: 13px;
+}
+
+.djangoql-completion .active {
+  background-color: #79aec8;
+  color: white;
+}
+
+.djangoql-completion ul {
+  padding: 2px 0;
+  margin: 0;
+  max-height: 295px;
+  overflow: auto;
+}
+
+.djangoql-completion li {
+  list-style: none;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.djangoql-completion .syntax-help {
+  padding: 4px 10px 6px 10px;
+  margin: 0;
+  border-top: solid 1px #ccc;
+  font-size: inherit;
+}

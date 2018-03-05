@@ -1,0 +1,9 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+{% block bodyclass %}{{ block.super }} dashboard{% endblock %}
+{% block breadcrumbs %}{% endblock %}
+{% block content %}
+        <h1>Sorry, there was an error handling your request</h1>
+        <p>Your super awesome system administrator has been notified.</p>
+        <p>Go back to the <a href="/">home page</a>.</p>
+{% endblock %}

@@ -103,6 +103,12 @@ class HuPlasmid (models.Model):
     created_by = models.ForeignKey(User)
     history = HistoricalRecords()
     
+    class Meta:
+        '''Set a custom name to be used throughout the admin pages'''
+        
+        verbose_name = 'plasmid'
+        verbose_name_plural = 'plasmids'
+
     RENAME_FILES = {
             'plasmid_map': {'dest': 'plasmids/', 'keep_ext': True}
         }

@@ -33,7 +33,7 @@ import os
 
 # Advanced search functionalities from DjangoQL
 from djangoql.admin import DjangoQLSearchMixin
-from djangoql.schema import DjangoQLSchema
+from djangoql.schema import DjangoQLSchema, StrField
 
 # Object history tracking from django-simple-history
 from simple_history.admin import SimpleHistoryAdmin
@@ -75,6 +75,46 @@ class MyAdminSite(admin.AdminSite):
 my_admin_site = MyAdminSite()
 
 #################################################
+#          CUSTOM USER SEARCH OPTIONS           #
+#################################################
+
+class SearchFieldOptUsername(StrField):
+    """Create a list of unique user's usernames for search"""
+
+    model = User
+    name = 'username'
+    suggest_options = True
+
+    def get_options(self):
+        # exclude(id__in=[1,20]) removes admin and guest accounts from 
+        # the list of options, distinct() returns only unique values
+        # sorted in alphabetical order
+
+        return super(SearchFieldOptUsername, self).get_options().\
+        exclude(id__in=[1,20]).\
+        distinct().\
+        order_by(self.name).\
+        values_list(self.name, flat=True)
+
+class SearchFieldOptLastname(StrField):
+    """Create a list of unique user's last names for search"""
+
+    model = User
+    name = 'last_name'
+    suggest_options = True
+
+    def get_options(self):
+        # exclude(id__in=[1,20]) removes admin and guest accounts from 
+        # the list of options, distinct() returns only unique values
+        # sorted in alphabetical order
+        
+        return super(SearchFieldOptLastname, self).\
+        get_options().\
+        exclude(id__in=[1,20]).\
+        distinct().order_by(self.name).\
+        values_list(self.name, flat=True)
+
+#################################################
 #          SA. CEREVISIAE STRAIN PAGES          #
 #################################################
 
@@ -94,7 +134,7 @@ class SaCerevisiaeStrainQLSchema(DjangoQLSchema):
                 'construction', 'modification', 'plasmids', 'selection', 'phenotype', 'background', 'received_from',
                 'us_e', 'note', 'reference', 'created_by',]
         elif model == User:
-            return ['username','last_name',]
+            return [SearchFieldOptUsername(), SearchFieldOptLastname()]
         return super(SaCerevisiaeStrainQLSchema, self).get_fields(model)
 
 class SaCerevisiaeStrainPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin, admin.ModelAdmin):
@@ -173,7 +213,7 @@ class HuPlasmidQLSchema(DjangoQLSchema):
             return ['id', 'name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
                 'reference', 'created_by',]
         elif model == User:
-            return ['username','last_name',]
+            return [SearchFieldOptUsername(), SearchFieldOptLastname()]
         return super(HuPlasmidQLSchema, self).get_fields(model)
 
 class HuPlasmidPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin, admin.ModelAdmin):
@@ -260,7 +300,7 @@ class OligoQLSchema(DjangoQLSchema):
         if model == collection_management_Oligo:
             return ['id', 'name','sequence', 'us_e', 'gene', 'restriction_site', 'description', 'comment', 'created_by',]
         elif model == User:
-            return ['username','last_name',]
+            return [SearchFieldOptUsername(), SearchFieldOptLastname()]
         return super(OligoQLSchema, self).get_fields(model)
 
 class OligoPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin, admin.ModelAdmin):
@@ -334,7 +374,7 @@ class ScPombeStrainQLSchema(DjangoQLSchema):
             return ['id', 'box_number', 'parental_strain', 'mating_type', 'auxotrophic_marker', 'genotype',
                     'phenotype', 'received_from', 'comment', 'created_by',]
         elif model == User:
-            return ['username','last_name',]
+            return [SearchFieldOptUsername(), SearchFieldOptLastname()]
         return super(ScPombeStrainQLSchema, self).get_fields(model)
 
 class ScPombeStrainPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin, admin.ModelAdmin):
@@ -401,7 +441,7 @@ class NzPlasmidQLSchema(DjangoQLSchema):
     '''Customize search functionality'''
     
     include = (collection_management_NzPlasmid, User) # Include only the relevant models to be searched
-    suggest_options = {User: ['username', 'last_name',],} # Autofill for username and last_name options for created_by field
+    #suggest_options = {User: ['username', 'last_name',],} # Autofill for username and last_name options for created_by field
 
     def get_fields(self, model):
         '''Define fields that can be searched'''
@@ -410,7 +450,7 @@ class NzPlasmidQLSchema(DjangoQLSchema):
             return ['id', 'name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
                 'reference', 'created_by',]
         elif model == User:
-            return ['username','last_name',]
+            return [SearchFieldOptUsername(), SearchFieldOptLastname()]
         return super(NzPlasmidQLSchema, self).get_fields(model)
 
 class NzPlasmidPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin, admin.ModelAdmin):
@@ -490,7 +530,7 @@ class EColiStrainQLSchema(DjangoQLSchema):
         if model == collection_management_EColiStrain:
             return ['id', 'name', 'resistance', 'genotype', 'supplier', 'us_e', 'purpose', 'note', 'created_by',]
         elif model == User:
-            return ['username','last_name',]
+            return [SearchFieldOptUsername(), SearchFieldOptLastname()]
         return super(EColiStrainQLSchema, self).get_fields(model)
 
 class EColiStrainPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin, admin.ModelAdmin):
@@ -565,7 +605,7 @@ class MammalianLineQLSchema(DjangoQLSchema):
             return ['id', 'name', 'box_name', 'alternative_name', 'organism', 'cell_type_tissue', 'culture_type', 
             'growth_condition','freezing_medium', 'received_from', 'description_comment', 'created_by',]
         elif model == User:
-            return ['username','last_name',]
+            return [SearchFieldOptUsername(), SearchFieldOptLastname()]
         return super(MammalianLineQLSchema, self).get_fields(model)
 
 class MammalianLinePage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin, admin.ModelAdmin):
@@ -641,7 +681,7 @@ class AntibodyQLSchema(DjangoQLSchema):
             return ['id', 'name', 'species_isotype', 'clone', 'received_from', 'catalogue_number', 'info_sheet',
                 'location', 'application', 'description_comment','info_sheet', 'created_by', 'arche_noah_choice',]
         elif model == User:
-            return ['username','last_name',]
+            return [SearchFieldOptUsername(), SearchFieldOptLastname()]
         return super(AntibodyQLSchema, self).get_fields(model)
 
 class AntibodyPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin, admin.ModelAdmin):

@@ -6,6 +6,8 @@ from __future__ import unicode_literals
 #    DJANGO 'CORE' FUNCTIONALITIES IMPORTS      #
 #################################################
 
+from django import forms
+
 from django.contrib import admin
 from django.contrib import messages
 from django.contrib.auth.admin import UserAdmin
@@ -124,7 +126,6 @@ class SaCerevisiaeStrainQLSchema(DjangoQLSchema):
     '''Customize search functionality'''
     
     include = (collection_management_SaCerevisiaeStrain, User) # Include only the relevant models to be searched
-    suggest_options = {User: ['username', 'last_name',],} # Autofill for username and last_name options for created_by field
 
     def get_fields(self, model):
         ''' Define fields that can be searched'''
@@ -154,7 +155,7 @@ class SaCerevisiaeStrainPage(ExportActionModelAdmin, DjangoQLSearchMixin, Simple
             obj.created_by = request.user
             obj.save()
         else:
-            if request.user.is_superuser or request.user == obj.created_by or request.user.groups.filter(name='Lab manager').exists():
+            if request.user.is_superuser or request.user == collection_management_SaCerevisiaeStrain.objects.get(pk=obj.pk).created_by or request.user.groups.filter(name='Lab manager').exists():
                 obj.save()
             else:
                 raise PermissionDenied
@@ -204,7 +205,6 @@ class HuPlasmidQLSchema(DjangoQLSchema):
     '''Customize search functionality'''
     
     include = (collection_management_HuPlasmid, User) # Include only the relevant models to be searched
-    suggest_options = {User: ['username', 'last_name',],} # Autofill for username and last_name options for created_by field
 
     def get_fields(self, model):
         '''Define fields that can be searched'''
@@ -233,7 +233,7 @@ class HuPlasmidPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAd
             obj.created_by = request.user
             obj.save()
         else:
-            if request.user.is_superuser or request.user == obj.created_by or request.user.groups.filter(name='Lab manager').exists():
+            if request.user.is_superuser or request.user == collection_management_HuPlasmid.objects.get(pk=obj.pk).created_by or request.user.groups.filter(name='Lab manager').exists():
                 obj.save()
             else:
                 if obj.created_by.id == 6: # Allow saving object, if record belongs to Helle (user id = 6)
@@ -292,7 +292,6 @@ class OligoQLSchema(DjangoQLSchema):
     '''Customize search functionality'''
     
     include = (collection_management_Oligo, User) # Include only the relevant models to be searched
-    suggest_options = {User: ['username', 'last_name',],} # Autofill for username and last_name options for created_by field
     
     def get_fields(self, model):
         '''Define fields that can be searched'''
@@ -321,7 +320,7 @@ class OligoPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin,
             obj.created_by = request.user
             obj.save()
         else:
-            if request.user.is_superuser or request.user == obj.created_by or request.user.groups.filter(name='Lab manager').exists():
+            if request.user.is_superuser or request.user == collection_management_Oligo.objects.get(pk=obj.pk).created_by or request.user.groups.filter(name='Lab manager').exists():
                 obj.save()
             else:
                 raise PermissionDenied
@@ -365,7 +364,6 @@ class ScPombeStrainQLSchema(DjangoQLSchema):
     '''Customize search functionality'''
     
     include = (collection_management_ScPombeStrain, User) # Include only the relevant models to be searched
-    suggest_options = {User: ['username', 'last_name',],} # Autofill for username and last_name options for created_by field
 
     def get_fields(self, model):
         '''Define fields that can be searched'''
@@ -394,7 +392,7 @@ class ScPombeStrainPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHisto
             obj.created_by = request.user
             obj.save()
         else:
-            if request.user.is_superuser or request.user == obj.created_by or request.user.groups.filter(name='Lab manager').exists():
+            if request.user.is_superuser or request.user == collection_management_ScPombeStrain.objects.get(pk=obj.pk).created_by or request.user.groups.filter(name='Lab manager').exists():
                 obj.save()
             else:
                 raise PermissionDenied
@@ -441,7 +439,6 @@ class NzPlasmidQLSchema(DjangoQLSchema):
     '''Customize search functionality'''
     
     include = (collection_management_NzPlasmid, User) # Include only the relevant models to be searched
-    #suggest_options = {User: ['username', 'last_name',],} # Autofill for username and last_name options for created_by field
 
     def get_fields(self, model):
         '''Define fields that can be searched'''
@@ -470,7 +467,7 @@ class NzPlasmidPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAd
             obj.created_by = request.user
             obj.save()
         else:
-            if request.user.is_superuser or request.user == obj.created_by or request.user.groups.filter(name='Lab manager').exists():
+            if request.user.is_superuser or request.user == collection_management_NzPlasmid.objects.get(pk=obj.pk).created_by or request.user.groups.filter(name='Lab manager').exists():
                 obj.save()
             else:
                 raise PermissionDenied
@@ -522,7 +519,6 @@ class EColiStrainQLSchema(DjangoQLSchema):
     '''Customize search functionality'''
     
     include = (collection_management_EColiStrain, User) # Include only the relevant models to be searched
-    suggest_options = {User: ['username', 'last_name',],} # Autofill for username and last_name options for created_by field
 
     def get_fields(self, model):
         '''Define fields that can be searched'''
@@ -550,7 +546,7 @@ class EColiStrainPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistory
             obj.created_by = request.user
             obj.save()
         else:
-            if request.user.is_superuser or request.user == obj.created_by or request.user.groups.filter(name='Lab manager').exists():
+            if request.user.is_superuser or request.user == collection_management_EColiStrain.objects.get(pk=obj.pk).created_by or request.user.groups.filter(name='Lab manager').exists():
                 obj.save()
             else:
                 raise PermissionDenied
@@ -596,7 +592,6 @@ class MammalianLineQLSchema(DjangoQLSchema):
     '''Customize search functionality'''
     
     include = (collection_management_MammalianLine, User) # Include only the relevant models to be searched
-    suggest_options = {User: ['username', 'last_name',],} # Autofill for username and last_name options for created_by field
 
     def get_fields(self, model):
         '''Define fields that can be searched'''
@@ -625,7 +620,7 @@ class MammalianLinePage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHisto
             obj.created_by = request.user
             obj.save()
         else:
-            if request.user.is_superuser or request.user == obj.created_by or request.user.groups.filter(name='Lab manager').exists():
+            if request.user.is_superuser or request.user == collection_management_MammalianLine.objects.get(pk=obj.pk).created_by or request.user.groups.filter(name='Lab manager').exists():
                 obj.save()
             else:
                 raise PermissionDenied
@@ -672,7 +667,6 @@ class AntibodyQLSchema(DjangoQLSchema):
     '''Customize search functionality'''
     
     include = (collection_management_Antibody, User) # Include only the relevant models to be searched
-    suggest_options = {User: ['username', 'last_name',],} # Autofill for username and last_name options for created_by field
 
     def get_fields(self, model):
         '''Define fields that can be searched'''

@@ -25,7 +25,6 @@ from collection_management.admin import my_admin_site
 
 urlpatterns = [
     url(r'^ckeditor/', include('ckeditor_uploader.urls')),
-    url(r'^new_order/', login_required(TemplateView.as_view(template_name='order_form.html'))),
     url(r'^order_confirmation/',  login_required(TemplateView.as_view(template_name='order_confirmation.html'))),
     url(r'^', my_admin_site.urls),
     ]

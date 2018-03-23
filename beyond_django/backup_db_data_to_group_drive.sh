@@ -41,7 +41,7 @@ b.received_from AND a.note = b.note AND a.reference = b.reference AND \
 a.plasmid_map = b.plasmid_map AND a.created_by_id = b.created_by_id AND \
 a.history_user_id = b.history_user_id WHERE b.maxtimestamp IS NULL; \
 UPDATE $ENTRY SET history_type = '+' WHERE ABS(UNIX_TIMESTAMP(created_date_time) \
-- UNIX_TIMESTAMP(last_changed_date_time)) < 0.1;"
+- UNIX_TIMESTAMP(last_changed_date_time)) < 0.25;"
 done
 
 #Remove all .tab and .gz files from backup folder 

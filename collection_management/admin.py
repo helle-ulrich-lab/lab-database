@@ -217,7 +217,7 @@ class HuPlasmidQLSchema(DjangoQLSchema):
         return super(HuPlasmidQLSchema, self).get_fields(model)
 
 class HuPlasmidPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin, admin.ModelAdmin):
-    list_display = ('id', 'name', 'selection', 'plasmid_map', 'created_by',)
+    list_display = ('id', 'name', 'selection', 'get_plasmidmap_short_name', 'created_by',)
     list_display_links = ('id', )
     list_per_page = 25
     formfield_overrides = {models.CharField: {'widget': TextInput(attrs={'size':'93'})},} # Make TextInput fields wider
@@ -275,6 +275,18 @@ class HuPlasmidPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAd
                 'reference', 'plasmid_map', 'created_date_time', 'last_changed_date_time', 'created_by',)
         return super(HuPlasmidPage,self).change_view(request,object_id)
     
+    def get_plasmidmap_short_name(self, instance):
+        '''This function allows you to define a custom field for the list view to
+        be defined in list_display as the name of the function, e.g. in this case
+        list_display = ('id', 'name', 'selection', 'get_plasmidmap_short_name','created_by',)'''
+        if instance.plasmid_map:
+            plasmid_name_for_download = "pHU" + str(instance.pk) + " - " + str(instance.name) + "." + str(instance.plasmid_map).split(".")[-1]
+            return '<a href="%s" download="%s">Download</a>' % (str(instance.plasmid_map.url), plasmid_name_for_download)
+        else:
+            return ''
+    get_plasmidmap_short_name.allow_tags = True
+    get_plasmidmap_short_name.short_description = 'Plasmid map'
+
     # Add custom js (or css) files to all pages that belong to this model
     class Media:
         js = ('admin/js/vendor/jquery/jquery.js',
@@ -450,12 +462,22 @@ class NzPlasmidQLSchema(DjangoQLSchema):
             return [SearchFieldOptUsername(), SearchFieldOptLastname()]
         return super(NzPlasmidQLSchema, self).get_fields(model)
 
+# class NzPlasmidCustomForm(forms.ModelForm):
+#     class Meta:
+#         model = collection_management_NzPlasmid
+#         fields = '__all__'
+
+#     def __init__(self, *args, **kwargs):
+#         super(NzPlasmidCustomForm, self).__init__(*args, **kwargs)
+#         self.fields['created_by'].queryset = self.fields['created_by'].queryset.exclude(id__in=[1,20]).order_by("last_name")                                            
+
 class NzPlasmidPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin, admin.ModelAdmin):
-    list_display = ('id', 'name', 'selection', 'plasmid_map','created_by',)
+    list_display = ('id', 'name', 'selection', 'get_plasmidmap_short_name','created_by',)
     list_display_links = ('id', )
     list_per_page = 25
     formfield_overrides = {models.CharField: {'widget': TextInput(attrs={'size':'93'})},}
     djangoql_schema = NzPlasmidQLSchema
+    # form = NzPlasmidCustomForm
     
     def save_model(self, request, obj, form, change):
         '''Override default save_model to limit a user's ability to save a record
@@ -502,6 +524,18 @@ class NzPlasmidPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAd
                 'reference', 'plasmid_map', 'created_date_time', 'last_changed_date_time', 'created_by',)
         return super(NzPlasmidPage,self).change_view(request,object_id)
     
+    def get_plasmidmap_short_name(self, instance):
+        '''This function allows you to define a custom field for the list view to
+        be defined in list_display as the name of the function, e.g. in this case
+        list_display = ('id', 'name', 'selection', 'get_plasmidmap_short_name','created_by',)'''
+        if instance.plasmid_map:
+            plasmid_name_for_download = "pNZ" + str(instance.pk) + " - " + str(instance.name) + "." + str(instance.plasmid_map).split(".")[-1]
+            return '<a href="%s" download="%s">Download</a>' % (str(instance.plasmid_map.url), plasmid_name_for_download)
+        else:
+            return ''
+    get_plasmidmap_short_name.allow_tags = True
+    get_plasmidmap_short_name.short_description = 'Plasmid map'
+
     # Add custom js (or css) files to all pages that belong to this model
     class Media:
         js = ('admin/js/vendor/jquery/jquery.js',
@@ -737,15 +771,21 @@ class AntibodyPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdm
         
     def get_sheet_short_name(self, instance):
         '''Create custom column for information sheet
-        It formats html element a  for the information sheet
-        such that the text shown for a link is always View/Download'''
+        It formats a html element a for the information sheet
+        such that the text shown for a link is always View'''
 
         if instance.info_sheet:
-            return '<a href="%s">%s</a>' % ('/uploads/' + str(instance.info_sheet), 'View/Download')
+            download_link = '/uploads/' + str(instance.info_sheet)
+            return '<a href="%s">%s</a>' % (download_link, 'View')
         else:
             return ''
     get_sheet_short_name.allow_tags = True # needed to show output of get_sheet_short_name as html and not simple text
     get_sheet_short_name.short_description = 'Info Sheet'
+
+    # Add custom js (or css) files to all pages that belong to this model
+    class Media:
+        js = ('admin/js/vendor/jquery/jquery.js',
+        'admin/js/admin/ChangeDownloadLink.js',)
 
 my_admin_site.register(collection_management_Antibody, AntibodyPage)
 

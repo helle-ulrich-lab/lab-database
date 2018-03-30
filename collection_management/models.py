@@ -338,8 +338,8 @@ class Antibody (models.Model):
     clone = models.CharField("Clone", max_length = 255, blank=True)
     received_from = models.CharField("Receieved from", max_length = 255, blank=True)
     catalogue_number = models.CharField("Catalogue number", max_length = 255, blank=True)
-    location = models.CharField("Location", max_length = 255, blank=True)
-    application = models.CharField("Application", max_length = 255, blank=True)
+    l_ocation = models.CharField("Location", max_length = 255, blank=True)
+    a_pplication = models.CharField("Application", max_length = 255, blank=True)
     description_comment = models.TextField("Description/Comments", max_length = 300, blank=True)
     info_sheet = models.FileField("Info sheet (max. 2 MB)", upload_to="temp/", blank=True)
 

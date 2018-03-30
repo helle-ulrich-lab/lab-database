@@ -788,16 +788,16 @@ class AntibodyQLSchema(DjangoQLSchema):
         
         if model == collection_management_Antibody:
             return ['id', 'name', 'species_isotype', 'clone', 'received_from', 'catalogue_number', 'info_sheet',
-                'location', 'application', 'description_comment','info_sheet', 'created_by', 'arche_noah_choice',]
+                'l_ocation', 'a_pplication', 'description_comment','info_sheet', 'created_by', 'arche_noah_choice',]
         elif model == User:
             return [SearchFieldOptUsername(), SearchFieldOptLastname()]
         return super(AntibodyQLSchema, self).get_fields(model)
 
 class AntibodyPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin, admin.ModelAdmin):
-    list_display = ('id', 'name', 'catalogue_number', 'species_isotype', 'clone', 'location', 'get_sheet_short_name')
+    list_display = ('id', 'name', 'catalogue_number', 'species_isotype', 'clone', 'l_ocation', 'get_sheet_short_name')
     list_display_links = ('id', )
     list_per_page = 25
-    ordering = ('name',)
+    #ordering = ('name',)
     formfield_overrides = {models.CharField: {'widget': TextInput(attrs={'size':'93'})},}
     djangoql_schema = AntibodyQLSchema
     
@@ -829,7 +829,7 @@ class AntibodyPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdm
         if obj:
             if request.user.groups.filter(name='Guest').exists():
                 return ['name', 'species_isotype', 'clone', 'received_from', 'catalogue_number', 'info_sheet',
-                'location', 'application', 'description_comment','info_sheet', 'created_by', 'created_date_time',
+                'l_ocation', 'a_pplication', 'description_comment','info_sheet', 'created_by', 'created_date_time',
                 'last_changed_date_time', 'arche_noah_choice',]
             else:
                 return ['created_date_time', 'last_changed_date_time',]
@@ -839,14 +839,14 @@ class AntibodyPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdm
     def add_view(self,request,extra_content=None):
         '''Override default add_view to show only desired fields'''
 
-        self.fields = ('name', 'species_isotype', 'clone', 'received_from', 'catalogue_number', 'location', 'application',
+        self.fields = ('name', 'species_isotype', 'clone', 'received_from', 'catalogue_number', 'l_ocation', 'a-pplication',
                 'description_comment', 'info_sheet', 'arche_noah_choice',)
         return super(AntibodyPage,self).add_view(request)
     
     def change_view(self,request,object_id,extra_content=None):
         '''Override default change_view to show only desired fields'''
 
-        self.fields = ('name', 'species_isotype', 'clone', 'received_from', 'catalogue_number', 'location', 'application',
+        self.fields = ('name', 'species_isotype', 'clone', 'received_from', 'catalogue_number', 'l_ocation', 'a_pplication',
                 'description_comment', 'info_sheet','created_date_time','last_changed_date_time', 'arche_noah_choice',)
         return super(AntibodyPage,self).change_view(request,object_id)
 

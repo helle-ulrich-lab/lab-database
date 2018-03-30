@@ -50,14 +50,12 @@
               </a>
             </li>
             {% endif %}
-            {%if cl.opts.app_config.verbose_name == "COLLECTIONS"%}
-              <li>
-                  <a style="background-color:palevioletred;" 
-                  href='?q=created_by.username+%3D+"{{user.username}}"'>
-                  {% blocktrans with cl.opts.verbose_name_plural as name_plural %}My {{ name_plural }}{% endblocktrans %}
-                  </a>
-              </li>
-            {% endif %}
+            <li>
+                <a style="background-color:palevioletred;" 
+                href='?q=created_by.username+%3D+"{{user.username}}"'>
+                {% blocktrans with cl.opts.verbose_name_plural as name_plural %}My {{ name_plural }}{% endblocktrans %}
+                </a>
+            </li>
           {% endblock %}
         </ul>
     {% endblock %}

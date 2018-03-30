@@ -68,7 +68,7 @@ class MyAdminSite(admin.AdminSite):
     site_header = ugettext_lazy('Ulrich Lab Intranet')
 
     # Text to put at the top of the admin index page.
-    index_title = ugettext_lazy('Ulrich Lab Intranet')
+    index_title = ugettext_lazy('Home')
 
     # URL for the "View site" link at the top of each admin page.
     site_url = '/'
@@ -81,16 +81,16 @@ my_admin_site = MyAdminSite()
 #################################################
 
 class SearchFieldOptUsername(StrField):
-    """Create a list of unique user's usernames for search"""
+    """Create a list of unique users' usernames for search"""
 
     model = User
     name = 'username'
     suggest_options = True
 
     def get_options(self):
-        # exclude(id__in=[1,20]) removes admin and guest accounts from 
-        # the list of options, distinct() returns only unique values
-        # sorted in alphabetical order
+        """exclude(id__in=[1,20]) removes admin and guest accounts from 
+        the list of options, distinct() returns only unique values
+        sorted in alphabetical order"""
 
         return super(SearchFieldOptUsername, self).get_options().\
         exclude(id__in=[1,20]).\
@@ -106,9 +106,9 @@ class SearchFieldOptLastname(StrField):
     suggest_options = True
 
     def get_options(self):
-        # exclude(id__in=[1,20]) removes admin and guest accounts from 
-        # the list of options, distinct() returns only unique values
-        # sorted in alphabetical order
+        """exclude(id__in=[1,20]) removes admin and guest accounts from 
+        the list of options, distinct() returns only unique values
+        sorted in alphabetical order"""
         
         return super(SearchFieldOptLastname, self).\
         get_options().\
@@ -168,7 +168,7 @@ class SaCerevisiaeStrainPage(ExportActionModelAdmin, DjangoQLSearchMixin, Simple
         because their set by Django itself'''
         
         if obj:
-            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
                 return ['name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parental_strain',
                 'construction', 'modification', 'plasmids', 'selection', 'phenotype', 'background', 'received_from',
                 'us_e', 'note', 'reference','created_date_time', 'last_changed_date_time', 'created_by',]
@@ -192,6 +192,18 @@ class SaCerevisiaeStrainPage(ExportActionModelAdmin, DjangoQLSearchMixin, Simple
         'construction', 'modification', 'plasmids', 'selection', 'phenotype', 'background', 'received_from',
         'us_e', 'note', 'reference', 'created_date_time', 'last_changed_date_time', 'created_by',)
         return super(SaCerevisiaeStrainPage,self).change_view(request,object_id)
+    
+    def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
+        """Override default changeform_view to hide Save buttons when certain conditions (same as
+        those in get_readonly_fields method) are met"""
+
+        extra_context = extra_context or {}
+        extra_context['show_submit_line'] = True
+        obj = collection_management_SaCerevisiaeStrain.objects.get(pk=object_id)
+        if obj:
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
+                extra_context['show_submit_line'] = False
+        return super(SaCerevisiaeStrainPage, self).changeform_view(request, object_id, extra_context=extra_context)
 
 my_admin_site.register(collection_management_SaCerevisiaeStrain, SaCerevisiaeStrainPage)
 
@@ -249,7 +261,7 @@ class HuPlasmidPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAd
         because their set by Django itself'''
         
         if obj:
-            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by.id == 6):
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by.id == 6) or request.user.groups.filter(name='Guest').exists():
                 return ['name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
                 'reference', 'plasmid_map', 'created_date_time', 'last_changed_date_time', 'created_by',]
             else:
@@ -274,6 +286,18 @@ class HuPlasmidPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAd
         self.fields = ('name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
                 'reference', 'plasmid_map', 'created_date_time', 'last_changed_date_time', 'created_by',)
         return super(HuPlasmidPage,self).change_view(request,object_id)
+
+    def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
+        """Override default changeform_view to hide Save buttons when certain conditions (same as
+        those in get_readonly_fields method) are met"""
+
+        extra_context = extra_context or {}
+        extra_context['show_submit_line'] = True
+        obj = collection_management_HuPlasmid.objects.get(pk=object_id)
+        if obj:
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by.id == 6) or request.user.groups.filter(name='Guest').exists():
+                extra_context['show_submit_line'] = False
+        return super(HuPlasmidPage, self).changeform_view(request, object_id, extra_context=extra_context)
     
     def get_plasmidmap_short_name(self, instance):
         '''This function allows you to define a custom field for the list view to
@@ -345,7 +369,7 @@ class OligoPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin,
         because their set by Django itself'''
         
         if obj:
-            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
                 return ['name','sequence', 'us_e', 'gene', 'restriction_site', 'description', 'comment', 'created_date_time', 'last_changed_date_time', 'created_by',]
             else:
                 return ['created_date_time', 'last_changed_date_time',]
@@ -363,6 +387,18 @@ class OligoPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin,
         
         self.fields = ('name','sequence', 'us_e', 'gene', 'restriction_site', 'description', 'comment', 'created_date_time', 'last_changed_date_time', 'created_by',)
         return super(OligoPage,self).change_view(request,object_id)
+
+    def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
+        """Override default changeform_view to hide Save buttons when certain conditions (same as
+        those in get_readonly_fields method) are met"""
+
+        extra_context = extra_context or {}
+        extra_context['show_submit_line'] = True
+        obj = collection_management_Oligo.objects.get(pk=object_id)
+        if obj:
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
+                extra_context['show_submit_line'] = False
+        return super(OligoPage, self).changeform_view(request, object_id, extra_context=extra_context)
 
 my_admin_site.register(collection_management_Oligo, OligoPage)
 
@@ -416,7 +452,7 @@ class ScPombeStrainPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHisto
         'created_date_time' and 'last_changed_date_time' fields must always be read-only
         because their set by Django itself'''
         
-        if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
+        if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
             if obj:
                 return ['box_number', 'parental_strain', 'mating_type', 'auxotrophic_marker', 'genotype',
         'phenotype', 'received_from', 'comment', 'created_date_time', 'last_changed_date_time', 'created_by',]
@@ -438,6 +474,18 @@ class ScPombeStrainPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHisto
         self.fields = ('box_number', 'parental_strain', 'mating_type', 'auxotrophic_marker', 'genotype',
         'phenotype', 'received_from', 'comment', 'created_date_time', 'last_changed_date_time', 'created_by',)
         return super(ScPombeStrainPage,self).change_view(request,object_id)
+
+    def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
+        """Override default changeform_view to hide Save buttons when certain conditions (same as
+        those in get_readonly_fields method) are met"""
+
+        extra_context = extra_context or {}
+        extra_context['show_submit_line'] = True
+        obj = collection_management_ScPombeStrain.objects.get(pk=object_id)
+        if obj:
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
+                extra_context['show_submit_line'] = False
+        return super(ScPombeStrainPage, self).changeform_view(request, object_id, extra_context=extra_context)
 
 my_admin_site.register(collection_management_ScPombeStrain, ScPombeStrainPage)
 
@@ -502,7 +550,7 @@ class NzPlasmidPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAd
         because their set by Django itself'''
         
         if obj:
-            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
                 return ['name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
                 'reference', 'plasmid_map', 'created_date_time', 'last_changed_date_time', 'created_by',]
             else:
@@ -523,6 +571,18 @@ class NzPlasmidPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAd
         self.fields = ('name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
                 'reference', 'plasmid_map', 'created_date_time', 'last_changed_date_time', 'created_by',)
         return super(NzPlasmidPage,self).change_view(request,object_id)
+
+    def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
+        """Override default changeform_view to hide Save buttons when certain conditions (same as
+        those in get_readonly_fields method) are met"""
+
+        extra_context = extra_context or {}
+        extra_context['show_submit_line'] = True
+        obj = collection_management_NzPlasmid.objects.get(pk=object_id)
+        if obj:
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
+                extra_context['show_submit_line'] = False
+        return super(NzPlasmidPage, self).changeform_view(request, object_id, extra_context=extra_context)
     
     def get_plasmidmap_short_name(self, instance):
         '''This function allows you to define a custom field for the list view to
@@ -593,7 +653,7 @@ class EColiStrainPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistory
         because their set by Django itself'''
 
         if obj:
-            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
                 return ['name', 'resistance', 'genotype', 'supplier', 'us_e', 'purpose', 'note',
                 'created_date_time', 'last_changed_date_time', 'created_by',]
             else:
@@ -612,7 +672,19 @@ class EColiStrainPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistory
 
         self.fields = ('name', 'resistance', 'genotype', 'supplier', 'us_e', 'purpose', 'note',
                 'created_date_time', 'last_changed_date_time', 'created_by',)
-        return super(EColiStrainPage,self).change_view(request,object_id) 
+        return super(EColiStrainPage,self).change_view(request,object_id)
+    
+    def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
+        """Override default changeform_view to hide Save buttons when certain conditions (same as
+        those in get_readonly_fields method) are met"""
+
+        extra_context = extra_context or {}
+        extra_context['show_submit_line'] = True
+        obj = collection_management_EColiStrain.objects.get(pk=object_id)
+        if obj:
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
+                extra_context['show_submit_line'] = False
+        return super(EColiStrainPage, self).changeform_view(request, object_id, extra_context=extra_context)
 
 my_admin_site.register(collection_management_EColiStrain, EColiStrainPage)
 
@@ -667,7 +739,7 @@ class MammalianLinePage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHisto
         because their set by Django itself'''
 
         if obj:
-            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
                 return ['name', 'box_name', 'alternative_name', 'organism', 'cell_type_tissue', 'culture_type', 'growth_condition',
                 'freezing_medium', 'received_from', 'description_comment','created_date_time', 'last_changed_date_time', 'created_by',]
             else:
@@ -688,6 +760,15 @@ class MammalianLinePage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHisto
         self.fields = ('name', 'box_name', 'alternative_name', 'organism', 'cell_type_tissue', 'culture_type', 'growth_condition',
                 'freezing_medium', 'received_from', 'description_comment','created_date_time', 'last_changed_date_time', 'created_by',)
         return super(MammalianLinePage,self).change_view(request,object_id)
+
+    def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['show_submit_line'] = True
+        obj = collection_management_MammalianLine.objects.get(pk=object_id)
+        if obj:
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
+                extra_context['show_submit_line'] = False
+        return super(MammalianLinePage, self).changeform_view(request, object_id, extra_context=extra_context)
 
 my_admin_site.register(collection_management_MammalianLine, MammalianLinePage)
 
@@ -768,6 +849,15 @@ class AntibodyPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdm
         self.fields = ('name', 'species_isotype', 'clone', 'received_from', 'catalogue_number', 'location', 'application',
                 'description_comment', 'info_sheet','created_date_time','last_changed_date_time', 'arche_noah_choice',)
         return super(AntibodyPage,self).change_view(request,object_id)
+
+    def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['show_submit_line'] = True
+        obj = collection_management_Antibody.objects.get(pk=object_id)
+        if obj:
+            if request.user.groups.filter(name='Guest').exists():
+                extra_context['show_submit_line'] = False
+        return super(AntibodyPage, self).changeform_view(request, object_id, extra_context=extra_context)
         
     def get_sheet_short_name(self, instance):
         '''Create custom column for information sheet

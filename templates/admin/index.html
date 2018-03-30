@@ -17,7 +17,7 @@
 
 {% if app_list %}
     {% for app in app_list %}
-        {% if app.name == "Laboratory management" or app.name == "Order management"%}
+        {% if app.name == "Laboratory management" or app.name == "Order management" %}
         {% else %}
             <div class="app-{{ app.app_label }} module">
                 <table>
@@ -52,7 +52,7 @@
 
 {% url 'admin:index' as admin_index_url %}
 
-{% if request.path|stringformat:"s" == admin_index_url %}
+{% if request.path|stringformat:"s" == admin_index_url and not user|has_group:"Guest" %}
     <div class="module">
             <table>
                 <caption>Laboratory Management</caption>
@@ -65,7 +65,7 @@
                                 <td>&nbsp;</td>
                                 <td>&nbsp;</td>
                             </tr>
-                            {% if element.0|stringformat:"s" == "Ordering"  %}
+                            {% if element.0|stringformat:"s" == "Ordering" %}
                                 <tr>
                                     <th scope="row" style="font-weight: normal;"><a href={{admin_index_url|add:"order_management/order/add/"}}>New order</a></th>
                                     <td>&nbsp;</td>
@@ -76,24 +76,24 @@
                                     <td>&nbsp;</td>
                                     <td>&nbsp;</td>
                                 </tr>
-                            {% endif%}
-                        {% else%}
+                            {% endif %}
+                        {% else %}
                             <tr>
                                 <th scope="row"><a href="{{ element.1 }}" target="_blank" style="font-weight: normal;">{{element.0}}</a></th>
                                 <td>&nbsp;</td>
                                 <td>&nbsp;</td>
                             </tr>        
                         {% endif %}
-                    {% endfor%}
-                {% endfor%}
-                {% if user|has_group:"Lab manager"%}
+                    {% endfor %}
+                {% endfor %}
+                {% if user|has_group:"Lab manager" %}
                     <tr style="background-color:#79aec8;">
                         <th scope="row" style="color:white;font-weight: normal;">Laboratory Management Admin</th>
                         <td>&nbsp;</td>
                         <td>&nbsp;</td>
                     </tr>    
                     {% for app in app_list %}
-                        {% if app.name == "Laboratory management" or app.name == "Order management"%}
+                        {% if app.name == "Laboratory management" or app.name == "Order management" %}
                             <tr style="background-color:#c4dce8;">
                                 {% if app.name == "Laboratory management" %}
                                     <th scope="row" style="color:#447e9b;">HomePage links</th>

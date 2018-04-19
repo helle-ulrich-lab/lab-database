@@ -8,6 +8,7 @@ BACKUP_DIR=/home/nzilio/ulrich_lab_intranet_db_backup
 
 # List of database tables to backup
 DB_TABLE_LIST="auth_user
+user_management_labuser
 collection_management_antibody
 collection_management_ecolistrain
 collection_management_huplasmid
@@ -44,7 +45,7 @@ UPDATE $ENTRY SET history_type = '+' WHERE ABS(UNIX_TIMESTAMP(created_date_time)
 - UNIX_TIMESTAMP(last_changed_date_time)) < 0.25;"
 done
 
-# Clean up duplicates from antibody history tables
+# Clean up duplicates from antibody history table
 mysql --user="django" --password="dFf3CpE8yqpVzadIn5VJ" --database="django" \
 --execute="
 DELETE FROM collection_management_historicalantibody WHERE info_sheet LIKE '%temp%'; \

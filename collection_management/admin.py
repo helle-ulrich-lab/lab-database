@@ -199,10 +199,11 @@ class SaCerevisiaeStrainPage(ExportActionModelAdmin, DjangoQLSearchMixin, Simple
 
         extra_context = extra_context or {}
         extra_context['show_submit_line'] = True
-        obj = collection_management_SaCerevisiaeStrain.objects.get(pk=object_id)
-        if obj:
-            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
-                extra_context['show_submit_line'] = False
+        if object_id:
+            obj = collection_management_SaCerevisiaeStrain.objects.get(pk=object_id)
+            if obj:
+                if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
+                    extra_context['show_submit_line'] = False
         return super(SaCerevisiaeStrainPage, self).changeform_view(request, object_id, extra_context=extra_context)
 
 my_admin_site.register(collection_management_SaCerevisiaeStrain, SaCerevisiaeStrainPage)
@@ -293,10 +294,11 @@ class HuPlasmidPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAd
 
         extra_context = extra_context or {}
         extra_context['show_submit_line'] = True
-        obj = collection_management_HuPlasmid.objects.get(pk=object_id)
-        if obj:
-            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by.id == 6) or request.user.groups.filter(name='Guest').exists():
-                extra_context['show_submit_line'] = False
+        if object_id:
+            obj = collection_management_HuPlasmid.objects.get(pk=object_id)
+            if obj:
+                if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by.id == 6) or request.user.groups.filter(name='Guest').exists():
+                    extra_context['show_submit_line'] = False
         return super(HuPlasmidPage, self).changeform_view(request, object_id, extra_context=extra_context)
     
     def get_plasmidmap_short_name(self, instance):
@@ -394,10 +396,11 @@ class OligoPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin,
 
         extra_context = extra_context or {}
         extra_context['show_submit_line'] = True
-        obj = collection_management_Oligo.objects.get(pk=object_id)
-        if obj:
-            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
-                extra_context['show_submit_line'] = False
+        if object_id:
+            obj = collection_management_Oligo.objects.get(pk=object_id)
+            if obj:
+                if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
+                    extra_context['show_submit_line'] = False
         return super(OligoPage, self).changeform_view(request, object_id, extra_context=extra_context)
 
 my_admin_site.register(collection_management_Oligo, OligoPage)
@@ -481,10 +484,11 @@ class ScPombeStrainPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHisto
 
         extra_context = extra_context or {}
         extra_context['show_submit_line'] = True
-        obj = collection_management_ScPombeStrain.objects.get(pk=object_id)
-        if obj:
-            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
-                extra_context['show_submit_line'] = False
+        if object_id:
+            obj = collection_management_ScPombeStrain.objects.get(pk=object_id)
+            if obj:
+                if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
+                    extra_context['show_submit_line'] = False
         return super(ScPombeStrainPage, self).changeform_view(request, object_id, extra_context=extra_context)
 
 my_admin_site.register(collection_management_ScPombeStrain, ScPombeStrainPage)
@@ -578,10 +582,11 @@ class NzPlasmidPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAd
 
         extra_context = extra_context or {}
         extra_context['show_submit_line'] = True
-        obj = collection_management_NzPlasmid.objects.get(pk=object_id)
-        if obj:
-            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
-                extra_context['show_submit_line'] = False
+        if object_id:
+            obj = collection_management_NzPlasmid.objects.get(pk=object_id)
+            if obj:
+                if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
+                    extra_context['show_submit_line'] = False
         return super(NzPlasmidPage, self).changeform_view(request, object_id, extra_context=extra_context)
     
     def get_plasmidmap_short_name(self, instance):
@@ -680,10 +685,11 @@ class EColiStrainPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistory
 
         extra_context = extra_context or {}
         extra_context['show_submit_line'] = True
-        obj = collection_management_EColiStrain.objects.get(pk=object_id)
-        if obj:
-            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
-                extra_context['show_submit_line'] = False
+        if object_id:
+            obj = collection_management_EColiStrain.objects.get(pk=object_id)
+            if obj:
+                if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
+                    extra_context['show_submit_line'] = False
         return super(EColiStrainPage, self).changeform_view(request, object_id, extra_context=extra_context)
 
 my_admin_site.register(collection_management_EColiStrain, EColiStrainPage)
@@ -764,10 +770,11 @@ class MammalianLinePage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHisto
     def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
         extra_context = extra_context or {}
         extra_context['show_submit_line'] = True
-        obj = collection_management_MammalianLine.objects.get(pk=object_id)
-        if obj:
-            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
-                extra_context['show_submit_line'] = False
+        if object_id:
+            obj = collection_management_MammalianLine.objects.get(pk=object_id)
+            if obj:
+                if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
+                    extra_context['show_submit_line'] = False
         return super(MammalianLinePage, self).changeform_view(request, object_id, extra_context=extra_context)
 
 my_admin_site.register(collection_management_MammalianLine, MammalianLinePage)
@@ -853,10 +860,11 @@ class AntibodyPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdm
     def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
         extra_context = extra_context or {}
         extra_context['show_submit_line'] = True
-        obj = collection_management_Antibody.objects.get(pk=object_id)
-        if obj:
-            if request.user.groups.filter(name='Guest').exists():
-                extra_context['show_submit_line'] = False
+        if object_id:
+            obj = collection_management_Antibody.objects.get(pk=object_id)
+            if obj:
+                if request.user.groups.filter(name='Guest').exists():
+                    extra_context['show_submit_line'] = False
         return super(AntibodyPage, self).changeform_view(request, object_id, extra_context=extra_context)
         
     def get_sheet_short_name(self, instance):

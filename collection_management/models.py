@@ -145,10 +145,22 @@ class HuPlasmid (models.Model):
 
     # Check if file is bigger than 2 MB
     def clean(self): 
+        errors = []
+        
         limit = 2 * 1024 * 1024
         if self.plasmid_map:
             if self.plasmid_map.size > limit:
-                raise ValidationError('Plasmid map too large. Size cannot exceed 2 MB.')
+                errors.append(ValidationError('Plasmid map too large. Size cannot exceed 2 MB.'))
+        
+            try:
+                plasmid_map_ext = self.plasmid_map.name.split('.')[-1].lower()
+            except:
+                plasmid_map_ext = None
+            if plasmid_map_ext == None or plasmid_map_ext != 'dna':
+                errors.append(ValidationError('Invalid file format. Please select a valid SnapGene .dna file'))
+
+        if len(errors) > 0:
+            raise ValidationError(errors)
 
     def __unicode__(self):
         return str(self.id)
@@ -262,10 +274,22 @@ class NzPlasmid (models.Model):
         super(NzPlasmid, self).save(force_insert, force_update)
 
     def clean(self): 
+        errors = []
+        
         limit = 2 * 1024 * 1024
         if self.plasmid_map:
             if self.plasmid_map.size > limit:
-                raise ValidationError('Plasmid map too large. Size cannot exceed 2 MB.')
+                errors.append(ValidationError('Plasmid map too large. Size cannot exceed 2 MB.'))
+        
+            try:
+                plasmid_map_ext = self.plasmid_map.name.split('.')[-1].lower()
+            except:
+                plasmid_map_ext = None
+            if plasmid_map_ext == None or plasmid_map_ext != 'dna':
+                errors.append(ValidationError('Invalid file format. Please select a valid SnapGene .dna file'))
+
+        if len(errors) > 0:
+            raise ValidationError(errors)
     
     class Meta:
         verbose_name = "nicola's plasmid"
@@ -381,11 +405,22 @@ class Antibody (models.Model):
                         setattr(self, field_name, final_name)
         super(Antibody, self).save(force_insert, force_update)
 
-    def clean(self): 
+    def clean(self):
+        errors = []
+        
         limit = 2 * 1024 * 1024
         if self.info_sheet:
             if self.info_sheet.size > limit:
-                raise ValidationError('File too large. Size cannot exceed 2 MB.')
+                errors.append(ValidationError('File too large. Size cannot exceed 2 MB.'))
+            try:
+                info_sheet_ext = self.info_sheet.name.split('.')[-1].lower()
+            except:
+                info_sheet_ext = None
+            if info_sheet_ext == None or info_sheet_ext != 'pdf':
+                errors.append(ValidationError('Invalid file format. Please select a valid .pdf file'))
+
+        if len(errors) > 0:
+            raise ValidationError(errors)
     
     class Meta:
         verbose_name = 'antibody'

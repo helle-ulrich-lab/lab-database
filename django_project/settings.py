@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'laboratory_management',
     'colorful',
     'order_management',
+    'pages',
 ]
 
 MIDDLEWARE = [

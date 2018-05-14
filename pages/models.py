@@ -20,9 +20,29 @@ from ckeditor_uploader.fields import RichTextUploadingField
 #               PROTOCOL MODEL                  #
 #################################################
 
+class Tag(models.Model):
+    name = models.CharField("Tag", max_length = 50, unique=True)
+    
+    def __unicode__(self):
+       return str(self.name)
+
 class Protocol(models.Model):
     title = models.CharField("Title", max_length = 200, blank=False)
-    content = RichTextUploadingField("Content")
+    content = RichTextUploadingField("Content", blank=False)
+    tags = models.ManyToManyField(Tag, blank=True)
+    
+    created_date_time = models.DateTimeField("Created", auto_now_add=True)
+    last_changed_date_time = models.DateTimeField("Last Changed", auto_now=True)
+    created_by = models.ForeignKey(User)
+    history = HistoricalRecords()
+    
+    def __unicode__(self):
+       return str(self.id)
+
+class Recipe(models.Model):
+    title = models.CharField("Title", max_length = 200, blank=False)
+    content = RichTextUploadingField("Content", blank=False)
+    tags = models.ManyToManyField(Tag, blank=True)
     
     created_date_time = models.DateTimeField("Created", auto_now_add=True)
     last_changed_date_time = models.DateTimeField("Last Changed", auto_now=True)

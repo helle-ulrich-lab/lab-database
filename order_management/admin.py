@@ -88,7 +88,7 @@ class OrderPage(admin.ModelAdmin):
                     send_mail(
                         'New order from the Ulrich Lab Intranet',
                         message,
-                        'hulrichlab@gmail.com',
+                        'system@imbc2.imb.uni-mainz.de',
                         ['ulrich-orders@imb-mainz.de'],
                         fail_silently=False,)
                     # If email successfully sent, message user

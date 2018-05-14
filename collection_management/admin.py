@@ -941,3 +941,19 @@ from user_management.admin import LabUserAdmin as user_management_LabUserAdmin
 
 my_admin_site.unregister(User)
 my_admin_site.register(User, user_management_LabUserAdmin)
+
+#################################################
+#                PROTOCOL PAGES                 #
+#################################################
+
+from pages.models import Protocol as pages_Protocol
+from pages.models import Recipe as pages_Recipe
+from pages.models import Tag as pages_Tag
+
+from pages.admin import ProtocolPage as pages_ProtocolPage
+from pages.admin import RecipePage as pages_RecipePage
+from pages.admin import TagPage as pages_TagPage
+
+my_admin_site.register(pages_Protocol, pages_ProtocolPage)
+my_admin_site.register(pages_Recipe, pages_RecipePage)
+my_admin_site.register(pages_Tag, pages_TagPage)

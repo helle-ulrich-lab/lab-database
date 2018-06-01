@@ -73,6 +73,52 @@ class MyAdminSite(admin.AdminSite):
     # URL for the "View site" link at the top of each admin page.
     site_url = '/'
 
+    def get_urls(self):
+        from django.conf.urls import url
+        from django.http import HttpResponse
+        urls = super(MyAdminSite, self).get_urls()
+        # Note that custom urls get pushed to the list (not appended)
+        # This doesn't work with urls += ...
+        urls = [
+            url(r'^pages/recipe/(\d+)/new_view/$',  lambda req:HttpResponse("Hello World")),
+            url(r'^auth/user/update_gdocs_user_list/$', self.update_lab_users_google_sheet)
+        ] + urls
+        return urls
+    
+    def update_lab_users_google_sheet (self, request):
+        """ Update active user list sheet on GoogleDocs """
+
+        import os
+        import sys
+
+        from django.http import HttpResponseRedirect
+        from django.contrib import messages
+
+        import pygsheets
+
+        from django_project.private_settings import LAB_MEMBERS_SHEET_ID
+
+        reload(sys)
+        sys.setdefaultencoding('utf-8')
+
+        try:
+            # Log in to GoogleDocs
+            base_path = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..'))
+            gc = pygsheets.authorize(service_file=base_path + "/beyond_django/gdrive_access_credentials.json", no_cache=True)
+            # Open user list Google sheet
+            spreadsheet = gc.open_by_key(LAB_MEMBERS_SHEET_ID)
+            worksheet = spreadsheet.worksheet('title', 'Users')
+            # Get list of active users 
+            users = [[user.first_name, user.last_name, user.email, user.labuser.abbreviation_code] \
+                    for user in User.objects.filter(is_active=True).exclude(id__in=[1,6,20]).exclude(groups__name='Guest').order_by('last_name')]
+            # Update user list Google sheet
+            worksheet.clear(start=(2,1))
+            worksheet.update_cells(crange=(2,1), values=users, extend=True)
+            messages.success(request, 'The user list on GoogleDocs was updated successfully')
+        except Exception, err:
+            messages.error(request, 'The user list on GoogleDocs could not be updated. Error: ' + str(err))
+        return HttpResponseRedirect("../")
+
 # Instantiate custom admin site 
 my_admin_site = MyAdminSite()
 
@@ -846,7 +892,7 @@ class AntibodyPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdm
     def add_view(self,request,extra_content=None):
         '''Override default add_view to show only desired fields'''
 
-        self.fields = ('name', 'species_isotype', 'clone', 'received_from', 'catalogue_number', 'l_ocation', 'a-pplication',
+        self.fields = ('name', 'species_isotype', 'clone', 'received_from', 'catalogue_number', 'l_ocation', 'a_pplication',
                 'description_comment', 'info_sheet', 'arche_noah_choice',)
         return super(AntibodyPage,self).add_view(request)
     

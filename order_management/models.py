@@ -42,7 +42,7 @@ class Order(models.Model):
     part_description = models.CharField("Part Description", max_length = 255, blank=False)
     quantity = models.CharField("Quantity", max_length = 255, blank=False)
     price = models.CharField("Price", max_length = 255, blank=True)
-    cost_unit = models.ForeignKey(CostUnit)
+    cost_unit = models.ForeignKey(CostUnit, default=1)
     urgent = models.BooleanField("Is this an urgent order?")
     delivery_alert = models.BooleanField("Would you like to receive a delivery alert for this order?")
     location = models.ForeignKey(Location)

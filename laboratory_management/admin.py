@@ -43,7 +43,7 @@ class UrlPage(admin.ModelAdmin):
 
         if obj:
             if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
-                return ['title', 'url', 'editable', 'category', 'created_by',]
+                return ['title', 'url', 'editable', 'category', 'created_by','hidden',]
             else:
                 return ['created_date_time', 'last_changed_date_time',]
         else:
@@ -52,13 +52,13 @@ class UrlPage(admin.ModelAdmin):
     def add_view(self,request,extra_content=None):
         '''Override default add_view to show only desired fields'''
 
-        self.fields = ('title', 'url', 'category', 'editable',)
+        self.fields = ('title', 'url', 'category', 'editable','hidden',)
         return super(UrlPage,self).add_view(request)
 
     def change_view(self,request,object_id,extra_content=None):
         '''Override default change_view to show only desired fields'''
 
-        self.fields = ('title', 'url', 'category', 'editable',)
+        self.fields = ('title', 'url', 'category', 'editable','hidden',)
         return super(UrlPage,self).change_view(request,object_id)
 
 #################################################
@@ -95,7 +95,7 @@ class CategoryPage(admin.ModelAdmin):
 
         if obj:
             if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
-                return ['name', 'colour', 'created_by',]
+                return ['name', 'colour', 'created_by', 'hidden']
             else:
                 return ['created_date_time', 'last_changed_date_time',]
         else:
@@ -104,11 +104,11 @@ class CategoryPage(admin.ModelAdmin):
     def add_view(self,request,extra_content=None):
         '''Override default add_view to show only desired fields'''
 
-        self.fields = ('name', 'colour',)
+        self.fields = ('name', 'colour', 'hidden',)
         return super(CategoryPage,self).add_view(request)
 
     def change_view(self,request,object_id,extra_content=None):
         '''Override default change_view to show only desired fields'''
 
-        self.fields = ('name', 'colour',)
+        self.fields = ('name', 'colour', 'hidden')
         return super(CategoryPage,self).change_view(request,object_id)

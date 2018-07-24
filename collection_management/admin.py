@@ -81,6 +81,7 @@ class MyAdminSite(admin.AdminSite):
         # This doesn't work with urls += ...
         urls = [
             url(r'^pages/recipe/(\d+)/new_view/$',  lambda req:HttpResponse("Hello World")),
+            #url(r'^pages/recipe/(\d+)/new_view/$',  lambda req:HttpResponse("Hello World")),
             url(r'^auth/user/update_gdocs_user_list/$', self.update_lab_users_google_sheet)
         ] + urls
         return urls
@@ -312,7 +313,7 @@ class HuPlasmidPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAd
                 return ['name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
                 'reference', 'plasmid_map', 'created_date_time', 'last_changed_date_time', 'created_by',]
             else:
-                if obj.created_by.id == 6: # Show plasmid_map and note as editable fields, if record belongs to Helle (user id = 6)
+                if obj.created_by.id == 6 and not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists()): # Show plasmid_map and note as editable fields, if record belongs to Helle (user id = 6)
                     return ['name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 
                     'reference', 'created_date_time', 'last_changed_date_time', 'created_by',]
                 else:
@@ -741,10 +742,102 @@ class EColiStrainPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistory
 my_admin_site.register(collection_management_EColiStrain, EColiStrainPage)
 
 #################################################
-#          MAMMALIAN CELL LINE PAGES            #
+#           MAMMALIAN LINE DOC                  #
 #################################################
 
+from .models import MammalianLineDoc as collection_management_MammalianLineDoc
 from .models import MammalianLine as collection_management_MammalianLine
+
+class MammalianLinePageDoc(admin.ModelAdmin):
+    list_display = ('id','name',)
+    list_display_links = ('id','name', )
+    list_per_page = 25
+    ordering = ['id']
+
+    def has_module_permission(self, request):
+        '''Hide module from Admin'''
+        return False
+
+    def get_readonly_fields(self, request, obj=None):
+        '''Override default get_readonly_fields to define user-specific read-only fields
+        If a user is not a superuser, lab manager or the user who created a record
+        return all fields as read-only 
+        'created_date_time' and 'last_changed_date_time' fields must always be read-only
+        because their set by Django itself'''
+
+        if obj:
+            return ['name', 'typ_e', 'date_of_test', 'mammalian_line', 'created_date_time',]
+    
+    def add_view(self,request,extra_content=None):
+        '''Override default add_view to show only desired fields'''
+
+        self.fields = (['name', 'typ_e', 'mammalian_line', 'date_of_test',])
+        return super(MammalianLinePageDoc,self).add_view(request)
+
+    def change_view(self,request,object_id,extra_content=None):
+        '''Override default change_view to show only desired fields'''
+
+        self.fields = (['name', 'typ_e', 'date_of_test', 'mammalian_line','created_date_time',])
+        return super(MammalianLinePageDoc,self).change_view(request,object_id)
+
+    def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['show_submit_line'] = True
+        if object_id:
+            extra_context['show_submit_line'] = False
+        return super(MammalianLinePageDoc, self).changeform_view(request, object_id, extra_context=extra_context)
+
+my_admin_site.register(collection_management_MammalianLineDoc, MammalianLinePageDoc)
+
+class MammalianLineDocInline(admin.TabularInline):
+    model = collection_management_MammalianLineDoc
+    verbose_name_plural = "Exsiting docs"
+    extra = 0
+    fields = ['typ_e', 'date_of_test', 'get_doc_short_name',]
+    readonly_fields = ['get_doc_short_name', 'typ_e', 'date_of_test', ]
+
+    def has_add_permission(self, request):
+        return False
+    
+    def get_doc_short_name(self, instance):
+        '''This function allows you to define a custom field for the list view to
+        be defined in list_display as the name of the function, e.g. in this case
+        list_display = ('id', 'name', 'selection', 'get_plasmidmap_short_name','created_by',)'''
+        if instance.name:
+            name_for_download = "mclHU" + str(collection_management_MammalianLine.objects.get(mammalianlinedoc=instance.pk)) + "_" + instance.typ_e + "_" + str(instance.date_of_test) +  str(instance.name).split(".")[-1]
+            return '<a href="%s" download="%s">Download</a>' % (str(instance.name.url), name_for_download)
+        else:
+            return ''
+    get_doc_short_name.allow_tags = True
+    get_doc_short_name.short_description = 'Document'
+
+class AddMammalianLineDocInline(admin.TabularInline):
+    model = collection_management_MammalianLineDoc
+    verbose_name_plural = "New docs"
+    extra = 0
+    fields = ['typ_e', 'date_of_test', 'name',]
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def get_readonly_fields(self, request, obj=None):
+        '''Override default get_readonly_fields to define user-specific read-only fields
+        If a user is not a superuser, lab manager or the user who created a record
+        return all fields as read-only 
+        'created_date_time' and 'last_changed_date_time' fields must always be read-only
+        because their set by Django itself'''
+
+        if obj:
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == collection_management_MammalianLine.objects.get(pk=obj.pk).created_by) or request.user.groups.filter(name='Guest').exists():
+                return ['typ_e', 'date_of_test', 'name',]
+            else:
+                return []
+        else:
+            return []
+
+#################################################
+#          MAMMALIAN CELL LINE PAGES            #
+#################################################
 
 class MammalianLineQLSchema(DjangoQLSchema):
     '''Customize search functionality'''
@@ -755,7 +848,7 @@ class MammalianLineQLSchema(DjangoQLSchema):
         '''Define fields that can be searched'''
         
         if model == collection_management_MammalianLine:
-            return ['id', 'name', 'box_name', 'alternative_name', 'organism', 'cell_type_tissue', 'culture_type', 
+            return ['id', 'name', 'box_name', 'alternative_name', 'parental_line', 'organism', 'cell_type_tissue', 'culture_type', 
             'growth_condition','freezing_medium', 'received_from', 'description_comment', 'created_by',]
         elif model == User:
             return [SearchFieldOptUsername(), SearchFieldOptLastname()]
@@ -767,6 +860,7 @@ class MammalianLinePage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHisto
     list_per_page = 25
     formfield_overrides = {models.CharField: {'widget': TextInput(attrs={'size':'93'})},}
     djangoql_schema = MammalianLineQLSchema
+    inlines = [MammalianLineDocInline, AddMammalianLineDocInline]
     
     def save_model(self, request, obj, form, change):
         '''Override default save_model to limit a user's ability to save a record
@@ -792,8 +886,8 @@ class MammalianLinePage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHisto
 
         if obj:
             if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
-                return ['name', 'box_name', 'alternative_name', 'organism', 'cell_type_tissue', 'culture_type', 'growth_condition',
-                'freezing_medium', 'received_from', 'description_comment','created_date_time', 'last_changed_date_time', 'created_by',]
+                return ['name', 'box_name', 'alternative_name', 'parental_line', 'organism', 'cell_type_tissue', 'culture_type', 'growth_condition',
+                'freezing_medium', 'received_from', 'description_comment', 'created_date_time', 'last_changed_date_time', 'created_by',]
             else:
                 return ['created_date_time', 'last_changed_date_time',]
         else:
@@ -802,15 +896,15 @@ class MammalianLinePage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHisto
     def add_view(self,request,extra_content=None):
         '''Override default add_view to show only desired fields'''
 
-        self.fields = ('name', 'box_name', 'alternative_name', 'organism', 'cell_type_tissue', 'culture_type', 'growth_condition',
+        self.fields = ('name', 'box_name', 'alternative_name', 'parental_line', 'organism', 'cell_type_tissue', 'culture_type', 'growth_condition',
                 'freezing_medium', 'received_from', 'description_comment',)
         return super(MammalianLinePage,self).add_view(request)
 
     def change_view(self,request,object_id,extra_content=None):
         '''Override default change_view to show only desired fields'''
 
-        self.fields = ('name', 'box_name', 'alternative_name', 'organism', 'cell_type_tissue', 'culture_type', 'growth_condition',
-                'freezing_medium', 'received_from', 'description_comment','created_date_time', 'last_changed_date_time', 'created_by',)
+        self.fields = ('name', 'box_name', 'alternative_name', 'parental_line', 'organism', 'cell_type_tissue', 'culture_type', 'growth_condition',
+                'freezing_medium', 'received_from', 'description_comment', 'created_date_time', 'last_changed_date_time', 'created_by',)
         return super(MammalianLinePage,self).change_view(request,object_id)
 
     def changeform_view(self, request, object_id=None, form_url='', extra_context=None):

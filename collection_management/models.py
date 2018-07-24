@@ -323,17 +323,21 @@ class EColiStrain (models.Model):
     def __unicode__(self):
        return str(self.id)
 
-#################################################
-#          MAMMALIAN CELL LINE MODEL            #
-#################################################
+################################################
+#         MAMMALIAN CELL LINE MODEL            #
+################################################
+
+def parental_line_choices():
+    MammalianLine.objects.all()
 
 class MammalianLine (models.Model):
     name = models.CharField("Name", max_length = 255, blank=False)
     box_name = models.CharField("Box", max_length = 255, blank=False)
     alternative_name = models.CharField("Alternative name", max_length = 255, blank=True)
+    parental_line = models.CharField("Parental cell line", max_length = 255, blank=False)
     organism = models.CharField("Organism", max_length = 20, blank=True)
     cell_type_tissue = models.CharField("Cell type/Tissue", max_length = 255, blank=True)
-    culture_type = models.CharField("Culture Type", max_length = 255, blank=True)
+    culture_type = models.CharField("Culture type", max_length = 255, blank=True)
     growth_condition = models.CharField("Growth conditions", max_length = 255, blank=True)
     freezing_medium = models.CharField("Freezing medium", max_length = 255, blank=True)
     received_from = models.CharField("Received from", max_length = 255, blank=True)
@@ -350,6 +354,67 @@ class MammalianLine (models.Model):
     
     def __unicode__(self):
         return str(self.id)
+
+class MammalianLineDoc(models.Model):
+    name = models.FileField("File name", upload_to="temp/", blank=False)
+    typ_e = models.CharField("Doc Type", max_length=255, choices=[["virus", "Virus test"], ["mycoplasma", "Mycoplasma test"], ["fingerprint", "Fingerprinting"], ["other", "Other"]], blank=False)
+    date_of_test = models.DateField("Date of test", blank=False)
+    mammalian_line = models.ForeignKey(MammalianLine)
+    
+    created_date_time = models.DateTimeField("Created", auto_now_add=True)
+    last_changed_date_time = models.DateTimeField("Last Changed", auto_now=True)
+    history = HistoricalRecords()
+
+    class Meta:
+        verbose_name = 'mammalian cell line document'
+    
+    def __unicode__(self):
+         return str(self.id)
+
+    RENAME_FILES = {
+            'name': {'dest': 'mammalian_cell_line_docs/', 'keep_ext': True}
+        }
+
+    def save(self, force_insert=False, force_update=False):
+        rename_files = getattr(self, 'RENAME_FILES', None)
+        if rename_files:
+            super(MammalianLineDoc, self).save(force_insert, force_update)
+            force_insert, force_update = False, True
+            for field_name, options in rename_files.iteritems():
+                field = getattr(self, field_name)
+                if field:
+                    file_name = force_unicode(field)
+                    name, ext = os.path.splitext(file_name)
+                    keep_ext = options.get('keep_ext', True)
+                    final_dest = options['dest']
+                    if callable(final_dest):
+                        final_name = final_dest(self, file_name)
+                    else:
+                        final_name = os.path.join(final_dest, "mclHU" + str(self.mammalian_line.id) + "_" + self.typ_e + "_" + time.strftime("%Y%m%d") + "_" + time.strftime("%H%M%S") + "_" + str(self.id))
+                        if keep_ext:
+                            final_name += ext
+                    if file_name != final_name:
+                        field.storage.delete(final_name)
+                        field.storage.save(final_name, field)
+                        field.close()
+                        field.storage.delete(file_name)
+                        setattr(self, field_name, final_name)
+        super(MammalianLineDoc, self).save(force_insert, force_update)
+
+    def clean(self): 
+        errors = []
+        
+        limit = 2 * 1024 * 1024
+        if self.name:
+            if self.name.size > limit:
+                errors.append(ValidationError('File too large. Size cannot exceed 2 MB.'))
+            try:
+                file_ext = self.name.name.split('.')[-1].lower()
+            except:
+                errors.append(ValidationError('Invalid file format. File does not have an extension'))
+
+        if len(errors) > 0:
+            raise ValidationError(errors)
 
 #################################################
 #                ANTIBODY MODEL                 #

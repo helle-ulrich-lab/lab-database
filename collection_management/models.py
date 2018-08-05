@@ -83,7 +83,7 @@ class SaCerevisiaeStrain (models.Model):
         return str(self.id)
 
 #################################################
-#                PLASMID MODEL                  #
+#               HU PLASMID MODEL                #
 #################################################
 
 class HuPlasmid (models.Model):
@@ -106,8 +106,8 @@ class HuPlasmid (models.Model):
     class Meta:
         '''Set a custom name to be used throughout the admin pages'''
         
-        verbose_name = 'plasmid'
-        verbose_name_plural = 'plasmids'
+        verbose_name = 'HU plasmid'
+        verbose_name_plural = 'HU plasmids'
 
     RENAME_FILES = {
             'plasmid_map': {'dest': 'plasmids/', 'keep_ext': True}
@@ -117,9 +117,12 @@ class HuPlasmid (models.Model):
         '''Override default save method to rename a plasmid map 
         of any given name to pHUX_date-uploaded_time-uploaded.yyy,
         after the corresponding entry has been created'''
+
+        from django.core.files.storage import default_storage
         
         rename_files = getattr(self, 'RENAME_FILES', None)
         if rename_files:
+            self.skip_history_when_saving = True # Turn off saving history record to avoid duplicate historical record, due to automatic renaming of plasmid_map
             super(HuPlasmid, self).save(force_insert, force_update)
             force_insert, force_update = False, True
             for field_name, options in rename_files.iteritems():
@@ -127,24 +130,26 @@ class HuPlasmid (models.Model):
                 if field:
                     file_name = force_unicode(field)
                     name, ext = os.path.splitext(file_name)
-                    keep_ext = options.get('keep_ext', True)
+                    name = name.split('/')[1]
                     final_dest = options['dest']
-                    if callable(final_dest):
-                        final_name = final_dest(self, file_name)
+                    if default_storage.exists(final_dest + name + ext): # Check if file already exists and if it does, leave it alone
+                        setattr(self, field_name, final_dest + name + ext)
                     else:
+                        keep_ext = options.get('keep_ext', True)
                         final_name = os.path.join(final_dest, "pHU" + '%s' % (self.pk,) + "_" + time.strftime("%Y%m%d") + "_" + time.strftime("%H%M%S"))
                         if keep_ext:
                             final_name += ext
-                    if file_name != final_name:
                         field.storage.delete(final_name)
                         field.storage.save(final_name, field)
                         field.close()
                         field.storage.delete(file_name)
                         setattr(self, field_name, final_name)
-        super(HuPlasmid, self).save(force_insert, force_update)
+                    del self.skip_history_when_saving # Turn on saving history record again
+                    super(HuPlasmid, self).save(force_insert, force_update)
 
-    # Check if file is bigger than 2 MB
-    def clean(self): 
+    def clean(self):
+        """Check if file is bigger than 2 MB"""
+    
         errors = []
         
         limit = 2 * 1024 * 1024
@@ -204,7 +209,7 @@ class ScPombeStrain (models.Model):
     parental_strain = models.CharField("Parental strains", max_length = 255, blank=True)
     mating_type = models.CharField("Mating Type", max_length = 20, blank=True)
     auxotrophic_marker = models.CharField("Auxotrophic markers", max_length = 255, blank=True)
-    genotype = models.TextField("Genotype", blank=False)
+    name = models.TextField("Genotype", blank=False)
     phenotype = models.CharField("Phenotype", max_length = 255, blank=True)
     received_from = models.CharField("Received from", max_length = 255, blank=True)
     comment = models.CharField("Comments", max_length = 300, blank=True)
@@ -225,7 +230,6 @@ class ScPombeStrain (models.Model):
 #                NZ PLASMID MODEL               #
 #################################################
 
-# Subclass to rename a plasmid map of any given name as pNZX_date-uploaded_time-uploaded.yyy
 class NzPlasmid (models.Model):
     name = models.CharField("Name", max_length = 255, blank=False)
     other_name = models.CharField("Other Name", max_length = 255, blank=True)
@@ -248,8 +252,15 @@ class NzPlasmid (models.Model):
         }
      
     def save(self, force_insert=False, force_update=False):
+        '''Override default save method to rename a plasmid map 
+        of any given name to pNZX_date-uploaded_time-uploaded.yyy,
+        after the corresponding entry has been created'''
+        
+        from django.core.files.storage import default_storage
+        
         rename_files = getattr(self, 'RENAME_FILES', None)
         if rename_files:
+            self.skip_history_when_saving = True # Turn off saving history record to avoid duplicate historical record, due to automatic renaming of plasmid_map
             super(NzPlasmid, self).save(force_insert, force_update)
             force_insert, force_update = False, True
             for field_name, options in rename_files.iteritems():
@@ -257,23 +268,26 @@ class NzPlasmid (models.Model):
                 if field:
                     file_name = force_unicode(field)
                     name, ext = os.path.splitext(file_name)
-                    keep_ext = options.get('keep_ext', True)
+                    name = name.split('/')[1]
                     final_dest = options['dest']
-                    if callable(final_dest):
-                        final_name = final_dest(self, file_name)
+                    if default_storage.exists(final_dest + name + ext): # Check if file already exists and if it does, leave it alone
+                        setattr(self, field_name, final_dest + name + ext)
                     else:
+                        keep_ext = options.get('keep_ext', True)
                         final_name = os.path.join(final_dest, "pNZ" + '%s' % (self.pk,) + "_" + time.strftime("%Y%m%d") + "_" + time.strftime("%H%M%S"))
                         if keep_ext:
                             final_name += ext
-                    if file_name != final_name:
                         field.storage.delete(final_name)
                         field.storage.save(final_name, field)
                         field.close()
                         field.storage.delete(file_name)
                         setattr(self, field_name, final_name)
-        super(NzPlasmid, self).save(force_insert, force_update)
+                    del self.skip_history_when_saving # Turn on saving history record again
+                    super(NzPlasmid, self).save(force_insert, force_update)
 
     def clean(self): 
+        """Check if file is bigger than 2 MB"""
+        
         errors = []
         
         limit = 2 * 1024 * 1024
@@ -376,8 +390,13 @@ class MammalianLineDoc(models.Model):
         }
 
     def save(self, force_insert=False, force_update=False):
+        '''Override default save method to rename a file 
+        of any given name to mclHU_date-uploaded_time-uploaded.yyy,
+        after the corresponding entry has been created'''
+        
         rename_files = getattr(self, 'RENAME_FILES', None)
         if rename_files:
+            self.skip_history_when_saving = True # Turn off saving history record to avoid duplicate historical record, due to automatic renaming of plasmid_map
             super(MammalianLineDoc, self).save(force_insert, force_update)
             force_insert, force_update = False, True
             for field_name, options in rename_files.iteritems():
@@ -399,9 +418,12 @@ class MammalianLineDoc(models.Model):
                         field.close()
                         field.storage.delete(file_name)
                         setattr(self, field_name, final_name)
+        del self.skip_history_when_saving
         super(MammalianLineDoc, self).save(force_insert, force_update)
 
-    def clean(self): 
+    def clean(self):
+        """Check if file is bigger than 2 MB"""
+
         errors = []
         
         limit = 2 * 1024 * 1024
@@ -420,7 +442,6 @@ class MammalianLineDoc(models.Model):
 #                ANTIBODY MODEL                 #
 #################################################
 
-# Subclass to rename am antibody information sheet as ab_info_X.yyy
 class Antibody (models.Model):
     name = models.CharField("Name", max_length = 255, blank=False)
     species_isotype = models.CharField("Species/Isotype", max_length = 255, blank=False)
@@ -445,8 +466,13 @@ class Antibody (models.Model):
         }
 
     def save(self, force_insert=False, force_update=False):
+        '''Override default save method to rename a pdf 
+        of any given name to mclHU_date-uploaded_time-uploaded.yyy,
+        after the corresponding entry has been created'''
+    
         rename_files = getattr(self, 'RENAME_FILES', None)
         if rename_files:
+            self.skip_history_when_saving = True # Turn off saving history record to avoid duplicate historical record, due to automatic renaming of plasmid_map
             super(Antibody, self).save(force_insert, force_update)
             force_insert, force_update = False, True
             for field_name, options in rename_files.iteritems():
@@ -468,9 +494,12 @@ class Antibody (models.Model):
                         field.close()
                         field.storage.delete(file_name)
                         setattr(self, field_name, final_name)
+        del self.skip_history_when_saving
         super(Antibody, self).save(force_insert, force_update)
 
     def clean(self):
+    """Check if file is bigger than 2 MB"""
+
         errors = []
         
         limit = 2 * 1024 * 1024

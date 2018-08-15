@@ -1,0 +1,67 @@
+{% extends 'admin/approval_summary_change_list.html' %}
+{% block content_title %}
+    <h1> {{title}}</h1>
+{% endblock %}
+
+
+
+{% block result_list %}
+
+{% if data %}
+
+  <div class='results'>
+      <table style="margin-top:10px;">
+      <thead>
+        <tr>
+          <th style="padding:8px 10px;background-color:#79aec8; color:white; font-size:14px">
+            ID
+          </th>
+          <th style="padding:8px 10px;background-color:#79aec8; color:white; font-size:14px">
+              Name
+          </th>
+          <th style="padding:8px 10px;background-color:#79aec8; color:white; font-size:14px">
+              Created by
+          </th>
+          <th style="padding:8px 10px;background-color:#79aec8; color:white; font-size:14px">
+              History
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+          {% for model in data %}
+          <tr>
+              <th colspan=4 style="background-color:#79aec882; color:#666; text-transform:uppercase; font-size:12px; padding:8px 10px;">
+                {{model.0}}
+              </th>
+            </tr>
+    {% for label, category in model.2.items %}
+    <tr style="background-color:#ddddddb8; text-transform:uppercase; color:#666;">
+        <th colspan=4 style="font-size: 11px;">{{label}}</th>
+    </tr>
+    {% if category %}
+        {% for row in category %}
+              <tr class=”{% cycle 'row1' 'row2' %}”>
+                  <td> <a href='/collection_management/{{model.1}}/{{ row.id }}' style="font-weight:bold">{{ row.id }} </a></td>
+                  <td> {{ row.name }} </td>
+                  <td> {{ row.created_by }} </td>
+                  <td> <a href='/collection_management/{{model.1}}/{{ row.id }}/history'>View</a></td>
+                </tr>
+                {% endfor %}
+    {% endif %}
+    {% endfor %}
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+
+{% else %}
+<div>
+There is nothing to approve at the moment.
+</div>
+{% endif %}
+
+{% endblock %}
+
+
+
+{% block pagination %}{% endblock %}

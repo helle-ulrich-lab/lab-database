@@ -27,6 +27,8 @@ from django.views.decorators.cache import never_cache
 from django.http import HttpResponseRedirect
 from django.urls import NoReverseMatch, reverse
 
+from . import views
+
 #################################################
 #        ADDED FUNCTIONALITIES IMPORTS          #
 #################################################
@@ -55,6 +57,19 @@ from django.contrib.auth.admin import GroupAdmin, UserAdmin
 from .models import ArcheNoahAnimal as collection_management_ArcheNoahAnimal
 
 #################################################
+#                CUSTOM CLASSES                 #
+#################################################
+
+class Approval():
+    def approval(self, instance):
+        if instance.last_changed_approval_by_pi:
+            return instance.last_changed_approval_by_pi
+        else:
+            return instance.created_approval_by_pi
+    approval.boolean = True
+    approval.short_description = "Approved"
+
+#################################################
 #               CUSTOM ADMIN SITE               #
 #################################################
 
@@ -81,8 +96,9 @@ class MyAdminSite(admin.AdminSite):
         # This doesn't work with urls += ...
         urls = [
             url(r'^pages/recipe/(\d+)/new_view/$',  lambda req:HttpResponse("Hello World")),
-            #url(r'^pages/recipe/(\d+)/new_view/$',  lambda req:HttpResponse("Hello World")),
-            url(r'^auth/user/update_gdocs_user_list/$', self.update_lab_users_google_sheet)
+            url(r'^auth/user/update_gdocs_user_list/$', self.update_lab_users_google_sheet),
+            url(r'^approval_summary/$', self.admin_view(self.approval_summary)),
+            url(r'^approval_summary/approve$', self.admin_view(self.approve_approval_summary)),
         ] + urls
         return urls
     
@@ -91,9 +107,6 @@ class MyAdminSite(admin.AdminSite):
 
         import os
         import sys
-
-        from django.http import HttpResponseRedirect
-        from django.contrib import messages
 
         import pygsheets
 
@@ -119,6 +132,60 @@ class MyAdminSite(admin.AdminSite):
         except Exception, err:
             messages.error(request, 'The user list on GoogleDocs could not be updated. Error: ' + str(err))
         return HttpResponseRedirect("../")
+
+    def approval_summary(self, request):
+        """ View to show all added and changed records from 
+        collection_management that have been added or changed
+        and that need to be approved by Helle"""
+        
+        from django.shortcuts import render
+        from django.apps import apps
+
+        if request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists(): # Only allow superusers and lab managers to access the page
+            data = []
+            app = apps.get_app_config('collection_management')
+            for model in app.models.values():
+                if not model._meta.verbose_name.lower().startswith(("historical", "arche", "antibody", "mammalian cell line document")): # Skip certain models within collection_management
+                    added = model.objects.all().filter(created_approval_by_pi=False)
+                    changed = model.objects.all().filter(last_changed_approval_by_pi=False).exclude(id__in=added)
+                    if len(added) != 0 or len(changed) != 0:
+                        if len(added) != 0 and len(changed) != 0:
+                            data.append((str(model._meta.verbose_name_plural).capitalize(), str(model.__name__).lower(), {"Added":list(added.only('id','name','created_by')), "Changed":list(changed.only('id','name','created_by'))}))
+                        else:
+                            if len(added) == 0:
+                                data.append((str(model._meta.verbose_name_plural).capitalize(), str(model.__name__).lower(), {"Changed":list(changed.only('id','name','created_by'))}))
+                            else:
+                                data.append((str(model._meta.verbose_name_plural).capitalize(), str(model.__name__).lower(), {"Added":list(added.only('id','name','created_by'))}))
+            context = {
+            'user': request.user,
+            'site_header': self.site_header,
+            'has_permission': self.has_permission(request), 
+            'site_url': self.site_url, 
+            'title':"Records to be approved", 
+            'custom_labels':["Added", "Changed"],
+            'data':data
+            }
+            return render(request, 'admin/approval_summary.html', context)
+        else:
+            raise PermissionDenied
+            
+    def approve_approval_summary(self, request):
+        """ Approve all records that are pending approval """
+
+        if request.user.id == 6: # Only allow Helle to approve records
+            try:
+                app = apps.get_app_config('collection_management')
+                for model in app.models.values():
+                    if not model._meta.verbose_name.lower().startswith(("historical", "arche", "antibody", "mammalian cell line document")): # Skip certain models within collection_management 
+                        model.objects.all().filter(created_approval_by_pi=False).update(created_approval_by_pi=True)
+                        model.objects.all().filter(last_changed_approval_by_pi=False).update(last_changed_approval_by_pi=True)
+                messages.success(request, 'The records have been approved')
+                return HttpResponseRedirect("/approval_summary/")
+            except Exception, err:
+                messages.error(request, 'The records could not be approved. Error: ' + str(err))
+                return HttpResponseRedirect("/approval_summary/")
+        else:
+            raise PermissionDenied
 
 # Instantiate custom admin site 
 my_admin_site = MyAdminSite()
@@ -185,8 +252,8 @@ class SaCerevisiaeStrainQLSchema(DjangoQLSchema):
             return [SearchFieldOptUsername(), SearchFieldOptLastname()]
         return super(SaCerevisiaeStrainQLSchema, self).get_fields(model)
 
-class SaCerevisiaeStrainPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin, admin.ModelAdmin):
-    list_display = ('id', 'name', 'mating_type','created_by',)
+class SaCerevisiaeStrainPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin, admin.ModelAdmin, Approval):
+    list_display = ('id', 'name', 'mating_type','created_by', 'approval')
     list_display_links = ('id', )
     list_per_page = 25
     formfield_overrides = {models.CharField: {'widget': TextInput(attrs={'size':'93'})},} # Make TextInput fields wider
@@ -203,6 +270,7 @@ class SaCerevisiaeStrainPage(ExportActionModelAdmin, DjangoQLSearchMixin, Simple
             obj.save()
         else:
             if request.user.is_superuser or request.user == collection_management_SaCerevisiaeStrain.objects.get(pk=obj.pk).created_by or request.user.groups.filter(name='Lab manager').exists():
+                obj.last_changed_approval_by_pi = False
                 obj.save()
             else:
                 raise PermissionDenied
@@ -218,11 +286,12 @@ class SaCerevisiaeStrainPage(ExportActionModelAdmin, DjangoQLSearchMixin, Simple
             if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
                 return ['name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parental_strain',
                 'construction', 'modification', 'plasmids', 'selection', 'phenotype', 'background', 'received_from',
-                'us_e', 'note', 'reference','created_date_time', 'last_changed_date_time', 'created_by',]
+                'us_e', 'note', 'reference', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
+                'last_changed_approval_by_pi', 'created_by',]
             else:
-                return ['created_date_time', 'last_changed_date_time',]
+                return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
         else:
-            return ['created_date_time', 'last_changed_date_time',]
+            return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
     
     def add_view(self,request,extra_content=None):
         '''Override default add_view to show only desired fields'''
@@ -237,7 +306,8 @@ class SaCerevisiaeStrainPage(ExportActionModelAdmin, DjangoQLSearchMixin, Simple
         
         self.fields = ('name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parental_strain',
         'construction', 'modification', 'plasmids', 'selection', 'phenotype', 'background', 'received_from',
-        'us_e', 'note', 'reference', 'created_date_time', 'last_changed_date_time', 'created_by',)
+        'us_e', 'note', 'reference', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 
+        'last_changed_approval_by_pi', 'created_by',)
         return super(SaCerevisiaeStrainPage,self).change_view(request,object_id)
     
     def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
@@ -276,8 +346,8 @@ class HuPlasmidQLSchema(DjangoQLSchema):
             return [SearchFieldOptUsername(), SearchFieldOptLastname()]
         return super(HuPlasmidQLSchema, self).get_fields(model)
 
-class HuPlasmidPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin, admin.ModelAdmin):
-    list_display = ('id', 'name', 'selection', 'get_plasmidmap_short_name', 'created_by',)
+class HuPlasmidPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin, admin.ModelAdmin, Approval):
+    list_display = ('id', 'name', 'selection', 'get_plasmidmap_short_name', 'created_by', 'approval')
     list_display_links = ('id', )
     list_per_page = 25
     formfield_overrides = {models.CharField: {'widget': TextInput(attrs={'size':'93'})},} # Make TextInput fields wider
@@ -294,9 +364,11 @@ class HuPlasmidPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAd
             obj.save()
         else:
             if request.user.is_superuser or request.user == collection_management_HuPlasmid.objects.get(pk=obj.pk).created_by or request.user.groups.filter(name='Lab manager').exists():
+                obj.last_changed_approval_by_pi = False
                 obj.save()
             else:
                 if obj.created_by.id == 6: # Allow saving object, if record belongs to Helle (user id = 6)
+                    obj.last_changed_approval_by_pi = False
                     obj.save()
                 else:
                     raise PermissionDenied
@@ -311,15 +383,17 @@ class HuPlasmidPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAd
         if obj:
             if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by.id == 6) or request.user.groups.filter(name='Guest').exists():
                 return ['name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
-                'reference', 'plasmid_map', 'created_date_time', 'last_changed_date_time', 'created_by',]
+                'reference', 'plasmid_map', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
+                'last_changed_approval_by_pi', 'created_by',]
             else:
                 if obj.created_by.id == 6 and not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists()): # Show plasmid_map and note as editable fields, if record belongs to Helle (user id = 6)
                     return ['name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 
-                    'reference', 'created_date_time', 'last_changed_date_time', 'created_by',]
+                    'reference', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
+                    'last_changed_approval_by_pi', 'created_by',]
                 else:
-                    return ['created_date_time', 'last_changed_date_time',]
+                    return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
         else:
-            return ['created_date_time', 'last_changed_date_time',]
+            return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
     
     def add_view(self,request,extra_content=None):
         '''Override default add_view to show only desired fields'''
@@ -332,7 +406,8 @@ class HuPlasmidPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAd
         '''Override default change_view to show only desired fields'''
         
         self.fields = ('name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
-                'reference', 'plasmid_map', 'created_date_time', 'last_changed_date_time', 'created_by',)
+                'reference', 'plasmid_map', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
+                'last_changed_approval_by_pi', 'created_by',)
         return super(HuPlasmidPage,self).change_view(request,object_id)
 
     def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
@@ -387,13 +462,24 @@ class OligoQLSchema(DjangoQLSchema):
             return [SearchFieldOptUsername(), SearchFieldOptLastname()]
         return super(OligoQLSchema, self).get_fields(model)
 
-class OligoPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin, admin.ModelAdmin):
-    list_display = ('id', 'name','sequence', 'restriction_site','created_by')
+class OligoPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin, admin.ModelAdmin, Approval):
+    list_display = ('id', 'name','get_oligo_short_sequence', 'restriction_site','created_by', 'approval')
     list_display_links = ('id',)
     list_per_page = 25
     formfield_overrides = {
     models.CharField: {'widget': TextInput(attrs={'size':'93'})},} # Make TextInput fields wider
     djangoql_schema = OligoQLSchema
+
+    def get_oligo_short_sequence(self, instance):
+        '''This function allows you to define a custom field for the list view to
+        be defined in list_display as the name of the function, e.g. in this case
+        list_display = ('id', 'name', )'''
+        if instance.sequence:
+            if len(instance.sequence) <= 75:
+                return instance.sequence
+            else:
+                return instance.sequence[0:75] + "..."
+    get_oligo_short_sequence.short_description = 'Sequence'
 
     def save_model(self, request, obj, form, change):
         '''Override default save_model to limit a user's ability to save a record
@@ -406,6 +492,7 @@ class OligoPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin,
             obj.save()
         else:
             if request.user.is_superuser or request.user == collection_management_Oligo.objects.get(pk=obj.pk).created_by or request.user.groups.filter(name='Lab manager').exists():
+                obj.last_changed_approval_by_pi = False
                 obj.save()
             else:
                 raise PermissionDenied
@@ -419,11 +506,12 @@ class OligoPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin,
         
         if obj:
             if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
-                return ['name','sequence', 'us_e', 'gene', 'restriction_site', 'description', 'comment', 'created_date_time', 'last_changed_date_time', 'created_by',]
+                return ['name','sequence', 'us_e', 'gene', 'restriction_site', 'description', 'comment', 'created_date_time',
+                'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',]
             else:
-                return ['created_date_time', 'last_changed_date_time',]
+                return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
         else:
-            return ['created_date_time', 'last_changed_date_time',]
+            return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
     
     def add_view(self,request,extra_content=None):
         '''Override default add_view to show only desired fields'''
@@ -434,7 +522,8 @@ class OligoPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin,
     def change_view(self,request,object_id,extra_content=None):
         '''Override default change_view to show only desired fields'''
         
-        self.fields = ('name','sequence', 'us_e', 'gene', 'restriction_site', 'description', 'comment', 'created_date_time', 'last_changed_date_time', 'created_by',)
+        self.fields = ('name','sequence', 'us_e', 'gene', 'restriction_site', 'description', 'comment',
+        'created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',)
         return super(OligoPage,self).change_view(request,object_id)
 
     def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
@@ -467,14 +556,14 @@ class ScPombeStrainQLSchema(DjangoQLSchema):
         '''Define fields that can be searched'''
         
         if model == collection_management_ScPombeStrain:
-            return ['id', 'box_number', 'parental_strain', 'mating_type', 'auxotrophic_marker', 'genotype',
+            return ['id', 'box_number', 'parental_strain', 'mating_type', 'auxotrophic_marker', 'name',
                     'phenotype', 'received_from', 'comment', 'created_by',]
         elif model == User:
             return [SearchFieldOptUsername(), SearchFieldOptLastname()]
         return super(ScPombeStrainQLSchema, self).get_fields(model)
 
-class ScPombeStrainPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin, admin.ModelAdmin):
-    list_display = ('id', 'genotype', 'auxotrophic_marker', 'mating_type',)
+class ScPombeStrainPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin, admin.ModelAdmin, Approval):
+    list_display = ('id', 'name', 'auxotrophic_marker', 'mating_type', 'approval',)
     list_display_links = ('id', )
     list_per_page = 25
     formfield_overrides = {models.CharField: {'widget': TextInput(attrs={'size':'93'})},}
@@ -491,6 +580,7 @@ class ScPombeStrainPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHisto
             obj.save()
         else:
             if request.user.is_superuser or request.user == collection_management_ScPombeStrain.objects.get(pk=obj.pk).created_by or request.user.groups.filter(name='Lab manager').exists():
+                obj.last_changed_approval_by_pi = False
                 obj.save()
             else:
                 raise PermissionDenied
@@ -502,27 +592,29 @@ class ScPombeStrainPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHisto
         'created_date_time' and 'last_changed_date_time' fields must always be read-only
         because their set by Django itself'''
         
-        if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
-            if obj:
-                return ['box_number', 'parental_strain', 'mating_type', 'auxotrophic_marker', 'genotype',
-        'phenotype', 'received_from', 'comment', 'created_date_time', 'last_changed_date_time', 'created_by',]
+        if obj:
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
+                return ['box_number', 'parental_strain', 'mating_type', 'auxotrophic_marker', 'name',
+        'phenotype', 'received_from', 'comment', 'created_date_time', 'created_approval_by_pi',
+        'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',]
             else:
-                return ['created_date_time', 'last_changed_date_time',]
+                return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
         else:
-            return ['created_date_time', 'last_changed_date_time',]
+            return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
 
     def add_view(self,request,extra_content=None):
         '''Override default add_view to show only desired fields'''
         
-        self.fields = ('box_number', 'parental_strain', 'mating_type', 'auxotrophic_marker', 'genotype',
+        self.fields = ('box_number', 'parental_strain', 'mating_type', 'auxotrophic_marker', 'name',
         'phenotype', 'received_from', 'comment', )
         return super(ScPombeStrainPage,self).add_view(request)
 
     def change_view(self,request,object_id,extra_content=None):
         '''Override default change_view to show only desired fields'''
         
-        self.fields = ('box_number', 'parental_strain', 'mating_type', 'auxotrophic_marker', 'genotype',
-        'phenotype', 'received_from', 'comment', 'created_date_time', 'last_changed_date_time', 'created_by',)
+        self.fields = ('box_number', 'parental_strain', 'mating_type', 'auxotrophic_marker', 'name',
+        'phenotype', 'received_from', 'comment', 'created_date_time', 'created_approval_by_pi',
+        'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',)
         return super(ScPombeStrainPage,self).change_view(request,object_id)
 
     def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
@@ -570,8 +662,8 @@ class NzPlasmidQLSchema(DjangoQLSchema):
 #         super(NzPlasmidCustomForm, self).__init__(*args, **kwargs)
 #         self.fields['created_by'].queryset = self.fields['created_by'].queryset.exclude(id__in=[1,20]).order_by("last_name")                                            
 
-class NzPlasmidPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin, admin.ModelAdmin):
-    list_display = ('id', 'name', 'selection', 'get_plasmidmap_short_name','created_by',)
+class NzPlasmidPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin, admin.ModelAdmin, Approval):
+    list_display = ('id', 'name', 'selection', 'get_plasmidmap_short_name','created_by', 'approval')
     list_display_links = ('id', )
     list_per_page = 25
     formfield_overrides = {models.CharField: {'widget': TextInput(attrs={'size':'93'})},}
@@ -589,6 +681,7 @@ class NzPlasmidPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAd
             obj.save()
         else:
             if request.user.is_superuser or request.user == collection_management_NzPlasmid.objects.get(pk=obj.pk).created_by or request.user.groups.filter(name='Lab manager').exists():
+                obj.last_changed_approval_by_pi = False
                 obj.save()
             else:
                 raise PermissionDenied
@@ -603,11 +696,12 @@ class NzPlasmidPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAd
         if obj:
             if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
                 return ['name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
-                'reference', 'plasmid_map', 'created_date_time', 'last_changed_date_time', 'created_by',]
+                'reference', 'plasmid_map', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
+                'last_changed_approval_by_pi', 'created_by',]
             else:
-                return ['created_date_time', 'last_changed_date_time',]
+                return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
         else:
-            return ['created_date_time', 'last_changed_date_time',]
+            return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
     
     def add_view(self,request,extra_content=None):
         '''Override default add_view to show only desired fields'''
@@ -620,7 +714,8 @@ class NzPlasmidPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAd
         '''Override default change_view to show only desired fields'''
         
         self.fields = ('name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
-                'reference', 'plasmid_map', 'created_date_time', 'last_changed_date_time', 'created_by',)
+                'reference', 'plasmid_map', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
+                'last_changed_approval_by_pi', 'created_by',)
         return super(NzPlasmidPage,self).change_view(request,object_id)
 
     def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
@@ -675,8 +770,8 @@ class EColiStrainQLSchema(DjangoQLSchema):
             return [SearchFieldOptUsername(), SearchFieldOptLastname()]
         return super(EColiStrainQLSchema, self).get_fields(model)
 
-class EColiStrainPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin, admin.ModelAdmin):
-    list_display = ('id', 'name', 'resistance', 'us_e','purpose')
+class EColiStrainPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin, admin.ModelAdmin, Approval):
+    list_display = ('id', 'name', 'resistance', 'us_e','purpose', 'approval')
     list_display_links = ('id', )
     list_per_page = 25
     formfield_overrides = {models.CharField: {'widget': TextInput(attrs={'size':'93'})},}
@@ -693,6 +788,7 @@ class EColiStrainPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistory
             obj.save()
         else:
             if request.user.is_superuser or request.user == collection_management_EColiStrain.objects.get(pk=obj.pk).created_by or request.user.groups.filter(name='Lab manager').exists():
+                obj.last_changed_approval_by_pi = False
                 obj.save()
             else:
                 raise PermissionDenied
@@ -707,11 +803,11 @@ class EColiStrainPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistory
         if obj:
             if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
                 return ['name', 'resistance', 'genotype', 'supplier', 'us_e', 'purpose', 'note',
-                'created_date_time', 'last_changed_date_time', 'created_by',]
+                'created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',]
             else:
-                return ['created_date_time', 'last_changed_date_time',]
+                return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
         else:
-            return ['created_date_time', 'last_changed_date_time',]
+            return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
     
     def add_view(self,request,extra_content=None):
         '''Override default add_view to show only desired fields'''
@@ -723,7 +819,8 @@ class EColiStrainPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistory
         '''Override default change_view to show only desired fields'''
 
         self.fields = ('name', 'resistance', 'genotype', 'supplier', 'us_e', 'purpose', 'note',
-                'created_date_time', 'last_changed_date_time', 'created_by',)
+                'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
+                'last_changed_approval_by_pi', 'created_by',)
         return super(EColiStrainPage,self).change_view(request,object_id)
     
     def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
@@ -854,8 +951,8 @@ class MammalianLineQLSchema(DjangoQLSchema):
             return [SearchFieldOptUsername(), SearchFieldOptLastname()]
         return super(MammalianLineQLSchema, self).get_fields(model)
 
-class MammalianLinePage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin, admin.ModelAdmin):
-    list_display = ('id', 'name', 'box_name', 'created_by')
+class MammalianLinePage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin, admin.ModelAdmin, Approval):
+    list_display = ('id', 'name', 'box_name', 'created_by', 'approval')
     list_display_links = ('id', )
     list_per_page = 25
     formfield_overrides = {models.CharField: {'widget': TextInput(attrs={'size':'93'})},}
@@ -873,10 +970,11 @@ class MammalianLinePage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHisto
             obj.save()
         else:
             if request.user.is_superuser or request.user == collection_management_MammalianLine.objects.get(pk=obj.pk).created_by or request.user.groups.filter(name='Lab manager').exists():
+                obj.last_changed_approval_by_pi = False
                 obj.save()
             else:
                 raise PermissionDenied
-                
+    
     def get_readonly_fields(self, request, obj=None):
         '''Override default get_readonly_fields to define user-specific read-only fields
         If a user is not a superuser, lab manager or the user who created a record
@@ -887,11 +985,12 @@ class MammalianLinePage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHisto
         if obj:
             if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
                 return ['name', 'box_name', 'alternative_name', 'parental_line', 'organism', 'cell_type_tissue', 'culture_type', 'growth_condition',
-                'freezing_medium', 'received_from', 'description_comment', 'created_date_time', 'last_changed_date_time', 'created_by',]
+                'freezing_medium', 'received_from', 'description_comment', 'created_date_time', 'created_approval_by_pi',
+                'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',]
             else:
-                return ['created_date_time', 'last_changed_date_time',]
+                return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
         else:
-            return ['created_date_time', 'last_changed_date_time',]
+            return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
     
     def add_view(self,request,extra_content=None):
         '''Override default add_view to show only desired fields'''
@@ -904,7 +1003,8 @@ class MammalianLinePage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHisto
         '''Override default change_view to show only desired fields'''
 
         self.fields = ('name', 'box_name', 'alternative_name', 'parental_line', 'organism', 'cell_type_tissue', 'culture_type', 'growth_condition',
-                'freezing_medium', 'received_from', 'description_comment', 'created_date_time', 'last_changed_date_time', 'created_by',)
+                'freezing_medium', 'received_from', 'description_comment', 'created_date_time', 'created_approval_by_pi',
+                'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',)
         return super(MammalianLinePage,self).change_view(request,object_id)
 
     def changeform_view(self, request, object_id=None, form_url='', extra_context=None):

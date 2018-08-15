@@ -15,6 +15,21 @@
 {% block content %}
 <div id="content-main">
 
+{% url 'admin:index' as admin_index_url %}
+
+{% if request.path|stringformat:"s" == admin_index_url and not user|has_group:"Guest" %}
+    {% if user|has_group:"Lab manager" %}
+    <ul class="object-tools">
+    <li class >
+        <a style="background-color:#79aec8;" 
+        href='/approval_summary'>
+        Approval Summary
+        </a>
+    </li>
+    </ul>
+    {% endif %}
+{% endif %}
+
 {% if app_list %}
     {% for app in app_list %}
         {% if app.name == "Laboratory management" or app.name == "Order management" %}
@@ -49,8 +64,6 @@
             </div>
         {% endif %}
     {% endfor %}
-
-{% url 'admin:index' as admin_index_url %}
 
 {% if request.path|stringformat:"s" == admin_index_url and not user|has_group:"Guest" %}
     <div class="module">

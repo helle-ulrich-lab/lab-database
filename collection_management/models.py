@@ -66,7 +66,9 @@ class SaCerevisiaeStrain (models.Model):
     reference = models.CharField("Reference", max_length = 255, blank=True)
     
     created_date_time = models.DateTimeField("Created", auto_now_add=True)
+    created_approval_by_pi = models.BooleanField("Record Creation Approval", default = False)
     last_changed_date_time = models.DateTimeField("Last Changed", auto_now=True)
+    last_changed_approval_by_pi = models.NullBooleanField("Record Change Approval", default = None)
     created_by = models.ForeignKey(User)
     history = HistoricalRecords()
     
@@ -99,7 +101,9 @@ class HuPlasmid (models.Model):
     plasmid_map = models.FileField("Plasmid Map (max. 2 MB)", upload_to="temp/", blank=True)
     
     created_date_time = models.DateTimeField("Created", auto_now_add=True)
+    created_approval_by_pi = models.BooleanField("Record Creation Approval", default = False)
     last_changed_date_time = models.DateTimeField("Last Changed", auto_now=True)
+    last_changed_approval_by_pi = models.NullBooleanField("Record Change Approval", default = None)
     created_by = models.ForeignKey(User)
     history = HistoricalRecords()
     
@@ -185,7 +189,9 @@ class Oligo (models.Model):
     comment = models.CharField("Comments", max_length = 255, blank=True)
     
     created_date_time = models.DateTimeField("Created", auto_now_add=True)
+    created_approval_by_pi = models.BooleanField("Record Creation Approval", default = False)
     last_changed_date_time = models.DateTimeField("Last Changed", auto_now=True)
+    last_changed_approval_by_pi = models.NullBooleanField("Record Change Approval", default = None)
     created_by = models.ForeignKey(User)
     history = HistoricalRecords()
     
@@ -215,7 +221,9 @@ class ScPombeStrain (models.Model):
     comment = models.CharField("Comments", max_length = 300, blank=True)
     
     created_date_time = models.DateTimeField("Created", auto_now_add=True)
+    created_approval_by_pi = models.BooleanField("Record Creation Approval", default = False)
     last_changed_date_time = models.DateTimeField("Last Changed", auto_now=True)
+    last_changed_approval_by_pi = models.NullBooleanField("Record Change Approval", default = None)
     created_by = models.ForeignKey(User)
     history = HistoricalRecords()
     
@@ -243,7 +251,9 @@ class NzPlasmid (models.Model):
     plasmid_map = models.FileField("Plasmid Map (max. 2 MB)", upload_to="temp/", blank=True)
     
     created_date_time = models.DateTimeField("Created", auto_now_add=True)
+    created_approval_by_pi = models.BooleanField("Record Creation Approval", default = False)
     last_changed_date_time = models.DateTimeField("Last Changed", auto_now=True)
+    last_changed_approval_by_pi = models.NullBooleanField("Record Change Approval", default = None)
     created_by = models.ForeignKey(User)
     history = HistoricalRecords()
 
@@ -326,7 +336,9 @@ class EColiStrain (models.Model):
     note =  models.CharField("Note", max_length = 255, blank=True)
     
     created_date_time = models.DateTimeField("Created", auto_now_add=True)
+    created_approval_by_pi = models.BooleanField("Record Creation Approval", default = False)
     last_changed_date_time = models.DateTimeField("Last Changed", auto_now=True)
+    last_changed_approval_by_pi = models.NullBooleanField("Record Change Approval", default = None)
     created_by = models.ForeignKey(User)
     history = HistoricalRecords()
     
@@ -358,7 +370,9 @@ class MammalianLine (models.Model):
     description_comment = models.TextField("Description/Comments", max_length = 300, blank=True)
     
     created_date_time = models.DateTimeField("Created", auto_now_add=True)
+    created_approval_by_pi = models.BooleanField("Record Creation Approval", default = False)
     last_changed_date_time = models.DateTimeField("Last Changed", auto_now=True)
+    last_changed_approval_by_pi = models.NullBooleanField("Record Change Approval", default = None)
     created_by = models.ForeignKey(User)
     history = HistoricalRecords()
     
@@ -498,7 +512,7 @@ class Antibody (models.Model):
         super(Antibody, self).save(force_insert, force_update)
 
     def clean(self):
-    """Check if file is bigger than 2 MB"""
+        """Check if file is bigger than 2 MB"""
 
         errors = []
         

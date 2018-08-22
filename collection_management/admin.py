@@ -69,6 +69,108 @@ class Approval():
     approval.boolean = True
     approval.short_description = "Approved"
 
+from django.contrib.admin.utils import unquote
+from django.contrib.contenttypes.models import ContentType
+from django.conf import settings
+from django.utils.encoding import force_text
+from django.shortcuts import get_object_or_404, render
+
+USER_NATURAL_KEY = tuple(
+    key.lower() for key in settings.AUTH_USER_MODEL.split('.', 1))
+
+class SimpleHistoryWithSymmaryAdmin(SimpleHistoryAdmin):
+    
+    object_history_template = "admin/object_history.html"
+    
+    def history_view(self, request, object_id, extra_context=None):
+        """The 'history' admin view for this model."""
+
+        def pairwise(iterable):
+            """ Create pairs of consecutive items from
+            iterable"""
+
+            import itertools
+            a, b = itertools.tee(iterable)
+            next(b, None)
+            return itertools.izip(a, b)
+
+        request.current_app = self.admin_site.name
+        model = self.model
+        opts = model._meta
+        app_label = opts.app_label
+        pk_name = opts.pk.attname
+        history = getattr(model, model._meta.simple_history_manager_attribute)
+        object_id = unquote(object_id)
+        action_list = history.filter(**{pk_name: object_id})
+        history_list_display = getattr(self, "history_list_display", [])
+        # If no history was found, see whether this object even exists.
+        try:
+            obj = self.get_queryset(request).get(**{pk_name: object_id})
+        except model.DoesNotExist:
+            try:
+                obj = action_list.latest('history_date').instance
+            except action_list.model.DoesNotExist:
+                raise http.Http404
+
+        if not self.has_change_permission(request, obj):
+            raise PermissionDenied
+
+        # Set attribute on each action_list entry from admin methods
+        for history_list_entry in history_list_display:
+            value_for_entry = getattr(self, history_list_entry, None)
+            if value_for_entry and callable(value_for_entry):
+                for list_entry in action_list:
+                    setattr(list_entry, history_list_entry,
+                            value_for_entry(list_entry))
+
+        # Create data structure for history summary
+        history_summary_data = []
+        try:
+            history_summary = obj.history.all()
+            if len(history_summary) > 1:
+                history_pairs = pairwise(history_summary)
+                for history_element in history_pairs:
+                    delta = history_element[0].diff_against(history_element[1])
+                    if delta:
+                        changes_list = []
+                        changes = delta.changes
+                        if delta.changes:
+                            for change in delta.changes:
+                                if not change.field.endswith(("time", "_pi")): # Do not show created/changed date/time or approval by PI fields
+                                    field_name = change.field if change.field[1] != "_" else change.field[:1] + change.field[2:]
+                                    changes_list.append(
+                                        (field_name.replace("_", " ").capitalize(), 
+                                        change.old if change.old else 'None', 
+                                        change.new if change.new else 'None'))
+                            if changes_list:
+                                history_summary_data.append(
+                                    (history_element[0].last_changed_date_time, 
+                                    User.objects.get(id=int(history_element[0].history_user_id)), 
+                                    changes_list))
+        except:
+            pass
+
+        content_type = ContentType.objects.get_by_natural_key(
+            *USER_NATURAL_KEY)
+        admin_user_view = 'admin:%s_%s_change' % (content_type.app_label,
+                                                  content_type.model)
+        context = {
+            'title': _('Change history: %s') % force_text(obj),
+            'action_list': action_list,
+            'module_name': capfirst(force_text(opts.verbose_name_plural)),
+            'object': obj,
+            'root_path': getattr(self.admin_site, 'root_path', None),
+            'app_label': app_label,
+            'opts': opts,
+            'admin_user_view': admin_user_view,
+            'history_list_display': history_list_display,
+            'history_summary_data': history_summary_data,
+        }
+        context.update(extra_context or {})
+        extra_kwargs = {}
+        return render(request, self.object_history_template, context,
+                      **extra_kwargs)
+
 #################################################
 #               CUSTOM ADMIN SITE               #
 #################################################
@@ -90,12 +192,10 @@ class MyAdminSite(admin.AdminSite):
 
     def get_urls(self):
         from django.conf.urls import url
-        from django.http import HttpResponse
         urls = super(MyAdminSite, self).get_urls()
         # Note that custom urls get pushed to the list (not appended)
         # This doesn't work with urls += ...
         urls = [
-            url(r'^pages/recipe/(\d+)/new_view/$',  lambda req:HttpResponse("Hello World")),
             url(r'^auth/user/update_gdocs_user_list/$', self.update_lab_users_google_sheet),
             url(r'^approval_summary/$', self.admin_view(self.approval_summary)),
             url(r'^approval_summary/approve$', self.admin_view(self.approve_approval_summary)),
@@ -148,21 +248,19 @@ class MyAdminSite(admin.AdminSite):
                 if not model._meta.verbose_name.lower().startswith(("historical", "arche", "antibody", "mammalian cell line document")): # Skip certain models within collection_management
                     added = model.objects.all().filter(created_approval_by_pi=False)
                     changed = model.objects.all().filter(last_changed_approval_by_pi=False).exclude(id__in=added)
-                    if len(added) != 0 or len(changed) != 0:
-                        if len(added) != 0 and len(changed) != 0:
-                            data.append((str(model._meta.verbose_name_plural).capitalize(), str(model.__name__).lower(), {"Added":list(added.only('id','name','created_by')), "Changed":list(changed.only('id','name','created_by'))}))
-                        else:
-                            if len(added) == 0:
-                                data.append((str(model._meta.verbose_name_plural).capitalize(), str(model.__name__).lower(), {"Changed":list(changed.only('id','name','created_by'))}))
-                            else:
-                                data.append((str(model._meta.verbose_name_plural).capitalize(), str(model.__name__).lower(), {"Added":list(added.only('id','name','created_by'))}))
+                    if added or changed:
+                        data.append(
+                            (str(model._meta.verbose_name_plural).capitalize(),
+                            str(model.__name__).lower(), 
+                            list(added.only('id','name','created_by')),
+                            list(changed.only('id','name','created_by'))
+                            ))
             context = {
             'user': request.user,
             'site_header': self.site_header,
             'has_permission': self.has_permission(request), 
             'site_url': self.site_url, 
             'title':"Records to be approved", 
-            'custom_labels':["Added", "Changed"],
             'data':data
             }
             return render(request, 'admin/approval_summary.html', context)
@@ -189,6 +287,9 @@ class MyAdminSite(admin.AdminSite):
 
 # Instantiate custom admin site 
 my_admin_site = MyAdminSite()
+
+# Disable delete selected action
+my_admin_site.disable_action('delete_selected')
 
 #################################################
 #          CUSTOM USER SEARCH OPTIONS           #
@@ -252,7 +353,7 @@ class SaCerevisiaeStrainQLSchema(DjangoQLSchema):
             return [SearchFieldOptUsername(), SearchFieldOptLastname()]
         return super(SaCerevisiaeStrainQLSchema, self).get_fields(model)
 
-class SaCerevisiaeStrainPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin, admin.ModelAdmin, Approval):
+class SaCerevisiaeStrainPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryWithSymmaryAdmin, admin.ModelAdmin, Approval):
     list_display = ('id', 'name', 'mating_type','created_by', 'approval')
     list_display_links = ('id', )
     list_per_page = 25
@@ -346,7 +447,7 @@ class HuPlasmidQLSchema(DjangoQLSchema):
             return [SearchFieldOptUsername(), SearchFieldOptLastname()]
         return super(HuPlasmidQLSchema, self).get_fields(model)
 
-class HuPlasmidPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin, admin.ModelAdmin, Approval):
+class HuPlasmidPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryWithSymmaryAdmin, admin.ModelAdmin, Approval):
     list_display = ('id', 'name', 'selection', 'get_plasmidmap_short_name', 'created_by', 'approval')
     list_display_links = ('id', )
     list_per_page = 25
@@ -422,7 +523,7 @@ class HuPlasmidPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAd
                 if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by.id == 6) or request.user.groups.filter(name='Guest').exists():
                     extra_context['show_submit_line'] = False
         return super(HuPlasmidPage, self).changeform_view(request, object_id, extra_context=extra_context)
-    
+
     def get_plasmidmap_short_name(self, instance):
         '''This function allows you to define a custom field for the list view to
         be defined in list_display as the name of the function, e.g. in this case
@@ -462,7 +563,7 @@ class OligoQLSchema(DjangoQLSchema):
             return [SearchFieldOptUsername(), SearchFieldOptLastname()]
         return super(OligoQLSchema, self).get_fields(model)
 
-class OligoPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin, admin.ModelAdmin, Approval):
+class OligoPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryWithSymmaryAdmin, admin.ModelAdmin, Approval):
     list_display = ('id', 'name','get_oligo_short_sequence', 'restriction_site','created_by', 'approval')
     list_display_links = ('id',)
     list_per_page = 25
@@ -562,7 +663,7 @@ class ScPombeStrainQLSchema(DjangoQLSchema):
             return [SearchFieldOptUsername(), SearchFieldOptLastname()]
         return super(ScPombeStrainQLSchema, self).get_fields(model)
 
-class ScPombeStrainPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin, admin.ModelAdmin, Approval):
+class ScPombeStrainPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryWithSymmaryAdmin, admin.ModelAdmin, Approval):
     list_display = ('id', 'name', 'auxotrophic_marker', 'mating_type', 'approval',)
     list_display_links = ('id', )
     list_per_page = 25
@@ -662,7 +763,7 @@ class NzPlasmidQLSchema(DjangoQLSchema):
 #         super(NzPlasmidCustomForm, self).__init__(*args, **kwargs)
 #         self.fields['created_by'].queryset = self.fields['created_by'].queryset.exclude(id__in=[1,20]).order_by("last_name")                                            
 
-class NzPlasmidPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin, admin.ModelAdmin, Approval):
+class NzPlasmidPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryWithSymmaryAdmin, admin.ModelAdmin, Approval):
     list_display = ('id', 'name', 'selection', 'get_plasmidmap_short_name','created_by', 'approval')
     list_display_links = ('id', )
     list_per_page = 25
@@ -730,7 +831,7 @@ class NzPlasmidPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAd
                 if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
                     extra_context['show_submit_line'] = False
         return super(NzPlasmidPage, self).changeform_view(request, object_id, extra_context=extra_context)
-    
+
     def get_plasmidmap_short_name(self, instance):
         '''This function allows you to define a custom field for the list view to
         be defined in list_display as the name of the function, e.g. in this case
@@ -770,7 +871,7 @@ class EColiStrainQLSchema(DjangoQLSchema):
             return [SearchFieldOptUsername(), SearchFieldOptLastname()]
         return super(EColiStrainQLSchema, self).get_fields(model)
 
-class EColiStrainPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin, admin.ModelAdmin, Approval):
+class EColiStrainPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryWithSymmaryAdmin, admin.ModelAdmin, Approval):
     list_display = ('id', 'name', 'resistance', 'us_e','purpose', 'approval')
     list_display_links = ('id', )
     list_per_page = 25
@@ -951,7 +1052,7 @@ class MammalianLineQLSchema(DjangoQLSchema):
             return [SearchFieldOptUsername(), SearchFieldOptLastname()]
         return super(MammalianLineQLSchema, self).get_fields(model)
 
-class MammalianLinePage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin, admin.ModelAdmin, Approval):
+class MammalianLinePage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryWithSymmaryAdmin, admin.ModelAdmin, Approval):
     list_display = ('id', 'name', 'box_name', 'created_by', 'approval')
     list_display_links = ('id', )
     list_per_page = 25
@@ -1040,13 +1141,68 @@ class AntibodyQLSchema(DjangoQLSchema):
             return [SearchFieldOptUsername(), SearchFieldOptLastname()]
         return super(AntibodyQLSchema, self).get_fields(model)
 
-class AntibodyPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdmin, admin.ModelAdmin):
+def export_label_antibody(modeladmin, request, queryset):
+    """ Admin adction to export antibodidy record info as a label
+    fot the Zebra label printer
+    """
+    
+    from django.http import HttpResponse
+    
+    from reportlab.pdfgen import canvas
+    from reportlab.lib.units import inch, cm
+    from collection_management.models import Antibody 
+    from reportlab.pdfbase.pdfmetrics import stringWidth
+    from reportlab.platypus import Paragraph, Frame, KeepInFrame
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment;filename="antibody_labels.pdf"'
+    
+    c = canvas.Canvas(response,pagesize=(4.1*cm,1.6*cm))
+    for ab in queryset:
+        
+        textobject = c.beginText()
+        textobject.setTextOrigin(0.15*cm, 1.2*cm)
+        textobject.setFont("Helvetica-Bold", 8)
+        textobject.textLine("abHU" + str(ab.id))
+        textobject.setFont("Helvetica", 6)
+        c.drawText(textobject)
+        
+        styles = getSampleStyleSheet()
+        normal = ParagraphStyle('small', parent=styles['Normal'], fontSize=8,)
+        frame1 = Frame(0.165*cm, 0.63*cm, 0.96*inch, 0.55*cm,  leftPadding=0, bottomPadding=0,rightPadding=0, topPadding=0, showBoundary=0)
+        story = [Paragraph(ab.name[:30],normal)]
+        story_inframe = KeepInFrame(0, 0, story, vAlign='MIDDLE')
+        frame1.addFromList([story_inframe], c)
+        normal.fontName = "Helvetica-Oblique"
+        frame2 = Frame(0.165*cm, 0.3*cm, 0.96*inch, 0.275*cm,  leftPadding=0, bottomPadding=0,rightPadding=0, topPadding=0, showBoundary=0)
+        story2 = [Paragraph(str(ab.received_from + " " + ab.catalogue_number).strip(), normal)]
+        story_inframe2 = KeepInFrame(0, 0, story2, vAlign='MIDDLE')
+        frame2.addFromList([story_inframe2], c)
+        obj_id = str(ab.id)
+        obj_id_width = c.stringWidth(obj_id, "Helvetica", 10)
+        textobject_round = c.beginText(obj_id)
+        textobject_round.setTextOrigin(3.5*cm-(obj_id_width/2),0.65*cm)
+        textobject_round.setFont("Helvetica", 10)
+        textobject_round.textLine(obj_id)
+        c.drawText(textobject_round)
+        c.showPage()
+    
+    c.save()
+    
+    return response
+
+export_label_antibody.short_description = "Export selected as Zebra priter labels" 
+        
+        
+class AntibodyPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryWithSymmaryAdmin, admin.ModelAdmin):
     list_display = ('id', 'name', 'catalogue_number', 'species_isotype', 'clone', 'l_ocation', 'get_sheet_short_name')
     list_display_links = ('id', )
     list_per_page = 25
     #ordering = ('name',)
     formfield_overrides = {models.CharField: {'widget': TextInput(attrs={'size':'93'})},}
     djangoql_schema = AntibodyQLSchema
+    actions = [export_label_antibody]
     
     def save_model(self, request, obj, form, change):
         '''Override default save_model to limit a user's ability to save a record
@@ -1106,7 +1262,7 @@ class AntibodyPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryAdm
                 if request.user.groups.filter(name='Guest').exists():
                     extra_context['show_submit_line'] = False
         return super(AntibodyPage, self).changeform_view(request, object_id, extra_context=extra_context)
-        
+
     def get_sheet_short_name(self, instance):
         '''Create custom column for information sheet
         It formats a html element a for the information sheet

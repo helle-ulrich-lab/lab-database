@@ -1,0 +1,48 @@
+{% extends "admin/object_history.html" %}
+{% load i18n %}
+{% load url from simple_history_compat %}
+{% load admin_urls %}
+{% load display_list from simple_history_admin_list %}
+
+
+{% block content %}
+  <div id="content-main">
+
+  <h2>Summary of changes</h2>
+      {% if history_summary_data %}
+
+        <div class='results'>
+        {% for history_element in history_summary_data %}
+        <div>
+        On {{history_element.0}}, {{history_element.1}} changed:
+        </div>
+        <ul>
+        {%for history_field in history_element.2%}
+        <li>
+        <mark style="background-color:#949dd7a1">{{history_field.0}}</mark> from <mark style="background-color:#ffb7b8de">{{history_field.1}}</mark> to <mark style="background-color: #a7c8abb5">{{history_field.2}}</mark>
+        </li>
+        {% endfor %}
+        </ul>
+        </br>
+        {% endfor %}
+      {% else %}
+      <div>
+      This record does not have a change history. </br></br>
+      </div>
+      {% endif %}
+        </div>
+  
+  <h2>Revert to a previous version of this object</h2>
+    <p>{% blocktrans %}Choose a date from the list below to revert to a previous version of this object.{% endblocktrans %}</p>
+
+    <div class="module">
+      {% if action_list %}
+        {% display_list %}
+      {% else %}
+        <p>{% trans "This object doesn't have a change history." %}</p>
+      {% endif %}
+    </div>
+        
+  </div>
+{% endblock %}
+

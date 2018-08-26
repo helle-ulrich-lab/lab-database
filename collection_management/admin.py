@@ -199,6 +199,7 @@ class MyAdminSite(admin.AdminSite):
             url(r'^auth/user/update_gdocs_user_list/$', self.update_lab_users_google_sheet),
             url(r'^approval_summary/$', self.admin_view(self.approval_summary)),
             url(r'^approval_summary/approve$', self.admin_view(self.approve_approval_summary)),
+            url(r'^order_management/my_orders_redirect$', self.admin_view(self.my_orders_redirect)),
         ] + urls
         return urls
     
@@ -284,6 +285,11 @@ class MyAdminSite(admin.AdminSite):
                 return HttpResponseRedirect("/approval_summary/")
         else:
             raise PermissionDenied
+
+    def my_orders_redirect(self, request):
+        """ Redirect user to their My Orders page """\
+
+        return HttpResponseRedirect(request.user.labuser.personal_order_list_url)
 
 # Instantiate custom admin site 
 my_admin_site = MyAdminSite()

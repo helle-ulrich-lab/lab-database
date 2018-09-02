@@ -23,7 +23,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = DJANGO_PRIVATE_DATA['secret_key']
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = DJANGO_PRIVATE_DATA['allowed_hosts']
 
@@ -48,6 +48,17 @@ INSTALLED_APPS = [
     'colorful',
     'order_management',
     'pages',
+    'django.contrib.sites.apps.SitesConfig',
+    'django.contrib.humanize.apps.HumanizeConfig',
+    'django_nyt.apps.DjangoNytConfig',
+    'mptt',
+    'sekizai',
+    'sorl.thumbnail',
+    'wiki.apps.WikiConfig',
+    'wiki.plugins.attachments.apps.AttachmentsConfig',
+    'wiki.plugins.notifications.apps.NotificationsConfig',
+    'wiki.plugins.images.apps.ImagesConfig',
+    'wiki.plugins.macros.apps.MacrosConfig',
 ]
 
 MIDDLEWARE = [
@@ -74,6 +85,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'sekizai.context_processors.sekizai',
             ],
         },
     },
@@ -182,5 +194,10 @@ en_formats.DATETIME_FORMAT = "j N Y, H:i:s"
 from django.conf.locale.en_GB import formats as en_gb_formats
 en_gb_formats.DATETIME_FORMAT = "j N Y, H:i:s"
 
-
 LOGIN_URL="/login/"
+
+# Wiki settings
+
+SITE_ID = 1
+WIKI_ACCOUNT_SIGNUP_ALLOWED = False
+WIKI_ACCOUNT_HANDLING = True

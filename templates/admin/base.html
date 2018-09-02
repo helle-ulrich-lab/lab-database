@@ -31,7 +31,7 @@
                 <strong>{% firstof user.get_short_name user.get_username %} </strong>({{ user.labuser.abbreviation_code }}).
             {% endblock %}
 
-            <span style='color:white'>| <a href='https://imb-webservices-01.imb.uni-mainz.de/imb-ulrichgr/wiki/Main_Page'>Wiki</a> |</span>
+            <span style='color:white'>| <a href='/wiki'>Wiki</a> |</span>
 
             {% block userlinks %}
                 {% if user.is_active and user.is_staff %}

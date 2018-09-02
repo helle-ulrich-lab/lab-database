@@ -18,6 +18,7 @@ from django.conf.urls import url
 from django.conf import settings
 from django.conf.urls import include
 from django.conf.urls.static import static
+from django.contrib.auth import views as auth_views
 
 from wiki.urls import get_pattern as get_wiki_pattern
 from django_nyt.urls import get_pattern as get_nyt_pattern
@@ -88,6 +89,20 @@ def wiki_check_login_guest(f):
                 path, resolved_login_url, REDIRECT_FIELD_NAME)
     return decorator
 
+def check_guest(f):
+    """If guest do not allow access to view"""
+
+    def decorator(request, **kwargs):
+        if request.user.groups.filter(name='Guest').exists():
+            from django.http import HttpResponseRedirect
+            from django.urls import reverse
+            from django.contrib import messages
+            messages.error(request, 'Guests are not allowed to change their password, you have been automatically redirected to this page')
+            return HttpResponseRedirect(reverse('admin:app_list', kwargs={'app_label': 'collection_management'}))
+        else:
+            return f(request, **kwargs)
+    return decorator
+
 #################################################
 #                 URL PATTERNS                  #
 #################################################
@@ -96,6 +111,7 @@ urlpatterns = [
     url(r'^ckeditor/', include('ckeditor_uploader.urls')),
     url(r'^notifications/', include(get_nyt_pattern())),
     url(r'^wiki/',  decorated_includes(wiki_check_login_guest, include(get_wiki_pattern()))),
+    url(r'^password_change/$', check_guest(auth_views.PasswordChangeView.as_view())),
     url(r'^', my_admin_site.urls),
     ]
 

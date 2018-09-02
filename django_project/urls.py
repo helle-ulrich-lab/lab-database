@@ -18,8 +18,6 @@ from django.conf.urls import url
 from django.conf import settings
 from django.conf.urls import include
 from django.conf.urls.static import static
-from django.views.generic import TemplateView
-from django.contrib.auth.decorators import login_required
 
 from wiki.urls import get_pattern as get_wiki_pattern
 from django_nyt.urls import get_pattern as get_nyt_pattern
@@ -96,7 +94,6 @@ def wiki_check_login_guest(f):
 
 urlpatterns = [
     url(r'^ckeditor/', include('ckeditor_uploader.urls')),
-    url(r'^order_confirmation/',  login_required(TemplateView.as_view(template_name='order_confirmation.html'))),
     url(r'^notifications/', include(get_nyt_pattern())),
     url(r'^wiki/',  decorated_includes(wiki_check_login_guest, include(get_wiki_pattern()))),
     url(r'^', my_admin_site.urls),

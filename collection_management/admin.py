@@ -196,7 +196,7 @@ class MyAdminSite(admin.AdminSite):
         # Note that custom urls get pushed to the list (not appended)
         # This doesn't work with urls += ...
         urls = [
-            url(r'^auth/user/update_gdocs_user_list/$', self.update_lab_users_google_sheet),
+            url(r'^update_gdocs_user_list$', self.update_lab_users_google_sheet),
             url(r'^approval_summary/$', self.admin_view(self.approval_summary)),
             url(r'^approval_summary/approve$', self.admin_view(self.approve_approval_summary)),
             url(r'^order_management/my_orders_redirect$', self.admin_view(self.my_orders_redirect)),
@@ -287,7 +287,7 @@ class MyAdminSite(admin.AdminSite):
             raise PermissionDenied
 
     def my_orders_redirect(self, request):
-        """ Redirect user to their My Orders page """\
+        """ Redirect user to their My Orders page """
 
         return HttpResponseRedirect(request.user.labuser.personal_order_list_url)
 
@@ -1146,60 +1146,6 @@ class AntibodyQLSchema(DjangoQLSchema):
         elif model == User:
             return [SearchFieldOptUsername(), SearchFieldOptLastname()]
         return super(AntibodyQLSchema, self).get_fields(model)
-
-def export_label_antibody(modeladmin, request, queryset):
-    """ Admin adction to export antibodidy record info as a label
-    fot the Zebra label printer
-    """
-    
-    from django.http import HttpResponse
-    
-    from reportlab.pdfgen import canvas
-    from reportlab.lib.units import inch, cm
-    from collection_management.models import Antibody 
-    from reportlab.pdfbase.pdfmetrics import stringWidth
-    from reportlab.platypus import Paragraph, Frame, KeepInFrame
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    
-    response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = 'attachment;filename="antibody_labels.pdf"'
-    
-    c = canvas.Canvas(response,pagesize=(4.1*cm,1.6*cm))
-    for ab in queryset:
-        
-        textobject = c.beginText()
-        textobject.setTextOrigin(0.15*cm, 1.2*cm)
-        textobject.setFont("Helvetica-Bold", 8)
-        textobject.textLine("abHU" + str(ab.id))
-        textobject.setFont("Helvetica", 6)
-        c.drawText(textobject)
-        
-        styles = getSampleStyleSheet()
-        normal = ParagraphStyle('small', parent=styles['Normal'], fontSize=8,)
-        frame1 = Frame(0.165*cm, 0.63*cm, 0.96*inch, 0.55*cm,  leftPadding=0, bottomPadding=0,rightPadding=0, topPadding=0, showBoundary=0)
-        story = [Paragraph(ab.name[:30],normal)]
-        story_inframe = KeepInFrame(0, 0, story, vAlign='MIDDLE')
-        frame1.addFromList([story_inframe], c)
-        normal.fontName = "Helvetica-Oblique"
-        frame2 = Frame(0.165*cm, 0.3*cm, 0.96*inch, 0.275*cm,  leftPadding=0, bottomPadding=0,rightPadding=0, topPadding=0, showBoundary=0)
-        story2 = [Paragraph(str(ab.received_from + " " + ab.catalogue_number).strip(), normal)]
-        story_inframe2 = KeepInFrame(0, 0, story2, vAlign='MIDDLE')
-        frame2.addFromList([story_inframe2], c)
-        obj_id = str(ab.id)
-        obj_id_width = c.stringWidth(obj_id, "Helvetica", 10)
-        textobject_round = c.beginText(obj_id)
-        textobject_round.setTextOrigin(3.5*cm-(obj_id_width/2),0.65*cm)
-        textobject_round.setFont("Helvetica", 10)
-        textobject_round.textLine(obj_id)
-        c.drawText(textobject_round)
-        c.showPage()
-    
-    c.save()
-    
-    return response
-
-export_label_antibody.short_description = "Export selected as Zebra priter labels" 
-        
         
 class AntibodyPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryWithSymmaryAdmin, admin.ModelAdmin):
     list_display = ('id', 'name', 'catalogue_number', 'species_isotype', 'clone', 'l_ocation', 'get_sheet_short_name')
@@ -1208,7 +1154,6 @@ class AntibodyPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryWit
     #ordering = ('name',)
     formfield_overrides = {models.CharField: {'widget': TextInput(attrs={'size':'93'})},}
     djangoql_schema = AntibodyQLSchema
-    actions = [export_label_antibody]
     
     def save_model(self, request, obj, form, change):
         '''Override default save_model to limit a user's ability to save a record

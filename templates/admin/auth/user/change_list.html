@@ -76,7 +76,7 @@
             </li>
             {% endif %}
             <li>
-              <form action="update_gdocs_user_list/" method="POST" onsubmit="ShowLoading()">
+              <form action="/update_gdocs_user_list" method="POST" onsubmit="ShowLoading()">
                   {% csrf_token %}
                       <button type="submit" class="submit-button">Update GDocs User List</button>
               </form>

@@ -112,7 +112,7 @@ urlpatterns = [
     url(r'^notifications/', include(get_nyt_pattern())),
     url(r'^wiki/',  decorated_includes(wiki_check_login_guest, include(get_wiki_pattern()))),
     url(r'^password_change/$', check_guest(auth_views.PasswordChangeView.as_view())),
-    url(r'^', my_admin_site.urls),
+    url(r'', my_admin_site.urls),
     ]
 
 if settings.DEBUG is True:

@@ -1124,6 +1124,22 @@ class MammalianLinePage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHisto
                     extra_context['show_submit_line'] = False
         return super(MammalianLinePage, self).changeform_view(request, object_id, extra_context=extra_context)
 
+    def get_formsets_with_inlines(self, request, obj=None):
+        """Remove AddMammalianLineDocInline from add/change form if user who
+        created a MammalianCellLine object is not the request user a lab manager
+        or a superuser"""
+        
+        if obj:
+            for inline in self.get_inline_instances(request, obj):
+                if inline.verbose_name_plural == 'Exsiting docs':
+                    yield inline.get_formset(request, obj), inline
+                else:
+                    if request.user == collection_management_MammalianLine.objects.get(pk=obj.pk).created_by or request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists():
+                        yield inline.get_formset(request, obj), inline
+        else:
+            for inline in self.get_inline_instances(request, obj):
+                yield inline.get_formset(request, obj), inline
+
 my_admin_site.register(collection_management_MammalianLine, MammalianLinePage)
 
 #################################################

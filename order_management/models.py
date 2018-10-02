@@ -19,7 +19,7 @@ class CostUnit(models.Model):
     class Meta:
         verbose_name = 'cost unit'
     
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
 #################################################
@@ -29,7 +29,7 @@ class CostUnit(models.Model):
 class Location(models.Model):
     name = models.CharField("Name", max_length = 255, blank=False)
     
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
 #################################################

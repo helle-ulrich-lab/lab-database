@@ -48,7 +48,7 @@ def export_as_docx(modeladmin, request, queryset):
         
         soup = BeautifulSoup(input_html_text, "html.parser")
         for img in soup.findAll('img'):
-            img.attrs["src"] = 'http://localhost:8080' + img.attrs["src"]
+            img.attrs["src"] = 'http://localhost:8443' + img.attrs["src"]
 
         file_name = MEDIA_ROOT + "temp/" + "".join(choice(allchar) for x in range(20))
         pypandoc.convert_text(soup, 'docx', format='html', outputfile=file_name,  extra_args=['-V', 'papersize:a4'])
@@ -57,7 +57,7 @@ def export_as_docx(modeladmin, request, queryset):
             response = HttpResponse(download_file, content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
             response['Content-Disposition'] = 'attachment; filename=pages_' + time.strftime("%Y%m%d") + "_" + time.strftime("%H%M%S") + '.docx'
         os.remove(file_name)
-    except Exception, err:
+    except Exception as err:
         messages.error(request, "Could not export record. Error: " + str(err))
     if 'response' not in locals():
         response = ''

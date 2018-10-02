@@ -45,4 +45,4 @@ class LabUserAdmin(BaseUserAdmin):
             return pretty_name
         else:
             return self.username
-    User.__unicode__ = user_pretty_name
+    User.__str__ = user_pretty_name

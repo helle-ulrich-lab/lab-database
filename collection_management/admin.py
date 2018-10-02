@@ -92,7 +92,7 @@ class SimpleHistoryWithSymmaryAdmin(SimpleHistoryAdmin):
             import itertools
             a, b = itertools.tee(iterable)
             next(b, None)
-            return itertools.izip(a, b)
+            return zip(a, b)
 
         request.current_app = self.admin_site.name
         model = self.model
@@ -213,9 +213,6 @@ class MyAdminSite(admin.AdminSite):
 
         from django_project.private_settings import LAB_MEMBERS_SHEET_ID
 
-        reload(sys)
-        sys.setdefaultencoding('utf-8')
-
         try:
             # Log in to GoogleDocs
             base_path = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..'))
@@ -230,7 +227,7 @@ class MyAdminSite(admin.AdminSite):
             worksheet.clear(start=(2,1))
             worksheet.update_cells(crange=(2,1), values=users, extend=True)
             messages.success(request, 'The user list on GoogleDocs was updated successfully')
-        except Exception, err:
+        except Exception as err:
             messages.error(request, 'The user list on GoogleDocs could not be updated. Error: ' + str(err))
         return HttpResponseRedirect("../")
 
@@ -280,7 +277,7 @@ class MyAdminSite(admin.AdminSite):
                         model.objects.all().filter(last_changed_approval_by_pi=False).update(last_changed_approval_by_pi=True)
                 messages.success(request, 'The records have been approved')
                 return HttpResponseRedirect("/approval_summary/")
-            except Exception, err:
+            except Exception as err:
                 messages.error(request, 'The records could not be approved. Error: ' + str(err))
                 return HttpResponseRedirect("/approval_summary/")
         else:

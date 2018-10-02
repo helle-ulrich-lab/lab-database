@@ -30,7 +30,7 @@ class Category(models.Model):
     created_by = models.ForeignKey(User)
     history = HistoricalRecords()
     
-    def __unicode__(self):
+    def __str__(self):
         return self.name
     
     class Meta:

@@ -54,8 +54,6 @@ reportlab==3.5.9
 requests==2.19.1
 rsa==4.0
 six==1.11.0
-snapgene-reader==0.1.15
-SnapGeneFileReader==0.1.11
 sorl-thumbnail==12.5.0
 tablib==0.12.1
 unicodecsv==0.14.1

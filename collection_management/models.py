@@ -8,7 +8,7 @@ from __future__ import unicode_literals
 
 from django.db import models
 from django.contrib.auth.models import User
-from django.utils.encoding import force_unicode
+from django.utils.encoding import force_text # from django.utils.encoding import force_unicode
 from django.forms import ValidationError
 
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -78,7 +78,7 @@ class SaCerevisiaeStrain (models.Model):
         verbose_name = 'strain - Sa. cerevisiae'
         verbose_name_plural = 'strains - Sa. cerevisiae'
     
-    def __unicode__(self):
+    def __str__(self):
         '''Set what to show as an object's unicode attribute, in this case
         it is just the ID of the object, but it could be its name'''
         
@@ -129,10 +129,10 @@ class HuPlasmid (models.Model):
             self.skip_history_when_saving = True # Turn off saving history record to avoid duplicate historical record, due to automatic renaming of plasmid_map
             super(HuPlasmid, self).save(force_insert, force_update)
             force_insert, force_update = False, True
-            for field_name, options in rename_files.iteritems():
+            for field_name, options in rename_files.items():
                 field = getattr(self, field_name)
                 if field:
-                    file_name = force_unicode(field)
+                    file_name = force_text(field)
                     name, ext = os.path.splitext(file_name)
                     name = name.split('/')[1]
                     final_dest = options['dest']
@@ -171,7 +171,7 @@ class HuPlasmid (models.Model):
         if len(errors) > 0:
             raise ValidationError(errors)
 
-    def __unicode__(self):
+    def __str__(self):
         return str(self.id)
 
 #################################################
@@ -195,7 +195,7 @@ class Oligo (models.Model):
     created_by = models.ForeignKey(User)
     history = HistoricalRecords()
     
-    def __unicode__(self):
+    def __str__(self):
        return str(self.id)
 
     # Automatically capitalize the sequence of an oligo and remove all white spaces
@@ -231,7 +231,7 @@ class ScPombeStrain (models.Model):
         verbose_name = 'strain - Sc. pombe'
         verbose_name_plural = 'strains - Sc. pombe'
     
-    def __unicode__(self):
+    def __str__(self):
         return str(self.id)
 
 #################################################
@@ -273,10 +273,10 @@ class NzPlasmid (models.Model):
             self.skip_history_when_saving = True # Turn off saving history record to avoid duplicate historical record, due to automatic renaming of plasmid_map
             super(NzPlasmid, self).save(force_insert, force_update)
             force_insert, force_update = False, True
-            for field_name, options in rename_files.iteritems():
+            for field_name, options in rename_files.items():
                 field = getattr(self, field_name)
                 if field:
-                    file_name = force_unicode(field)
+                    file_name = force_text(field)
                     name, ext = os.path.splitext(file_name)
                     name = name.split('/')[1]
                     final_dest = options['dest']
@@ -319,7 +319,7 @@ class NzPlasmid (models.Model):
         verbose_name = "nicola's plasmid"
         verbose_name_plural = "nicola's plasmids"
         
-    def __unicode__(self):
+    def __str__(self):
         return str(self.id)
 
 #################################################
@@ -346,7 +346,7 @@ class EColiStrain (models.Model):
         verbose_name = 'strain - E. coli'
         verbose_name_plural = 'strains - E. coli'
         
-    def __unicode__(self):
+    def __str__(self):
        return str(self.id)
 
 ################################################
@@ -380,7 +380,7 @@ class MammalianLine (models.Model):
         verbose_name = 'mammmalian cell line'
         verbose_name_plural = 'mammmalian cell lines'
     
-    def __unicode__(self):
+    def __str__(self):
         return str(self.id)
 
 class MammalianLineDoc(models.Model):
@@ -396,7 +396,7 @@ class MammalianLineDoc(models.Model):
     class Meta:
         verbose_name = 'mammalian cell line document'
     
-    def __unicode__(self):
+    def __str__(self):
          return str(self.id)
 
     RENAME_FILES = {
@@ -413,10 +413,10 @@ class MammalianLineDoc(models.Model):
             self.skip_history_when_saving = True # Turn off saving history record to avoid duplicate historical record, due to automatic renaming of plasmid_map
             super(MammalianLineDoc, self).save(force_insert, force_update)
             force_insert, force_update = False, True
-            for field_name, options in rename_files.iteritems():
+            for field_name, options in rename_files.items():
                 field = getattr(self, field_name)
                 if field:
-                    file_name = force_unicode(field)
+                    file_name = force_text(field)
                     name, ext = os.path.splitext(file_name)
                     keep_ext = options.get('keep_ext', True)
                     final_dest = options['dest']
@@ -489,10 +489,10 @@ class Antibody (models.Model):
             self.skip_history_when_saving = True # Turn off saving history record to avoid duplicate historical record, due to automatic renaming of plasmid_map
             super(Antibody, self).save(force_insert, force_update)
             force_insert, force_update = False, True
-            for field_name, options in rename_files.iteritems():
+            for field_name, options in rename_files.items():
                 field = getattr(self, field_name)
                 if field:
-                    file_name = force_unicode(field)
+                    file_name = force_text(field)
                     name, ext = os.path.splitext(file_name)
                     keep_ext = options.get('keep_ext', True)
                     final_dest = options['dest']
@@ -534,5 +534,5 @@ class Antibody (models.Model):
         verbose_name = 'antibody'
         verbose_name_plural = 'antibodies'
     
-    def __unicode__(self):
+    def __str__(self):
         return str(self.id)

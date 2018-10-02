@@ -23,7 +23,7 @@ from ckeditor_uploader.fields import RichTextUploadingField
 class Tag(models.Model):
     name = models.CharField("Tag", max_length = 50, unique=True)
     
-    def __unicode__(self):
+    def __str__(self):
        return str(self.name)
 
 class Protocol(models.Model):
@@ -36,7 +36,7 @@ class Protocol(models.Model):
     created_by = models.ForeignKey(User)
     history = HistoricalRecords()
     
-    def __unicode__(self):
+    def __str__(self):
        return str(self.id)
 
 class Recipe(models.Model):
@@ -49,5 +49,5 @@ class Recipe(models.Model):
     created_by = models.ForeignKey(User)
     history = HistoricalRecords()
     
-    def __unicode__(self):
+    def __str__(self):
        return str(self.id)

@@ -29,10 +29,6 @@ import pygsheets
 
 from django_project.private_settings import ORDER_MASTER_LIST_SHEET_ID
 
-# Switch from default ASCII to utf-8 encoding, needed for the Google Docs stuff to work
-reload(sys)
-sys.setdefaultencoding('utf-8')
-
 #################################################
 #                 ORDER PAGES                   #
 #################################################
@@ -77,7 +73,7 @@ class OrderPage(admin.ModelAdmin):
                 worksheet.insert_rows(1, number=1, values=new_order, inherit=False)
                 # If successful, message user
                 messages.success(request, 'Your order was added successfully')
-            except Exception, err1:
+            except Exception as err1:
                 # If order cannot be added to Google Sheet, try sending it by email to ulrich-orders@imb-mainz.de
                 try:
                     new_order[15] = ": ".join(urgent)
@@ -93,7 +89,7 @@ class OrderPage(admin.ModelAdmin):
                         fail_silently=False,)
                     # If email successfully sent, message user
                     messages.warning(request, 'Your order was not added to the Order list. However, it was successfully sent by email to the lab managers')
-                except Exception, err2:
+                except Exception as err2:
                     # If order cannot be added to Google Sheet or sent by email, send error message to user
                     messages.error(request, "Your order could not be processed. Error: " + str(err1) + ', ' + str(err2))
                 

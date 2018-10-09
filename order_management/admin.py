@@ -105,7 +105,7 @@ class OrderPage(admin.ModelAdmin):
             'admin/css/vendor/jqueryui/jquery-ui.structure.min.css', 
             'admin/css/vendor/jqueryui/jquery-ui.theme.min.css',
             )}
-        js = ('admin/js/vendor/jquery/jquery.min.js',
+        js = ('admin/js/vendor/jquery/jquery.js',
         'admin/js/vendor/jqueryui/jquery-ui.min.js',
         'admin/js/order_management/product-autocomplete.js',)
     

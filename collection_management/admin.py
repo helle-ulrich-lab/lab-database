@@ -200,6 +200,9 @@ class MyAdminSite(admin.AdminSite):
             url(r'^approval_summary/$', self.admin_view(self.approval_summary)),
             url(r'^approval_summary/approve$', self.admin_view(self.approve_approval_summary)),
             url(r'^order_management/my_orders_redirect$', self.admin_view(self.my_orders_redirect)),
+            #url(r'^uploads/(?P<folder>[\w\-]+)/(?P<file_name>.*)$', self.admin_view(self.document_view)),
+            url(r'secure_location/(?P<file_name>.*)$', self.admin_view(self.document_view)),
+
         ] + urls
         return urls
     
@@ -287,6 +290,26 @@ class MyAdminSite(admin.AdminSite):
         """ Redirect user to their My Orders page """
 
         return HttpResponseRedirect(request.user.labuser.personal_order_list_url)
+
+    from django.contrib.auth.decorators import login_required
+
+    def document_view(self, request, *args, **kwargs):
+        """Create protected view for file, remember to include login_required, but maybe
+        not required because part of the admin site, which by default requires login"""
+
+        from django.http import HttpResponse
+
+        # response = HttpResponse(kwargs.get('file_name',"default value"))
+        
+        # from collection_management.models import NzPlasmid
+
+        # obj_id = int(kwargs.get('file_name',"default value").split("_")[0][3:])
+        # document = NzPlasmid.objects.get(id=obj_id)
+        response = HttpResponse()
+        # response.content = document.plasmid_map.read()
+        response["Content-Disposition"] = "attachment; filename={0}".format(kwargs.get('file_name',"default value"))
+        response['X-Accel-Redirect'] = "/secret/{0}".format(kwargs.get('file_name',"default value"))
+        return response
 
 # Instantiate custom admin site 
 my_admin_site = MyAdminSite()

@@ -3,8 +3,8 @@ import sys
 import os
 
 # Switch from default ASCII to utf-8 encoding
-reload(sys)
-sys.setdefaultencoding('utf-8')
+# reload(sys)
+# sys.setdefaultencoding('utf-8')
 
 #Get base path
 base_path = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '../../..'))
@@ -36,6 +36,8 @@ with open(base_path + "/ulrich_lab_intranet/django_project/static/admin/js/order
     # Loop through all the elements (= rows) in the Order master list
     for line in lstoforders[1:]:
         
+        line = [str(i) for i in line]
+
         # Output entire row to backup of the Order master list file, tab-delimited
         out_handle_txt.write("\t".join([item.strip().replace('"',"").replace('\n',"") for item in line]) + "\n")
         
@@ -43,7 +45,7 @@ with open(base_path + "/ulrich_lab_intranet/django_project/static/admin/js/order
         prod = line[2].strip().lower()
         if (prod not in lstofprodname) and prod != "none" and prod != "idt-oligo":
             if (len(line[2])>0) and ("?" not in line[2]) :
-                jsonlin = '{ value: "' + line[4].encode(encoding='UTF-8',errors='ignore').strip().replace('"',"").replace('\n',"") + '" , data: "'+ line[2].strip().replace("'","").replace('\n',"") + "#" + line[1].strip().replace("'","").replace('\n',"") +'" },\n'
+                jsonlin = '{ value: "' + line[4].strip().replace('"',"").replace('\n',"") + '" , data: "'+ line[2].strip().replace("'","").replace('\n',"") + "#" + line[1].strip().replace("'","").replace('\n',"") +'" },\n'
                 lstofprodname.append(prod)
                 out_handle_js.write(jsonlin)
 

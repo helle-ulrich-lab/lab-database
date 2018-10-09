@@ -1,46 +1,61 @@
-(function() {
-  var djangoJQuery;
-  if (typeof jQuery == 'undefined' && typeof django == 'undefined') {
-    console.error('ERROR django-ckeditor missing jQuery. Set CKEDITOR_JQUERY_URL or provide jQuery in the template.');
-  } else if (typeof django != 'undefined') {
-    djangoJQuery = django.jQuery;
+/* global CKEDITOR */
+;(function() {
+  var el = document.getElementById('ckeditor-init-script');
+  if (el && !window.CKEDITOR_BASEPATH) {
+    window.CKEDITOR_BASEPATH = el.getAttribute('data-ckeditor-basepath');
   }
 
-  var $ = jQuery || djangoJQuery;
-
-  var el = $('.django-ckeditor-widget');
-  if (el.length && !window.CKEDITOR_BASEPATH) {
-    window.CKEDITOR_BASEPATH = el[0].getAttribute('data-ckeditor-basepath');
+  // Polyfill from https://developer.mozilla.org/en/docs/Web/API/Element/matches
+  if (!Element.prototype.matches) {
+    Element.prototype.matches =
+        Element.prototype.matchesSelector ||
+        Element.prototype.mozMatchesSelector ||
+        Element.prototype.msMatchesSelector ||
+        Element.prototype.oMatchesSelector ||
+        Element.prototype.webkitMatchesSelector ||
+        function(s) {
+            var matches = (this.document || this.ownerDocument).querySelectorAll(s),
+                i = matches.length;
+            while (--i >= 0 && matches.item(i) !== this) {}
+            return i > -1;
+        };
   }
 
-  $(function() {
+  function runInitialisers() {
     initialiseCKEditor();
     initialiseCKEditorInInlinedForms();
+  }
 
-    function initialiseCKEditorInInlinedForms() {
-      try {
-        $(document).on("click", ".add-row a, .grp-add-handler", function () {
-          initialiseCKEditor();
-          return true;
-        });
-      } catch (e) {
-        $(document).delegate(".add-row a, .grp-add-handler", "click",  function () {
-          initialiseCKEditor();
-          return true;
-        });
+  if (document.readyState != 'loading') {
+    runInitialisers();
+  } else {
+    document.addEventListener('DOMContentLoaded', runInitialisers);
+  }
+
+  function initialiseCKEditor() {
+    var textareas = Array.prototype.slice.call(document.querySelectorAll('textarea[data-type=ckeditortype]'));
+    for (var i=0; i<textareas.length; ++i) {
+      var t = textareas[i];
+      if (t.getAttribute('data-processed') == '0' && t.id.indexOf('__prefix__') == -1) {
+        t.setAttribute('data-processed', '1');
+        var ext = JSON.parse(t.getAttribute('data-external-plugin-resources'));
+        for (var j=0; j<ext.length; ++j) {
+          CKEDITOR.plugins.addExternal(ext[j][0], ext[j][1], ext[j][2]);
+        }
+        CKEDITOR.replace(t.id, JSON.parse(t.getAttribute('data-config')));
       }
     }
+  }
 
-    function initialiseCKEditor() {
-      $('textarea[data-type=ckeditortype]').each(function(){
-        if($(this).data('processed') == "0" && $(this).attr('id').indexOf('__prefix__') == -1){
-          $(this).data('processed',"1");
-          $($(this).data('external-plugin-resources')).each(function(){
-              CKEDITOR.plugins.addExternal(this[0], this[1], this[2]);
-          });
-          CKEDITOR.replace($(this).attr('id'), $(this).data('config'));
-        }
-      });
-    }
-  });
+  function initialiseCKEditorInInlinedForms() {
+    document.body.addEventListener('click', function(e) {
+      if (e.target && (
+        e.target.matches('.add-row a') ||
+        e.target.matches('.grp-add-handler')
+      )) {
+        initialiseCKEditor();
+      }
+    });
+  }
+
 }());

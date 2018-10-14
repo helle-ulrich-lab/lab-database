@@ -45,6 +45,22 @@ class ArcheNoahAnimal (models.Model):
         verbose_name_plural = 'Arche Noah items'
 
 #################################################
+#                CUSTOM CLASSES                 #
+#################################################
+
+class SaveWithoutHistoricalRecord():
+    """Allows inheritance of method to save a object without
+    saving a historical record"""
+
+    def save_without_historical_record(self, *args, **kwargs):
+        self.skip_history_when_saving = True
+        try:
+            ret = self.save(*args, **kwargs)
+        finally:
+            del self.skip_history_when_saving
+        return ret
+
+#################################################
 #         SA. CEREVISIAE STRAIN MODEL           #
 #################################################
 
@@ -114,7 +130,7 @@ class HuPlasmid (models.Model):
         verbose_name_plural = 'HU plasmids'
 
     RENAME_FILES = {
-            'plasmid_map': {'dest': 'plasmids/', 'keep_ext': True}
+            'plasmid_map': {'dest': 'collection_management/huplasmid/', 'keep_ext': True}
         }
 
     def save(self, force_insert=False, force_update=False):
@@ -258,7 +274,7 @@ class NzPlasmid (models.Model):
     history = HistoricalRecords()
 
     RENAME_FILES = {
-            'plasmid_map': {'dest': 'nz_plasmids/', 'keep_ext': True}
+            'plasmid_map': {'dest': 'collection_management/nzplasmid/', 'keep_ext': True}
         }
      
     def save(self, force_insert=False, force_update=False):
@@ -400,7 +416,7 @@ class MammalianLineDoc(models.Model):
          return str(self.id)
 
     RENAME_FILES = {
-            'name': {'dest': 'mammalian_cell_line_docs/', 'keep_ext': True}
+            'name': {'dest': 'collection_management/mammalianlinedoc/', 'keep_ext': True}
         }
 
     def save(self, force_insert=False, force_update=False):
@@ -456,7 +472,7 @@ class MammalianLineDoc(models.Model):
 #                ANTIBODY MODEL                 #
 #################################################
 
-class Antibody (models.Model):
+class Antibody (models.Model,SaveWithoutHistoricalRecord):
     name = models.CharField("Name", max_length = 255, blank=False)
     species_isotype = models.CharField("Species/Isotype", max_length = 255, blank=False)
     clone = models.CharField("Clone", max_length = 255, blank=True)
@@ -476,7 +492,7 @@ class Antibody (models.Model):
     arche_noah_relationship = GenericRelation(ArcheNoahAnimal)
     
     RENAME_FILES = {
-            'info_sheet': {'dest': 'antibody_info_sheets/', 'keep_ext': True}
+            'info_sheet': {'dest': 'collection_management/antibody/', 'keep_ext': True}
         }
 
     def save(self, force_insert=False, force_update=False):
@@ -499,7 +515,7 @@ class Antibody (models.Model):
                     if callable(final_dest):
                         final_name = final_dest(self, file_name)
                     else:
-                        final_name = os.path.join(final_dest, "ab_info_" + '%s' % (self.pk,))
+                        final_name = os.path.join(final_dest, "abHU{}_f".format(self.pk))
                         if keep_ext:
                             final_name += ext
                     if file_name != final_name:

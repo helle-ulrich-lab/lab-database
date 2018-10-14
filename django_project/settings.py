@@ -23,7 +23,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = DJANGO_PRIVATE_DATA['secret_key']
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = DJANGO_PRIVATE_DATA['debug']
 
 ALLOWED_HOSTS = DJANGO_PRIVATE_DATA['allowed_hosts']
 

@@ -62,7 +62,7 @@ from .models import ArcheNoahAnimal as collection_management_ArcheNoahAnimal
 
 class Approval():
     def approval(self, instance):
-        if instance.last_changed_approval_by_pi:
+        if instance.last_changed_approval_by_pi is not None:
             return instance.last_changed_approval_by_pi
         else:
             return instance.created_approval_by_pi
@@ -200,9 +200,7 @@ class MyAdminSite(admin.AdminSite):
             url(r'^approval_summary/$', self.admin_view(self.approval_summary)),
             url(r'^approval_summary/approve$', self.admin_view(self.approve_approval_summary)),
             url(r'^order_management/my_orders_redirect$', self.admin_view(self.my_orders_redirect)),
-            #url(r'^uploads/(?P<folder>[\w\-]+)/(?P<file_name>.*)$', self.admin_view(self.document_view)),
-            url(r'secure_location/(?P<file_name>.*)$', self.admin_view(self.document_view)),
-
+            url(r'uploads/(?P<url_path>.*)$', self.admin_view(self.uploads)),
         ] + urls
         return urls
     
@@ -291,25 +289,104 @@ class MyAdminSite(admin.AdminSite):
 
         return HttpResponseRedirect(request.user.labuser.personal_order_list_url)
 
-    from django.contrib.auth.decorators import login_required
-
     def document_view(self, request, *args, **kwargs):
-        """Create protected view for file, remember to include login_required, but maybe
-        not required because part of the admin site, which by default requires login"""
+        """Create protected view for file"""
 
         from django.http import HttpResponse
+        from django.http import Http404
+        import re
 
-        # response = HttpResponse(kwargs.get('file_name',"default value"))
-        
-        # from collection_management.models import NzPlasmid
-
-        # obj_id = int(kwargs.get('file_name',"default value").split("_")[0][3:])
-        # document = NzPlasmid.objects.get(id=obj_id)
         response = HttpResponse()
-        # response.content = document.plasmid_map.read()
-        response["Content-Disposition"] = "attachment; filename={0}".format(kwargs.get('file_name',"default value"))
-        response['X-Accel-Redirect'] = "/secret/{0}".format(kwargs.get('file_name',"default value"))
+
+        try:
+            app_name = str(kwargs["app_name"]).lower()
+            model_name = str(kwargs["model_name"]).lower()
+            file_name = str(kwargs['file_name'])
+            file_prefix = file_name.split('_')[0]
+            file_ext = file_name.split('.')[-1].lower()
+            model = apps.get_model(app_name, model_name)
+            obj_id = int(re.findall('\d+(?=_)', file_name)[0])
+        except:
+            raise Http404()
+                
+        if model_name == 'mammalianlinedoc':
+            mammalianline = apps.get_model(app_name, "mammalianline")
+            obj_name = mammalianline.objects.get(id=obj_id).name + " Test #" + re.findall('\d+(?=.)', file_name)[-1]
+        else:
+            obj_name = model.objects.get(id=obj_id).name
+
+        download_file_name = "{file_prefix} - {obj_name}.{file_ext}".format(
+            file_prefix = file_prefix,
+            obj_name = obj_name,
+            file_ext = file_ext,
+            ).replace(',','')
+
+        if file_ext == 'pdf':
+            response["Content-Type"] = "application/pdf"
+            response["Content-Disposition"] = "inline; filename={download_file_name}".format(download_file_name=download_file_name)
+            response['X-Accel-Redirect'] = "/secret/{app_name}/{model_name}/{file_name}".format(app_name=app_name, model_name = model_name, file_name=file_name)
+        else:
+            response["Content-Disposition"] = "attachment; filename={download_file_name}".format(download_file_name=download_file_name)
+            response['X-Accel-Redirect'] = "/secret/{app_name}/{model_name}/{file_name}".format(app_name=app_name, model_name = model_name, file_name=file_name)
+            
         return response
+
+    def document_wiki(self, request, *args, **kwargs):
+        """Create protected view for file"""
+
+        from django.http import HttpResponse
+        
+        response = HttpResponse(str(kwargs["url_path"]))
+
+        # response['X-Accel-Redirect'] = "/secret/wiki/{url_path}".format(url_path=kwargs["url_path"])
+        return response
+    
+    def uploads(self, request, *args, **kwargs):
+        """Protected view for uploads/media files"""
+
+        from django.http import HttpResponse
+        from django.http import Http404
+        import re
+        from django.core.files.storage import default_storage
+        
+        url_path = str(kwargs["url_path"])
+        
+        if default_storage.exists(url_path): # check if file exists
+            response = HttpResponse()
+            if url_path.startswith('collection_management'):
+                try:
+                    app_name, model_name, file_name = url_path.split('/')
+                    file_prefix = file_name.split('_')[0]
+                    file_ext = file_name.split('.')[-1]
+                    model = apps.get_model(app_name, model_name)
+                    obj_id = int(re.findall('\d+(?=_)', file_name)[0])
+                except:
+                    raise Http404()
+
+                if model_name == 'mammalianlinedoc':
+                    mammalianline = apps.get_model(app_name, "mammalianline")
+                    obj_name = mammalianline.objects.get(id=obj_id).name + " Test #" + re.findall('\d+(?=.)', file_name)[-1]
+                else:
+                    obj_name = model.objects.get(id=obj_id).name
+
+                download_file_name = "{file_prefix} - {obj_name}.{file_ext}".format(
+                    file_prefix = file_prefix,
+                    obj_name = obj_name,
+                    file_ext = file_ext,
+                    ).replace(',','')
+
+                if file_ext == 'pdf':
+                    response["Content-Type"] = "application/pdf"
+                    response["Content-Disposition"] = "inline; filename={download_file_name}".format(download_file_name=download_file_name)
+                    response['X-Accel-Redirect'] = "/secret/{url_path}".format(url_path=url_path) # redirect to internal only location
+                else:
+                    response["Content-Disposition"] = "attachment; filename={download_file_name}".format(download_file_name=download_file_name)
+                    response['X-Accel-Redirect'] = "/secret/{url_path}".format(url_path=url_path)
+            else:
+                response['X-Accel-Redirect'] = "/secret/{url_path}".format(url_path=url_path)
+            return response
+        else:
+            raise  Http404
 
 # Instantiate custom admin site 
 my_admin_site = MyAdminSite()
@@ -555,17 +632,11 @@ class HuPlasmidPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryWi
         be defined in list_display as the name of the function, e.g. in this case
         list_display = ('id', 'name', 'selection', 'get_plasmidmap_short_name','created_by',)'''
         if instance.plasmid_map:
-            plasmid_name_for_download = "pHU" + str(instance.pk) + " - " + str(instance.name) + "." + str(instance.plasmid_map).split(".")[-1]
-            return '<a href="%s" download="%s">Download</a>' % (str(instance.plasmid_map.url), plasmid_name_for_download)
+            return '<a href="{}">Download</a>'.format(str(instance.plasmid_map.url))
         else:
             return ''
     get_plasmidmap_short_name.allow_tags = True
     get_plasmidmap_short_name.short_description = 'Plasmid map'
-
-    # Add custom js (or css) files to all pages that belong to this model
-    class Media:
-        js = ('admin/js/vendor/jquery/jquery.js',
-        'admin/js/admin/ChangeDownloadLink.js',)
 
 my_admin_site.register(collection_management_HuPlasmid, HuPlasmidPage)
 
@@ -863,17 +934,11 @@ class NzPlasmidPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryWi
         be defined in list_display as the name of the function, e.g. in this case
         list_display = ('id', 'name', 'selection', 'get_plasmidmap_short_name','created_by',)'''
         if instance.plasmid_map:
-            plasmid_name_for_download = "pNZ" + str(instance.pk) + " - " + str(instance.name) + "." + str(instance.plasmid_map).split(".")[-1]
-            return '<a href="%s" download="%s">Download</a>' % (str(instance.plasmid_map.url), plasmid_name_for_download)
+            return '<a href="{}">Download</a>'.format(str(instance.plasmid_map.url))
         else:
             return ''
     get_plasmidmap_short_name.allow_tags = True
     get_plasmidmap_short_name.short_description = 'Plasmid map'
-
-    # Add custom js (or css) files to all pages that belong to this model
-    class Media:
-        js = ('admin/js/vendor/jquery/jquery.js',
-        'admin/js/admin/ChangeDownloadLink.js',)
 
 my_admin_site.register(collection_management_NzPlasmid, NzPlasmidPage)
 
@@ -1028,8 +1093,7 @@ class MammalianLineDocInline(admin.TabularInline):
         be defined in list_display as the name of the function, e.g. in this case
         list_display = ('id', 'name', 'selection', 'get_plasmidmap_short_name','created_by',)'''
         if instance.name:
-            name_for_download = "mclHU" + str(collection_management_MammalianLine.objects.get(mammalianlinedoc=instance.pk)) + "_" + instance.typ_e + "_" + str(instance.date_of_test) +  str(instance.name).split(".")[-1]
-            return '<a href="%s" download="%s">Download</a>' % (str(instance.name.url), name_for_download)
+            return '<a href="{}">View</a>'.format(str(instance.name.url))
         else:
             return ''
     get_doc_short_name.allow_tags = True
@@ -1256,8 +1320,7 @@ class AntibodyPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryWit
         such that the text shown for a link is always View'''
 
         if instance.info_sheet:
-            download_link = '/uploads/' + str(instance.info_sheet)
-            return '<a href="%s">%s</a>' % (download_link, 'View')
+            return '<a href="{}">View</a>'.format(str(instance.info_sheet.url))
         else:
             return ''
     get_sheet_short_name.allow_tags = True # needed to show output of get_sheet_short_name as html and not simple text

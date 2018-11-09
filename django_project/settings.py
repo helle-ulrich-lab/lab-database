@@ -174,6 +174,8 @@ ADMINS = DJANGO_PRIVATE_DATA['admin_email_address']
 
 # Other settings
 
+FILE_UPLOAD_PERMISSIONS = 0o664
+
 CKEDITOR_CONFIGS = {
     'default': {
         'toolbar': 'Custom',

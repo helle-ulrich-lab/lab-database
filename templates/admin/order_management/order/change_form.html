@@ -12,7 +12,11 @@
 {{ media }}
 {% endblock %}
 
-{% block extrastyle %}{{ block.super }}<link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}" />{% endblock %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}" />
+<link rel="stylesheet" type="text/css" href="{% static "admin/css/vendor/jqueryui/jquery-ui.structure.min.css" %}" />
+<link rel="stylesheet" type="text/css" href="{% static "admin/css/vendor/jqueryui/jquery-ui.min.css" %}" />
+<link rel="stylesheet" type="text/css" href="{% static "admin/css/vendor/jqueryui/jquery-ui.theme.min.css" %}" />
+{% endblock %}
 
 {% block coltype %}colM{% endblock %}
 
@@ -88,4 +92,11 @@
 
 </div>
 </form></div>
+{% endblock %}
+
+{% block footer %}
+  <div id="footer"></div>
+  <script type="text/javascript" src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
+  <script type="text/javascript" src="{% static 'admin/js/vendor/jqueryui/jquery-ui.js' %}"></script>
+  <script type="text/javascript" src="{% static 'admin/js/order_management/product-autocomplete.js' %}"></script>
 {% endblock %}

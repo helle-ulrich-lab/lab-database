@@ -98,17 +98,6 @@ class OrderPage(admin.ModelAdmin):
         
         return HttpResponseRedirect(reverse("admin:index"))
     
-    # Include custom JS and CSS files to Order pages
-    class Media:
-        css = {
-            "all": ('admin/css/vendor/jqueryui/jquery-ui.min.css', 
-            'admin/css/vendor/jqueryui/jquery-ui.structure.min.css', 
-            'admin/css/vendor/jqueryui/jquery-ui.theme.min.css',
-            )}
-        js = ('admin/js/vendor/jquery/jquery.js',
-        'admin/js/vendor/jqueryui/jquery-ui.min.js',
-        'admin/js/order_management/product-autocomplete.js',)
-    
     def add_view(self,request,extra_content=None):
         '''Override default add_view to show only desired fields'''
         self.fields = ('supplier','supplier_part_no', 'part_description', 'quantity', 'price', 'cost_unit', 'urgent',

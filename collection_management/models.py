@@ -2,6 +2,7 @@
 
 from __future__ import unicode_literals
 
+
 #################################################
 #    DJANGO 'CORE' FUNCTIONALITIES IMPORTS      #
 #################################################
@@ -10,6 +11,10 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils.encoding import force_text # from django.utils.encoding import force_unicode
 from django.forms import ValidationError
+from django.contrib import messages
+from django.core.files.storage import default_storage
+from django_project.settings import MEDIA_ROOT
+from django_project.settings import BASE_DIR
 
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.fields import GenericRelation
@@ -27,6 +32,9 @@ from simple_history.models import HistoricalRecords
 
 import os.path
 import time
+from snapgene.pyclasses.client import Client
+from snapgene.pyclasses.config import Config
+import zmq
 
 #################################################
 #              ARCHE NOAH MODEL                 #
@@ -150,6 +158,7 @@ class HuPlasmid (models.Model):
                 if field:
                     file_name = force_text(field)
                     name, ext = os.path.splitext(file_name)
+                    ext = ext.lower()
                     name = name.split('/')[1]
                     final_dest = options['dest']
                     if default_storage.exists(final_dest + name + ext): # Check if file already exists and if it does, leave it alone
@@ -164,6 +173,30 @@ class HuPlasmid (models.Model):
                         field.close()
                         field.storage.delete(file_name)
                         setattr(self, field_name, final_name)
+
+                        # For plasmid map, detect common features and save as png using snapgene server
+                        try:
+                            config = Config()
+                            server_ports = config.get_server_ports()
+                            for port in server_ports.values():
+                                try:
+                                    client = Client(port, zmq.Context())
+                                except:
+                                    continue
+                                break
+                            dna_plasmid_map_path = MEDIA_ROOT + final_name
+                            png_plasmid_map_path = MEDIA_ROOT + final_name.replace("collection_management", "plasmid_map_png").replace(".dna", ".png")
+                            common_features_path = BASE_DIR + "/snapgene/standardCommonFeatures.ftrs"
+                            argument = {"request":"detectFeatures", "inputFile": dna_plasmid_map_path, 
+                            "outputFile": dna_plasmid_map_path, "featureDatabase": common_features_path}
+                            client.requestResponse(argument, 10000)                       
+                            argument = {"request":"generatePNGMap", "inputFile": dna_plasmid_map_path ,
+                            "outputPng": png_plasmid_map_path, "title":"pHU" + str(self.id) + " - " + str(self.name), 
+                            "showEnzymes": True, "showFeatures": True, "showPrimers": True, "showORFs": False}
+                            client.requestResponse(argument, 10000)
+                        except:
+                            messages.warning(request, 'Could not detect common features or save map preview')
+
                     del self.skip_history_when_saving # Turn on saving history record again
                     super(HuPlasmid, self).save(force_insert, force_update)
 
@@ -282,8 +315,6 @@ class NzPlasmid (models.Model):
         of any given name to pNZX_date-uploaded_time-uploaded.yyy,
         after the corresponding entry has been created'''
         
-        from django.core.files.storage import default_storage
-        
         rename_files = getattr(self, 'RENAME_FILES', None)
         if rename_files:
             self.skip_history_when_saving = True # Turn off saving history record to avoid duplicate historical record, due to automatic renaming of plasmid_map
@@ -294,6 +325,7 @@ class NzPlasmid (models.Model):
                 if field:
                     file_name = force_text(field)
                     name, ext = os.path.splitext(file_name)
+                    ext = ext.lower()
                     name = name.split('/')[1]
                     final_dest = options['dest']
                     if default_storage.exists(final_dest + name + ext): # Check if file already exists and if it does, leave it alone
@@ -308,6 +340,30 @@ class NzPlasmid (models.Model):
                         field.close()
                         field.storage.delete(file_name)
                         setattr(self, field_name, final_name)
+                        
+                        # For plasmid map, detect common features and save as png using snapgene server
+                        try:
+                            config = Config()
+                            server_ports = config.get_server_ports()
+                            for port in server_ports.values():
+                                try:
+                                    client = Client(port, zmq.Context())
+                                except:
+                                    continue
+                                break
+                            dna_plasmid_map_path = MEDIA_ROOT + final_name
+                            png_plasmid_map_path = MEDIA_ROOT + final_name.replace("collection_management", "plasmid_map_png").replace(".dna", ".png")
+                            common_features_path = BASE_DIR + "/snapgene/standardCommonFeatures.ftrs"
+                            argument = {"request":"detectFeatures", "inputFile": dna_plasmid_map_path, 
+                            "outputFile": dna_plasmid_map_path, "featureDatabase": common_features_path}
+                            client.requestResponse(argument, 10000)                       
+                            argument = {"request":"generatePNGMap", "inputFile": dna_plasmid_map_path,
+                            "outputPng": png_plasmid_map_path, "title":"pNZ" + str(self.id) + " - " + str(self.name),
+                            "showEnzymes": True, "showFeatures": True, "showPrimers": True, "showORFs": False}
+                            client.requestResponse(argument, 10000)
+                        except:
+                            messages.warning(request, 'Could not detect common features or save map preview')
+                    
                     del self.skip_history_when_saving # Turn on saving history record again
                     super(NzPlasmid, self).save(force_insert, force_update)
 
@@ -434,6 +490,7 @@ class MammalianLineDoc(models.Model):
                 if field:
                     file_name = force_text(field)
                     name, ext = os.path.splitext(file_name)
+                    ext = ext.lower()
                     keep_ext = options.get('keep_ext', True)
                     final_dest = options['dest']
                     if callable(final_dest):
@@ -510,6 +567,7 @@ class Antibody (models.Model,SaveWithoutHistoricalRecord):
                 if field:
                     file_name = force_text(field)
                     name, ext = os.path.splitext(file_name)
+                    ext = ext.lower()
                     keep_ext = options.get('keep_ext', True)
                     final_dest = options['dest']
                     if callable(final_dest):

@@ -289,58 +289,6 @@ class MyAdminSite(admin.AdminSite):
 
         return HttpResponseRedirect(request.user.labuser.personal_order_list_url)
 
-    def document_view(self, request, *args, **kwargs):
-        """Create protected view for file"""
-
-        from django.http import HttpResponse
-        from django.http import Http404
-        import re
-
-        response = HttpResponse()
-
-        try:
-            app_name = str(kwargs["app_name"]).lower()
-            model_name = str(kwargs["model_name"]).lower()
-            file_name = str(kwargs['file_name'])
-            file_prefix = file_name.split('_')[0]
-            file_ext = file_name.split('.')[-1].lower()
-            model = apps.get_model(app_name, model_name)
-            obj_id = int(re.findall('\d+(?=_)', file_name)[0])
-        except:
-            raise Http404()
-                
-        if model_name == 'mammalianlinedoc':
-            mammalianline = apps.get_model(app_name, "mammalianline")
-            obj_name = mammalianline.objects.get(id=obj_id).name + " Test #" + re.findall('\d+(?=.)', file_name)[-1]
-        else:
-            obj_name = model.objects.get(id=obj_id).name
-
-        download_file_name = "{file_prefix} - {obj_name}.{file_ext}".format(
-            file_prefix = file_prefix,
-            obj_name = obj_name,
-            file_ext = file_ext,
-            ).replace(',','')
-
-        if file_ext == 'pdf':
-            response["Content-Type"] = "application/pdf"
-            response["Content-Disposition"] = "inline; filename={download_file_name}".format(download_file_name=download_file_name)
-            response['X-Accel-Redirect'] = "/secret/{app_name}/{model_name}/{file_name}".format(app_name=app_name, model_name = model_name, file_name=file_name)
-        else:
-            response["Content-Disposition"] = "attachment; filename={download_file_name}".format(download_file_name=download_file_name)
-            response['X-Accel-Redirect'] = "/secret/{app_name}/{model_name}/{file_name}".format(app_name=app_name, model_name = model_name, file_name=file_name)
-            
-        return response
-
-    def document_wiki(self, request, *args, **kwargs):
-        """Create protected view for file"""
-
-        from django.http import HttpResponse
-        
-        response = HttpResponse(str(kwargs["url_path"]))
-
-        # response['X-Accel-Redirect'] = "/secret/wiki/{url_path}".format(url_path=kwargs["url_path"])
-        return response
-    
     def uploads(self, request, *args, **kwargs):
         """Protected view for uploads/media files"""
 
@@ -378,15 +326,32 @@ class MyAdminSite(admin.AdminSite):
                 if file_ext == 'pdf':
                     response["Content-Type"] = "application/pdf"
                     response["Content-Disposition"] = "inline; filename={download_file_name}".format(download_file_name=download_file_name)
-                    response['X-Accel-Redirect'] = "/secret/{url_path}".format(url_path=url_path) # redirect to internal only location
                 else:
                     response["Content-Disposition"] = "attachment; filename={download_file_name}".format(download_file_name=download_file_name)
-                    response['X-Accel-Redirect'] = "/secret/{url_path}".format(url_path=url_path)
-            else:
                 response['X-Accel-Redirect'] = "/secret/{url_path}".format(url_path=url_path)
+            else:
+                try:
+                    file_name = url_path.split('/')[-1]
+                    file_ext = file_name.split('.')[-1].lower() 
+                    if file_ext == "png":
+                        response["Content-Type"] = "image/png"
+                    elif file_ext == "jpg":
+                        response["Content-Type"] = "image/jpeg"
+                    elif  file_ext == "jpeg":
+                        response["Content-Type"] = "image/jpeg"
+                    elif file_ext == "pdf":
+                        response["Content-Type"] = "application/pdf"
+                        response["Content-Disposition"] = "inline; filename={download_file_name}".format(download_file_name=file_name)
+                    elif file_ext == "upload":
+                        if ".pdf." in file_name:
+                            response["Content-Type"] = "application/pdf"
+                            response["Content-Disposition"] = "inline; filename={download_file_name}".format(download_file_name=file_name[:-7])
+                    response['X-Accel-Redirect'] = "/secret/{url_path}".format(url_path=url_path)
+                except:
+                    raise Http404
             return response
         else:
-            raise  Http404
+            raise Http404      
 
 # Instantiate custom admin site 
 my_admin_site = MyAdminSite()
@@ -632,11 +597,16 @@ class HuPlasmidPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryWi
         be defined in list_display as the name of the function, e.g. in this case
         list_display = ('id', 'name', 'selection', 'get_plasmidmap_short_name','created_by',)'''
         if instance.plasmid_map:
-            return '<a href="{}">Download</a>'.format(str(instance.plasmid_map.url))
+            return '<a class="image-link" href="{0}">View</a> | <a href="{1}">Download</a>'.format(str(instance.plasmid_map.url.replace("collection_management", "plasmid_map_png").replace(".dna", ".png")),str(instance.plasmid_map.url))
         else:
             return ''
     get_plasmidmap_short_name.allow_tags = True
     get_plasmidmap_short_name.short_description = 'Plasmid map'
+
+    class Media:
+        css = {
+            "all": ('admin/css/vendor/magnific-popup.css',
+            )}
 
 my_admin_site.register(collection_management_HuPlasmid, HuPlasmidPage)
 
@@ -934,11 +904,16 @@ class NzPlasmidPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryWi
         be defined in list_display as the name of the function, e.g. in this case
         list_display = ('id', 'name', 'selection', 'get_plasmidmap_short_name','created_by',)'''
         if instance.plasmid_map:
-            return '<a href="{}">Download</a>'.format(str(instance.plasmid_map.url))
+            return '<a class="image-link" href="{0}">View</a> | <a href="{1}">Download</a>'.format(str(instance.plasmid_map.url.replace("collection_management", "plasmid_map_png").replace(".dna", ".png")),str(instance.plasmid_map.url))
         else:
             return ''
     get_plasmidmap_short_name.allow_tags = True
     get_plasmidmap_short_name.short_description = 'Plasmid map'
+
+    class Media:
+        css = {
+            "all": ('admin/css/vendor/magnific-popup.css',
+            )}
 
 my_admin_site.register(collection_management_NzPlasmid, NzPlasmidPage)
 

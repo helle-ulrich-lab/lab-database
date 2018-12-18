@@ -2,55 +2,20 @@
 
 from __future__ import unicode_literals
 
-
 #################################################
 #    DJANGO 'CORE' FUNCTIONALITIES IMPORTS      #
 #################################################
 
 from django.db import models
 from django.contrib.auth.models import User
-from django.utils.encoding import force_text # from django.utils.encoding import force_unicode
 from django.forms import ValidationError
-from django.contrib import messages
-from django.core.files.storage import default_storage
-from django_project.settings import MEDIA_ROOT
-from django_project.settings import BASE_DIR
-
-from django.contrib.contenttypes.fields import GenericForeignKey
-from django.contrib.contenttypes.fields import GenericRelation
-from django.contrib.contenttypes.models import ContentType
+from django.utils.encoding import force_text
 
 #################################################
 #        ADDED FUNCTIONALITIES IMPORTS          #
 #################################################
 
 from simple_history.models import HistoricalRecords
-
-#################################################
-#                OTHER IMPORTS                  #
-#################################################
-
-import os.path
-import time
-from snapgene.pyclasses.client import Client
-from snapgene.pyclasses.config import Config
-import zmq
-
-#################################################
-#              ARCHE NOAH MODEL                 #
-#################################################
-
-class ArcheNoahAnimal (models.Model):
-    '''Special model to collect objects (items) from other models
-    that have been added to the Arche Noah backup'''
-
-    content_type = models.ForeignKey(ContentType)
-    object_id = models.PositiveIntegerField()
-    content_object = GenericForeignKey('content_type', 'object_id')
-    
-    class Meta:
-        verbose_name = 'Arche Noah item'
-        verbose_name_plural = 'Arche Noah items'
 
 #################################################
 #                CUSTOM CLASSES                 #
@@ -93,6 +58,7 @@ class SaCerevisiaeStrain (models.Model):
     created_approval_by_pi = models.BooleanField("Record Creation Approval", default = False)
     last_changed_date_time = models.DateTimeField("Last Changed", auto_now=True)
     last_changed_approval_by_pi = models.NullBooleanField("Record Change Approval", default = None)
+    approval_by_pi_date_time = models.DateTimeField(null = True, default = None)
     created_by = models.ForeignKey(User)
     history = HistoricalRecords()
     
@@ -112,7 +78,7 @@ class SaCerevisiaeStrain (models.Model):
 #               HU PLASMID MODEL                #
 #################################################
 
-class HuPlasmid (models.Model):
+class HuPlasmid (models.Model, SaveWithoutHistoricalRecord):
     name = models.CharField("Name", max_length = 255, blank=False)
     other_name = models.CharField("Other Name", max_length = 255, blank=True)
     parent_vector = models.CharField("Parent Vector", max_length = 255, blank=True)
@@ -122,12 +88,13 @@ class HuPlasmid (models.Model):
     received_from = models.CharField("Received from", max_length = 255, blank=True)
     note = models.CharField("Note", max_length = 300, blank=True)
     reference = models.CharField("Reference", max_length = 255, blank=True)
-    plasmid_map = models.FileField("Plasmid Map (max. 2 MB)", upload_to="temp/", blank=True)
+    plasmid_map = models.FileField("Plasmid Map (max. 2 MB)", upload_to="collection_management/huplasmid/", blank=True)
     
     created_date_time = models.DateTimeField("Created", auto_now_add=True)
     created_approval_by_pi = models.BooleanField("Record Creation Approval", default = False)
     last_changed_date_time = models.DateTimeField("Last Changed", auto_now=True)
     last_changed_approval_by_pi = models.NullBooleanField("Record Change Approval", default = None)
+    approval_by_pi_date_time = models.DateTimeField(null = True, default = None)
     created_by = models.ForeignKey(User)
     history = HistoricalRecords()
     
@@ -136,69 +103,6 @@ class HuPlasmid (models.Model):
         
         verbose_name = 'HU plasmid'
         verbose_name_plural = 'HU plasmids'
-
-    RENAME_FILES = {
-            'plasmid_map': {'dest': 'collection_management/huplasmid/', 'keep_ext': True}
-        }
-
-    def save(self, force_insert=False, force_update=False):
-        '''Override default save method to rename a plasmid map 
-        of any given name to pHUX_date-uploaded_time-uploaded.yyy,
-        after the corresponding entry has been created'''
-
-        from django.core.files.storage import default_storage
-        
-        rename_files = getattr(self, 'RENAME_FILES', None)
-        if rename_files:
-            self.skip_history_when_saving = True # Turn off saving history record to avoid duplicate historical record, due to automatic renaming of plasmid_map
-            super(HuPlasmid, self).save(force_insert, force_update)
-            force_insert, force_update = False, True
-            for field_name, options in rename_files.items():
-                field = getattr(self, field_name)
-                if field:
-                    file_name = force_text(field)
-                    name, ext = os.path.splitext(file_name)
-                    ext = ext.lower()
-                    name = name.split('/')[1]
-                    final_dest = options['dest']
-                    if default_storage.exists(final_dest + name + ext): # Check if file already exists and if it does, leave it alone
-                        setattr(self, field_name, final_dest + name + ext)
-                    else:
-                        keep_ext = options.get('keep_ext', True)
-                        final_name = os.path.join(final_dest, "pHU" + '%s' % (self.pk,) + "_" + time.strftime("%Y%m%d") + "_" + time.strftime("%H%M%S"))
-                        if keep_ext:
-                            final_name += ext
-                        field.storage.delete(final_name)
-                        field.storage.save(final_name, field)
-                        field.close()
-                        field.storage.delete(file_name)
-                        setattr(self, field_name, final_name)
-
-                        # For plasmid map, detect common features and save as png using snapgene server
-                        try:
-                            config = Config()
-                            server_ports = config.get_server_ports()
-                            for port in server_ports.values():
-                                try:
-                                    client = Client(port, zmq.Context())
-                                except:
-                                    continue
-                                break
-                            dna_plasmid_map_path = MEDIA_ROOT + final_name
-                            png_plasmid_map_path = MEDIA_ROOT + final_name.replace("collection_management", "plasmid_map_png").replace(".dna", ".png")
-                            common_features_path = BASE_DIR + "/snapgene/standardCommonFeatures.ftrs"
-                            argument = {"request":"detectFeatures", "inputFile": dna_plasmid_map_path, 
-                            "outputFile": dna_plasmid_map_path, "featureDatabase": common_features_path}
-                            client.requestResponse(argument, 10000)                       
-                            argument = {"request":"generatePNGMap", "inputFile": dna_plasmid_map_path ,
-                            "outputPng": png_plasmid_map_path, "title":"pHU" + str(self.id) + " - " + str(self.name), 
-                            "showEnzymes": True, "showFeatures": True, "showPrimers": True, "showORFs": False}
-                            client.requestResponse(argument, 10000)
-                        except:
-                            messages.warning(request, 'Could not detect common features or save map preview')
-
-                    del self.skip_history_when_saving # Turn on saving history record again
-                    super(HuPlasmid, self).save(force_insert, force_update)
 
     def clean(self):
         """Check if file is bigger than 2 MB"""
@@ -241,15 +145,17 @@ class Oligo (models.Model):
     created_approval_by_pi = models.BooleanField("Record Creation Approval", default = False)
     last_changed_date_time = models.DateTimeField("Last Changed", auto_now=True)
     last_changed_approval_by_pi = models.NullBooleanField("Record Change Approval", default = None)
+    approval_by_pi_date_time = models.DateTimeField(null = True, default = None)
     created_by = models.ForeignKey(User)
     history = HistoricalRecords()
     
     def __str__(self):
        return str(self.id)
 
-    # Automatically capitalize the sequence of an oligo and remove all white spaces
-    # from it. Also set the lenght of the oligo  
     def save(self, force_insert=False, force_update=False):
+        """Automatically capitalize the sequence of an oligo and remove all white spaces
+        from it. Also set the lenght of the oligo"""
+        
         upper_sequence = self.sequence.upper()
         self.sequence = "".join(upper_sequence.split())
         self.length = len(self.sequence)
@@ -273,6 +179,7 @@ class ScPombeStrain (models.Model):
     created_approval_by_pi = models.BooleanField("Record Creation Approval", default = False)
     last_changed_date_time = models.DateTimeField("Last Changed", auto_now=True)
     last_changed_approval_by_pi = models.NullBooleanField("Record Change Approval", default = None)
+    approval_by_pi_date_time = models.DateTimeField(null = True, default = None)
     created_by = models.ForeignKey(User)
     history = HistoricalRecords()
     
@@ -287,7 +194,7 @@ class ScPombeStrain (models.Model):
 #                NZ PLASMID MODEL               #
 #################################################
 
-class NzPlasmid (models.Model):
+class NzPlasmid (models.Model, SaveWithoutHistoricalRecord):
     name = models.CharField("Name", max_length = 255, blank=False)
     other_name = models.CharField("Other Name", max_length = 255, blank=True)
     parent_vector = models.CharField("Parent Vector", max_length = 255, blank=True)
@@ -297,75 +204,15 @@ class NzPlasmid (models.Model):
     received_from = models.CharField("Received from", max_length = 255, blank=True)
     note = models.CharField("Note", max_length = 300, blank=True)
     reference = models.CharField("Reference", max_length = 255, blank=True)
-    plasmid_map = models.FileField("Plasmid Map (max. 2 MB)", upload_to="temp/", blank=True)
+    plasmid_map = models.FileField("Plasmid Map (max. 2 MB)", upload_to="collection_management/nzplasmid/", blank=True)
     
     created_date_time = models.DateTimeField("Created", auto_now_add=True)
     created_approval_by_pi = models.BooleanField("Record Creation Approval", default = False)
     last_changed_date_time = models.DateTimeField("Last Changed", auto_now=True)
     last_changed_approval_by_pi = models.NullBooleanField("Record Change Approval", default = None)
+    approval_by_pi_date_time = models.DateTimeField(null = True, default = None)
     created_by = models.ForeignKey(User)
     history = HistoricalRecords()
-
-    RENAME_FILES = {
-            'plasmid_map': {'dest': 'collection_management/nzplasmid/', 'keep_ext': True}
-        }
-     
-    def save(self, force_insert=False, force_update=False):
-        '''Override default save method to rename a plasmid map 
-        of any given name to pNZX_date-uploaded_time-uploaded.yyy,
-        after the corresponding entry has been created'''
-        
-        rename_files = getattr(self, 'RENAME_FILES', None)
-        if rename_files:
-            self.skip_history_when_saving = True # Turn off saving history record to avoid duplicate historical record, due to automatic renaming of plasmid_map
-            super(NzPlasmid, self).save(force_insert, force_update)
-            force_insert, force_update = False, True
-            for field_name, options in rename_files.items():
-                field = getattr(self, field_name)
-                if field:
-                    file_name = force_text(field)
-                    name, ext = os.path.splitext(file_name)
-                    ext = ext.lower()
-                    name = name.split('/')[1]
-                    final_dest = options['dest']
-                    if default_storage.exists(final_dest + name + ext): # Check if file already exists and if it does, leave it alone
-                        setattr(self, field_name, final_dest + name + ext)
-                    else:
-                        keep_ext = options.get('keep_ext', True)
-                        final_name = os.path.join(final_dest, "pNZ" + '%s' % (self.pk,) + "_" + time.strftime("%Y%m%d") + "_" + time.strftime("%H%M%S"))
-                        if keep_ext:
-                            final_name += ext
-                        field.storage.delete(final_name)
-                        field.storage.save(final_name, field)
-                        field.close()
-                        field.storage.delete(file_name)
-                        setattr(self, field_name, final_name)
-                        
-                        # For plasmid map, detect common features and save as png using snapgene server
-                        try:
-                            config = Config()
-                            server_ports = config.get_server_ports()
-                            for port in server_ports.values():
-                                try:
-                                    client = Client(port, zmq.Context())
-                                except:
-                                    continue
-                                break
-                            dna_plasmid_map_path = MEDIA_ROOT + final_name
-                            png_plasmid_map_path = MEDIA_ROOT + final_name.replace("collection_management", "plasmid_map_png").replace(".dna", ".png")
-                            common_features_path = BASE_DIR + "/snapgene/standardCommonFeatures.ftrs"
-                            argument = {"request":"detectFeatures", "inputFile": dna_plasmid_map_path, 
-                            "outputFile": dna_plasmid_map_path, "featureDatabase": common_features_path}
-                            client.requestResponse(argument, 10000)                       
-                            argument = {"request":"generatePNGMap", "inputFile": dna_plasmid_map_path,
-                            "outputPng": png_plasmid_map_path, "title":"pNZ" + str(self.id) + " - " + str(self.name),
-                            "showEnzymes": True, "showFeatures": True, "showPrimers": True, "showORFs": False}
-                            client.requestResponse(argument, 10000)
-                        except:
-                            messages.warning(request, 'Could not detect common features or save map preview')
-                    
-                    del self.skip_history_when_saving # Turn on saving history record again
-                    super(NzPlasmid, self).save(force_insert, force_update)
 
     def clean(self): 
         """Check if file is bigger than 2 MB"""
@@ -411,6 +258,7 @@ class EColiStrain (models.Model):
     created_approval_by_pi = models.BooleanField("Record Creation Approval", default = False)
     last_changed_date_time = models.DateTimeField("Last Changed", auto_now=True)
     last_changed_approval_by_pi = models.NullBooleanField("Record Change Approval", default = None)
+    approval_by_pi_date_time = models.DateTimeField(null = True, default = None)
     created_by = models.ForeignKey(User)
     history = HistoricalRecords()
     
@@ -424,9 +272,6 @@ class EColiStrain (models.Model):
 ################################################
 #         MAMMALIAN CELL LINE MODEL            #
 ################################################
-
-def parental_line_choices():
-    MammalianLine.objects.all()
 
 class MammalianLine (models.Model):
     name = models.CharField("Name", max_length = 255, blank=False)
@@ -445,6 +290,7 @@ class MammalianLine (models.Model):
     created_approval_by_pi = models.BooleanField("Record Creation Approval", default = False)
     last_changed_date_time = models.DateTimeField("Last Changed", auto_now=True)
     last_changed_approval_by_pi = models.NullBooleanField("Record Change Approval", default = None)
+    approval_by_pi_date_time = models.DateTimeField(null = True, default = None)
     created_by = models.ForeignKey(User)
     history = HistoricalRecords()
     
@@ -455,7 +301,11 @@ class MammalianLine (models.Model):
     def __str__(self):
         return str(self.id)
 
-class MammalianLineDoc(models.Model):
+################################################
+#        MAMMALIAN CELL LINE DOC MODEL         #
+################################################
+
+class MammalianLineDoc(models.Model, SaveWithoutHistoricalRecord):
     name = models.FileField("File name", upload_to="temp/", blank=False)
     typ_e = models.CharField("Doc Type", max_length=255, choices=[["virus", "Virus test"], ["mycoplasma", "Mycoplasma test"], ["fingerprint", "Fingerprinting"], ["other", "Other"]], blank=False)
     date_of_test = models.DateField("Date of test", blank=False)
@@ -463,16 +313,10 @@ class MammalianLineDoc(models.Model):
     
     created_date_time = models.DateTimeField("Created", auto_now_add=True)
     last_changed_date_time = models.DateTimeField("Last Changed", auto_now=True)
-    history = HistoricalRecords()
-
-    class Meta:
-        verbose_name = 'mammalian cell line document'
     
-    def __str__(self):
-         return str(self.id)
-
     RENAME_FILES = {
-            'name': {'dest': 'collection_management/mammalianlinedoc/', 'keep_ext': True}
+        'name': 
+        {'dest': 'collection_management/mammalianlinedoc/', 'keep_ext': True}
         }
 
     def save(self, force_insert=False, force_update=False):
@@ -482,7 +326,6 @@ class MammalianLineDoc(models.Model):
         
         rename_files = getattr(self, 'RENAME_FILES', None)
         if rename_files:
-            self.skip_history_when_saving = True # Turn off saving history record to avoid duplicate historical record, due to automatic renaming of plasmid_map
             super(MammalianLineDoc, self).save(force_insert, force_update)
             force_insert, force_update = False, True
             for field_name, options in rename_files.items():
@@ -505,8 +348,13 @@ class MammalianLineDoc(models.Model):
                         field.close()
                         field.storage.delete(file_name)
                         setattr(self, field_name, final_name)
-        del self.skip_history_when_saving
         super(MammalianLineDoc, self).save(force_insert, force_update)
+
+    class Meta:
+        verbose_name = 'mammalian cell line document'
+    
+    def __str__(self):
+         return str(self.id)
 
     def clean(self):
         """Check if file is bigger than 2 MB"""
@@ -529,7 +377,7 @@ class MammalianLineDoc(models.Model):
 #                ANTIBODY MODEL                 #
 #################################################
 
-class Antibody (models.Model,SaveWithoutHistoricalRecord):
+class Antibody (models.Model, SaveWithoutHistoricalRecord):
     name = models.CharField("Name", max_length = 255, blank=False)
     species_isotype = models.CharField("Species/Isotype", max_length = 255, blank=False)
     clone = models.CharField("Clone", max_length = 255, blank=True)
@@ -538,52 +386,12 @@ class Antibody (models.Model,SaveWithoutHistoricalRecord):
     l_ocation = models.CharField("Location", max_length = 255, blank=True)
     a_pplication = models.CharField("Application", max_length = 255, blank=True)
     description_comment = models.TextField("Description/Comments", max_length = 300, blank=True)
-    info_sheet = models.FileField("Info sheet (max. 2 MB)", upload_to="temp/", blank=True)
+    info_sheet = models.FileField("Info sheet (max. 2 MB)", upload_to="collection_management/antibody/", blank=True)
 
     created_date_time = models.DateTimeField("Created", auto_now_add=True)
     last_changed_date_time = models.DateTimeField("Last Changed", auto_now=True)
     created_by = models.ForeignKey(User)
     history = HistoricalRecords()
-    
-    arche_noah_choice = models.BooleanField("Added to Arche Noah?", default=False)
-    arche_noah_relationship = GenericRelation(ArcheNoahAnimal)
-    
-    RENAME_FILES = {
-            'info_sheet': {'dest': 'collection_management/antibody/', 'keep_ext': True}
-        }
-
-    def save(self, force_insert=False, force_update=False):
-        '''Override default save method to rename a pdf 
-        of any given name to mclHU_date-uploaded_time-uploaded.yyy,
-        after the corresponding entry has been created'''
-    
-        rename_files = getattr(self, 'RENAME_FILES', None)
-        if rename_files:
-            self.skip_history_when_saving = True # Turn off saving history record to avoid duplicate historical record, due to automatic renaming of plasmid_map
-            super(Antibody, self).save(force_insert, force_update)
-            force_insert, force_update = False, True
-            for field_name, options in rename_files.items():
-                field = getattr(self, field_name)
-                if field:
-                    file_name = force_text(field)
-                    name, ext = os.path.splitext(file_name)
-                    ext = ext.lower()
-                    keep_ext = options.get('keep_ext', True)
-                    final_dest = options['dest']
-                    if callable(final_dest):
-                        final_name = final_dest(self, file_name)
-                    else:
-                        final_name = os.path.join(final_dest, "abHU{}_f".format(self.pk))
-                        if keep_ext:
-                            final_name += ext
-                    if file_name != final_name:
-                        field.storage.delete(final_name)
-                        field.storage.save(final_name, field)
-                        field.close()
-                        field.storage.delete(file_name)
-                        setattr(self, field_name, final_name)
-        del self.skip_history_when_saving
-        super(Antibody, self).save(force_insert, force_update)
 
     def clean(self):
         """Check if file is bigger than 2 MB"""

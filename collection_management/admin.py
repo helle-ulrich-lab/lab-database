@@ -6,8 +6,6 @@ from __future__ import unicode_literals
 #    DJANGO 'CORE' FUNCTIONALITIES IMPORTS      #
 #################################################
 
-from django import forms
-
 from django.contrib import admin
 from django.contrib import messages
 from django.contrib.auth.admin import UserAdmin
@@ -16,24 +14,34 @@ from django.apps import apps
 from django.db import models
 
 from django.core.urlresolvers import reverse
-from django.core.mail import send_mail
+from django.core.mail import send_mail, mail_admins
+from django.utils import timezone
 from django.core.exceptions import PermissionDenied
 
 from django.utils.translation import ugettext as _, ugettext_lazy
 from django.utils.text import capfirst
 
 from django.forms import TextInput
-from django.views.decorators.cache import never_cache
 from django.http import HttpResponseRedirect
-from django.urls import NoReverseMatch, reverse
+from django.http import HttpResponse
+from django.urls import reverse
 
-from . import views
+from django_project.settings import MEDIA_ROOT
+from django_project.settings import BASE_DIR
+
+from django.contrib.auth.models import Group, User
+from django.contrib.auth.admin import GroupAdmin, UserAdmin
+
+from django.contrib.admin.utils import unquote
+from django.contrib.contenttypes.models import ContentType
+from django.conf import settings
+from django.utils.encoding import force_text
+from django.shortcuts import get_object_or_404, render
+from django.utils.safestring import mark_safe
 
 #################################################
 #        ADDED FUNCTIONALITIES IMPORTS          #
 #################################################
-
-import os
 
 # Advanced search functionalities from DjangoQL
 from djangoql.admin import DjangoQLSearchMixin
@@ -43,18 +51,22 @@ from djangoql.schema import DjangoQLSchema, StrField
 from simple_history.admin import SimpleHistoryAdmin
 
 # Import/Export functionalities from django-import-export
-from import_export.admin import ExportActionModelAdmin
+from import_export import resources
 
-# Google Sheets API to add new orders to Order Master List
-import pygsheets
+# Background tasks
+from background_task import background
 
 #################################################
 #                OTHER IMPORTS                  #
 #################################################
 
-from django.contrib.auth.models import Group, User
-from django.contrib.auth.admin import GroupAdmin, UserAdmin
-from .models import ArcheNoahAnimal as collection_management_ArcheNoahAnimal
+import datetime
+import inspect
+from snapgene.pyclasses.client import Client
+from snapgene.pyclasses.config import Config
+import zmq
+import os
+import time
 
 #################################################
 #                CUSTOM CLASSES                 #
@@ -69,16 +81,10 @@ class Approval():
     approval.boolean = True
     approval.short_description = "Approved"
 
-from django.contrib.admin.utils import unquote
-from django.contrib.contenttypes.models import ContentType
-from django.conf import settings
-from django.utils.encoding import force_text
-from django.shortcuts import get_object_or_404, render
-
 USER_NATURAL_KEY = tuple(
     key.lower() for key in settings.AUTH_USER_MODEL.split('.', 1))
 
-class SimpleHistoryWithSymmaryAdmin(SimpleHistoryAdmin):
+class SimpleHistoryWithSummaryAdmin(SimpleHistoryAdmin):
     
     object_history_template = "admin/object_history.html"
     
@@ -172,6 +178,38 @@ class SimpleHistoryWithSymmaryAdmin(SimpleHistoryAdmin):
                       **extra_kwargs)
 
 #################################################
+#               CUSTOM FUNCTIONS                #
+#################################################
+
+@background(schedule=1) # Run snapgene_plasmid_map_preview 1 s after it is called, as "background" process
+def snapgene_plasmid_map_preview(dna_plasmid_map_path, plasmid_prefix, obj_id, obj_name):
+    """ Given a path to a snapgene plasmid map, use snapegene server
+    to detect common features and create map preview as png
+    and """
+
+    try:
+        config = Config()
+        server_ports = config.get_server_ports()
+        for port in server_ports.values():
+            try:
+                client = Client(port, zmq.Context())
+            except:
+                continue
+            break
+        png_plasmid_map_path = dna_plasmid_map_path.replace("collection_management", "plasmid_map_png").replace(".dna", ".png")
+        common_features_path = os.path.join(BASE_DIR, "snapgene/standardCommonFeatures.ftrs")
+        argument = {"request":"detectFeatures", "inputFile": dna_plasmid_map_path, 
+        "outputFile": dna_plasmid_map_path, "featureDatabase": common_features_path}
+        client.requestResponse(argument, 10000)                       
+        argument = {"request":"generatePNGMap", "inputFile": dna_plasmid_map_path,
+        "outputPng": png_plasmid_map_path, "title": "{}{} - {}".format(plasmid_prefix, obj_id, obj_name),
+        "showEnzymes": True, "showFeatures": True, "showPrimers": True, "showORFs": False}
+        client.requestResponse(argument, 10000)
+    except:
+        mail_admins("Snapgene server error", "There was an error with creating the preview for {} with snapgene server".format(dna_plasmid_map_path), fail_silently=True)
+        raise Exception
+
+#################################################
 #               CUSTOM ADMIN SITE               #
 #################################################
 
@@ -196,41 +234,12 @@ class MyAdminSite(admin.AdminSite):
         # Note that custom urls get pushed to the list (not appended)
         # This doesn't work with urls += ...
         urls = [
-            url(r'^update_gdocs_user_list$', self.update_lab_users_google_sheet),
             url(r'^approval_summary/$', self.admin_view(self.approval_summary)),
             url(r'^approval_summary/approve$', self.admin_view(self.approve_approval_summary)),
             url(r'^order_management/my_orders_redirect$', self.admin_view(self.my_orders_redirect)),
             url(r'uploads/(?P<url_path>.*)$', self.admin_view(self.uploads)),
         ] + urls
         return urls
-    
-    def update_lab_users_google_sheet (self, request):
-        """ Update active user list sheet on GoogleDocs """
-
-        import os
-        import sys
-
-        import pygsheets
-
-        from django_project.private_settings import LAB_MEMBERS_SHEET_ID
-
-        try:
-            # Log in to GoogleDocs
-            base_path = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..'))
-            gc = pygsheets.authorize(service_file=base_path + "/beyond_django/gdrive_access_credentials.json", no_cache=True)
-            # Open user list Google sheet
-            spreadsheet = gc.open_by_key(LAB_MEMBERS_SHEET_ID)
-            worksheet = spreadsheet.worksheet('title', 'Users')
-            # Get list of active users 
-            users = [[user.first_name, user.last_name, user.email, user.labuser.abbreviation_code] \
-                    for user in User.objects.filter(is_active=True).exclude(id__in=[1,6,20]).exclude(groups__name='Guest').order_by('last_name')]
-            # Update user list Google sheet
-            worksheet.clear(start=(2,1))
-            worksheet.update_cells(crange=(2,1), values=users, extend=True)
-            messages.success(request, 'The user list on GoogleDocs was updated successfully')
-        except Exception as err:
-            messages.error(request, 'The user list on GoogleDocs could not be updated. Error: ' + str(err))
-        return HttpResponseRedirect("../")
 
     def approval_summary(self, request):
         """ View to show all added and changed records from 
@@ -240,11 +249,21 @@ class MyAdminSite(admin.AdminSite):
         from django.shortcuts import render
         from django.apps import apps
 
-        if request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists(): # Only allow superusers and lab managers to access the page
+        if request.user.is_superuser or request.user.id == 6: # Only allow superusers and Helle to access the page
             data = []
+            order_model = apps.get_app_config('order_management').get_model("order")
+            added = order_model.objects.all().filter(created_approval_by_pi=False)
+            if added:
+                data.append(
+                    (str(order_model._meta.verbose_name_plural).capitalize(),
+                    str(order_model.__name__).lower(), 
+                    list(added.only('id','part_description','created_by')),
+                    [],
+                    str(order_model._meta.app_label)
+                    ))
             app = apps.get_app_config('collection_management')
             for model in app.models.values():
-                if not model._meta.verbose_name.lower().startswith(("historical", "arche", "antibody", "mammalian cell line document")): # Skip certain models within collection_management
+                if not model._meta.verbose_name.lower().startswith(("historical", "antibody", "mammalian cell line document")): # Skip certain models within collection_management
                     added = model.objects.all().filter(created_approval_by_pi=False)
                     changed = model.objects.all().filter(last_changed_approval_by_pi=False).exclude(id__in=added)
                     if added or changed:
@@ -252,7 +271,8 @@ class MyAdminSite(admin.AdminSite):
                             (str(model._meta.verbose_name_plural).capitalize(),
                             str(model.__name__).lower(), 
                             list(added.only('id','name','created_by')),
-                            list(changed.only('id','name','created_by'))
+                            list(changed.only('id','name','created_by')),
+                            str(model._meta.app_label),
                             ))
             context = {
             'user': request.user,
@@ -264,7 +284,7 @@ class MyAdminSite(admin.AdminSite):
             }
             return render(request, 'admin/approval_summary.html', context)
         else:
-            raise PermissionDenied
+            return messages.error(request, 'Nice try, you are not allowed to do that.')
             
     def approve_approval_summary(self, request):
         """ Approve all records that are pending approval """
@@ -273,21 +293,24 @@ class MyAdminSite(admin.AdminSite):
             try:
                 app = apps.get_app_config('collection_management')
                 for model in app.models.values():
-                    if not model._meta.verbose_name.lower().startswith(("historical", "arche", "antibody", "mammalian cell line document")): # Skip certain models within collection_management 
-                        model.objects.all().filter(created_approval_by_pi=False).update(created_approval_by_pi=True)
-                        model.objects.all().filter(last_changed_approval_by_pi=False).update(last_changed_approval_by_pi=True)
+                    if not model._meta.verbose_name.lower().startswith(("historical", "antibody", "mammalian cell line document")): # Skip certain models within collection_management 
+                        model.objects.all().filter(created_approval_by_pi=False).update(created_approval_by_pi=True, approval_by_pi_date_time = timezone.now())
+                        model.objects.all().filter(last_changed_approval_by_pi=False).update(last_changed_approval_by_pi=True, approval_by_pi_date_time = timezone.now())
+                order_model = apps.get_app_config('order_management').get_model("order")
+                order_model.objects.all().filter(created_approval_by_pi=False).update(created_approval_by_pi=True)
                 messages.success(request, 'The records have been approved')
                 return HttpResponseRedirect("/approval_summary/")
             except Exception as err:
                 messages.error(request, 'The records could not be approved. Error: ' + str(err))
                 return HttpResponseRedirect("/approval_summary/")
         else:
-            raise PermissionDenied
+            messages.error(request, 'Nice try, you are not allowed to do that.')
+            return HttpResponseRedirect("/approval_summary/")
 
     def my_orders_redirect(self, request):
         """ Redirect user to their My Orders page """
 
-        return HttpResponseRedirect(request.user.labuser.personal_order_list_url)
+        return HttpResponseRedirect('/order_management/order/?q=created_by.username+%3D+"{}"'.format(request.user.username))
 
     def uploads(self, request, *args, **kwargs):
         """Protected view for uploads/media files"""
@@ -296,11 +319,19 @@ class MyAdminSite(admin.AdminSite):
         from django.http import Http404
         import re
         from django.core.files.storage import default_storage
+        import mimetypes
         
         url_path = str(kwargs["url_path"])
         
         if default_storage.exists(url_path): # check if file exists
+            
             response = HttpResponse()
+            mimetype, encoding = mimetypes.guess_type(url_path)
+            mimetype = mimetype if mimetype else 'application/octet-stream'
+            response["Content-Type"] = mimetype
+            if encoding:
+                response["Content-Encoding"] = encoding
+            
             if url_path.startswith('collection_management'):
                 try:
                     app_name, model_name, file_name = url_path.split('/')
@@ -323,32 +354,18 @@ class MyAdminSite(admin.AdminSite):
                     file_ext = file_ext,
                     ).replace(',','')
 
-                if file_ext == 'pdf':
-                    response["Content-Type"] = "application/pdf"
+                if 'pdf' in mimetype.lower():
                     response["Content-Disposition"] = "inline; filename={download_file_name}".format(download_file_name=download_file_name)
                 else:
                     response["Content-Disposition"] = "attachment; filename={download_file_name}".format(download_file_name=download_file_name)
-                response['X-Accel-Redirect'] = "/secret/{url_path}".format(url_path=url_path)
             else:
-                try:
-                    file_name = url_path.split('/')[-1]
-                    file_ext = file_name.split('.')[-1].lower() 
-                    if file_ext == "png":
-                        response["Content-Type"] = "image/png"
-                    elif file_ext == "jpg":
-                        response["Content-Type"] = "image/jpeg"
-                    elif  file_ext == "jpeg":
-                        response["Content-Type"] = "image/jpeg"
-                    elif file_ext == "pdf":
-                        response["Content-Type"] = "application/pdf"
-                        response["Content-Disposition"] = "inline; filename={download_file_name}".format(download_file_name=file_name)
-                    elif file_ext == "upload":
-                        if ".pdf." in file_name:
-                            response["Content-Type"] = "application/pdf"
-                            response["Content-Disposition"] = "inline; filename={download_file_name}".format(download_file_name=file_name[:-7])
-                    response['X-Accel-Redirect'] = "/secret/{url_path}".format(url_path=url_path)
-                except:
-                    raise Http404
+                file_name = os.path.basename(url_path)
+                if 'pdf' in mimetype.lower():
+                    response["Content-Disposition"] = "inline; filename={download_file_name}".format(download_file_name=file_name)
+                else:
+                    response["Content-Disposition"] = "attachment; filename={download_file_name}".format(download_file_name=file_name)
+            
+            response['X-Accel-Redirect'] = "/secret/{url_path}".format(url_path=url_path)
             return response
         else:
             raise Http404      
@@ -421,12 +438,32 @@ class SaCerevisiaeStrainQLSchema(DjangoQLSchema):
             return [SearchFieldOptUsername(), SearchFieldOptLastname()]
         return super(SaCerevisiaeStrainQLSchema, self).get_fields(model)
 
-class SaCerevisiaeStrainPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryWithSymmaryAdmin, admin.ModelAdmin, Approval):
+class SaCerevisiaeStrainExportResource(resources.ModelResource):
+    """Defines a custom export resource class for SaCerevisiaeStrain"""
+    
+    class Meta:
+        model = collection_management_SaCerevisiaeStrain
+        fields = ('id', 'name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parental_strain',
+        'construction', 'modification', 'plasmids', 'selection', 'phenotype', 'background', 'received_from',
+        'us_e', 'note', 'reference', 'created_date_time', 'last_changed_date_time', 'created_by__username',)
+
+def export_sacerevisiaestrain(modeladmin, request, queryset):
+    """Export SaCerevisiaeStrain as xlsx"""
+
+    export_data = SaCerevisiaeStrainExportResource().export(queryset)
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.xlsx'.format(collection_management_SaCerevisiaeStrain.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
+    response.write(export_data.xlsx)
+    return response
+export_sacerevisiaestrain.short_description = "Export selected strains as xlsx"
+
+class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelAdmin, Approval):
     list_display = ('id', 'name', 'mating_type','created_by', 'approval')
     list_display_links = ('id', )
     list_per_page = 25
     formfield_overrides = {models.CharField: {'widget': TextInput(attrs={'size':'93'})},} # Make TextInput fields wider
     djangoql_schema = SaCerevisiaeStrainQLSchema
+    actions = [export_sacerevisiaestrain]
     
     def save_model(self, request, obj, form, change):
         '''Override default save_model to limit a user's ability to save a record
@@ -438,7 +475,8 @@ class SaCerevisiaeStrainPage(ExportActionModelAdmin, DjangoQLSearchMixin, Simple
             obj.created_by = request.user
             obj.save()
         else:
-            if request.user.is_superuser or request.user == collection_management_SaCerevisiaeStrain.objects.get(pk=obj.pk).created_by or request.user.groups.filter(name='Lab manager').exists():
+            saved_obj = collection_management_SaCerevisiaeStrain.objects.get(pk=obj.pk)
+            if request.user.is_superuser or request.user == saved_obj.created_by or request.user.groups.filter(name='Lab manager').exists() or saved_obj.created_by.groups.filter(name='Past member').exists() or saved_obj.created_by.id == 6:
                 obj.last_changed_approval_by_pi = False
                 obj.save()
             else:
@@ -452,13 +490,19 @@ class SaCerevisiaeStrainPage(ExportActionModelAdmin, DjangoQLSearchMixin, Simple
         because their set by Django itself'''
         
         if obj:
-            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
-                return ['name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parental_strain',
-                'construction', 'modification', 'plasmids', 'selection', 'phenotype', 'background', 'received_from',
-                'us_e', 'note', 'reference', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
-                'last_changed_approval_by_pi', 'created_by',]
-            else:
+            if (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
                 return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
+            else:
+                if obj.created_by.groups.filter(name='Past member') or obj.created_by.id == 6:
+                    return ['name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parental_strain',
+                'construction', 'modification', 'plasmids', 'selection', 'phenotype', 'background', 'received_from',
+                'us_e', 'reference', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
+                'last_changed_approval_by_pi', 'created_by',]
+                else:
+                    return ['name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parental_strain',
+                    'construction', 'modification', 'plasmids', 'selection', 'phenotype', 'background', 'received_from',
+                    'us_e', 'note', 'reference', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
+                    'last_changed_approval_by_pi', 'created_by',]
         else:
             return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
     
@@ -488,14 +532,14 @@ class SaCerevisiaeStrainPage(ExportActionModelAdmin, DjangoQLSearchMixin, Simple
         if object_id:
             obj = collection_management_SaCerevisiaeStrain.objects.get(pk=object_id)
             if obj:
-                if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
+                if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by.groups.filter(name='Past member'))  or request.user.groups.filter(name='Guest').exists():
                     extra_context['show_submit_line'] = False
         return super(SaCerevisiaeStrainPage, self).changeform_view(request, object_id, extra_context=extra_context)
 
 my_admin_site.register(collection_management_SaCerevisiaeStrain, SaCerevisiaeStrainPage)
 
 #################################################
-#                PLASMID PAGES                  #
+#               HU PLASMID PAGES                #
 #################################################
 
 from .models import HuPlasmid as collection_management_HuPlasmid
@@ -515,32 +559,94 @@ class HuPlasmidQLSchema(DjangoQLSchema):
             return [SearchFieldOptUsername(), SearchFieldOptLastname()]
         return super(HuPlasmidQLSchema, self).get_fields(model)
 
-class HuPlasmidPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryWithSymmaryAdmin, admin.ModelAdmin, Approval):
+class HuPlasmidExportResource(resources.ModelResource):
+    """Defines a custom export resource class for HuPlasmid"""
+    
+    class Meta:
+        model = collection_management_HuPlasmid
+        fields = ('id', 'name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
+                'reference', 'plasmid_map', 'created_date_time', 'last_changed_date_time', 'created_by__username',)
+
+def export_huplasmid(modeladmin, request, queryset):
+    """Export HuPlasmid as xlsx"""
+
+    export_data = HuPlasmidExportResource().export(queryset)
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.xlsx'.format(collection_management_HuPlasmid.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
+    response.write(export_data.xlsx)
+    return response
+export_huplasmid.short_description = "Export selected plasmids as xlsx"
+
+class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelAdmin, Approval):
     list_display = ('id', 'name', 'selection', 'get_plasmidmap_short_name', 'created_by', 'approval')
     list_display_links = ('id', )
     list_per_page = 25
     formfield_overrides = {models.CharField: {'widget': TextInput(attrs={'size':'93'})},} # Make TextInput fields wider
     djangoql_schema = HuPlasmidQLSchema
+    actions = [export_huplasmid]
     
     def save_model(self, request, obj, form, change):
         '''Override default save_model to limit a user's ability to save a record
         Superusers and lab managers can change all records
         Regular users can change only their own records
-        Guests cannot change any record'''
+        Guests cannot change any record.
+        It also renames a plasmid map to pNZ{obj.id}_{date_created}_{time_created}.ext
+        and whenever possible creates a plasmid map preview with snapegene server'''
         
+        rename_and_preview = False
+
         if obj.pk == None:
             obj.created_by = request.user
-            obj.save()
-        else:
-            if request.user.is_superuser or request.user == collection_management_HuPlasmid.objects.get(pk=obj.pk).created_by or request.user.groups.filter(name='Lab manager').exists():
-                obj.last_changed_approval_by_pi = False
+            if obj.plasmid_map:
+                rename_and_preview = True
+                obj.save_without_historical_record()
+            else:
                 obj.save()
+        else:
+            old_obj = collection_management_HuPlasmid.objects.get(pk=obj.pk)
+            if request.user.is_superuser or request.user == old_obj.created_by or request.user.groups.filter(name='Lab manager').exists():
+                obj.last_changed_approval_by_pi = False
+                if obj.plasmid_map and obj.plasmid_map != old_obj.plasmid_map:
+                    rename_and_preview = True
+                    obj.save_without_historical_record()
+                else:
+                    obj.save()
             else:
                 if obj.created_by.id == 6: # Allow saving object, if record belongs to Helle (user id = 6)
                     obj.last_changed_approval_by_pi = False
-                    obj.save()
+                    if obj.plasmid_map and obj.plasmid_map != old_obj.plasmid_map:
+                        rename_and_preview = True
+                        obj.save_without_historical_record()
+                    else:
+                        obj.save()
                 else:
                     raise PermissionDenied
+        
+        # Rename plasmid map
+        if rename_and_preview:
+            plasmid_map_dir_path = os.path.join(MEDIA_ROOT, 'collection_management/huplasmid/')
+            old_file_name_abs_path = os.path.join(MEDIA_ROOT, obj.plasmid_map.name)
+            old_file_name, ext = os.path.splitext(os.path.basename(old_file_name_abs_path)) 
+            new_file_name = os.path.join(
+                'collection_management/huplasmid/', 
+                "pHU{}_{}_{}{}".format(obj.id, time.strftime("%Y%m%d"), time.strftime("%H%M%S"), ext.lower()))
+            new_file_name_abs_path = os.path.join(MEDIA_ROOT, new_file_name)
+            
+            if not os.path.exists(plasmid_map_dir_path):
+                os.makedirs(plasmid_map_dir_path) 
+            
+            os.rename(
+                old_file_name_abs_path, 
+                new_file_name_abs_path)
+            
+            obj.plasmid_map.name = new_file_name
+            obj.save()
+            
+            # For plasmid map, detect common features and save as png using snapgene server
+            try:
+                snapgene_plasmid_map_preview(new_file_name_abs_path, "pHU", obj.id, obj.name)
+            except:
+                messages.warning(request, 'Could not detect common features or save map preview')
     
     def get_readonly_fields(self, request, obj=None):
         '''Override default get_readonly_fields to define user-specific read-only fields
@@ -596,11 +702,11 @@ class HuPlasmidPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryWi
         '''This function allows you to define a custom field for the list view to
         be defined in list_display as the name of the function, e.g. in this case
         list_display = ('id', 'name', 'selection', 'get_plasmidmap_short_name','created_by',)'''
+        
         if instance.plasmid_map:
-            return '<a class="image-link" href="{0}">View</a> | <a href="{1}">Download</a>'.format(str(instance.plasmid_map.url.replace("collection_management", "plasmid_map_png").replace(".dna", ".png")),str(instance.plasmid_map.url))
+            return mark_safe('<a class="image-link" href="{0}">View</a> | <a href="{1}">Download</a>'.format(str(instance.plasmid_map.url.replace("collection_management", "plasmid_map_png").replace(".dna", ".png")),str(instance.plasmid_map.url)))
         else:
             return ''
-    get_plasmidmap_short_name.allow_tags = True
     get_plasmidmap_short_name.short_description = 'Plasmid map'
 
     class Media:
@@ -630,18 +736,38 @@ class OligoQLSchema(DjangoQLSchema):
             return [SearchFieldOptUsername(), SearchFieldOptLastname()]
         return super(OligoQLSchema, self).get_fields(model)
 
-class OligoPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryWithSymmaryAdmin, admin.ModelAdmin, Approval):
+class OligoExportResource(resources.ModelResource):
+    """Defines a custom export resource class for Oligo"""
+    
+    class Meta:
+        model = collection_management_Oligo
+        fields = ('id', 'name','sequence', 'us_e', 'gene', 'restriction_site', 'description', 'comment',
+        'created_date_time', 'last_changed_date_time', 'created_by__username',)
+
+def export_oligo(modeladmin, request, queryset):
+    """Export Oligo as xlsx"""
+
+    export_data = OligoExportResource().export(queryset)
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.xlsx'.format(collection_management_Oligo.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
+    response.write(export_data.xlsx)
+    return response
+export_oligo.short_description = "Export selected oligos as xlsx"
+
+class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelAdmin, Approval):
     list_display = ('id', 'name','get_oligo_short_sequence', 'restriction_site','created_by', 'approval')
     list_display_links = ('id',)
     list_per_page = 25
     formfield_overrides = {
     models.CharField: {'widget': TextInput(attrs={'size':'93'})},} # Make TextInput fields wider
     djangoql_schema = OligoQLSchema
+    actions = [export_oligo]
 
     def get_oligo_short_sequence(self, instance):
         '''This function allows you to define a custom field for the list view to
         be defined in list_display as the name of the function, e.g. in this case
         list_display = ('id', 'name', )'''
+        
         if instance.sequence:
             if len(instance.sequence) <= 75:
                 return instance.sequence
@@ -730,12 +856,31 @@ class ScPombeStrainQLSchema(DjangoQLSchema):
             return [SearchFieldOptUsername(), SearchFieldOptLastname()]
         return super(ScPombeStrainQLSchema, self).get_fields(model)
 
-class ScPombeStrainPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryWithSymmaryAdmin, admin.ModelAdmin, Approval):
+class ScPombeStrainExportResource(resources.ModelResource):
+    """Defines a custom export resource class for ScPombeStrain"""
+    
+    class Meta:
+        model = collection_management_ScPombeStrain
+        fields = ('id', 'box_number', 'parental_strain', 'mating_type', 'auxotrophic_marker', 'name',
+        'phenotype', 'received_from', 'comment', 'created_date_time', 'last_changed_date_time', 'created_by__username')
+
+def export_scpombestrain(modeladmin, request, queryset):
+    """Export ScPombeStrain as xlsx"""
+
+    export_data = ScPombeStrainExportResource().export(queryset)
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.xlsx'.format(collection_management_ScPombeStrain.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
+    response.write(export_data.xlsx)
+    return response
+export_scpombestrain.short_description = "Export selected strains as xlsx"
+
+class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelAdmin, Approval):
     list_display = ('id', 'name', 'auxotrophic_marker', 'mating_type', 'approval',)
     list_display_links = ('id', )
     list_per_page = 25
     formfield_overrides = {models.CharField: {'widget': TextInput(attrs={'size':'93'})},}
     djangoql_schema = ScPombeStrainQLSchema
+    actions = [export_scpombestrain]
 
     def save_model(self, request, obj, form, change):
         '''Override default save_model to limit a user's ability to save a record
@@ -821,38 +966,86 @@ class NzPlasmidQLSchema(DjangoQLSchema):
             return [SearchFieldOptUsername(), SearchFieldOptLastname()]
         return super(NzPlasmidQLSchema, self).get_fields(model)
 
-# class NzPlasmidCustomForm(forms.ModelForm):
-#     class Meta:
-#         model = collection_management_NzPlasmid
-#         fields = '__all__'
+class NzPlasmidExportResource(resources.ModelResource):
+    """Defines a custom export resource class for NzPlasmid"""
+    
+    class Meta:
+        model = collection_management_NzPlasmid
+        fields = ('id', 'name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
+                'reference', 'plasmid_map', 'created_date_time', 'last_changed_date_time', 'created_by__username',)
 
-#     def __init__(self, *args, **kwargs):
-#         super(NzPlasmidCustomForm, self).__init__(*args, **kwargs)
-#         self.fields['created_by'].queryset = self.fields['created_by'].queryset.exclude(id__in=[1,20]).order_by("last_name")                                            
+def export_nzplasmid(modeladmin, request, queryset):
+    """Export NzPlasmid as xlsx"""
 
-class NzPlasmidPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryWithSymmaryAdmin, admin.ModelAdmin, Approval):
+    export_data = NzPlasmidExportResource().export(queryset)
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.xlsx'.format(collection_management_NzPlasmid.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
+    response.write(export_data.xlsx)
+    return response
+export_nzplasmid.short_description = "Export selected plasmids as xlsx"
+
+class NzPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelAdmin, Approval):
     list_display = ('id', 'name', 'selection', 'get_plasmidmap_short_name','created_by', 'approval')
     list_display_links = ('id', )
     list_per_page = 25
     formfield_overrides = {models.CharField: {'widget': TextInput(attrs={'size':'93'})},}
     djangoql_schema = NzPlasmidQLSchema
-    # form = NzPlasmidCustomForm
+    actions = [export_nzplasmid]
     
     def save_model(self, request, obj, form, change):
         '''Override default save_model to limit a user's ability to save a record
         Superusers and lab managers can change all records
         Regular users can change only their own records
-        Guests cannot change any record'''
+        Guests cannot change any record.
+        It also renames a plasmid map to pNZ{obj.id}_{date_created}_{time_created}.ext
+        and whenever possible creates a plasmid map preview with snapegene server'''
+
+        rename_and_preview = False
 
         if obj.pk == None:
             obj.created_by = request.user
-            obj.save()
-        else:
-            if request.user.is_superuser or request.user == collection_management_NzPlasmid.objects.get(pk=obj.pk).created_by or request.user.groups.filter(name='Lab manager').exists():
-                obj.last_changed_approval_by_pi = False
+            if obj.plasmid_map:
+                rename_and_preview = True
+                obj.save_without_historical_record()
+            else:
                 obj.save()
+        else:
+            old_obj = collection_management_NzPlasmid.objects.get(pk=obj.pk)
+            if request.user.is_superuser or request.user == old_obj.created_by or request.user.groups.filter(name='Lab manager').exists():
+                obj.last_changed_approval_by_pi = False
+                if obj.plasmid_map and obj.plasmid_map != old_obj.plasmid_map:
+                    rename_and_preview = True
+                    obj.save_without_historical_record()
+                else:
+                    obj.save()
             else:
                 raise PermissionDenied
+        
+        # Rename plasmid map
+        if rename_and_preview:
+            plasmid_map_dir_path = os.path.join(MEDIA_ROOT, 'collection_management/nzplasmid/')
+            old_file_name_abs_path = os.path.join(MEDIA_ROOT, obj.plasmid_map.name)
+            old_file_name, ext = os.path.splitext(os.path.basename(old_file_name_abs_path)) 
+            new_file_name = os.path.join(
+                'collection_management/nzplasmid/', 
+                "pNZ{}_{}_{}{}".format(obj.id, time.strftime("%Y%m%d"), time.strftime("%H%M%S"), ext.lower()))
+            new_file_name_abs_path = os.path.join(MEDIA_ROOT, new_file_name)
+            
+            if not os.path.exists(plasmid_map_dir_path):
+                os.makedirs(plasmid_map_dir_path) 
+            
+            os.rename(
+                old_file_name_abs_path, 
+                new_file_name_abs_path)
+            
+            obj.plasmid_map.name = new_file_name
+            obj.save()
+            
+            # For plasmid map, detect common features and save as png using snapgene server
+            try:
+                snapgene_plasmid_map_preview(new_file_name_abs_path, "pNZ", obj.id, obj.name)
+            except:
+                messages.warning(request, 'Could not detect common features or save map preview')
                 
     def get_readonly_fields(self, request, obj=None):
         '''Override default get_readonly_fields to define user-specific read-only fields
@@ -904,10 +1097,9 @@ class NzPlasmidPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryWi
         be defined in list_display as the name of the function, e.g. in this case
         list_display = ('id', 'name', 'selection', 'get_plasmidmap_short_name','created_by',)'''
         if instance.plasmid_map:
-            return '<a class="image-link" href="{0}">View</a> | <a href="{1}">Download</a>'.format(str(instance.plasmid_map.url.replace("collection_management", "plasmid_map_png").replace(".dna", ".png")),str(instance.plasmid_map.url))
+            return mark_safe('<a class="image-link" href="{0}">View</a> | <a href="{1}">Download</a>'.format(str(instance.plasmid_map.url.replace("collection_management", "plasmid_map_png").replace(".dna", ".png")),str(instance.plasmid_map.url)))
         else:
             return ''
-    get_plasmidmap_short_name.allow_tags = True
     get_plasmidmap_short_name.short_description = 'Plasmid map'
 
     class Media:
@@ -937,12 +1129,31 @@ class EColiStrainQLSchema(DjangoQLSchema):
             return [SearchFieldOptUsername(), SearchFieldOptLastname()]
         return super(EColiStrainQLSchema, self).get_fields(model)
 
-class EColiStrainPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryWithSymmaryAdmin, admin.ModelAdmin, Approval):
+class EColiStrainExportResource(resources.ModelResource):
+    """Defines a custom export resource class for EColiStrain"""
+    
+    class Meta:
+        model = collection_management_EColiStrain
+        fields = ('id' ,'name', 'resistance', 'genotype', 'supplier', 'us_e', 'purpose', 'note',
+                'created_date_time', 'last_changed_date_time', 'created_by__username',)
+
+def export_ecolistrain(modeladmin, request, queryset):
+    """Export EColiStrain as xlsx"""
+
+    export_data = EColiStrainExportResource().export(queryset)
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.xlsx'.format(collection_management_EColiStrain.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
+    response.write(export_data.xlsx)
+    return response
+export_ecolistrain.short_description = "Export selected strains as xlsx"
+
+class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelAdmin, Approval):
     list_display = ('id', 'name', 'resistance', 'us_e','purpose', 'approval')
     list_display_links = ('id', )
     list_per_page = 25
     formfield_overrides = {models.CharField: {'widget': TextInput(attrs={'size':'93'})},}
     djangoql_schema = EColiStrainQLSchema
+    actions = [export_ecolistrain]
     
     def save_model(self, request, obj, form, change):
         '''Override default save_model to limit a user's ability to save a record
@@ -1054,8 +1265,10 @@ class MammalianLinePageDoc(admin.ModelAdmin):
 my_admin_site.register(collection_management_MammalianLineDoc, MammalianLinePageDoc)
 
 class MammalianLineDocInline(admin.TabularInline):
+    """Inline to view existing mammalian line documents"""
+
     model = collection_management_MammalianLineDoc
-    verbose_name_plural = "Exsiting docs"
+    verbose_name_plural = "Existing docs"
     extra = 0
     fields = ['typ_e', 'date_of_test', 'get_doc_short_name',]
     readonly_fields = ['get_doc_short_name', 'typ_e', 'date_of_test', ]
@@ -1068,13 +1281,14 @@ class MammalianLineDocInline(admin.TabularInline):
         be defined in list_display as the name of the function, e.g. in this case
         list_display = ('id', 'name', 'selection', 'get_plasmidmap_short_name','created_by',)'''
         if instance.name:
-            return '<a href="{}">View</a>'.format(str(instance.name.url))
+            return mark_safe('<a href="{}">View</a>'.format(str(instance.name.url)))
         else:
             return ''
-    get_doc_short_name.allow_tags = True
     get_doc_short_name.short_description = 'Document'
 
 class AddMammalianLineDocInline(admin.TabularInline):
+    """Inline to add new mammalian line documents"""
+    
     model = collection_management_MammalianLineDoc
     verbose_name_plural = "New docs"
     extra = 0
@@ -1086,9 +1300,7 @@ class AddMammalianLineDocInline(admin.TabularInline):
     def get_readonly_fields(self, request, obj=None):
         '''Override default get_readonly_fields to define user-specific read-only fields
         If a user is not a superuser, lab manager or the user who created a record
-        return all fields as read-only 
-        'created_date_time' and 'last_changed_date_time' fields must always be read-only
-        because their set by Django itself'''
+        return all fields as read-only'''
 
         if obj:
             if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == collection_management_MammalianLine.objects.get(pk=obj.pk).created_by) or request.user.groups.filter(name='Guest').exists():
@@ -1117,13 +1329,33 @@ class MammalianLineQLSchema(DjangoQLSchema):
             return [SearchFieldOptUsername(), SearchFieldOptLastname()]
         return super(MammalianLineQLSchema, self).get_fields(model)
 
-class MammalianLinePage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryWithSymmaryAdmin, admin.ModelAdmin, Approval):
+class MammalianLineExportResource(resources.ModelResource):
+    """Defines a custom export resource class for MammalianLine"""
+    
+    class Meta:
+        model = collection_management_MammalianLine
+        fields = ('id','name', 'box_name', 'alternative_name', 'parental_line', 'organism', 'cell_type_tissue', 
+                'culture_type', 'growth_condition', 'freezing_medium', 'received_from', 'description_comment', 
+                'created_date_time', 'last_changed_date_time', 'created_by__username',)
+
+def export_mammalianline(modeladmin, request, queryset):
+    """Export MammalianLine as xlsx"""
+
+    export_data = MammalianLineExportResource().export(queryset)
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.xlsx'.format(collection_management_MammalianLine.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
+    response.write(export_data.xlsx)
+    return response
+export_mammalianline.short_description = "Export selected cell lines as xlsx"
+
+class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelAdmin, Approval):
     list_display = ('id', 'name', 'box_name', 'created_by', 'approval')
     list_display_links = ('id', )
     list_per_page = 25
     formfield_overrides = {models.CharField: {'widget': TextInput(attrs={'size':'93'})},}
     djangoql_schema = MammalianLineQLSchema
     inlines = [MammalianLineDocInline, AddMammalianLineDocInline]
+    actions = [export_mammalianline]
     
     def save_model(self, request, obj, form, change):
         '''Override default save_model to limit a user's ability to save a record
@@ -1174,6 +1406,9 @@ class MammalianLinePage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHisto
         return super(MammalianLinePage,self).change_view(request,object_id)
 
     def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
+        """Override default changeform_view to hide Save buttons when certain conditions (same as
+        those in get_readonly_fields method) are met"""
+
         extra_context = extra_context or {}
         extra_context['show_submit_line'] = True
         if object_id:
@@ -1190,14 +1425,17 @@ class MammalianLinePage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHisto
         
         if obj:
             for inline in self.get_inline_instances(request, obj):
-                if inline.verbose_name_plural == 'Exsiting docs':
+                if inline.verbose_name_plural == 'Existing docs':
                     yield inline.get_formset(request, obj), inline
                 else:
                     if request.user == collection_management_MammalianLine.objects.get(pk=obj.pk).created_by or request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists():
                         yield inline.get_formset(request, obj), inline
         else:
             for inline in self.get_inline_instances(request, obj):
-                yield inline.get_formset(request, obj), inline
+                if inline.verbose_name_plural == 'Existing docs':
+                    continue
+                else:
+                    yield inline.get_formset(request, obj), inline
 
 my_admin_site.register(collection_management_MammalianLine, MammalianLinePage)
 
@@ -1217,37 +1455,84 @@ class AntibodyQLSchema(DjangoQLSchema):
         
         if model == collection_management_Antibody:
             return ['id', 'name', 'species_isotype', 'clone', 'received_from', 'catalogue_number', 'info_sheet',
-                'l_ocation', 'a_pplication', 'description_comment','info_sheet', 'created_by', 'arche_noah_choice',]
+                'l_ocation', 'a_pplication', 'description_comment','info_sheet', 'created_by', ]
         elif model == User:
             return [SearchFieldOptUsername(), SearchFieldOptLastname()]
         return super(AntibodyQLSchema, self).get_fields(model)
-        
-class AntibodyPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryWithSymmaryAdmin, admin.ModelAdmin):
-    list_display = ('id', 'name', 'catalogue_number', 'species_isotype', 'clone', 'l_ocation', 'get_sheet_short_name')
+
+class AntibodyExportResource(resources.ModelResource):
+    """Defines a custom export resource class for Antibody"""
+    
+    class Meta:
+        model = collection_management_Antibody
+        fields = ('id', 'name', 'species_isotype', 'clone', 'received_from', 'catalogue_number', 'l_ocation', 'a_pplication',
+                'description_comment', 'info_sheet','created_date_time','last_changed_date_time',)
+
+def export_antibody(modeladmin, request, queryset):
+    """Export Antibody as xlsx"""
+
+    export_data = AntibodyExportResource().export(queryset)
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.xlsx'.format(collection_management_Antibody.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
+    response.write(export_data.xlsx)
+    return response
+export_antibody.short_description = "Export selected antibodies as xlsx"
+
+class AntibodyPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelAdmin):
+    list_display = ('id', 'name', 'catalogue_number', 'received_from', 'species_isotype', 'clone', 'l_ocation', 'get_sheet_short_name')
     list_display_links = ('id', )
     list_per_page = 25
-    #ordering = ('name',)
     formfield_overrides = {models.CharField: {'widget': TextInput(attrs={'size':'93'})},}
     djangoql_schema = AntibodyQLSchema
+    actions = [export_antibody]
     
     def save_model(self, request, obj, form, change):
         '''Override default save_model to limit a user's ability to save a record
         Superusers and lab managers can change all records
         Regular users can change only their own records
-        Guests cannot change any record'''
+        Guests cannot change any record
+        Also automatically renames info_sheet
+        '''
+
+        rename_doc = False
 
         if obj.pk == None:
             obj.created_by = request.user
-            obj.save()
+            if obj.info_sheet:
+                rename_doc = True
+                obj.save_without_historical_record()
+            else:
+                obj.save()
         else:
             if request.user.groups.filter(name='Guest').exists():
                 raise PermissionDenied
+            old_obj = collection_management_Antibody.objects.get(pk=obj.pk)
+            if obj.info_sheet and obj.info_sheet != old_obj.info_sheet:
+                rename_doc = True
+                obj.save_without_historical_record()
             else:
-                if obj.arche_noah_choice and not collection_management_ArcheNoahAnimal.objects.filter(object_id=obj.id):
-                    arche_noah_obj = collection_management_ArcheNoahAnimal(content_object=obj, object_id=obj.id)
-                    arche_noah_obj.save()
                 obj.save()
-    
+
+        # Rename info_sheet
+        if rename_doc:
+            doc_dir_path = os.path.join(MEDIA_ROOT, 'collection_management/antibody/')
+            old_file_name_abs_path = os.path.join(MEDIA_ROOT, obj.info_sheet.name)
+            old_file_name, ext = os.path.splitext(os.path.basename(old_file_name_abs_path)) 
+            new_file_name = os.path.join(
+                'collection_management/antibody/',
+                "abHU{}_f{}".format(obj.id, ext.lower()))
+            new_file_name_abs_path = os.path.join(MEDIA_ROOT, new_file_name)
+            
+            if not os.path.exists(doc_dir_path):
+                os.makedirs(doc_dir_path) 
+            
+            os.rename(
+                old_file_name_abs_path, 
+                new_file_name_abs_path)
+            
+            obj.info_sheet.name = new_file_name
+            obj.save()
+        
     def get_readonly_fields(self, request, obj=None):
         '''Override default get_readonly_fields to define user-specific read-only fields
         If a user is not a superuser, lab manager or the user who created a record
@@ -1259,7 +1544,7 @@ class AntibodyPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryWit
             if request.user.groups.filter(name='Guest').exists():
                 return ['name', 'species_isotype', 'clone', 'received_from', 'catalogue_number', 'info_sheet',
                 'l_ocation', 'a_pplication', 'description_comment','info_sheet', 'created_by', 'created_date_time',
-                'last_changed_date_time', 'arche_noah_choice',]
+                'last_changed_date_time',]
             else:
                 return ['created_date_time', 'last_changed_date_time',]
         else:
@@ -1269,17 +1554,20 @@ class AntibodyPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryWit
         '''Override default add_view to show only desired fields'''
 
         self.fields = ('name', 'species_isotype', 'clone', 'received_from', 'catalogue_number', 'l_ocation', 'a_pplication',
-                'description_comment', 'info_sheet', 'arche_noah_choice',)
+                'description_comment', 'info_sheet', )
         return super(AntibodyPage,self).add_view(request)
     
     def change_view(self,request,object_id,extra_content=None):
         '''Override default change_view to show only desired fields'''
 
         self.fields = ('name', 'species_isotype', 'clone', 'received_from', 'catalogue_number', 'l_ocation', 'a_pplication',
-                'description_comment', 'info_sheet','created_date_time','last_changed_date_time', 'arche_noah_choice',)
+                'description_comment', 'info_sheet','created_date_time','last_changed_date_time', )
         return super(AntibodyPage,self).change_view(request,object_id)
 
     def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
+        """Override default changeform_view to hide Save buttons when certain conditions (same as
+        those in get_readonly_fields method) are met"""
+
         extra_context = extra_context or {}
         extra_context['show_submit_line'] = True
         if object_id:
@@ -1295,59 +1583,37 @@ class AntibodyPage(ExportActionModelAdmin, DjangoQLSearchMixin, SimpleHistoryWit
         such that the text shown for a link is always View'''
 
         if instance.info_sheet:
-            return '<a href="{}">View</a>'.format(str(instance.info_sheet.url))
+            return mark_safe('<a href="{}">View</a>'.format(str(instance.info_sheet.url)))
         else:
             return ''
-    get_sheet_short_name.allow_tags = True # needed to show output of get_sheet_short_name as html and not simple text
     get_sheet_short_name.short_description = 'Info Sheet'
 
-    # Add custom js (or css) files to all pages that belong to this model
-    class Media:
-        js = ('admin/js/vendor/jquery/jquery.js',
-        'admin/js/admin/ChangeDownloadLink.js',)
-
 my_admin_site.register(collection_management_Antibody, AntibodyPage)
-
-#################################################
-#              ARCHE NOAH PAGES                 #
-#################################################
-
-class ArcheNoahAnimalPage(admin.ModelAdmin):
-    list_display = ('content_type', 'object_id',)
-    list_display_links = ('object_id', )
-    ordering = ('content_type', 'object_id',)
-    list_per_page = 25
-    
-my_admin_site.register(collection_management_ArcheNoahAnimal, ArcheNoahAnimalPage)
-
-#################################################
-#          LABORATORY MANAGEMENT PAGES          #
-#################################################
-
-from laboratory_management.models import Category as laboratory_management_Category
-from laboratory_management.models import Url as laboratory_management_Url
-
-from laboratory_management.admin import CategoryPage as laboratory_management_CategoryPage
-from laboratory_management.admin import UrlPage as laboratory_management_UrlPage
-
-my_admin_site.register(laboratory_management_Category, laboratory_management_CategoryPage)
-my_admin_site.register(laboratory_management_Url, laboratory_management_UrlPage)
 
 #################################################
 #             ORDER MANAGEMENT PAGES            #
 #################################################
 
-from order_management.models import CostUnit as order_CostUnit
-from order_management.models import Location as order_Location
+from order_management.models import CostUnit as order_management_CostUnit
+from order_management.models import Location as order_management_Location
 from order_management.models import Order as order_management_Order
+from order_management.models import OrderExtraDoc as order_management_OrderExtraDoc
+from order_management.models import MsdsForm as order_management_MsdsForm
 
-from order_management.admin import CostUnitPage as laboratory_management_CostUnitPage
-from order_management.admin import LocationPage as laboratory_management_LocationPage
-from order_management.admin import OrderPage as laboratory_management_OrderPage
+from order_management.admin import SearchFieldOptLocation, SearchFieldOptCostUnit, SearchFieldOptSupplier, SearchFieldOptPartDescription, OrderQLSchema
+from order_management.admin import OrderExtraDocInline
+from order_management.admin import AddOrderExtraDocInline
+from order_management.admin import CostUnitPage as order_management_CostUnitPage
+from order_management.admin import LocationPage as order_management_LocationPage
+from order_management.admin import OrderPage as order_management_OrderPage
+from order_management.admin import MsdsFormPage as order_management_MsdsFormPage
+from order_management.admin import OrderExtraDocPage as order_management_OrderExtraDocPage
 
-my_admin_site.register(order_management_Order, laboratory_management_OrderPage)
-my_admin_site.register(order_CostUnit, laboratory_management_CostUnitPage)
-my_admin_site.register(order_Location, laboratory_management_LocationPage)
+my_admin_site.register(order_management_Order, order_management_OrderPage)
+my_admin_site.register(order_management_CostUnit, order_management_CostUnitPage)
+my_admin_site.register(order_management_Location, order_management_LocationPage)
+my_admin_site.register(order_management_MsdsForm, order_management_MsdsFormPage)
+my_admin_site.register(order_management_OrderExtraDoc, order_management_OrderExtraDocPage)
 
 #################################################
 #            CUSTOM USER/GROUP PAGES            #
@@ -1364,17 +1630,14 @@ my_admin_site.unregister(User)
 my_admin_site.register(User, user_management_LabUserAdmin)
 
 #################################################
-#                PROTOCOL PAGES                 #
+#               BACKGROUND TASKS                #
 #################################################
 
-from pages.models import Protocol as pages_Protocol
-from pages.models import Recipe as pages_Recipe
-from pages.models import Tag as pages_Tag
+from background_task.models import Task
+from background_task.models_completed import CompletedTask
 
-from pages.admin import ProtocolPage as pages_ProtocolPage
-from pages.admin import RecipePage as pages_RecipePage
-from pages.admin import TagPage as pages_TagPage
+from background_task.admin import TaskAdmin
+from background_task.admin import CompletedTaskAdmin
 
-my_admin_site.register(pages_Protocol, pages_ProtocolPage)
-my_admin_site.register(pages_Recipe, pages_RecipePage)
-my_admin_site.register(pages_Tag, pages_TagPage)
+my_admin_site.register(Task, TaskAdmin)
+my_admin_site.register(CompletedTask, CompletedTaskAdmin)

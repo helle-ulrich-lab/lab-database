@@ -2,9 +2,23 @@
 {% load i18n static %}
 
 {% load app_filters %} 
-{% load homepage_urls %} 
 
-{% block extrastyle %}{{ block.super }}<link rel="stylesheet" type="text/css" href="{% static "admin/css/dashboard.css" %}" />{% endblock %}
+
+{% block extrastyle %}{{ block.super }}
+<link rel="stylesheet" type="text/css" href="{% static "admin/css/dashboard.css" %}" />
+<style type="text/css">
+.blinking{
+	animation:blinkingText 1s 3;
+}
+@keyframes blinkingText{
+	0%{		color: pink; font-weight: bold;	}
+	49%{	color: transparent;	}
+	50%{	color: transparent;	}
+	99%{	color:transparent;	}
+	100%{	color: pink; font-weight: bold;	}
+}
+</style>
+{% endblock %}
 
 {% block coltype %}colMS{% endblock %}
 
@@ -18,7 +32,7 @@
 {% url 'admin:index' as admin_index_url %}
 
 {% if request.path|stringformat:"s" == admin_index_url and not user|has_group:"Guest" %}
-    {% if user|has_group:"Lab manager" %}
+    {% if user.is_superuser or user.id == 6 %}
     <ul class="object-tools">
     <li class >
         <a style="background-color:#79aec8;" 
@@ -30,122 +44,38 @@
     {% endif %}
 {% endif %}
 
+
 {% if app_list %}
     {% for app in app_list %}
-        {% if app.name == "Laboratory management" or app.name == "Order management" %}
-        {% else %}
-            <div class="app-{{ app.app_label }} module">
-                <table>
-                <caption>
-                    <a href="{{ app.app_url }}" class="section" title="{% blocktrans with name=app.name %}Models in the {{ name }} application{% endblocktrans %}">{{ app.name }}</a>
-                </caption>
-                {% for model in app.models %}
-                    <tr class="model-{{ model.object_name|lower }}">
-                    {% if model.admin_url %}
-                        <th scope="row"><a href="{{ model.admin_url }}">{{ model.name }}</a></th>
-                    {% else %}
-                        <th scope="row">{{ model.name }}</th>
-                    {% endif %}
-    
-                    {% if model.add_url %}
-                        <td><a href="{{ model.add_url }}" class="addlink">{% trans 'Add' %}</a></td>
-                    {% else %}
-                        <td>&nbsp;</td>
-                    {% endif %}
-    
-                    {% if model.admin_url %}
-                        <td><a href="{{ model.admin_url }}" class="changelink">{% trans 'Change' %}</a></td>
-                    {% else %}
-                        <td>&nbsp;</td>
-                    {% endif %}
-                    </tr>
-                {% endfor %}
-                </table>
-            </div>
-        {% endif %}
+        <div class="app-{{ app.app_label }} module">
+        <table>
+        <caption>
+            <a href="{{ app.app_url }}" class="section" title="{% blocktrans with name=app.name %}Models in the {{ name }} application{% endblocktrans %}">{{ app.name }}</a>
+        </caption>
+        {% for model in app.models %}
+            <tr class="model-{{ model.object_name|lower }}">
+            {% if model.admin_url %}
+                <th scope="row"><a href="{{ model.admin_url }}">{{ model.name }}</a></th>
+            {% else %}
+                <th scope="row">{{ model.name }}</th>
+            {% endif %}
+
+            {% if model.add_url %}
+                <td><a href="{{ model.add_url }}" class="addlink">{% trans 'Add' %}</a></td>
+            {% else %}
+                <td>&nbsp;</td>
+            {% endif %}
+
+            {% if model.admin_url %}
+                <td><a href="{{ model.admin_url }}" class="changelink">{% trans 'Change' %}</a></td>
+            {% else %}
+                <td>&nbsp;</td>
+            {% endif %}
+            </tr>
+        {% endfor %}
+        </table>
+        </div>
     {% endfor %}
-
-{% if request.path|stringformat:"s" == admin_index_url and not user|has_group:"Guest" %}
-    <div class="module">
-            <table>
-                <caption>Laboratory Management</caption>
-                {% get_homepage_urls as homepage_urls %}
-                {% for category in homepage_urls %}
-                    {% for element in category %}
-                        {% if forloop.first%}
-                            <tr  style="background-color:{{element.1}};color:#447e9b;">
-                                <th scope="row">{{ element.0 }}</th>
-                                <td>&nbsp;</td>
-                                <td>&nbsp;</td>
-                            </tr>
-                            {% if element.0|stringformat:"s" == "Ordering" %}
-                                <tr>
-                                    <th scope="row" style="font-weight: normal;"><a href={{admin_index_url|add:"order_management/order/add/"}}>New order</a></th>
-                                    <td>&nbsp;</td>
-                                    <td>&nbsp;</td>
-                                </tr>    
-                                <tr>
-                                    <th scope="row" style='font-weight: normal;'><a href="{{ user.labuser.personal_order_list_url }}" target="_blank">My orders</a></th>
-                                    <td>&nbsp;</td>
-                                    <td>&nbsp;</td>
-                                </tr>
-                            {% endif %}
-                        {% else %}
-                            <tr>
-                                <th scope="row"><a href="{{ element.1 }}" target="_blank" style="font-weight: normal;">{{element.0}}</a></th>
-                                <td>&nbsp;</td>
-                                <td>&nbsp;</td>
-                            </tr>        
-                        {% endif %}
-                    {% endfor %}
-                {% endfor %}
-                {% if user|has_group:"Lab manager" %}
-                    <tr style="background-color:#79aec8;">
-                        <th scope="row" style="color:white;font-weight: normal;">Laboratory Management Admin</th>
-                        <td>&nbsp;</td>
-                        <td>&nbsp;</td>
-                    </tr>    
-                    {% for app in app_list %}
-                        {% if app.name == "Laboratory management" or app.name == "Order management" %}
-                            <tr style="background-color:#c4dce8;">
-                                {% if app.name == "Laboratory management" %}
-                                    <th scope="row" style="color:#447e9b;">HomePage links</th>
-                                {% elif app.name == "Order management" %}
-                                    <th scope="row" style="color:#447e9b;">Ordering</th>
-                                {% endif %}
-                                <td>&nbsp;</td>
-                                <td>&nbsp;</td>
-                            </tr>  
-                        
-                            {% for model in app.models %}
-                                <tr class="model-{{ model.object_name|lower }}">
-                                {% if model.admin_url %}
-                                    <th scope="row"><a href="{{ model.admin_url }}">{{ model.name }}</a></th>
-                                {% else %}
-                                    <th scope="row">{{ model.name }}</th>
-                                {% endif %}
-                
-                                {% if model.add_url %}
-                                    <td><a href="{{ model.add_url }}" class="addlink">{% trans 'Add' %}</a></td>
-                                {% else %}
-                                    <td>&nbsp;</td>
-                                {% endif %}
-                
-                                {% if model.admin_url %}
-                                    <td><a href="{{ model.admin_url }}" class="changelink">{% trans 'Change' %}</a></td>
-                                {% else %}
-                                    <td>&nbsp;</td>
-                                {% endif %}
-                                </tr>
-                                {% endfor %}
-
-                        {% endif %}
-                    {% endfor %}
-                {% endif %}
-            </table>
-    </div>
-{% endif %}
-
 {% else %}
     <p>{% trans "You don't have permission to edit anything." %}</p>
 {% endif %}

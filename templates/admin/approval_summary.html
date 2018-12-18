@@ -73,10 +73,16 @@
                                     </tr>
                                     {% for row in model.2 %}
                                         <tr class=”{% cycle 'row1' 'row2' %}”>
-                                            <td> <a href='/collection_management/{{model.1}}/{{ row.id }}' style="font-weight:bold">{{ row.id }} </a></td>
-                                            <td> {{ row.name }} </td>
+                                            <td> <a href='/{{model.4}}/{{model.1}}/{{ row.id }}' style="font-weight:bold">{{ row.id }} </a></td>
+                                            <td> 
+                                                {% if row.name %}
+                                                {{ row.name}}
+                                                {% else %}
+                                                {{ row.part_description }}
+                                                {% endif %}
+                                            </td>
                                             <td> {{ row.created_by }} </td>
-                                            <td> <a href='/collection_management/{{model.1}}/{{ row.id }}/history/'>View</a></td>
+                                            <td> <a href='/{{model.4}}/{{model.1}}/{{ row.id }}/history/'>View</a></td>
                                         </tr>
                                     {% endfor %}
                                 {% endif %}
@@ -86,10 +92,10 @@
                                     </tr>
                                     {% for row in model.3 %}
                                         <tr class=”{% cycle 'row1' 'row2' %}”>
-                                            <td> <a href='/collection_management/{{model.1}}/{{ row.id }}' style="font-weight:bold">{{ row.id }} </a></td>
+                                            <td> <a href='/{{model.4}}/{{model.1}}/{{ row.id }}' style="font-weight:bold">{{ row.id }} </a></td>
                                             <td> {{ row.name }} </td>
                                             <td> {{ row.created_by }} </td>
-                                            <td> <a href='/collection_management/{{model.1}}/{{ row.id }}/history/'>View</a></td>
+                                            <td> <a href='/{{model.4}}/{{model.1}}/{{ row.id }}/history/'>View</a></td>
                                         </tr>
                                     {% endfor %}
                                 {% endif %}

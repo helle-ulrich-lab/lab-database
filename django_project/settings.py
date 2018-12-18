@@ -31,6 +31,7 @@ ALLOWED_HOSTS = DJANGO_PRIVATE_DATA['allowed_hosts']
 
 INSTALLED_APPS = [
     'flat_responsive',
+    'adminactions',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -40,14 +41,10 @@ INSTALLED_APPS = [
     'djangoql',
     'simple_history',
     'import_export',
-    'ckeditor',
-    'ckeditor_uploader',
     'collection_management',
-    'user_management',
-    'laboratory_management',
     'colorful',
+    'user_management',
     'order_management',
-    'pages',
     'django.contrib.sites.apps.SitesConfig',
     'django.contrib.humanize.apps.HumanizeConfig',
     'django_nyt.apps.DjangoNytConfig',
@@ -59,6 +56,7 @@ INSTALLED_APPS = [
     'wiki.plugins.notifications.apps.NotificationsConfig',
     'wiki.plugins.images.apps.ImagesConfig',
     'wiki.plugins.macros.apps.MacrosConfig',
+    'background_task',
 ]
 
 MIDDLEWARE = [
@@ -103,8 +101,6 @@ WSGI_APPLICATION = 'django_project.wsgi.application'
 
 DATABASES = {
     'default': {
-        # 'ENGINE': 'django.db.backends.sqlite3',
-        # 'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
         'ENGINE': 'django.db.backends.mysql', 
         'NAME': 'django', 
         'USER': DJANGO_PRIVATE_DATA['db_user'], 
@@ -139,13 +135,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # https://docs.djangoproject.com/en/1.11/topics/i18n/
 
 LANGUAGE_CODE = 'en-us'
-
 TIME_ZONE = 'Europe/Berlin'
-
 USE_I18N = True
-
 USE_L10N = True
-
 USE_TZ = True
 
 
@@ -155,10 +147,12 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR,'static/')
 
+
 # Media files
 
 MEDIA_URL = '/uploads/'
 MEDIA_ROOT = os.path.join(BASE_DIR,'uploads/')
+
 
 #Email/SMTP settings
 
@@ -167,40 +161,12 @@ EMAIL_PORT = 25
 EMAIL_HOST_USER = None
 EMAIL_HOST_PASSWORD = None
 
+
 #Email settings for error messages
 
 SERVER_EMAIL = DJANGO_PRIVATE_DATA['server_email_address']
 ADMINS = DJANGO_PRIVATE_DATA['admin_email_address']
 
-# Other settings
-
-FILE_UPLOAD_PERMISSIONS = 0o664
-
-CKEDITOR_CONFIGS = {
-    'default': {
-        'toolbar': 'Custom',
-        'toolbar_Custom': [
-            ['Undo','Redo',],
-            ['Print'],
-            ['Font','FontSize', '-', 'TextColor', 'Bold', 'Italic', 'Underline', '-','Subscript','Superscript'],
-            ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', '-', 'JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock'],
-            ['Image', 'Table', 'Maximize'],
-            ['Link', 'Unlink', 'Anchor'],
-            ['Find']
-        ]
-    }
-}
-
-CKEDITOR_UPLOAD_PATH = 'ckeditor/'
-
-
-from django.conf.locale.en import formats as en_formats
-en_formats.DATETIME_FORMAT = "j N Y, H:i:s"
-
-from django.conf.locale.en_GB import formats as en_gb_formats
-en_gb_formats.DATETIME_FORMAT = "j N Y, H:i:s"
-
-LOGIN_URL="/login/"
 
 # Wiki settings
 
@@ -211,3 +177,18 @@ WIKI_MARKDOWN_HTML_WHITELIST = ['a', 'abbr', 'acronym', 'b', 'blockquote', 'code
 'i', 'li', 'ol', 'strong', 'ul', 'figure', 'figcaption', 'br', 'hr', 'p', 'div', 'img', 
 'pre', 'span', 'sup', 'table', 'thead', 'tbody', 'th', 'tr', 'td', 'dl', 'dt', 'dd',
 'h0', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'h7', 'sub', 'sup']
+
+
+# Other settings
+
+FILE_UPLOAD_PERMISSIONS = 0o664
+
+from django.conf.locale.en import formats as en_formats
+en_formats.DATETIME_FORMAT = "j N Y, H:i:s"
+en_formats.DATE_FORMAT = "j N Y"
+
+from django.conf.locale.en_GB import formats as en_gb_formats
+en_gb_formats.DATETIME_FORMAT = "j N Y, H:i:s"
+en_gb_formats.DATE_FORMAT = "j N Y"
+
+LOGIN_URL="/login/"

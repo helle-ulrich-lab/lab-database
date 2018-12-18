@@ -19,6 +19,7 @@ from django.conf import settings
 from django.conf.urls import include
 from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
+from django.contrib.auth.decorators import login_required
 
 from wiki.urls import get_pattern as get_wiki_pattern
 from django_nyt.urls import get_pattern as get_nyt_pattern
@@ -59,7 +60,7 @@ def decorated_includes(func, includes, *args, **kwargs):
     return urlconf_module, app_name, namespace
 
 def wiki_check_login_guest(f):
-    """For wiki pages, verigy that user is logged in and is not a guest"""
+    """For wiki pages, verify that user is logged in and is not a guest"""
 
     def decorator(request, **kwargs):
         if request.user.is_authenticated:
@@ -90,7 +91,7 @@ def wiki_check_login_guest(f):
     return decorator
 
 def check_guest(f):
-    """If guest do not allow access to view"""
+    """If guest, do not allow access to view"""
 
     def decorator(request, **kwargs):
         if request.user.groups.filter(name='Guest').exists():
@@ -107,8 +108,10 @@ def check_guest(f):
 #                 URL PATTERNS                  #
 #################################################
 
+from .wiki_pdf_download import CustomAttachmentDownloadView
+
 urlpatterns = [
-    url(r'^ckeditor/', include('ckeditor_uploader.urls')),
+    url(r'^wiki/(?P<article_id>[0-9]+)/plugin/attachments/download/(?P<attachment_id>[0-9]+)/$', login_required(CustomAttachmentDownloadView.as_view())),
     url(r'^notifications/', include(get_nyt_pattern())),
     url(r'^wiki/',  decorated_includes(wiki_check_login_guest, include(get_wiki_pattern()))),
     url(r'^password_change/$', check_guest(auth_views.PasswordChangeView.as_view())),

@@ -562,8 +562,16 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
                 messages.warning(request, 'Could not update the order autocomplete function')
             obj.save()
             
+            # Delete temp history record that does not contain internal_order_id
+            obj.history.last().delete()
+            
             obj.internal_order_no = "{}-{}".format(obj.pk, datetime.date.today().strftime("%y%m%d"))
-            obj.save_without_historical_record()
+            obj.save()
+            
+            # Change history record history_change_reason from changed to created (+)
+            history_obj = obj.history.last()
+            history_obj.history_type = "+"
+            history_obj.save()
 
             if obj.urgent:
                 message = """Dear lab managers,

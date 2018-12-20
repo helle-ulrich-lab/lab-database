@@ -305,7 +305,7 @@ class MammalianLine (models.Model):
 #        MAMMALIAN CELL LINE DOC MODEL         #
 ################################################
 
-class MammalianLineDoc(models.Model, SaveWithoutHistoricalRecord):
+class MammalianLineDoc(models.Model):
     name = models.FileField("File name", upload_to="temp/", blank=False)
     typ_e = models.CharField("Doc Type", max_length=255, choices=[["virus", "Virus test"], ["mycoplasma", "Mycoplasma test"], ["fingerprint", "Fingerprinting"], ["other", "Other"]], blank=False)
     date_of_test = models.DateField("Date of test", blank=False)

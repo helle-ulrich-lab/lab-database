@@ -30,10 +30,12 @@
         {% block object-tools %}
             <ul class="object-tools">
             {% block object-tools-items %}
-                <li>
-                <a style="background-color:palevioletred;" 
-                href='approve'>Approve All</a>
-                </li>
+                {% if user.id == 6 %}        
+                    <li>
+                    <a style="background-color:palevioletred;" 
+                    href='approve'>Approve All</a>
+                    </li>
+                {% endif %}
             {% endblock %}
             </ul>
         {% endblock %}

@@ -594,14 +594,14 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.Mo
         and whenever possible creates a plasmid map preview with snapegene server'''
         
         rename_and_preview = False
+        new_obj = False
 
         if obj.pk == None:
             obj.created_by = request.user
             if obj.plasmid_map:
                 rename_and_preview = True
-                obj.save_without_historical_record()
-            else:
-                obj.save()
+                new_obj = True
+            obj.save()
         else:
             old_obj = collection_management_HuPlasmid.objects.get(pk=obj.pk)
             if request.user.is_superuser or request.user == old_obj.created_by or request.user.groups.filter(name='Lab manager').exists():
@@ -641,6 +641,15 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.Mo
             
             obj.plasmid_map.name = new_file_name
             obj.save()
+
+            # For new records, delete first history record, which contains the unformatted plasmid_map name, and change 
+            # the newer history record's history_type from changed (~) to created (+). This gets rid of a duplicate
+            # history record created when automatically generating a plasmid_map name
+            if new_obj:
+                obj.history.last().delete()
+                history_obj = obj.history.first()
+                history_obj.history_type = "+"
+                history_obj.save()
             
             # For plasmid map, detect common features and save as png using snapgene server
             try:
@@ -1001,14 +1010,14 @@ class NzPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.Mo
         and whenever possible creates a plasmid map preview with snapegene server'''
 
         rename_and_preview = False
+        new_obj = False
 
         if obj.pk == None:
             obj.created_by = request.user
             if obj.plasmid_map:
                 rename_and_preview = True
-                obj.save_without_historical_record()
-            else:
-                obj.save()
+                new_obj = True
+            obj.save()
         else:
             old_obj = collection_management_NzPlasmid.objects.get(pk=obj.pk)
             if request.user.is_superuser or request.user == old_obj.created_by or request.user.groups.filter(name='Lab manager').exists():
@@ -1040,6 +1049,15 @@ class NzPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.Mo
             
             obj.plasmid_map.name = new_file_name
             obj.save()
+
+            # For new records, delete first history record, which contains the unformatted plasmid_map name, and change 
+            # the newer history record's history_type from changed (~) to created (+). This gets rid of a duplicate
+            # history record created when automatically generating a plasmid_map name
+            if new_obj:
+                obj.history.last().delete()
+                history_obj = obj.history.first()
+                history_obj.history_type = "+"
+                history_obj.save()
             
             # For plasmid map, detect common features and save as png using snapgene server
             try:
@@ -1495,14 +1513,14 @@ class AntibodyPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.Mod
         '''
 
         rename_doc = False
+        new_obj = False
 
         if obj.pk == None:
             obj.created_by = request.user
             if obj.info_sheet:
                 rename_doc = True
-                obj.save_without_historical_record()
-            else:
-                obj.save()
+                new_obj = True
+            obj.save()
         else:
             if request.user.groups.filter(name='Guest').exists():
                 raise PermissionDenied
@@ -1532,6 +1550,15 @@ class AntibodyPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.Mod
             
             obj.info_sheet.name = new_file_name
             obj.save()
+
+            # For new records, delete first history record, which contains the unformatted info_sheet name, and change 
+            # the newer history record's history_type from changed (~) to created (+). This gets rid of a duplicate
+            # history record created when automatically generating a info_sheet name
+            if new_obj:
+                obj.history.last().delete()
+                history_obj = obj.history.first()
+                history_obj.history_type = "+"
+                history_obj.save()
         
     def get_readonly_fields(self, request, obj=None):
         '''Override default get_readonly_fields to define user-specific read-only fields

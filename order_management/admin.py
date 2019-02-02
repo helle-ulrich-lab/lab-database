@@ -562,14 +562,15 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
                 messages.warning(request, 'Could not update the order autocomplete function')
             obj.save()
             
-            # Delete temp history record that does not contain internal_order_id
-            obj.history.last().delete()
-            
+            # Automatically create internal_order_number and add it to record
             obj.internal_order_no = "{}-{}".format(obj.pk, datetime.date.today().strftime("%y%m%d"))
             obj.save()
             
-            # Change history record history_change_reason from changed to created (+)
-            history_obj = obj.history.last()
+            # Delete first history record, which doesn't contain an internal_order_number, and change the newer history 
+            # record's history_type from changed (~) to created (+). This gets rid of a duplicate history record created
+            # when automatically generating an internal_order_number
+            obj.history.last().delete()
+            history_obj = obj.history.first()
             history_obj.history_type = "+"
             history_obj.save()
 
@@ -916,17 +917,17 @@ class OrderExtraDocPage(DjangoQLSearchMixin, admin.ModelAdmin):
 #################################################
 
 class CostUnitPage(admin.ModelAdmin):
-    list_display = ('id','name', 'status')
-    list_display_links = ('id', )
+    list_display = ('name', 'description', 'status')
+    list_display_links = ('name',)
     list_per_page = 25
-    ordering = ['id']
+    ordering = ['name']
 
 #################################################
 #           ORDER LOCATION PAGES                #
 #################################################
 
 class LocationPage(admin.ModelAdmin):
-    list_display = ('id','name', 'status')
-    list_display_links = ('id', )
+    list_display = ('name', 'status')
+    list_display_links = ('name', )
     list_per_page = 25
-    ordering = ['id']
+    ordering = ['name']

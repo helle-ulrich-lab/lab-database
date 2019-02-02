@@ -25,14 +25,15 @@ import time
 
 class CostUnit(models.Model):
     name = models.CharField("Name", max_length = 255, unique = True, blank=False)
+    description = models.CharField("Description", max_length = 255, unique = True, blank=False)
     status = models.BooleanField("Deactivate?", default = False)
     
     class Meta:
         verbose_name = 'cost unit'
-        ordering = ["name"]
+        ordering = ["name",]
     
     def __str__(self):
-        return self.name
+        return "{} - {}".format(self.name, self.description)
 
     def save(self, force_insert=False, force_update=False):
         
@@ -49,7 +50,7 @@ class Location(models.Model):
     status = models.BooleanField("Deactivate?", default = False)
     
     class Meta:
-        ordering = ["name"]
+        ordering = ["name",]
 
     def __str__(self):
         return self.name

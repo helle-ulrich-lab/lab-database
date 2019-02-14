@@ -12,4 +12,4 @@ CURRENT_DATE_TIME=`date +'%Y%m%d_%H%M'`
 
 /home/nzilio/ulrich_lab_intranet/bin/python $DJANGO_BASE_DIR/manage.py shell < $DJANGO_BASE_DIR/beyond_django/export_db_tables_as_xlsx.py
 
-/bin/tar cf - $DJANGO_BASE_DIR/uploads/ | /usr/bin/pigz >  $BACKUP_DIR/uploads.tar.gz
+/usr/bin/rsync -a /home/nzilio/ulrich_lab_intranet/django_project/uploads/ /home/nzilio/ulrich_lab_intranet/django_project/ulrich_lab_intranet_db_backup/uploads

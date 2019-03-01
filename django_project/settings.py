@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'colorful',
     'user_management',
     'order_management',
+    'guardian',
     'django.contrib.sites.apps.SitesConfig',
     'django.contrib.humanize.apps.HumanizeConfig',
     'django_nyt.apps.DjangoNytConfig',
@@ -69,6 +70,11 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'simple_history.middleware.HistoryRequestMiddleware',
 ]
+
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.ModelBackend', # this is default
+    'guardian.backends.ObjectPermissionBackend',
+)
 
 ROOT_URLCONF = 'django_project.urls'
 

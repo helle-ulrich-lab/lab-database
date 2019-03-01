@@ -1,0 +1,11 @@
+{% extends "admin/collection_management/change_form.html" %}
+{% load i18n admin_urls %}
+
+
+{% block object-tools-items %}
+{% url opts|admin_urlname:'permissions' original.pk|admin_urlquote as history_url %}
+{% if show_submit_line or show_submit_line == None %}
+<li><a href="{% add_preserved_filters history_url %}" class="permissionslink">{% trans "Object permissions" %}</a></li>
+{% endif %}
+{{ block.super }}
+{% endblock %}

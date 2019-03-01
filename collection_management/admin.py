@@ -28,6 +28,8 @@ from django.urls import reverse
 
 from django_project.settings import MEDIA_ROOT
 from django_project.settings import BASE_DIR
+from django_project.private_settings import SAVERIS_USERNAME
+from django_project.private_settings import SAVERIS_PASSWORD
 
 from django.contrib.auth.models import Group, User
 from django.contrib.auth.admin import GroupAdmin, UserAdmin
@@ -56,6 +58,14 @@ from import_export import resources
 # Background tasks
 from background_task import background
 
+# Http stuff
+import http.cookiejar
+import urllib.request, urllib.parse, urllib.error
+
+# Django guardian
+from guardian.admin import GuardedModelAdmin
+from guardian.admin import UserManage
+
 #################################################
 #                OTHER IMPORTS                  #
 #################################################
@@ -67,6 +77,50 @@ from snapgene.pyclasses.config import Config
 import zmq
 import os
 import time
+
+#################################################
+#               CUSTOM FUNCTIONS                #
+#################################################
+
+@background(schedule=1) # Run snapgene_plasmid_map_preview 1 s after it is called, as "background" process
+def snapgene_plasmid_map_preview(dna_plasmid_map_path, plasmid_prefix, obj_id, obj_name):
+    """ Given a path to a snapgene plasmid map, use snapegene server
+    to detect common features and create map preview as png
+    and """
+
+    try:
+        config = Config()
+        server_ports = config.get_server_ports()
+        for port in server_ports.values():
+            try:
+                client = Client(port, zmq.Context())
+            except:
+                continue
+            break
+        png_plasmid_map_path = dna_plasmid_map_path.replace("collection_management", "plasmid_map_png").replace(".dna", ".png")
+        common_features_path = os.path.join(BASE_DIR, "snapgene/standardCommonFeatures.ftrs")
+        argument = {"request":"detectFeatures", "inputFile": dna_plasmid_map_path, 
+        "outputFile": dna_plasmid_map_path, "featureDatabase": common_features_path}
+        client.requestResponse(argument, 10000)                       
+        argument = {"request":"generatePNGMap", "inputFile": dna_plasmid_map_path,
+        "outputPng": png_plasmid_map_path, "title": "{}{} - {}".format(plasmid_prefix, obj_id, obj_name),
+        "showEnzymes": True, "showFeatures": True, "showPrimers": True, "showORFs": False}
+        client.requestResponse(argument, 10000)
+    except:
+        mail_admins("Snapgene server error", "There was an error with creating the preview for {} with snapgene server".format(dna_plasmid_map_path), fail_silently=True)
+        raise Exception
+
+@background(schedule=86400) # Run snapgene_plasmid_map_preview 1 s after it is called, as "background" process
+def delete_obj_perm_after_24h(perm, user_id, obj_id, app_label, model_name):
+    """ Delete object permession after 24 h"""
+    
+    from django.apps import apps
+    from guardian.shortcuts import remove_perm
+    
+    user = User.objects.get(id=user_id)
+    obj = apps.get_model(app_label, model_name).objects.get(id=obj_id)
+
+    remove_perm(perm, user, obj)
 
 #################################################
 #                CUSTOM CLASSES                 #
@@ -143,7 +197,10 @@ class SimpleHistoryWithSummaryAdmin(SimpleHistoryAdmin):
                         if delta.changes:
                             for change in delta.changes:
                                 if not change.field.endswith(("time", "_pi")): # Do not show created/changed date/time or approval by PI fields
-                                    field_name = change.field if change.field[1] != "_" else change.field[:1] + change.field[2:]
+                                    if change.field[1] == "_" or change.field[2] == "_":
+                                        field_name = change.field.replace("_", "")
+                                    else:
+                                        field_name = change.field
                                     changes_list.append(
                                         (field_name.replace("_", " ").capitalize(), 
                                         change.old if change.old else 'None', 
@@ -177,37 +234,161 @@ class SimpleHistoryWithSummaryAdmin(SimpleHistoryAdmin):
         return render(request, self.object_history_template, context,
                       **extra_kwargs)
 
-#################################################
-#               CUSTOM FUNCTIONS                #
-#################################################
+class DataLoggerWebsiteLogin(object):
 
-@background(schedule=1) # Run snapgene_plasmid_map_preview 1 s after it is called, as "background" process
-def snapgene_plasmid_map_preview(dna_plasmid_map_path, plasmid_prefix, obj_id, obj_name):
-    """ Given a path to a snapgene plasmid map, use snapegene server
-    to detect common features and create map preview as png
-    and """
+    """ Class to log on to the Saveris website with 
+    username and password """
 
-    try:
-        config = Config()
-        server_ports = config.get_server_ports()
-        for port in server_ports.values():
-            try:
-                client = Client(port, zmq.Context())
-            except:
-                continue
-            break
-        png_plasmid_map_path = dna_plasmid_map_path.replace("collection_management", "plasmid_map_png").replace(".dna", ".png")
-        common_features_path = os.path.join(BASE_DIR, "snapgene/standardCommonFeatures.ftrs")
-        argument = {"request":"detectFeatures", "inputFile": dna_plasmid_map_path, 
-        "outputFile": dna_plasmid_map_path, "featureDatabase": common_features_path}
-        client.requestResponse(argument, 10000)                       
-        argument = {"request":"generatePNGMap", "inputFile": dna_plasmid_map_path,
-        "outputPng": png_plasmid_map_path, "title": "{}{} - {}".format(plasmid_prefix, obj_id, obj_name),
-        "showEnzymes": True, "showFeatures": True, "showPrimers": True, "showORFs": False}
-        client.requestResponse(argument, 10000)
-    except:
-        mail_admins("Snapgene server error", "There was an error with creating the preview for {} with snapgene server".format(dna_plasmid_map_path), fail_silently=True)
-        raise Exception
+    def __init__(self, login, password):
+
+        self.login = login
+        self.password = password
+
+        self.cj = http.cookiejar.CookieJar()
+        self.opener = urllib.request.build_opener(
+            urllib.request.HTTPRedirectHandler(),
+            urllib.request.HTTPHandler(debuglevel=0),
+            urllib.request.HTTPSHandler(debuglevel=0),
+            urllib.request.HTTPCookieProcessor(self.cj)
+        )
+        self.opener.addheaders = [
+            ('User-agent', ('Mozilla/4.0 (compatible; MSIE 6.0; '
+                           'Windows NT 5.2; .NET CLR 1.1.4322)'))
+        ]
+        self.loginToWebsite()
+
+    def loginToWebsite(self):
+        """ Handle login. This should populate our cookie jar """
+        login_data = urllib.parse.urlencode({
+            'data[User][login]' : self.login,
+            'data[User][password]' : self.password,
+        }).encode("utf-8")
+        
+        response = self.opener.open("https://www.saveris.net/users/login", login_data)
+        return ''.join(str(response.readlines()))
+
+class CustomUserManage(UserManage):
+    
+    """
+    Add drop-down menu to select user to who to give additonal permissions
+    """
+
+    from django import forms
+
+    user = forms.ChoiceField(choices=[('------', '------')] + [(u.username, u) for u in User.objects.all().order_by('last_name') if u.groups.filter(name='Regular lab member').exists()],
+                            label=_("Username"),
+                        error_messages={'does_not_exist': _(
+                            "This user does not exist")},)
+    is_permanent = forms.BooleanField(required=False, label=_("Grant indefinitely?"))
+
+class CustomGuardedModelAdmin(GuardedModelAdmin):
+
+    def get_urls(self):
+        """
+        Extends standard guardian admin model urls with delete url
+        """
+        
+        from django.conf.urls import url
+        
+        urls = super(CustomGuardedModelAdmin, self).get_urls()
+
+        info = self.model._meta.app_label, self.model._meta.model_name
+        myurls = [
+            url(r'^(?P<object_pk>.+)/permissions/(?P<user_id>\-?\d+)/remove/$',
+                view=self.admin_site.admin_view(
+                    self.obj_perms_delete),name='%s_%s_permissions_delete' % info)
+        ]
+        urls = myurls + urls
+        
+        return urls
+
+    def obj_perms_manage_view(self, request, object_pk):
+        """
+        Main object permissions view. Presents all users and groups with any
+        object permissions for the current model *instance*. Users or groups
+        without object permissions for related *instance* would **not** be
+        shown. In order to add or manage user or group one should use links or
+        forms presented within the page.
+        """
+
+        from guardian.shortcuts import assign_perm
+        from guardian.shortcuts import get_user_model
+        from guardian.shortcuts import get_users_with_perms
+        from collections import OrderedDict
+        from django.contrib.admin.utils import unquote
+
+        if not self.has_change_permission(request, None):
+            post_url = reverse('admin:index', current_app=self.admin_site.name)
+            return redirect(post_url)
+
+        obj = get_object_or_404(self.get_queryset(
+            request), pk=unquote(object_pk))
+        users_perms = OrderedDict(
+            sorted(
+                get_users_with_perms(obj, attach_perms=True,
+                                     with_group_users=False).items(),
+                key=lambda user: getattr(
+                    user[0], get_user_model().USERNAME_FIELD)
+            )
+        )
+
+        if request.method == 'POST' and 'submit_manage_user' in request.POST:
+            perm = '{}.change_{}'.format(self.model._meta.app_label, self.model._meta.model_name)
+            user = User.objects.get(username=request.POST['user'])
+            assign_perm(perm, user, obj)
+            user_form = self.get_obj_perms_user_select_form(request)(request.POST)
+            group_form = self.get_obj_perms_group_select_form(request)(request.POST)
+            info = (
+                self.admin_site.name,
+                self.model._meta.app_label,
+                self.model._meta.model_name,
+            )
+            if user_form.is_valid():
+                user_id = user_form.cleaned_data['user'].pk
+                messages.success(request, 'Permissions saved.')
+                if not request.POST.get('is_permanent', False): # If "Grant indefinitely" not selected remove permission after 24 h
+                    delete_obj_perm_after_24h(perm, user.id, obj.id, obj._meta.app_label, obj._meta.model_name)
+                return HttpResponseRedirect(".")
+        else:
+            user_form = self.get_obj_perms_user_select_form(request)()
+
+        context = self.get_obj_perms_base_context(request, obj)
+        context['users_perms'] = users_perms
+        context['user_form'] = user_form
+
+        # https://github.com/django/django/commit/cf1f36bb6eb34fafe6c224003ad585a647f6117b
+        request.current_app = self.admin_site.name
+
+        return render(request, self.get_obj_perms_manage_template(), context)
+
+    def obj_perms_manage_user_view(self, request, object_pk, user_id):
+        """
+        Forbid usage of this view
+        """
+
+        raise PermissionDenied
+
+    def get_obj_perms_user_select_form(self, request):
+        """
+        Returns form class for selecting a user for permissions management.  By
+        default :form:`UserManage` is returned.
+        """
+        
+        return CustomUserManage
+
+    def obj_perms_delete(self, request, object_pk, user_id):
+        """ Delete object permission for a user"""
+
+        from guardian.shortcuts import get_user_model
+        from guardian.shortcuts import remove_perm
+
+        user = get_object_or_404(get_user_model(), pk=user_id)
+        obj = get_object_or_404(self.get_queryset(request), pk=object_pk)
+        
+        remove_perm('{}.change_{}'.format(self.model._meta.app_label, self.model._meta.model_name),  user, obj)
+        messages.success(request, 'Permission removed.')
+
+        return HttpResponseRedirect("../..")
 
 #################################################
 #               CUSTOM ADMIN SITE               #
@@ -229,7 +410,9 @@ class MyAdminSite(admin.AdminSite):
     site_url = '/'
 
     def get_urls(self):
+        
         from django.conf.urls import url
+        
         urls = super(MyAdminSite, self).get_urls()
         # Note that custom urls get pushed to the list (not appended)
         # This doesn't work with urls += ...
@@ -238,6 +421,7 @@ class MyAdminSite(admin.AdminSite):
             url(r'^approval_summary/approve$', self.admin_view(self.approve_approval_summary)),
             url(r'^order_management/my_orders_redirect$', self.admin_view(self.my_orders_redirect)),
             url(r'uploads/(?P<url_path>.*)$', self.admin_view(self.uploads)),
+            url(r'^temp_control/$', self.temp_control),
         ] + urls
         return urls
 
@@ -368,7 +552,34 @@ class MyAdminSite(admin.AdminSite):
             response['X-Accel-Redirect'] = "/secret/{url_path}".format(url_path=url_path)
             return response
         else:
-            raise Http404      
+            raise Http404
+
+    def temp_control(self, request):
+        """ View to show the temperature of the -150° freezer """
+
+        from bs4 import BeautifulSoup
+        from django.shortcuts import render
+
+        # Log on to the Saveris website, browse to page that shows T and read response
+        html = DataLoggerWebsiteLogin(SAVERIS_USERNAME, SAVERIS_PASSWORD).opener.open('https://www.saveris.net/MeasuringPts').read()
+
+        soup = BeautifulSoup(html)
+        
+        # Get all td elements, extract relevant info and style it a bit
+        td_elements = soup.find_all('td')
+        T = td_elements[4].text.strip().replace(",", ".").replace("Â", "").replace("°", "° ")
+        date_time = datetime.datetime.strptime(td_elements[5].text.strip(), '%d.%m.%Y %H:%M:%S')
+
+        context = {
+        'user': request.user,
+        'site_header': self.site_header,
+        'has_permission': self.has_permission(request), 
+        'site_url': self.site_url, 
+        'title':"Temperature control", 
+        'data':[date_time, T]
+        }
+        
+        return render(request, 'admin/temp_control.html', context)
 
 # Instantiate custom admin site 
 my_admin_site = MyAdminSite()
@@ -393,7 +604,7 @@ class SearchFieldOptUsername(StrField):
         sorted in alphabetical order"""
 
         return super(SearchFieldOptUsername, self).get_options().\
-        exclude(id__in=[1,20]).\
+        exclude(id__in=[1,20,36,]).\
         distinct().\
         order_by(self.name).\
         values_list(self.name, flat=True)
@@ -457,7 +668,7 @@ def export_sacerevisiaestrain(modeladmin, request, queryset):
     return response
 export_sacerevisiaestrain.short_description = "Export selected strains as xlsx"
 
-class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelAdmin, Approval):
+class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin, Approval):
     list_display = ('id', 'name', 'mating_type','created_by', 'approval')
     list_display_links = ('id', )
     list_per_page = 25
@@ -491,8 +702,10 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
         
         if obj:
             if (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
-                return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
+                return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',]
             else:
+                if request.user.has_perm('collection_management.change_sacerevisiaestrain', obj):
+                    return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',]
                 if obj.created_by.groups.filter(name='Past member') or obj.created_by.id == 6:
                     return ['name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parental_strain',
                 'construction', 'modification', 'plasmids', 'selection', 'phenotype', 'background', 'received_from',
@@ -533,8 +746,24 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
             obj = collection_management_SaCerevisiaeStrain.objects.get(pk=object_id)
             if obj:
                 if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by.groups.filter(name='Past member'))  or request.user.groups.filter(name='Guest').exists():
-                    extra_context['show_submit_line'] = False
+                    if not request.user.has_perm('collection_management.change_sacerevisiaestrain', obj):
+                        extra_context['show_submit_line'] = False
         return super(SaCerevisiaeStrainPage, self).changeform_view(request, object_id, extra_context=extra_context)
+
+    def obj_perms_manage_view(self, request, object_pk):
+        """
+        Main object Guardian permissions view. 
+
+        Customized to allow only record owner to change permissions
+        """
+        obj = collection_management_SaCerevisiaeStrain.objects.get(pk=object_pk)
+        
+        if obj:
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
+                messages.error(request, 'Nice try, you are allowed to change the permissions of your own records only.')
+                return HttpResponseRedirect("..")
+        return super(SaCerevisiaeStrainPage,self).obj_perms_manage_view(request, object_pk)
+
 
 my_admin_site.register(collection_management_SaCerevisiaeStrain, SaCerevisiaeStrainPage)
 
@@ -577,7 +806,7 @@ def export_huplasmid(modeladmin, request, queryset):
     return response
 export_huplasmid.short_description = "Export selected plasmids as xlsx"
 
-class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelAdmin, Approval):
+class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin, Approval):
     list_display = ('id', 'name', 'selection', 'get_plasmidmap_short_name', 'created_by', 'approval')
     list_display_links = ('id', )
     list_per_page = 25
@@ -665,17 +894,19 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.Mo
         because their set by Django itself'''
         
         if obj:
+            if request.user.has_perm('collection_management.change_huplasmid', obj):
+                return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',]
             if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by.id == 6) or request.user.groups.filter(name='Guest').exists():
                 return ['name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
-                'reference', 'plasmid_map', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
-                'last_changed_approval_by_pi', 'created_by',]
+                    'reference', 'plasmid_map', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
+                    'last_changed_approval_by_pi', 'created_by',]
             else:
                 if obj.created_by.id == 6 and not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists()): # Show plasmid_map and note as editable fields, if record belongs to Helle (user id = 6)
                     return ['name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 
                     'reference', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
                     'last_changed_approval_by_pi', 'created_by',]
                 else:
-                    return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
+                    return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi','created_by',]
         else:
             return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
     
@@ -703,8 +934,9 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.Mo
         if object_id:
             obj = collection_management_HuPlasmid.objects.get(pk=object_id)
             if obj:
-                if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by.id == 6) or request.user.groups.filter(name='Guest').exists():
-                    extra_context['show_submit_line'] = False
+                if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
+                    if not request.user.has_perm('collection_management.change_huplasmid', obj):
+                        extra_context['show_submit_line'] = False
         return super(HuPlasmidPage, self).changeform_view(request, object_id, extra_context=extra_context)
 
     def get_plasmidmap_short_name(self, instance):
@@ -722,6 +954,20 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.Mo
         css = {
             "all": ('admin/css/vendor/magnific-popup.css',
             )}
+
+    def obj_perms_manage_view(self, request, object_pk):
+        """
+        Main object Guardian permissions view. 
+
+        Customized to allow only record owner to change permissions
+        """
+        obj = collection_management_HuPlasmid.objects.get(pk=object_pk)
+        
+        if obj:
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
+                messages.error(request, 'Nice try, you are allowed to change the permissions of your own records only.')
+                return HttpResponseRedirect("..")
+        return super(HuPlasmidPage,self).obj_perms_manage_view(request, object_pk)
 
 my_admin_site.register(collection_management_HuPlasmid, HuPlasmidPage)
 
@@ -993,7 +1239,7 @@ def export_nzplasmid(modeladmin, request, queryset):
     return response
 export_nzplasmid.short_description = "Export selected plasmids as xlsx"
 
-class NzPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelAdmin, Approval):
+class NzPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin, Approval):
     list_display = ('id', 'name', 'selection', 'get_plasmidmap_short_name','created_by', 'approval')
     list_display_links = ('id', )
     list_per_page = 25
@@ -1074,11 +1320,14 @@ class NzPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.Mo
         
         if obj:
             if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
-                return ['name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
-                'reference', 'plasmid_map', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
-                'last_changed_approval_by_pi', 'created_by',]
+                if request.user.has_perm('collection_management.change_nzplasmid', obj):
+                    return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by']
+                else:
+                    return ['name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
+                    'reference', 'plasmid_map', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
+                    'last_changed_approval_by_pi', 'created_by',]
             else:
-                return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
+                return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by']
         else:
             return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
     
@@ -1107,7 +1356,8 @@ class NzPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.Mo
             obj = collection_management_NzPlasmid.objects.get(pk=object_id)
             if obj:
                 if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
-                    extra_context['show_submit_line'] = False
+                    if not request.user.has_perm('collection_management.change_nzplasmid', obj):
+                        extra_context['show_submit_line'] = False
         return super(NzPlasmidPage, self).changeform_view(request, object_id, extra_context=extra_context)
 
     def get_plasmidmap_short_name(self, instance):
@@ -1124,6 +1374,20 @@ class NzPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.Mo
         css = {
             "all": ('admin/css/vendor/magnific-popup.css',
             )}
+
+    def obj_perms_manage_view(self, request, object_pk):
+        """
+        Main object Guardian permissions view. 
+
+        Customized to allow only record owner to change permissions
+        """
+        obj = collection_management_NzPlasmid.objects.get(pk=object_pk)
+        
+        if obj:
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
+                messages.error(request, 'Nice try, you are allowed to change the permissions of your own records only.')
+                return HttpResponseRedirect("..")
+        return super(NzPlasmidPage,self).obj_perms_manage_view(request, object_pk)
 
 my_admin_site.register(collection_management_NzPlasmid, NzPlasmidPage)
 
@@ -1366,7 +1630,7 @@ def export_mammalianline(modeladmin, request, queryset):
     return response
 export_mammalianline.short_description = "Export selected cell lines as xlsx"
 
-class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelAdmin, Approval):
+class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin, Approval):
     list_display = ('id', 'name', 'box_name', 'created_by', 'approval')
     list_display_links = ('id', )
     list_per_page = 25
@@ -1400,11 +1664,14 @@ class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admi
 
         if obj:
             if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
-                return ['name', 'box_name', 'alternative_name', 'parental_line', 'organism', 'cell_type_tissue', 'culture_type', 'growth_condition',
-                'freezing_medium', 'received_from', 'description_comment', 'created_date_time', 'created_approval_by_pi',
-                'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',]
+                if request.user.has_perm('collection_management.change_mammalianline', obj):
+                    return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by']
+                else:
+                    return ['name', 'box_name', 'alternative_name', 'parental_line', 'organism', 'cell_type_tissue', 'culture_type', 'growth_condition',
+                    'freezing_medium', 'received_from', 'description_comment', 'created_date_time', 'created_approval_by_pi',
+                    'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',]
             else:
-                return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
+                return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by']
         else:
             return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
     
@@ -1433,7 +1700,8 @@ class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admi
             obj = collection_management_MammalianLine.objects.get(pk=object_id)
             if obj:
                 if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
-                    extra_context['show_submit_line'] = False
+                    if not request.user.has_perm('collection_management.change_mammalianline', obj):
+                        extra_context['show_submit_line'] = False
         return super(MammalianLinePage, self).changeform_view(request, object_id, extra_context=extra_context)
 
     def get_formsets_with_inlines(self, request, obj=None):
@@ -1454,6 +1722,20 @@ class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admi
                     continue
                 else:
                     yield inline.get_formset(request, obj), inline
+    
+    def obj_perms_manage_view(self, request, object_pk):
+        """
+        Main object Guardian permissions view. 
+
+        Customized to allow only record owner to change permissions
+        """
+        obj = collection_management_MammalianLine.objects.get(pk=object_pk)
+        
+        if obj:
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
+                messages.error(request, 'Nice try, you are allowed to change the permissions of your own records only.')
+                return HttpResponseRedirect("..")
+        return super(MammalianLinePage,self).obj_perms_manage_view(request, object_pk)
 
 my_admin_site.register(collection_management_MammalianLine, MammalianLinePage)
 

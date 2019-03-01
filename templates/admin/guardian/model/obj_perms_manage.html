@@ -1,0 +1,69 @@
+{% extends "admin/change_form.html" %}
+{% load i18n %}
+{% load guardian_tags %}
+
+{% block extrahead %}{{ block.super }}
+<style type="text/css">
+</style>
+{% endblock %}
+
+{% block breadcrumbs %}{% if not is_popup %}
+<div class="breadcrumbs">
+     <a href="../../../../">{% trans "Home" %}</a> &rsaquo;
+     <a href="../../../">{{ opts.app_config.verbose_name|capfirst|escape }}</a> &rsaquo;
+     {% if has_change_permission %}<a href="../../">{{ opts.verbose_name_plural|capfirst }}</a>{% else %}{{ opts.verbose_name_plural|capfirst }}{% endif %} &rsaquo;
+     {% if has_change_permission %}<a href="../">{{ original|truncatewords:"18" }}</a>{% else %}{{ original|truncatewords:"18" }}{% endif %} &rsaquo;
+     {% trans "Object permissions" %}
+</div>
+{% endif %}{% endblock %}
+
+{% block content %}
+<div id="content-main">
+
+<form action="." method="post">
+    {% csrf_token %}
+    {% if user_form.errors %}
+    <div>
+        <p class="errornote">{% trans "Please correct the errors below." %}</p>
+    </div>
+    {% endif %}
+    <fieldset class="module aligned">
+        {% for error in user_form.errors %}
+            <p class="error">{{ error }}</p>
+        {% endfor %}
+        
+        {% if users_perms %}
+            <table id="user-permissions" class="object-perms" style='margin-bottom: 20px;'>
+                <caption>{% trans "User permissions" %}</caption>
+                <thead>
+                    <tr>
+                        <th>{% trans "User" %}</th>
+                        <th>{% trans "" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user, user_perms in users_perms.items %}
+                    <tr>
+                        <td>{{ user }}</td>
+                        <td>
+                            <a href="{{ user.id|safe }}/remove/">{% trans "Remove" %}</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+        
+        <h3 style='padding-left: 0;'>Grant a user the permission to change this record</h3>
+        <p style='padding-left: 0;'>By  default, permissions are granted for 24 h. Alternatively, you can choose to grant a permission indefinitely.</p>
+        {% for field in user_form %}
+            {% include "admin/guardian/model/field.html" %}
+        {% endfor %}
+        <div>
+            <input name="submit_manage_user" type="submit" value="{% trans "Grant permission" %}"/>
+        </div>
+    </fieldset>
+</form>
+</div>
+{% endblock %}
+

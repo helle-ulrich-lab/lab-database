@@ -32,7 +32,7 @@ def export_xlsx(model,export_resource):
 
     file_name = os.path.join(
         BASE_DIR,
-        "ulrich_lab_intranet_db_backup/",
+        "ulrich_lab_intranet_db_backup/excel_tables/",
         "{}.xlsx".format(model.__name__))
     with open(file_name, "wb") as out_handle:
         out_data = export_resource().export(model.objects.all()).xlsx

@@ -934,7 +934,7 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
         if object_id:
             obj = collection_management_HuPlasmid.objects.get(pk=object_id)
             if obj:
-                if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
+                if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by.id == 6) or request.user.groups.filter(name='Guest').exists():
                     if not request.user.has_perm('collection_management.change_huplasmid', obj):
                         extra_context['show_submit_line'] = False
         return super(HuPlasmidPage, self).changeform_view(request, object_id, extra_context=extra_context)

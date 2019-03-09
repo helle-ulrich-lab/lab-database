@@ -197,10 +197,7 @@ class SimpleHistoryWithSummaryAdmin(SimpleHistoryAdmin):
                         if delta.changes:
                             for change in delta.changes:
                                 if not change.field.endswith(("time", "_pi")): # Do not show created/changed date/time or approval by PI fields
-                                    if change.field[1] == "_" or change.field[2] == "_":
-                                        field_name = change.field.replace("_", "")
-                                    else:
-                                        field_name = change.field
+                                    field_name = model._meta.get_field(change.field).verbose_name
                                     changes_list.append(
                                         (field_name.replace("_", " ").capitalize(), 
                                         change.old if change.old else 'None', 

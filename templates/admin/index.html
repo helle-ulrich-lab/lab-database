@@ -6,18 +6,6 @@
 
 {% block extrastyle %}{{ block.super }}
 <link rel="stylesheet" type="text/css" href="{% static "admin/css/dashboard.css" %}" />
-<style type="text/css">
-.blinking{
-	animation:blinkingText 1s 3;
-}
-@keyframes blinkingText{
-	0%{		color: pink; font-weight: bold;	}
-	49%{	color: transparent;	}
-	50%{	color: transparent;	}
-	99%{	color:transparent;	}
-	100%{	color: pink; font-weight: bold;	}
-}
-</style>
 {% endblock %}
 
 {% block coltype %}colMS{% endblock %}

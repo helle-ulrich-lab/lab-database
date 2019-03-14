@@ -31,7 +31,7 @@
                 <strong>{% firstof user.get_short_name user.get_username %}</strong>.
             {% endblock %}
 
-            <span style='color:white'>| <a class="blinking" href='/wiki'>Wiki</a> |</span>
+            <span style='color:white'>| <a href='/wiki'>Wiki</a> |</span>
 
             {% block userlinks %}
                 {% if user.is_active and user.is_staff %}

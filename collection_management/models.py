@@ -16,6 +16,8 @@ from django.utils.encoding import force_text
 #################################################
 
 from simple_history.models import HistoricalRecords
+import os
+import time
 
 #################################################
 #                CUSTOM CLASSES                 #

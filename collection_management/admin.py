@@ -1582,7 +1582,7 @@ class AddMammalianLineDocInline(admin.TabularInline):
         return all fields as read-only'''
 
         if obj:
-            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == collection_management_MammalianLine.objects.get(pk=obj.pk).created_by) or request.user.groups.filter(name='Guest').exists():
+            if request.user.groups.filter(name='Guest').exists():
                 return ['typ_e', 'date_of_test', 'name',]
             else:
                 return []
@@ -1646,7 +1646,7 @@ class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Cust
             obj.created_by = request.user
             obj.save()
         else:
-            if request.user.is_superuser or request.user == collection_management_MammalianLine.objects.get(pk=obj.pk).created_by or request.user.groups.filter(name='Lab manager').exists():
+            if not request.user.groups.filter(name='Guest').exists():
                 obj.last_changed_approval_by_pi = False
                 obj.save()
             else:
@@ -1696,9 +1696,8 @@ class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Cust
         if object_id:
             obj = collection_management_MammalianLine.objects.get(pk=object_id)
             if obj:
-                if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
-                    if not request.user.has_perm('collection_management.change_mammalianline', obj):
-                        extra_context['show_submit_line'] = False
+                if request.user.groups.filter(name='Guest').exists():
+                    extra_context['show_submit_line'] = False
         return super(MammalianLinePage, self).changeform_view(request, object_id, extra_context=extra_context)
 
     def get_formsets_with_inlines(self, request, obj=None):
@@ -1711,7 +1710,7 @@ class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Cust
                 if inline.verbose_name_plural == 'Existing docs':
                     yield inline.get_formset(request, obj), inline
                 else:
-                    if request.user == collection_management_MammalianLine.objects.get(pk=obj.pk).created_by or request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists():
+                    if not request.user.groups.filter(name='Guest').exists():
                         yield inline.get_formset(request, obj), inline
         else:
             for inline in self.get_inline_instances(request, obj):

@@ -25,7 +25,20 @@ from collection_management.admin import AntibodyExportResource
 from order_management.models import Order
 from order_management.admin import OrderExportResource
 
+
 def export_xlsx(model,export_resource):
+    
+    def convert_xlsx_to_tsv(file_name):
+        import xlrd
+        import csv
+        
+        xlsx_file = xlrd.open_workbook(file_name)
+        sheet = xlsx_file.sheet_by_index(0)
+        with open(file_name.replace("xlsx", "tsv"), 'w') as out_handle:
+            wr = csv.writer(out_handle, delimiter="\t")
+            for rownum in range(sheet.nrows):
+                wr.writerow(sheet.row_values(rownum))
+    
     import time
     import os
     from django_project.settings import BASE_DIR
@@ -36,7 +49,8 @@ def export_xlsx(model,export_resource):
         "{}.xlsx".format(model.__name__))
     with open(file_name, "wb") as out_handle:
         out_data = export_resource().export(model.objects.all()).xlsx
-        out_handle.write(out_data) 
+        out_handle.write(out_data)
+    convert_xlsx_to_tsv(file_name)
 
 export_xlsx(SaCerevisiaeStrain, SaCerevisiaeStrainExportResource)
 export_xlsx(HuPlasmid, HuPlasmidExportResource)

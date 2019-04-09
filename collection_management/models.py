@@ -104,8 +104,8 @@ class HuPlasmid (models.Model, SaveWithoutHistoricalRecord):
     class Meta:
         '''Set a custom name to be used throughout the admin pages'''
         
-        verbose_name = 'HU plasmid'
-        verbose_name_plural = 'HU plasmids'
+        verbose_name = 'plasmid'
+        verbose_name_plural = 'plasmids'
 
     def clean(self):
         """Check if file is bigger than 2 MB"""

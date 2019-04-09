@@ -1202,192 +1202,192 @@ my_admin_site.register(collection_management_ScPombeStrain, ScPombeStrainPage)
 #                NZ PLASMID PAGES               #
 #################################################
 
-from .models import NzPlasmid as collection_management_NzPlasmid
+# from .models import NzPlasmid as collection_management_NzPlasmid
 
-class NzPlasmidQLSchema(DjangoQLSchema):
-    '''Customize search functionality'''
+# class NzPlasmidQLSchema(DjangoQLSchema):
+#     '''Customize search functionality'''
     
-    include = (collection_management_NzPlasmid, User) # Include only the relevant models to be searched
+#     include = (collection_management_NzPlasmid, User) # Include only the relevant models to be searched
 
-    def get_fields(self, model):
-        '''Define fields that can be searched'''
+#     def get_fields(self, model):
+#         '''Define fields that can be searched'''
         
-        if model == collection_management_NzPlasmid:
-            return ['id', 'name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
-                'reference', 'created_by',]
-        elif model == User:
-            return [SearchFieldOptUsername(), SearchFieldOptLastname()]
-        return super(NzPlasmidQLSchema, self).get_fields(model)
+#         if model == collection_management_NzPlasmid:
+#             return ['id', 'name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
+#                 'reference', 'created_by',]
+#         elif model == User:
+#             return [SearchFieldOptUsername(), SearchFieldOptLastname()]
+#         return super(NzPlasmidQLSchema, self).get_fields(model)
 
-class NzPlasmidExportResource(resources.ModelResource):
-    """Defines a custom export resource class for NzPlasmid"""
+# class NzPlasmidExportResource(resources.ModelResource):
+#     """Defines a custom export resource class for NzPlasmid"""
     
-    class Meta:
-        model = collection_management_NzPlasmid
-        fields = ('id', 'name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
-                'reference', 'plasmid_map', 'created_date_time', 'last_changed_date_time', 'created_by__username',)
+#     class Meta:
+#         model = collection_management_NzPlasmid
+#         fields = ('id', 'name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
+#                 'reference', 'plasmid_map', 'created_date_time', 'last_changed_date_time', 'created_by__username',)
 
-def export_nzplasmid(modeladmin, request, queryset):
-    """Export NzPlasmid as xlsx"""
+# def export_nzplasmid(modeladmin, request, queryset):
+#     """Export NzPlasmid as xlsx"""
 
-    export_data = NzPlasmidExportResource().export(queryset)
-    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.xlsx'.format(collection_management_NzPlasmid.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
-    response.write(export_data.xlsx)
-    return response
-export_nzplasmid.short_description = "Export selected plasmids as xlsx"
+#     export_data = NzPlasmidExportResource().export(queryset)
+#     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+#     response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.xlsx'.format(collection_management_NzPlasmid.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
+#     response.write(export_data.xlsx)
+#     return response
+# export_nzplasmid.short_description = "Export selected plasmids as xlsx"
 
-class NzPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin, Approval):
-    list_display = ('id', 'name', 'selection', 'get_plasmidmap_short_name','created_by', 'approval')
-    list_display_links = ('id', )
-    list_per_page = 25
-    formfield_overrides = {models.CharField: {'widget': TextInput(attrs={'size':'93'})},}
-    djangoql_schema = NzPlasmidQLSchema
-    actions = [export_nzplasmid]
+# class NzPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin, Approval):
+#     list_display = ('id', 'name', 'selection', 'get_plasmidmap_short_name','created_by', 'approval')
+#     list_display_links = ('id', )
+#     list_per_page = 25
+#     formfield_overrides = {models.CharField: {'widget': TextInput(attrs={'size':'93'})},}
+#     djangoql_schema = NzPlasmidQLSchema
+#     actions = [export_nzplasmid]
     
-    def save_model(self, request, obj, form, change):
-        '''Override default save_model to limit a user's ability to save a record
-        Superusers and lab managers can change all records
-        Regular users can change only their own records
-        Guests cannot change any record.
-        It also renames a plasmid map to pNZ{obj.id}_{date_created}_{time_created}.ext
-        and whenever possible creates a plasmid map preview with snapegene server'''
+#     def save_model(self, request, obj, form, change):
+#         '''Override default save_model to limit a user's ability to save a record
+#         Superusers and lab managers can change all records
+#         Regular users can change only their own records
+#         Guests cannot change any record.
+#         It also renames a plasmid map to pNZ{obj.id}_{date_created}_{time_created}.ext
+#         and whenever possible creates a plasmid map preview with snapegene server'''
 
-        rename_and_preview = False
-        new_obj = False
+#         rename_and_preview = False
+#         new_obj = False
 
-        if obj.pk == None:
-            obj.created_by = request.user
-            if obj.plasmid_map:
-                rename_and_preview = True
-                new_obj = True
-            obj.save()
-        else:
-            old_obj = collection_management_NzPlasmid.objects.get(pk=obj.pk)
-            if request.user.is_superuser or request.user == old_obj.created_by or request.user.groups.filter(name='Lab manager').exists():
-                obj.last_changed_approval_by_pi = False
-                if obj.plasmid_map and obj.plasmid_map != old_obj.plasmid_map:
-                    rename_and_preview = True
-                    obj.save_without_historical_record()
-                else:
-                    obj.save()
-            else:
-                raise PermissionDenied
+#         if obj.pk == None:
+#             obj.created_by = request.user
+#             if obj.plasmid_map:
+#                 rename_and_preview = True
+#                 new_obj = True
+#             obj.save()
+#         else:
+#             old_obj = collection_management_NzPlasmid.objects.get(pk=obj.pk)
+#             if request.user.is_superuser or request.user == old_obj.created_by or request.user.groups.filter(name='Lab manager').exists():
+#                 obj.last_changed_approval_by_pi = False
+#                 if obj.plasmid_map and obj.plasmid_map != old_obj.plasmid_map:
+#                     rename_and_preview = True
+#                     obj.save_without_historical_record()
+#                 else:
+#                     obj.save()
+#             else:
+#                 raise PermissionDenied
         
-        # Rename plasmid map
-        if rename_and_preview:
-            plasmid_map_dir_path = os.path.join(MEDIA_ROOT, 'collection_management/nzplasmid/')
-            old_file_name_abs_path = os.path.join(MEDIA_ROOT, obj.plasmid_map.name)
-            old_file_name, ext = os.path.splitext(os.path.basename(old_file_name_abs_path)) 
-            new_file_name = os.path.join(
-                'collection_management/nzplasmid/', 
-                "pNZ{}_{}_{}{}".format(obj.id, time.strftime("%Y%m%d"), time.strftime("%H%M%S"), ext.lower()))
-            new_file_name_abs_path = os.path.join(MEDIA_ROOT, new_file_name)
+#         # Rename plasmid map
+#         if rename_and_preview:
+#             plasmid_map_dir_path = os.path.join(MEDIA_ROOT, 'collection_management/nzplasmid/')
+#             old_file_name_abs_path = os.path.join(MEDIA_ROOT, obj.plasmid_map.name)
+#             old_file_name, ext = os.path.splitext(os.path.basename(old_file_name_abs_path)) 
+#             new_file_name = os.path.join(
+#                 'collection_management/nzplasmid/', 
+#                 "pNZ{}_{}_{}{}".format(obj.id, time.strftime("%Y%m%d"), time.strftime("%H%M%S"), ext.lower()))
+#             new_file_name_abs_path = os.path.join(MEDIA_ROOT, new_file_name)
             
-            if not os.path.exists(plasmid_map_dir_path):
-                os.makedirs(plasmid_map_dir_path) 
+#             if not os.path.exists(plasmid_map_dir_path):
+#                 os.makedirs(plasmid_map_dir_path) 
             
-            os.rename(
-                old_file_name_abs_path, 
-                new_file_name_abs_path)
+#             os.rename(
+#                 old_file_name_abs_path, 
+#                 new_file_name_abs_path)
             
-            obj.plasmid_map.name = new_file_name
-            obj.save()
+#             obj.plasmid_map.name = new_file_name
+#             obj.save()
 
-            # For new records, delete first history record, which contains the unformatted plasmid_map name, and change 
-            # the newer history record's history_type from changed (~) to created (+). This gets rid of a duplicate
-            # history record created when automatically generating a plasmid_map name
-            if new_obj:
-                obj.history.last().delete()
-                history_obj = obj.history.first()
-                history_obj.history_type = "+"
-                history_obj.save()
+#             # For new records, delete first history record, which contains the unformatted plasmid_map name, and change 
+#             # the newer history record's history_type from changed (~) to created (+). This gets rid of a duplicate
+#             # history record created when automatically generating a plasmid_map name
+#             if new_obj:
+#                 obj.history.last().delete()
+#                 history_obj = obj.history.first()
+#                 history_obj.history_type = "+"
+#                 history_obj.save()
             
-            # For plasmid map, detect common features and save as png using snapgene server
-            try:
-                snapgene_plasmid_map_preview(new_file_name_abs_path, "pNZ", obj.id, obj.name)
-            except:
-                messages.warning(request, 'Could not detect common features or save map preview')
+#             # For plasmid map, detect common features and save as png using snapgene server
+#             try:
+#                 snapgene_plasmid_map_preview(new_file_name_abs_path, "pNZ", obj.id, obj.name)
+#             except:
+#                 messages.warning(request, 'Could not detect common features or save map preview')
                 
-    def get_readonly_fields(self, request, obj=None):
-        '''Override default get_readonly_fields to define user-specific read-only fields
-        If a user is not a superuser, lab manager or the user who created a record
-        return all fields as read-only 
-        'created_date_time' and 'last_changed_date_time' fields must always be read-only
-        because their set by Django itself'''
+#     def get_readonly_fields(self, request, obj=None):
+#         '''Override default get_readonly_fields to define user-specific read-only fields
+#         If a user is not a superuser, lab manager or the user who created a record
+#         return all fields as read-only 
+#         'created_date_time' and 'last_changed_date_time' fields must always be read-only
+#         because their set by Django itself'''
         
-        if obj:
-            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
-                if request.user.has_perm('collection_management.change_nzplasmid', obj):
-                    return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by']
-                else:
-                    return ['name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
-                    'reference', 'plasmid_map', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
-                    'last_changed_approval_by_pi', 'created_by',]
-            else:
-                return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by']
-        else:
-            return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
+#         if obj:
+#             if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
+#                 if request.user.has_perm('collection_management.change_nzplasmid', obj):
+#                     return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by']
+#                 else:
+#                     return ['name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
+#                     'reference', 'plasmid_map', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
+#                     'last_changed_approval_by_pi', 'created_by',]
+#             else:
+#                 return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by']
+#         else:
+#             return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
     
-    def add_view(self,request,extra_content=None):
-        '''Override default add_view to show only desired fields'''
+#     def add_view(self,request,extra_content=None):
+#         '''Override default add_view to show only desired fields'''
         
-        self.fields = ('name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
-                'reference', 'plasmid_map',)
-        return super(NzPlasmidPage,self).add_view(request)
+#         self.fields = ('name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
+#                 'reference', 'plasmid_map',)
+#         return super(NzPlasmidPage,self).add_view(request)
 
-    def change_view(self,request,object_id,extra_content=None):
-        '''Override default change_view to show only desired fields'''
+#     def change_view(self,request,object_id,extra_content=None):
+#         '''Override default change_view to show only desired fields'''
         
-        self.fields = ('name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
-                'reference', 'plasmid_map', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
-                'last_changed_approval_by_pi', 'created_by',)
-        return super(NzPlasmidPage,self).change_view(request,object_id)
+#         self.fields = ('name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
+#                 'reference', 'plasmid_map', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
+#                 'last_changed_approval_by_pi', 'created_by',)
+#         return super(NzPlasmidPage,self).change_view(request,object_id)
 
-    def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
-        """Override default changeform_view to hide Save buttons when certain conditions (same as
-        those in get_readonly_fields method) are met"""
+#     def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
+#         """Override default changeform_view to hide Save buttons when certain conditions (same as
+#         those in get_readonly_fields method) are met"""
 
-        extra_context = extra_context or {}
-        extra_context['show_submit_line'] = True
-        if object_id:
-            obj = collection_management_NzPlasmid.objects.get(pk=object_id)
-            if obj:
-                if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
-                    if not request.user.has_perm('collection_management.change_nzplasmid', obj):
-                        extra_context['show_submit_line'] = False
-        return super(NzPlasmidPage, self).changeform_view(request, object_id, extra_context=extra_context)
+#         extra_context = extra_context or {}
+#         extra_context['show_submit_line'] = True
+#         if object_id:
+#             obj = collection_management_NzPlasmid.objects.get(pk=object_id)
+#             if obj:
+#                 if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
+#                     if not request.user.has_perm('collection_management.change_nzplasmid', obj):
+#                         extra_context['show_submit_line'] = False
+#         return super(NzPlasmidPage, self).changeform_view(request, object_id, extra_context=extra_context)
 
-    def get_plasmidmap_short_name(self, instance):
-        '''This function allows you to define a custom field for the list view to
-        be defined in list_display as the name of the function, e.g. in this case
-        list_display = ('id', 'name', 'selection', 'get_plasmidmap_short_name','created_by',)'''
-        if instance.plasmid_map:
-            return mark_safe('<a class="image-link" href="{0}">View</a> | <a href="{1}">Download</a>'.format(str(instance.plasmid_map.url.replace("collection_management", "plasmid_map_png").replace(".dna", ".png")),str(instance.plasmid_map.url)))
-        else:
-            return ''
-    get_plasmidmap_short_name.short_description = 'Plasmid map'
+#     def get_plasmidmap_short_name(self, instance):
+#         '''This function allows you to define a custom field for the list view to
+#         be defined in list_display as the name of the function, e.g. in this case
+#         list_display = ('id', 'name', 'selection', 'get_plasmidmap_short_name','created_by',)'''
+#         if instance.plasmid_map:
+#             return mark_safe('<a class="image-link" href="{0}">View</a> | <a href="{1}">Download</a>'.format(str(instance.plasmid_map.url.replace("collection_management", "plasmid_map_png").replace(".dna", ".png")),str(instance.plasmid_map.url)))
+#         else:
+#             return ''
+#     get_plasmidmap_short_name.short_description = 'Plasmid map'
 
-    class Media:
-        css = {
-            "all": ('admin/css/vendor/magnific-popup.css',
-            )}
+#     class Media:
+#         css = {
+#             "all": ('admin/css/vendor/magnific-popup.css',
+#             )}
 
-    def obj_perms_manage_view(self, request, object_pk):
-        """
-        Main object Guardian permissions view. 
+#     def obj_perms_manage_view(self, request, object_pk):
+#         """
+#         Main object Guardian permissions view. 
 
-        Customized to allow only record owner to change permissions
-        """
-        obj = collection_management_NzPlasmid.objects.get(pk=object_pk)
+#         Customized to allow only record owner to change permissions
+#         """
+#         obj = collection_management_NzPlasmid.objects.get(pk=object_pk)
         
-        if obj:
-            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
-                messages.error(request, 'Nice try, you are allowed to change the permissions of your own records only.')
-                return HttpResponseRedirect("..")
-        return super(NzPlasmidPage,self).obj_perms_manage_view(request, object_pk)
+#         if obj:
+#             if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
+#                 messages.error(request, 'Nice try, you are allowed to change the permissions of your own records only.')
+#                 return HttpResponseRedirect("..")
+#         return super(NzPlasmidPage,self).obj_perms_manage_view(request, object_pk)
 
-my_admin_site.register(collection_management_NzPlasmid, NzPlasmidPage)
+# my_admin_site.register(collection_management_NzPlasmid, NzPlasmidPage)
 
 #################################################
 #              E. COLI STRAIN PAGES             #

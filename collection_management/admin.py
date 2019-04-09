@@ -97,7 +97,7 @@ def snapgene_plasmid_map_preview(dna_plasmid_map_path, plasmid_prefix, obj_id, o
             except:
                 continue
             break
-        png_plasmid_map_path = dna_plasmid_map_path.replace("collection_management", "plasmid_map_png").replace(".dna", ".png")
+        png_plasmid_map_path = dna_plasmid_map_path.replace("huplasmid", "huplasmid/png").replace(".dna", ".png")
         common_features_path = os.path.join(BASE_DIR, "snapgene/standardCommonFeatures.ftrs")
         argument = {"request":"detectFeatures", "inputFile": dna_plasmid_map_path, 
         "outputFile": dna_plasmid_map_path, "featureDatabase": common_features_path}
@@ -513,7 +513,7 @@ class MyAdminSite(admin.AdminSite):
             if encoding:
                 response["Content-Encoding"] = encoding
             
-            if url_path.startswith('collection_management'):
+            if url_path.startswith('collection_management') and not url_path.endswith('png'):
                 try:
                     app_name, model_name, file_name = url_path.split('/')
                     file_prefix = file_name.split('_')[0]
@@ -866,6 +866,7 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
                 new_file_name_abs_path)
             
             obj.plasmid_map.name = new_file_name
+            obj.plasmid_map_png = new_file_name.replace("huplasmid", "huplasmid/png").replace(".dna", ".png")
             obj.save()
 
             # For new records, delete first history record, which contains the unformatted plasmid_map name, and change 
@@ -892,18 +893,18 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
         
         if obj:
             if request.user.has_perm('collection_management.change_huplasmid', obj):
-                return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',]
+                return ['plasmid_map_png', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',]
             if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by.id == 6) or request.user.groups.filter(name='Guest').exists():
                 return ['name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
-                    'reference', 'plasmid_map', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
+                    'reference', 'plasmid_map', 'plasmid_map_png', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
                     'last_changed_approval_by_pi', 'created_by',]
             else:
                 if obj.created_by.id == 6 and not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists()): # Show plasmid_map and note as editable fields, if record belongs to Helle (user id = 6)
                     return ['name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 
-                    'reference', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
+                    'reference', 'plasmid_map_png', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
                     'last_changed_approval_by_pi', 'created_by',]
                 else:
-                    return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi','created_by',]
+                    return ['plasmid_map_png', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi','created_by',]
         else:
             return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
     
@@ -918,7 +919,7 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
         '''Override default change_view to show only desired fields'''
         
         self.fields = ('name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
-                'reference', 'plasmid_map', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
+                'reference', 'plasmid_map', 'plasmid_map_png', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
                 'last_changed_approval_by_pi', 'created_by',)
         return super(HuPlasmidPage,self).change_view(request,object_id)
 
@@ -942,7 +943,7 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
         list_display = ('id', 'name', 'selection', 'get_plasmidmap_short_name','created_by',)'''
         
         if instance.plasmid_map:
-            return mark_safe('<a class="image-link" href="{0}">View</a> | <a href="{1}">Download</a>'.format(str(instance.plasmid_map.url.replace("collection_management", "plasmid_map_png").replace(".dna", ".png")),str(instance.plasmid_map.url)))
+            return mark_safe('<a class="image-link" href="{0}">View</a> | <a href="{1}">Download</a>'.format(str(instance.plasmid_map_png.url),str(instance.plasmid_map.url)))
         else:
             return ''
     get_plasmidmap_short_name.short_description = 'Plasmid map'

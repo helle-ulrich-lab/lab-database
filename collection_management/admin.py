@@ -83,7 +83,7 @@ import time
 #################################################
 
 @background(schedule=1) # Run snapgene_plasmid_map_preview 1 s after it is called, as "background" process
-def snapgene_plasmid_map_preview(dna_plasmid_map_path, plasmid_prefix, obj_id, obj_name):
+def snapgene_plasmid_map_preview(plasmid_map_path, png_plasmid_map_path, obj_id, obj_name):
     """ Given a path to a snapgene plasmid map, use snapegene server
     to detect common features and create map preview as png
     and """
@@ -97,13 +97,12 @@ def snapgene_plasmid_map_preview(dna_plasmid_map_path, plasmid_prefix, obj_id, o
             except:
                 continue
             break
-        png_plasmid_map_path = dna_plasmid_map_path.replace("huplasmid", "huplasmid/png").replace(".dna", ".png")
         common_features_path = os.path.join(BASE_DIR, "snapgene/standardCommonFeatures.ftrs")
-        argument = {"request":"detectFeatures", "inputFile": dna_plasmid_map_path, 
-        "outputFile": dna_plasmid_map_path, "featureDatabase": common_features_path}
+        argument = {"request":"detectFeatures", "inputFile": plasmid_map_path, 
+        "outputFile": plasmid_map_path, "featureDatabase": common_features_path}
         client.requestResponse(argument, 10000)                       
-        argument = {"request":"generatePNGMap", "inputFile": dna_plasmid_map_path,
-        "outputPng": png_plasmid_map_path, "title": "{}{} - {}".format(plasmid_prefix, obj_id, obj_name),
+        argument = {"request":"generatePNGMap", "inputFile": plasmid_map_path,
+        "outputPng": png_plasmid_map_path, "title": "pHU{} - {}".format(obj_id, obj_name),
         "showEnzymes": True, "showFeatures": True, "showPrimers": True, "showORFs": False}
         client.requestResponse(argument, 10000)
     except:
@@ -880,7 +879,7 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
             
             # For plasmid map, detect common features and save as png using snapgene server
             try:
-                snapgene_plasmid_map_preview(new_file_name_abs_path, "pHU", obj.id, obj.name)
+                snapgene_plasmid_map_preview(obj.plasmid_map.path, obj.plasmid_map_png.path, obj.id, obj.name)
             except:
                 messages.warning(request, 'Could not detect common features or save map preview')
     

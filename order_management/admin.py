@@ -851,7 +851,7 @@ class MsdsFormQLSchema(DjangoQLSchema):
 class MsdsFormPage(DjangoQLSearchMixin, admin.ModelAdmin):
     list_display = ('id','name',)
     list_per_page = 25
-    ordering = ['id']
+    ordering = ['name']
     djangoql_schema = MsdsFormQLSchema
     
     def add_view(self,request,extra_content=None):

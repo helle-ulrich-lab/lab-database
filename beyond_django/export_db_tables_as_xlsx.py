@@ -10,8 +10,8 @@ from collection_management.admin import OligoExportResource
 from collection_management.models import ScPombeStrain
 from collection_management.admin import ScPombeStrainExportResource
 
-from collection_management.models import NzPlasmid
-from collection_management.admin import NzPlasmidExportResource
+# from collection_management.models import NzPlasmid
+# from collection_management.admin import NzPlasmidExportResource
 
 from collection_management.models import EColiStrain
 from collection_management.admin import EColiStrainExportResource
@@ -56,7 +56,7 @@ export_xlsx(SaCerevisiaeStrain, SaCerevisiaeStrainExportResource)
 export_xlsx(HuPlasmid, HuPlasmidExportResource)
 export_xlsx(Oligo, OligoExportResource)
 export_xlsx(ScPombeStrain, ScPombeStrainExportResource)
-export_xlsx(NzPlasmid, NzPlasmidExportResource)
+# export_xlsx(NzPlasmid, NzPlasmidExportResource)
 export_xlsx(EColiStrain, EColiStrainExportResource)
 export_xlsx(MammalianLine, MammalianLineExportResource)
 export_xlsx(Antibody, OrderExportResource)

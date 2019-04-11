@@ -90,9 +90,10 @@ class HuPlasmid (models.Model, SaveWithoutHistoricalRecord):
     received_from = models.CharField("Received from", max_length = 255, blank=True)
     note = models.CharField("Note", max_length = 300, blank=True)
     reference = models.CharField("Reference", max_length = 255, blank=True)
-    plasmid_map = models.FileField("Plasmid Map (max. 2 MB)", upload_to="collection_management/huplasmid/", blank=True)
+    plasmid_map = models.FileField("Plasmid map (max. 2 MB)", upload_to="collection_management/huplasmid/dna/", blank=True)
     plasmid_map_png = models.ImageField("Plasmid image" , upload_to="collection_management/huplasmid/png/", blank=True)
-    
+    plasmid_map_gbk = models.FileField("Plasmid map (.gbk)", upload_to="collection_management/huplasmid/gb/", blank=True)
+
     created_date_time = models.DateTimeField("Created", auto_now_add=True)
     created_approval_by_pi = models.BooleanField("Record Creation Approval", default = False)
     last_changed_date_time = models.DateTimeField("Last Changed", auto_now=True)

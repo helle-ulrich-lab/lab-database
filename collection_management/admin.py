@@ -83,7 +83,7 @@ import time
 #################################################
 
 @background(schedule=1) # Run snapgene_plasmid_map_preview 1 s after it is called, as "background" process
-def snapgene_plasmid_map_preview(plasmid_map_path, png_plasmid_map_path, obj_id, obj_name):
+def snapgene_plasmid_map_preview(plasmid_map_path, png_plasmid_map_path, gbk_plasmid_map_path, obj_id, obj_name):
     """ Given a path to a snapgene plasmid map, use snapegene server
     to detect common features and create map preview as png
     and """
@@ -97,14 +97,22 @@ def snapgene_plasmid_map_preview(plasmid_map_path, png_plasmid_map_path, obj_id,
             except:
                 continue
             break
+        
         common_features_path = os.path.join(BASE_DIR, "snapgene/standardCommonFeatures.ftrs")
+        
         argument = {"request":"detectFeatures", "inputFile": plasmid_map_path, 
         "outputFile": plasmid_map_path, "featureDatabase": common_features_path}
         client.requestResponse(argument, 10000)                       
+        
         argument = {"request":"generatePNGMap", "inputFile": plasmid_map_path,
         "outputPng": png_plasmid_map_path, "title": "pHU{} - {}".format(obj_id, obj_name),
         "showEnzymes": True, "showFeatures": True, "showPrimers": True, "showORFs": False}
         client.requestResponse(argument, 10000)
+        
+        argument = {"request":"exportDNAFile", "inputFile": plasmid_map_path,
+        "outputFile": gbk_plasmid_map_path, "exportFilter": "biosequence.gb"}
+        client.requestResponse(argument, 10000)
+
     except:
         mail_admins("Snapgene server error", "There was an error with creating the preview for {} with snapgene server".format(dna_plasmid_map_path), fail_silently=True)
         raise Exception
@@ -513,14 +521,24 @@ class MyAdminSite(admin.AdminSite):
                 response["Content-Encoding"] = encoding
             
             if url_path.startswith('collection_management') and not url_path.endswith('png'):
-                try:
-                    app_name, model_name, file_name = url_path.split('/')
-                    file_prefix = file_name.split('_')[0]
-                    file_ext = file_name.split('.')[-1]
-                    model = apps.get_model(app_name, model_name)
-                    obj_id = int(re.findall('\d+(?=_)', file_name)[0])
-                except:
-                    raise Http404()
+                if '/huplasmid/' in url_path:
+                    try:
+                        app_name, model_name, file_type, file_name = url_path.split('/')
+                        file_prefix = file_name.split('_')[0]
+                        file_ext = file_name.split('.')[-1]
+                        model = apps.get_model(app_name, model_name)
+                        obj_id = int(re.findall('\d+(?=_)', file_name)[0])
+                    except:
+                        raise Http404()
+                else:
+                    try:
+                        app_name, model_name, file_name = url_path.split('/')
+                        file_prefix = file_name.split('_')[0]
+                        file_ext = file_name.split('.')[-1]
+                        model = apps.get_model(app_name, model_name)
+                        obj_id = int(re.findall('\d+(?=_)', file_name)[0])
+                    except:
+                        raise Http404()
 
                 if model_name == 'mammalianlinedoc':
                     mammalianline = apps.get_model(app_name, "mammalianline")
@@ -542,6 +560,8 @@ class MyAdminSite(admin.AdminSite):
                 file_name = os.path.basename(url_path)
                 if 'pdf' in mimetype.lower():
                     response["Content-Disposition"] = "inline; filename={download_file_name}".format(download_file_name=file_name)
+                elif 'png' in mimetype.lower():
+                    response["Content-Disposition"] = ""
                 else:
                     response["Content-Disposition"] = "attachment; filename={download_file_name}".format(download_file_name=file_name)
             
@@ -849,11 +869,11 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
         
         # Rename plasmid map
         if rename_and_preview:
-            plasmid_map_dir_path = os.path.join(MEDIA_ROOT, 'collection_management/huplasmid/')
+            plasmid_map_dir_path = os.path.join(MEDIA_ROOT, 'collection_management/huplasmid/dna/')
             old_file_name_abs_path = os.path.join(MEDIA_ROOT, obj.plasmid_map.name)
             old_file_name, ext = os.path.splitext(os.path.basename(old_file_name_abs_path)) 
             new_file_name = os.path.join(
-                'collection_management/huplasmid/', 
+                'collection_management/huplasmid/dna/', 
                 "pHU{}_{}_{}{}".format(obj.id, time.strftime("%Y%m%d"), time.strftime("%H%M%S"), ext.lower()))
             new_file_name_abs_path = os.path.join(MEDIA_ROOT, new_file_name)
             
@@ -865,7 +885,8 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
                 new_file_name_abs_path)
             
             obj.plasmid_map.name = new_file_name
-            obj.plasmid_map_png = new_file_name.replace("huplasmid", "huplasmid/png").replace(".dna", ".png")
+            obj.plasmid_map_png.name = new_file_name.replace("huplasmid/dna", "huplasmid/png").replace(".dna", ".png")
+            obj.plasmid_map_gbk.name = new_file_name.replace("huplasmid/dna", "huplasmid/gbk").replace(".dna", ".gbk")
             obj.save()
 
             # For new records, delete first history record, which contains the unformatted plasmid_map name, and change 
@@ -879,7 +900,7 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
             
             # For plasmid map, detect common features and save as png using snapgene server
             try:
-                snapgene_plasmid_map_preview(obj.plasmid_map.path, obj.plasmid_map_png.path, obj.id, obj.name)
+                snapgene_plasmid_map_preview(obj.plasmid_map.path, obj.plasmid_map_png.path, obj.plasmid_map_gbk.path, obj.id, obj.name)
             except:
                 messages.warning(request, 'Could not detect common features or save map preview')
     
@@ -892,18 +913,18 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
         
         if obj:
             if request.user.has_perm('collection_management.change_huplasmid', obj):
-                return ['plasmid_map_png', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',]
+                return ['plasmid_map_png', 'plasmid_map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',]
             if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by.id == 6) or request.user.groups.filter(name='Guest').exists():
                 return ['name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
-                    'reference', 'plasmid_map', 'plasmid_map_png', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
+                    'reference', 'plasmid_map', 'plasmid_map_png', 'plasmid_map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
                     'last_changed_approval_by_pi', 'created_by',]
             else:
                 if obj.created_by.id == 6 and not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists()): # Show plasmid_map and note as editable fields, if record belongs to Helle (user id = 6)
                     return ['name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 
-                    'reference', 'plasmid_map_png', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
+                    'reference', 'plasmid_map_png', 'plasmid_map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
                     'last_changed_approval_by_pi', 'created_by',]
                 else:
-                    return ['plasmid_map_png', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi','created_by',]
+                    return ['plasmid_map_png', 'plasmid_map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi','created_by',]
         else:
             return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
     
@@ -918,7 +939,7 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
         '''Override default change_view to show only desired fields'''
         
         self.fields = ('name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
-                'reference', 'plasmid_map', 'plasmid_map_png', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
+                'reference', 'plasmid_map', 'plasmid_map_png', 'plasmid_map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
                 'last_changed_approval_by_pi', 'created_by',)
         return super(HuPlasmidPage,self).change_view(request,object_id)
 
@@ -942,7 +963,7 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
         list_display = ('id', 'name', 'selection', 'get_plasmidmap_short_name','created_by',)'''
         
         if instance.plasmid_map:
-            return mark_safe('<a class="image-link" href="{0}">View</a> | <a href="{1}">Download</a>'.format(str(instance.plasmid_map_png.url),str(instance.plasmid_map.url)))
+            return mark_safe('<a class="image-link" href="{}">png</a> | <a href="{}">dna</a> | <a href="{}">gbk</a>'.format(str(instance.plasmid_map_png.url),str(instance.plasmid_map.url), str(instance.plasmid_map_gbk.url)))
         else:
             return ''
     get_plasmidmap_short_name.short_description = 'Plasmid map'

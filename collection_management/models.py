@@ -39,10 +39,19 @@ class SaveWithoutHistoricalRecord():
 #         SA. CEREVISIAE STRAIN MODEL           #
 #################################################
 
+mating_type_choice = (
+    ('a','a'),
+    ('alpha','alpha'),
+    ('unknown','unknown'),
+    ('a/a','a/a'),
+    ('alpha/alpha','alpha/alpha'),
+    ('a/alpha','a/alpha')   
+)
+
 class SaCerevisiaeStrain (models.Model):
     name = models.CharField("Name", max_length = 255, blank=False)
     relevant_genotype = models.CharField("Relevant Genotype", max_length = 255, blank=False)
-    mating_type = models.CharField("Mating Type", max_length = 20, blank=True)
+    mating_type = models.CharField("Mating Type", choices = mating_type_choice, max_length = 20, blank=True)
     chromosomal_genotype = models.TextField("Chromosomal Genotype", blank=True)
     parental_strain = models.CharField("Parental Strain", max_length = 255, blank=True)
     construction = models.TextField("Construction", blank=True)
@@ -81,7 +90,7 @@ class SaCerevisiaeStrain (models.Model):
 #################################################
 
 class HuPlasmid (models.Model, SaveWithoutHistoricalRecord):
-    name = models.CharField("Name", max_length = 255, blank=False)
+    name = models.CharField("Name", max_length = 255, unique=True, blank=False)
     other_name = models.CharField("Other Name", max_length = 255, blank=True)
     parent_vector = models.CharField("Parent Vector", max_length = 255, blank=True)
     selection = models.CharField("Selection", max_length = 50, blank=False)
@@ -281,7 +290,8 @@ class MammalianLine (models.Model):
     name = models.CharField("Name", max_length = 255, blank=False)
     box_name = models.CharField("Box", max_length = 255, blank=False)
     alternative_name = models.CharField("Alternative name", max_length = 255, blank=True)
-    parental_line = models.CharField("Parental cell line", max_length = 255, blank=False)
+    parental_line_old = models.CharField("Parental cell line", max_length = 255, blank=False)
+    parental_line = models.ForeignKey('self', verbose_name = 'parental line', blank=True, null=True)
     organism = models.CharField("Organism", max_length = 20, blank=True)
     cell_type_tissue = models.CharField("Cell type/Tissue", max_length = 255, blank=True)
     culture_type = models.CharField("Culture type", max_length = 255, blank=True)
@@ -303,7 +313,7 @@ class MammalianLine (models.Model):
         verbose_name_plural = 'mammmalian cell lines'
     
     def __str__(self):
-        return str(self.id)
+        return "#{} - {}".format(self.id, self.name)
 
 ################################################
 #        MAMMALIAN CELL LINE DOC MODEL         #

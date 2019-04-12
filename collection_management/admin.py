@@ -1656,6 +1656,7 @@ class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Cust
     djangoql_schema = MammalianLineQLSchema
     inlines = [MammalianLineDocInline, AddMammalianLineDocInline]
     actions = [export_mammalianline]
+    raw_id_fields = ['parental_line']
     
     def save_model(self, request, obj, form, change):
         '''Override default save_model to limit a user's ability to save a record

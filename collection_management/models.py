@@ -298,7 +298,7 @@ class MammalianLine (models.Model):
     growth_condition = models.CharField("growth conditions", max_length = 255, blank=True)
     freezing_medium = models.CharField("freezing medium", max_length = 255, blank=True)
     received_from = models.CharField("received from", max_length = 255, blank=True)
-    description_comment = models.TextField("description/comments", max_length = 500, help_text='Max. 500 characters', blank=True)
+    description_comment = models.TextField("description/comments", blank=True)
     
     created_date_time = models.DateTimeField("created", auto_now_add=True)
     created_approval_by_pi = models.BooleanField("record creation approval", default = False)
@@ -400,7 +400,7 @@ class Antibody (models.Model, SaveWithoutHistoricalRecord):
     catalogue_number = models.CharField("catalogue number", max_length = 255, blank=True)
     l_ocation = models.CharField("location", max_length = 255, blank=True)
     a_pplication = models.CharField("application", max_length = 255, blank=True)
-    description_comment = models.TextField("description/comments", max_length = 300, blank=True)
+    description_comment = models.TextField("description/comments", blank=True)
     info_sheet = models.FileField("info sheet (max. 2 MB)", upload_to="collection_management/antibody/", blank=True)
 
     created_date_time = models.DateTimeField("created", auto_now_add=True)

@@ -70,7 +70,7 @@ class SaCerevisiaeStrain (models.Model):
     last_changed_date_time = models.DateTimeField("last changed", auto_now=True)
     last_changed_approval_by_pi = models.NullBooleanField("record change approval", default = None)
     approval_by_pi_date_time = models.DateTimeField(null = True, default = None)
-    created_by = models.ForeignKey(User)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT)
     history = HistoricalRecords()
     
     class Meta:
@@ -108,7 +108,7 @@ class HuPlasmid (models.Model, SaveWithoutHistoricalRecord):
     last_changed_date_time = models.DateTimeField("last changed", auto_now=True)
     last_changed_approval_by_pi = models.NullBooleanField("record change approval", default = None)
     approval_by_pi_date_time = models.DateTimeField(null = True, default = None)
-    created_by = models.ForeignKey(User)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT)
     history = HistoricalRecords()
     
     class Meta:
@@ -159,7 +159,7 @@ class Oligo (models.Model):
     last_changed_date_time = models.DateTimeField("last changed", auto_now=True)
     last_changed_approval_by_pi = models.NullBooleanField("record change approval", default = None)
     approval_by_pi_date_time = models.DateTimeField(null = True, default = None)
-    created_by = models.ForeignKey(User)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT)
     history = HistoricalRecords()
     
     def __str__(self):
@@ -193,7 +193,7 @@ class ScPombeStrain (models.Model):
     last_changed_date_time = models.DateTimeField("last changed", auto_now=True)
     last_changed_approval_by_pi = models.NullBooleanField("record change approval", default = None)
     approval_by_pi_date_time = models.DateTimeField(null = True, default = None)
-    created_by = models.ForeignKey(User)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT)
     history = HistoricalRecords()
     
     class Meta:
@@ -224,7 +224,7 @@ class NzPlasmid (models.Model, SaveWithoutHistoricalRecord):
     last_changed_date_time = models.DateTimeField("last changed", auto_now=True)
     last_changed_approval_by_pi = models.NullBooleanField("record change approval", default = None)
     approval_by_pi_date_time = models.DateTimeField(null = True, default = None)
-    created_by = models.ForeignKey(User)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT)
     history = HistoricalRecords()
 
     def clean(self): 
@@ -272,7 +272,7 @@ class EColiStrain (models.Model):
     last_changed_date_time = models.DateTimeField("last changed", auto_now=True)
     last_changed_approval_by_pi = models.NullBooleanField("record change approval", default = None)
     approval_by_pi_date_time = models.DateTimeField(null = True, default = None)
-    created_by = models.ForeignKey(User)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT)
     history = HistoricalRecords()
     
     class Meta:
@@ -291,7 +291,7 @@ class MammalianLine (models.Model):
     box_name = models.CharField("box", max_length = 255, blank=False)
     alternative_name = models.CharField("alternative name", max_length = 255, blank=True)
     parental_line_old = models.CharField("parental cell line", max_length = 255, blank=False)
-    parental_line = models.ForeignKey('self', verbose_name = 'parental line', blank=True, null=True)
+    parental_line = models.ForeignKey('self', on_delete=models.PROTECT, verbose_name = 'parental line', blank=True, null=True)
     organism = models.CharField("organism", max_length = 20, blank=True)
     cell_type_tissue = models.CharField("cell type/tissue", max_length = 255, blank=True)
     culture_type = models.CharField("culture type", max_length = 255, blank=True)
@@ -305,7 +305,7 @@ class MammalianLine (models.Model):
     last_changed_date_time = models.DateTimeField("last changed", auto_now=True)
     last_changed_approval_by_pi = models.NullBooleanField("record change approval", default = None)
     approval_by_pi_date_time = models.DateTimeField(null = True, default = None)
-    created_by = models.ForeignKey(User)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT)
     history = HistoricalRecords()
     
     class Meta:
@@ -324,7 +324,7 @@ class MammalianLineDoc(models.Model):
     typ_e = models.CharField("doc type", max_length=255, choices=[["virus", "Virus test"], ["mycoplasma", "Mycoplasma test"], ["fingerprint", "Fingerprinting"], ["other", "Other"]], blank=False)
     date_of_test = models.DateField("date of test", blank=False)
     comment = models.CharField("comment", max_length=150, blank=True)
-    mammalian_line = models.ForeignKey(MammalianLine)
+    mammalian_line = models.ForeignKey(MammalianLine, on_delete=models.PROTECT)
     
     created_date_time = models.DateTimeField("created", auto_now_add=True)
     last_changed_date_time = models.DateTimeField("last Changed", auto_now=True)
@@ -405,7 +405,7 @@ class Antibody (models.Model, SaveWithoutHistoricalRecord):
 
     created_date_time = models.DateTimeField("created", auto_now_add=True)
     last_changed_date_time = models.DateTimeField("last changed", auto_now=True)
-    created_by = models.ForeignKey(User)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT)
     history = HistoricalRecords()
 
     def clean(self):

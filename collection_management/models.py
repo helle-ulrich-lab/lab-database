@@ -11,6 +11,9 @@ from django.contrib.auth.models import User
 from django.forms import ValidationError
 from django.utils.encoding import force_text
 
+from formz.models import ZkbsPlasmid
+from formz.models import FormZBaseElement
+
 #################################################
 #        ADDED FUNCTIONALITIES IMPORTS          #
 #################################################
@@ -110,6 +113,10 @@ class HuPlasmid (models.Model, SaveWithoutHistoricalRecord):
     approval_by_pi_date_time = models.DateTimeField(null = True, default = None)
     created_by = models.ForeignKey(User, on_delete=models.PROTECT)
     history = HistoricalRecords()
+
+    vector_known_zkbs = models.NullBooleanField("backbone in ZKBS database?", default = None, blank=True, null=True)
+    vector_zkbs = models.ForeignKey(ZkbsPlasmid, verbose_name = 'ZKBS database vector', on_delete=models.PROTECT, blank=True, null=True)
+    formz_elements = models.ManyToManyField(FormZBaseElement, verbose_name = 'Elements', blank=True)
     
     class Meta:
         '''Set a custom name to be used throughout the admin pages'''

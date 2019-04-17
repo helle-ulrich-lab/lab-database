@@ -58,7 +58,8 @@ INSTALLED_APPS = [
     'wiki.plugins.images.apps.ImagesConfig',
     'wiki.plugins.macros.apps.MacrosConfig',
     'background_task',
-]
+    'formz',
+    ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

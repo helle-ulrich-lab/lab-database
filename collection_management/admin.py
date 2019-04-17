@@ -829,6 +829,7 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
     formfield_overrides = {models.CharField: {'widget': TextInput(attrs={'size':'93'})},} # Make TextInput fields wider
     djangoql_schema = HuPlasmidQLSchema
     actions = [export_huplasmid]
+    filter_horizontal = ['formz_elements',]
     
     def save_model(self, request, obj, form, change):
         '''Override default save_model to limit a user's ability to save a record
@@ -917,12 +918,12 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
             if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by.id == 6) or request.user.groups.filter(name='Guest').exists():
                 return ['name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
                     'reference', 'plasmid_map', 'plasmid_map_png', 'plasmid_map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
-                    'last_changed_approval_by_pi', 'created_by',]
+                    'last_changed_approval_by_pi', 'created_by', 'vector_known_zkbs', 'vector_zkbs','formz_elements']
             else:
                 if obj.created_by.id == 6 and not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists()): # Show plasmid_map and note as editable fields, if record belongs to Helle (user id = 6)
                     return ['name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 
                     'reference', 'plasmid_map_png', 'plasmid_map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
-                    'last_changed_approval_by_pi', 'created_by',]
+                    'last_changed_approval_by_pi', 'created_by', 'vector_known_zkbs', 'vector_zkbs','formz_elements']
                 else:
                     return ['plasmid_map_png', 'plasmid_map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi','created_by',]
         else:
@@ -933,15 +934,60 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
         
         self.fields = ('name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
                 'reference', 'plasmid_map',)
+
+        # self.fieldsets = (
+        # (None, {
+        #     'fields': ('name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
+        #         'reference', 'plasmid_map',)
+        # }),
+        # ('Formablatt Z', {
+        #     'fields': ('vector_known_zkbs', 'vector_zkbs','formz_elements')
+        # }),
+        # )
+
         return super(HuPlasmidPage,self).add_view(request)
     
-    def change_view(self,request,object_id,extra_content=None):
+    def change_view(self,request,object_id,extra_context=None):
         '''Override default change_view to show only desired fields'''
+
+        if object_id:
+            obj = collection_management_HuPlasmid.objects.get(pk=object_id)
+            if obj:
+                if request.user == obj.created_by:
+                    self.save_as = True
         
-        self.fields = ('name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
+        if '_saveasnew' in request.POST:
+            self.fields = ('name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
+                'reference', 'plasmid_map',)
+        else:
+            self.fields = ('name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
                 'reference', 'plasmid_map', 'plasmid_map_png', 'plasmid_map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
                 'last_changed_approval_by_pi', 'created_by',)
-        return super(HuPlasmidPage,self).change_view(request,object_id)
+
+        # if '_saveasnew' in request.POST:
+        #     self.fieldsets = (
+        #         (None, {
+        #             'fields': ('name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
+        #         'reference', 'plasmid_map',)
+        #         }),
+        #         ('Formablatt Z', {
+        #             'fields': ('vector_known_zkbs', 'vector_zkbs','formz_elements')
+        #             }),
+        #         )
+        # else:
+        #     self.fieldsets = (
+        #     (None, {
+        #         'fields': ('name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
+        #             'reference', 'plasmid_map', 'plasmid_map_png', 'plasmid_map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
+        #             'last_changed_approval_by_pi', 'created_by',)
+        #     }),
+        #     ('Formablatt Z', {
+        #         'classes': ('collapse',),
+        #         'fields': ('vector_known_zkbs', 'vector_zkbs','formz_elements')
+        #     }),
+        #     )
+        
+        return super(HuPlasmidPage,self).change_view(request,object_id,extra_context)
 
     def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
         """Override default changeform_view to hide Save buttons when certain conditions (same as
@@ -1694,16 +1740,16 @@ class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Cust
         else:
             return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
     
-    def get_form(self, request, obj, *args, **kwargs):
-        form = super(MammalianLinePage, self).get_form(request, *args, **kwargs)
+    # def get_form(self, request, obj, *args, **kwargs):
+    #     form = super(MammalianLinePage, self).get_form(request, *args, **kwargs)
 
-        if obj:
-            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
-                if not request.user.has_perm('collection_management.change_mammalianline', obj):
-                    form.base_fields['parental_line'].disabled = True
-                    self.raw_id_fields
+    #     if obj:
+    #         if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
+    #             if not request.user.has_perm('collection_management.change_mammalianline', obj):
+    #                 form.base_fields['parental_line'].disabled = True
+    #                 self.raw_id_fields
 
-        return form
+    #     return form
 
     def add_view(self,request,extra_content=None):
         '''Override default add_view to show only desired fields'''
@@ -1979,3 +2025,28 @@ from background_task.admin import CompletedTaskAdmin
 
 my_admin_site.register(Task, TaskAdmin)
 my_admin_site.register(CompletedTask, CompletedTaskAdmin)
+
+#################################################
+#                  FORMBLATT Z                  #
+#################################################
+
+from formz.models import NucleicAcidPurity as formz_NucleicAcidPurity
+from formz.models import NucleicAcidRisk as formz_NucleicAcidRisk
+from formz.models import GenTechMethod as formz_GenTechMethod
+from formz.models import FormZProject
+from formz.models import FormZBaseElement
+from formz.models import FormZHeader
+
+from formz.admin import NucleicAcidPurityPage as formz_NucleicAcidPurityPage
+from formz.admin import NucleicAcidRiskPage as formz_NucleicAcidRiskPage
+from formz.admin import GenTechMethodPage as formz_GenTechMethodPage
+from formz.admin import FormZProjectPage
+from formz.admin import FormZBaseElementPage
+from formz.admin import FormZHeaderPage
+
+my_admin_site.register(formz_NucleicAcidPurity, formz_NucleicAcidPurityPage)
+my_admin_site.register(formz_NucleicAcidRisk, formz_NucleicAcidRiskPage)
+my_admin_site.register(formz_GenTechMethod, formz_GenTechMethodPage)
+my_admin_site.register(FormZProject, FormZProjectPage)
+my_admin_site.register(FormZBaseElement, FormZBaseElementPage)
+my_admin_site.register(FormZHeader, FormZHeaderPage)

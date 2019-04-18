@@ -1702,8 +1702,10 @@ class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Cust
     djangoql_schema = MammalianLineQLSchema
     inlines = [MammalianLineDocInline, AddMammalianLineDocInline]
     actions = [export_mammalianline]
-    raw_id_fields = ['parental_line']
-    
+
+    search_fields = ['id', 'name']
+    autocomplete_fields = ['parental_line']
+
     def save_model(self, request, obj, form, change):
         '''Override default save_model to limit a user's ability to save a record
         Superusers and lab managers can change all records
@@ -1739,17 +1741,33 @@ class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Cust
                 return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by']
         else:
             return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
-    
-    # def get_form(self, request, obj, *args, **kwargs):
-    #     form = super(MammalianLinePage, self).get_form(request, *args, **kwargs)
 
-    #     if obj:
-    #         if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
-    #             if not request.user.has_perm('collection_management.change_mammalianline', obj):
-    #                 form.base_fields['parental_line'].disabled = True
-    #                 self.raw_id_fields
+    def get_form(self, request, obj=None, **kwargs):
+        """
+        Modify the default factory to change form fields based on the request/object.
+        """
+        default_factory = super(MammalianLinePage, self).get_form(request, obj=obj, **kwargs)
 
-    #     return form
+        def factory(*args, **_kwargs):
+            form = default_factory(*args, **_kwargs)
+            return self.modify_form(form, request, obj, **_kwargs)
+
+        return factory
+
+    @staticmethod
+    def modify_form(form, request, obj, **kwargs):
+        """
+        Edit 'parental_line' field
+        """
+        if obj:
+            try:
+                form.fields['parental_line'].help_text = mark_safe( '<a target="_blank" href="{}">View</a>'.format(reverse("admin:{}_{}_change".format(obj._meta.app_label, obj._meta.model_name), args=(obj.parental_line.id,))))
+            except:
+                pass
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
+                if not request.user.has_perm('collection_management.change_mammalianline', obj):
+                    form.fields['parental_line'].disabled = True
+        return form
 
     def add_view(self,request,extra_content=None):
         '''Override default add_view to show only desired fields'''

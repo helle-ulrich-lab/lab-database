@@ -1081,6 +1081,7 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
     models.CharField: {'widget': TextInput(attrs={'size':'93'})},} # Make TextInput fields wider
     djangoql_schema = OligoQLSchema
     actions = [export_oligo]
+    save_as = True
 
     def get_oligo_short_sequence(self, instance):
         '''This function allows you to define a custom field for the list view to

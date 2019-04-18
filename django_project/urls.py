@@ -16,7 +16,7 @@ Including another URLconf
 
 from django.conf.urls import url
 from django.conf import settings
-from django.conf.urls import include
+from django.urls.conf import include
 from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required
@@ -29,18 +29,18 @@ from collection_management.admin import my_admin_site
 # Apply a decorator to every urlpattern and URLconf module returned by
 # Django's include() method. From https://djangosnippets.org/snippets/2532/
 
-from django.core.urlresolvers import RegexURLPattern, RegexURLResolver
+from django.urls.resolvers import URLPattern, URLResolver
 
-class DecoratedURLPattern(RegexURLPattern):
+class DecoratedURLPattern(URLPattern):
     def resolve(self, *args, **kwargs):
         result = super(DecoratedURLPattern, self).resolve(*args, **kwargs)
         if result:
             result.func = self._decorate_with(result.func)
         return result
 
-class DecoratedRegexURLResolver(RegexURLResolver):
+class DecoratedURLResolver(URLResolver):
     def resolve(self, *args, **kwargs):
-        result = super(DecoratedRegexURLResolver, self).resolve(*args, **kwargs)
+        result = super(DecoratedURLResolver, self).resolve(*args, **kwargs)
         if result:
             result.func = self._decorate_with(result.func)
         return result
@@ -49,12 +49,12 @@ def decorated_includes(func, includes, *args, **kwargs):
     urlconf_module, app_name, namespace = includes
 
     for item in urlconf_module:
-        if isinstance(item, RegexURLPattern):
+        if isinstance(item, URLPattern):
             item.__class__ = DecoratedURLPattern
             item._decorate_with = func
 
-        elif isinstance(item, RegexURLResolver):
-            item.__class__ = DecoratedRegexURLResolver
+        elif isinstance(item, URLResolver):
+            item.__class__ = DecoratedURLResolver
             item._decorate_with = func
 
     return urlconf_module, app_name, namespace
@@ -112,8 +112,8 @@ from .wiki_pdf_download import CustomAttachmentDownloadView
 
 urlpatterns = [
     url(r'^wiki/(?P<article_id>[0-9]+)/plugin/attachments/download/(?P<attachment_id>[0-9]+)/$', login_required(CustomAttachmentDownloadView.as_view())),
-    url(r'^notifications/', include(get_nyt_pattern())),
-    url(r'^wiki/',  decorated_includes(wiki_check_login_guest, include(get_wiki_pattern()))),
+    url(r'^notifications/', include('django_nyt.urls')),
+    url(r'^wiki/',  decorated_includes(wiki_check_login_guest, get_wiki_pattern())),
     url(r'^password_change/$', check_guest(auth_views.PasswordChangeView.as_view())),
     url(r'', my_admin_site.urls),
     ]

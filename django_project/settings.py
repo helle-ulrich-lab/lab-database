@@ -30,7 +30,6 @@ ALLOWED_HOSTS = DJANGO_PRIVATE_DATA['allowed_hosts']
 # Application definition
 
 INSTALLED_APPS = [
-    'flat_responsive',
     'adminactions',
     'django.contrib.admin',
     'django.contrib.auth',

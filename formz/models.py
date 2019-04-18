@@ -118,8 +118,8 @@ class FormZBaseElement (models.Model):
     donor_organism = models.CharField("donor organism", max_length = 255, blank=True, null=True)
     donor_organism_risk = models.PositiveSmallIntegerField('risk group', choices=((1,1), (2,2)), blank=True, null=True)
     nuc_acid_type = models.CharField("nucleic acid type", max_length = 255, blank=True, null=True)
-    nuc_acid_purity = models.ForeignKey(NucleicAcidPurity, verbose_name = 'nucleic acid purity', blank=True, null=True)
-    nuc_acid_risk = models.ForeignKey(NucleicAcidRisk, verbose_name = 'nucleic acid risk potential', blank=True, null=True)
+    nuc_acid_purity = models.ForeignKey(NucleicAcidPurity, verbose_name = 'nucleic acid purity', on_delete=models.PROTECT, blank=True, null=True)
+    nuc_acid_risk = models.ForeignKey(NucleicAcidRisk, verbose_name = 'nucleic acid risk potential', on_delete=models.PROTECT, blank=True, null=True)
 
     class Meta:
         '''Set a custom name to be used throughout the admin pages'''

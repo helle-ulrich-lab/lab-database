@@ -1123,7 +1123,7 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
                 return ['name','sequence', 'us_e', 'gene', 'restriction_site', 'description', 'comment', 'created_date_time',
                 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',]
             else:
-                return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
+                return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi','created_by']
         else:
             return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
     
@@ -1136,8 +1136,19 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
     def change_view(self,request,object_id,extra_content=None):
         '''Override default change_view to show only desired fields'''
         
-        self.fields = ('name','sequence', 'us_e', 'gene', 'restriction_site', 'description', 'comment',
-        'created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',)
+
+        if object_id:
+            obj = collection_management_Oligo.objects.get(pk=object_id)
+            if obj:
+                if request.user == obj.created_by:
+                    self.save_as = True
+        
+        if '_saveasnew' in request.POST:
+            self.fields = ('name','sequence', 'us_e', 'gene', 'restriction_site', 'description', 'comment',
+                'created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', )
+        else:
+            self.fields = ('name','sequence', 'us_e', 'gene', 'restriction_site', 'description', 'comment',
+                'created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',)
         return super(OligoPage,self).change_view(request,object_id)
 
     def changeform_view(self, request, object_id=None, form_url='', extra_context=None):

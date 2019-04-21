@@ -394,6 +394,13 @@ class CustomGuardedModelAdmin(GuardedModelAdmin):
 
         return HttpResponseRedirect("../..")
 
+import django.contrib.admin.widgets
+class CustomRelatedFieldWidgetWrapper(django.contrib.admin.widgets.RelatedFieldWidgetWrapper):
+    """Monkey patch CustomRelatedFieldWidgetWrapper to show
+    eye next to change icon"""
+    template_name = 'admin/related_widget_wrapper_custom.html'
+django.contrib.admin.widgets.RelatedFieldWidgetWrapper = CustomRelatedFieldWidgetWrapper
+
 #################################################
 #               CUSTOM ADMIN SITE               #
 #################################################
@@ -1772,10 +1779,10 @@ class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Cust
         Edit 'parental_line' field
         """
         if obj:
-            try:
-                form.fields['parental_line'].help_text = mark_safe( '<a target="_blank" href="{}">View</a>'.format(reverse("admin:{}_{}_change".format(obj._meta.app_label, obj._meta.model_name), args=(obj.parental_line.id,))))
-            except:
-                pass
+            # try:
+            #     form.fields['parental_line'].help_text = mark_safe( '<a target="_blank" href="{}">View</a>'.format(reverse("admin:{}_{}_change".format(obj._meta.app_label, obj._meta.model_name), args=(obj.parental_line.id,))))
+            # except:
+            #     pass
             if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
                 if not request.user.has_perm('collection_management.change_mammalianline', obj):
                     form.fields['parental_line'].disabled = True

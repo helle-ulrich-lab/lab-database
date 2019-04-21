@@ -31,6 +31,7 @@ ALLOWED_HOSTS = DJANGO_PRIVATE_DATA['allowed_hosts']
 
 INSTALLED_APPS = [
     'adminactions',
+    'django.forms',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -59,6 +60,8 @@ INSTALLED_APPS = [
     'background_task',
     'formz',
     ]
+
+FORM_RENDERER = 'django.forms.renderers.TemplatesSetting' 
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

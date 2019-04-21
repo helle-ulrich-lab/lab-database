@@ -56,10 +56,14 @@ class SaCerevisiaeStrain (models.Model):
     relevant_genotype = models.CharField("relevant genotype", max_length = 255, blank=False)
     mating_type = models.CharField("mating type", choices = mating_type_choice, max_length = 20, blank=True)
     chromosomal_genotype = models.TextField("chromosomal genotype", blank=True)
-    parental_strain = models.CharField("parental strain", max_length = 255, blank=True)
+    parent_1 = models.ForeignKey('self', verbose_name = 'Parent 1', on_delete=models.PROTECT, related_name='parent_strain_1', blank=True, null=True)
+    parent_2 = models.ForeignKey('self', verbose_name = 'Parent 2', on_delete=models.PROTECT, related_name='parent_strain_2', blank=True, null=True)
+    parental_strain = models.CharField("parental strain", help_text = "Use only when 'Parent 1' does not apply", max_length = 255, blank=True)
     construction = models.TextField("construction", blank=True)
     modification = models.CharField("modification", max_length = 255, blank=True)
-    plasmids = models.CharField("plasmids", max_length = 255, blank=True)
+    integrated_plasmids = models.ManyToManyField('HuPlasmid', related_name='integrated_pl', blank= True)
+    cassette_plasmids = models.ManyToManyField('HuPlasmid', related_name='cassette_pl', help_text= 'Tagging and knock out plasmids', blank= True)
+    plasmids = models.CharField("plasmids", max_length = 255, help_text = 'Use only when the other plasmid fields do not apply', blank=True)
     selection = models.CharField("selection", max_length = 255, blank=True)
     phenotype = models.CharField("phenotype", max_length = 255, blank=True)
     background = models.CharField("background", max_length = 255, blank=True)
@@ -86,7 +90,7 @@ class SaCerevisiaeStrain (models.Model):
         '''Set what to show as an object's unicode attribute, in this case
         it is just the ID of the object, but it could be its name'''
         
-        return str(self.id)
+        return "{} - {}".format(self.id, self.name)
 
 #################################################
 #               HU PLASMID MODEL                #
@@ -145,7 +149,7 @@ class HuPlasmid (models.Model, SaveWithoutHistoricalRecord):
             raise ValidationError(errors)
 
     def __str__(self):
-        return str(self.id)
+        return "{} - {}".format(self.id, self.name)
 
 #################################################
 #                 OLIGO MODEL                   #

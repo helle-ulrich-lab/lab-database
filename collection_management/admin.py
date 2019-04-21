@@ -698,6 +698,9 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
     formfield_overrides = {models.CharField: {'widget': TextInput(attrs={'size':'93'})},} # Make TextInput fields wider
     djangoql_schema = SaCerevisiaeStrainQLSchema
     actions = [export_sacerevisiaestrain]
+
+    search_fields = ['id', 'name']
+    autocomplete_fields = ['parent_1', 'parent_2', 'integrated_plasmids', 'cassette_plasmids']
     
     def save_model(self, request, obj, form, change):
         '''Override default save_model to limit a user's ability to save a record
@@ -742,21 +745,48 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
         else:
             return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
     
+    def get_form(self, request, obj=None, **kwargs):
+        """
+        Modify the default factory to change form fields based on the request/object.
+        """
+        default_factory = super(SaCerevisiaeStrainPage, self).get_form(request, obj=obj, **kwargs)
+
+        def factory(*args, **_kwargs):
+            form = default_factory(*args, **_kwargs)
+            return self.modify_form(form, request, obj, **_kwargs)
+
+        return factory
+
+    @staticmethod
+    def modify_form(form, request, obj, **kwargs):
+        """
+        Edit 'parental_line' field
+        """
+        if obj:
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
+                if not request.user.has_perm('collection_management.change_sacerevisiaestrain', obj):
+                    form.fields['parent_1'].disabled = True
+                    form.fields['parent_2'].disabled = True
+                    form.fields['integrated_plasmids'].disabled = True
+                    form.fields['cassette_plasmids'].disabled = True
+        return form
+
+
     def add_view(self,request,extra_content=None):
         '''Override default add_view to show only desired fields'''
         
-        self.fields = ('name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parental_strain',
-        'construction', 'modification', 'plasmids', 'selection', 'phenotype', 'background', 'received_from',
-        'us_e', 'note', 'reference',)
+        self.fields = ('name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parent_1', 'parent_2', 
+        'parental_strain', 'construction', 'modification','integrated_plasmids', 'cassette_plasmids', 'plasmids', 
+        'selection', 'phenotype', 'background', 'received_from', 'us_e', 'note', 'reference',)
         return super(SaCerevisiaeStrainPage,self).add_view(request)
 
     def change_view(self,request,object_id,extra_content=None):
         '''Override default change_view to show only desired fields'''
         
-        self.fields = ('name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parental_strain',
-        'construction', 'modification', 'plasmids', 'selection', 'phenotype', 'background', 'received_from',
-        'us_e', 'note', 'reference', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 
-        'last_changed_approval_by_pi', 'created_by',)
+        self.fields = ('name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parent_1', 'parent_2', 
+        'parental_strain', 'construction', 'modification', 'integrated_plasmids', 'cassette_plasmids', 'plasmids', 
+        'selection', 'phenotype', 'background', 'received_from','us_e', 'note', 'reference', 'created_date_time', 
+        'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',)
         return super(SaCerevisiaeStrainPage,self).change_view(request,object_id)
     
     def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
@@ -837,6 +867,7 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
     djangoql_schema = HuPlasmidQLSchema
     actions = [export_huplasmid]
     filter_horizontal = ['formz_elements',]
+    search_fields = ['id', 'name']
     
     def save_model(self, request, obj, form, change):
         '''Override default save_model to limit a user's ability to save a record

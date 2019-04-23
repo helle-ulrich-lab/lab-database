@@ -52,7 +52,7 @@
             {% endif %}
             <li>
                 <a style="background-color:palevioletred;" 
-                href='?q=created_by.username+%3D+"{{user.username}}"'>
+                href='?q-l=on&q=created_by.username+%3D+"{{user.username}}"'>
                 {% blocktrans with cl.opts.verbose_name_plural as name_plural %}My {{ name_plural }}{% endblocktrans %}
                 </a>
             </li>

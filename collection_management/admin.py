@@ -745,44 +745,44 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
                 if request.user.has_perm('collection_management.change_sacerevisiaestrain', obj):
                     return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',]
                 if obj.created_by.groups.filter(name='Past member') or obj.created_by.id == 6:
-                    return ['name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parental_strain',
-                'construction', 'modification', 'plasmids', 'selection', 'phenotype', 'background', 'received_from',
-                'us_e', 'reference', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
+                    return ['name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parent_1', 'parent_2', 'parental_strain',
+                'construction', 'modification', 'integrated_plasmids', 'cassette_plasmids', 'plasmids', 'selection', 'phenotype', 
+                'background', 'received_from', 'us_e', 'reference', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
                 'last_changed_approval_by_pi', 'created_by',]
                 else:
-                    return ['name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parental_strain',
-                    'construction', 'modification', 'plasmids', 'selection', 'phenotype', 'background', 'received_from',
-                    'us_e', 'note', 'reference', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
-                    'last_changed_approval_by_pi', 'created_by',]
+                    return ['name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parent_1', 'parent_2', 'parental_strain',
+                    'construction', 'modification', 'integrated_plasmids', 'cassette_plasmids', 'plasmids', 'selection', 'phenotype', 
+                    'background', 'received_from', 'us_e', 'note', 'reference', 'created_date_time', 'created_approval_by_pi', 
+                    'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',]
         else:
             return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
     
-    def get_form(self, request, obj=None, **kwargs):
-        """
-        Modify the default factory to change form fields based on the request/object.
-        """
-        default_factory = super(SaCerevisiaeStrainPage, self).get_form(request, obj=obj, **kwargs)
+    # def get_form(self, request, obj=None, **kwargs):
+    #     """
+    #     Modify the default factory to change form fields based on the request/object.
+    #     """
+    #     default_factory = super(SaCerevisiaeStrainPage, self).get_form(request, obj=obj, **kwargs)
 
-        def factory(*args, **_kwargs):
-            form = default_factory(*args, **_kwargs)
-            return self.modify_form(form, request, obj, **_kwargs)
+    #     def factory(*args, **_kwargs):
+    #         form = default_factory(*args, **_kwargs)
+    #         return self.modify_form(form, request, obj, **_kwargs)
 
-        return factory
+    #     return factory
 
-    @staticmethod
-    def modify_form(form, request, obj, **kwargs):
-        """
-        Edit 'parental_line' field
-        """
-        if obj:
-            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
-                if not request.user.has_perm('collection_management.change_sacerevisiaestrain', obj):
-                    for field in ['parent_1', 'parent_2', 'integrated_plasmids', 'cassette_plasmids']:
-                        try:
-                            form.fields[field].disabled = True
-                        except:
-                            continue
-        return form
+    # @staticmethod
+    # def modify_form(form, request, obj, **kwargs):
+    #     """
+    #     Edit 'parental_line' field
+    #     """
+    #     if obj:
+    #         if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
+    #             if not request.user.has_perm('collection_management.change_sacerevisiaestrain', obj):
+    #                 for field in ['parent_1', 'parent_2', 'integrated_plasmids', 'cassette_plasmids']:
+    #                     try:
+    #                         form.fields[field].disabled = True
+    #                     except:
+    #                         continue
+    #     return form
 
     def add_view(self,request,extra_content=None):
         '''Override default add_view to show only desired fields'''

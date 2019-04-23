@@ -21,6 +21,7 @@ from django.core.exceptions import PermissionDenied
 from django.utils.translation import ugettext as _, ugettext_lazy
 from django.utils.text import capfirst
 
+from django import forms
 from django.forms import TextInput
 from django.http import HttpResponseRedirect
 from django.http import HttpResponse
@@ -691,6 +692,16 @@ def export_sacerevisiaestrain(modeladmin, request, queryset):
     return response
 export_sacerevisiaestrain.short_description = "Export selected strains as xlsx"
 
+class SaCerevisiaeStrainForm(forms.ModelForm):
+    def clean_name(self):
+        """Check if name is unique before saving"""
+        
+        qs = collection_management_SaCerevisiaeStrain.objects.filter(name=self.cleaned_data["name"])
+        if qs:
+            raise forms.ValidationError('Strain with this name already exists.')
+        else:
+            return self.cleaned_data["name"]
+
 class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin, Approval):
     list_display = ('id', 'name', 'mating_type','created_by', 'approval')
     list_display_links = ('id', )
@@ -698,6 +709,7 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
     formfield_overrides = {models.CharField: {'widget': TextInput(attrs={'size':'93'})},} # Make TextInput fields wider
     djangoql_schema = SaCerevisiaeStrainQLSchema
     actions = [export_sacerevisiaestrain]
+    form = SaCerevisiaeStrainForm
 
     search_fields = ['id', 'name']
     autocomplete_fields = ['parent_1', 'parent_2', 'integrated_plasmids', 'cassette_plasmids']
@@ -783,11 +795,23 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
 
     def change_view(self,request,object_id,extra_content=None):
         '''Override default change_view to show only desired fields'''
-        
-        self.fields = ('name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parent_1', 'parent_2', 
-        'parental_strain', 'construction', 'modification', 'integrated_plasmids', 'cassette_plasmids', 'plasmids', 
-        'selection', 'phenotype', 'background', 'received_from','us_e', 'note', 'reference', 'created_date_time', 
-        'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',)
+
+        if object_id:
+            obj = collection_management_SaCerevisiaeStrain.objects.get(pk=object_id)
+            if obj:
+                if request.user == obj.created_by:
+                    self.save_as = True
+
+        if '_saveasnew' in request.POST:
+            self.fields = ('name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parent_1', 'parent_2', 
+                'parental_strain', 'construction', 'modification', 'integrated_plasmids', 'cassette_plasmids', 'plasmids', 
+                'selection', 'phenotype', 'background', 'received_from','us_e', 'note', 'reference',)
+        else:
+            self.fields = ('name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parent_1', 'parent_2', 
+                'parental_strain', 'construction', 'modification', 'integrated_plasmids', 'cassette_plasmids', 'plasmids', 
+                'selection', 'phenotype', 'background', 'received_from','us_e', 'note', 'reference', 'created_date_time', 
+                'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',)
+
         return super(SaCerevisiaeStrainPage,self).change_view(request,object_id)
     
     def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
@@ -799,7 +823,7 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
         if object_id:
             obj = collection_management_SaCerevisiaeStrain.objects.get(pk=object_id)
             if obj:
-                if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by.groups.filter(name='Past member'))  or request.user.groups.filter(name='Guest').exists():
+                if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by.id == 6 or obj.created_by.groups.filter(name='Past member'))  or request.user.groups.filter(name='Guest').exists():
                     if not request.user.has_perm('collection_management.change_sacerevisiaestrain', obj):
                         extra_context['show_submit_line'] = False
         return super(SaCerevisiaeStrainPage, self).changeform_view(request, object_id, extra_context=extra_context)
@@ -817,7 +841,6 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
                 messages.error(request, 'Nice try, you are allowed to change the permissions of your own records only.')
                 return HttpResponseRedirect("..")
         return super(SaCerevisiaeStrainPage,self).obj_perms_manage_view(request, object_pk)
-
 
 my_admin_site.register(collection_management_SaCerevisiaeStrain, SaCerevisiaeStrainPage)
 
@@ -1174,13 +1197,6 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
 
     def change_view(self,request,object_id,extra_content=None):
         '''Override default change_view to show only desired fields'''
-        
-
-        if object_id:
-            obj = collection_management_Oligo.objects.get(pk=object_id)
-            if obj:
-                if request.user == obj.created_by:
-                    self.save_as = True
         
         if '_saveasnew' in request.POST:
             self.fields = ('name','sequence', 'us_e', 'gene', 'restriction_site', 'description', 'comment',

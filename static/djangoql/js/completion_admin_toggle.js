@@ -1,5 +1,5 @@
 (function (DjangoQL) {
   'use strict';
 
-  DjangoQL._enableToggle = False;
+  DjangoQL._enableToggle = true;
 }(window.DjangoQL));

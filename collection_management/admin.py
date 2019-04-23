@@ -765,10 +765,11 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
         if obj:
             if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
                 if not request.user.has_perm('collection_management.change_sacerevisiaestrain', obj):
-                    form.fields['parent_1'].disabled = True
-                    form.fields['parent_2'].disabled = True
-                    form.fields['integrated_plasmids'].disabled = True
-                    form.fields['cassette_plasmids'].disabled = True
+                    for field in ['parent_1', 'parent_2', 'integrated_plasmids', 'cassette_plasmids']:
+                        try:
+                            form.fields[field].disabled = True
+                        except:
+                            continue
         return form
 
 

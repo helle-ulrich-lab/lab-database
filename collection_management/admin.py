@@ -784,7 +784,6 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
                             continue
         return form
 
-
     def add_view(self,request,extra_content=None):
         '''Override default add_view to show only desired fields'''
         

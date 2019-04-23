@@ -1,7 +1,7 @@
 from os import path
 from django.apps import AppConfig
 
-VERBOSE_APP_NAME = "COLLECTIONS"
+VERBOSE_APP_NAME = "Collections"
 
 
 def get_current_app_name(file):

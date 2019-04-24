@@ -191,14 +191,18 @@ class Oligo (models.Model):
 
 class ScPombeStrain (models.Model):
     box_number = models.SmallIntegerField("box number", blank=False)
+    parent_1 = models.ForeignKey('self', verbose_name = 'Parent 1', on_delete=models.PROTECT, related_name='pom_parent_strain_1', help_text='Main parental strain', blank=True, null=True)
+    parent_2 = models.ForeignKey('self', verbose_name = 'Parent 2', on_delete=models.PROTECT, related_name='pom_parent_strain_2', help_text='Only for crosses', blank=True, null=True)
     parental_strain = models.CharField("parental strains", max_length = 255, blank=True)
     mating_type = models.CharField("mating type", max_length = 20, blank=True)
     auxotrophic_marker = models.CharField("auxotrophic markers", max_length = 255, blank=True)
     name = models.TextField("genotype", blank=False)
+    integrated_plasmids = models.ManyToManyField('HuPlasmid', related_name='pom_integrated_pl', blank= True)
+    cassette_plasmids = models.ManyToManyField('HuPlasmid', related_name='pom_cassette_pl', help_text= 'Tagging and knock out plasmids', blank= True)
     phenotype = models.CharField("phenotype", max_length = 255, blank=True)
     received_from = models.CharField("received from", max_length = 255, blank=True)
     comment = models.CharField("comments", max_length = 300, blank=True)
-    
+
     created_date_time = models.DateTimeField("created", auto_now_add=True)
     created_approval_by_pi = models.BooleanField("record creation approval", default = False)
     last_changed_date_time = models.DateTimeField("last changed", auto_now=True)
@@ -212,7 +216,7 @@ class ScPombeStrain (models.Model):
         verbose_name_plural = 'strains - Sc. pombe'
     
     def __str__(self):
-        return str(self.id)
+        return "{} - {}".format(self.id, self.name)
 
 #################################################
 #                NZ PLASMID MODEL               #

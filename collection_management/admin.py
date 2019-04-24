@@ -1311,8 +1311,9 @@ class ScPombeStrainQLSchema(DjangoQLSchema):
         '''Define fields that can be searched'''
         
         if model == collection_management_ScPombeStrain:
-            return ['id', 'box_number', 'parental_strain', 'mating_type', 'auxotrophic_marker', 'name',
-                    'phenotype', 'received_from', 'comment', 'created_by',]
+            return ['id', 'box_number', FieldParent1(), FieldParent2(), 'parental_strain', 'mating_type', 
+            'auxotrophic_marker', 'name', FieldIntegratedPlasmidM2M(), FieldCassettePlasmidM2M(),
+            'phenotype', 'received_from', 'comment', 'created_by',]
         elif model == User:
             return [SearchFieldOptUsernameScPom(), SearchFieldOptLastnameScPom()]
         return super(ScPombeStrainQLSchema, self).get_fields(model)
@@ -1335,6 +1336,16 @@ def export_scpombestrain(modeladmin, request, queryset):
     return response
 export_scpombestrain.short_description = "Export selected strains as xlsx"
 
+class ScPombeStrainForm(forms.ModelForm):
+    def clean_name(self):
+        """Check if name is unique before saving"""
+        
+        qs = collection_management_ScPombeStrain.objects.filter(name=self.cleaned_data["name"])
+        if qs:
+            raise forms.ValidationError('Strain with this name already exists.')
+        else:
+            return self.cleaned_data["name"]
+
 class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelAdmin, Approval):
     list_display = ('id', 'name', 'auxotrophic_marker', 'mating_type', 'approval',)
     list_display_links = ('id', )
@@ -1342,6 +1353,10 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admi
     formfield_overrides = {models.CharField: {'widget': TextInput(attrs={'size':'93'})},}
     djangoql_schema = ScPombeStrainQLSchema
     actions = [export_scpombestrain]
+    form = ScPombeStrainForm
+
+    search_fields = ['id', 'name']
+    autocomplete_fields = ['parent_1', 'parent_2', 'integrated_plasmids', 'cassette_plasmids']
 
     def save_model(self, request, obj, form, change):
         '''Override default save_model to limit a user's ability to save a record
@@ -1368,27 +1383,38 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admi
         
         if obj:
             if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
-                return ['box_number', 'parental_strain', 'mating_type', 'auxotrophic_marker', 'name',
-        'phenotype', 'received_from', 'comment', 'created_date_time', 'created_approval_by_pi',
-        'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',]
+                return ['box_number', 'parent_1', 'parent_2', 'parental_strain', 'mating_type', 'auxotrophic_marker', 'name',
+                        'integrated_plasmids', 'cassette_plasmids', 'phenotype', 'received_from', 'comment', 'created_date_time', 
+                        'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',]
             else:
-                return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
+                return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi','created_by',]
         else:
-            return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
+            return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi','created_by',]
 
     def add_view(self,request,extra_content=None):
         '''Override default add_view to show only desired fields'''
         
-        self.fields = ('box_number', 'parental_strain', 'mating_type', 'auxotrophic_marker', 'name',
-        'phenotype', 'received_from', 'comment', )
+        self.fields = ('box_number', 'parent_1', 'parent_2', 'parental_strain', 'mating_type', 'auxotrophic_marker', 'name',
+        'integrated_plasmids', 'cassette_plasmids', 'phenotype', 'received_from', 'comment', )
         return super(ScPombeStrainPage,self).add_view(request)
 
     def change_view(self,request,object_id,extra_content=None):
         '''Override default change_view to show only desired fields'''
         
-        self.fields = ('box_number', 'parental_strain', 'mating_type', 'auxotrophic_marker', 'name',
-        'phenotype', 'received_from', 'comment', 'created_date_time', 'created_approval_by_pi',
-        'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',)
+        if object_id:
+            obj = collection_management_ScPombeStrain.objects.get(pk=object_id)
+            if obj:
+                if request.user == obj.created_by:
+                    self.save_as = True
+        
+        if '_saveasnew' in request.POST:
+            self.fields = ('box_number', 'parent_1', 'parent_2', 'parental_strain', 'mating_type', 'auxotrophic_marker', 'name',
+                'integrated_plasmids', 'cassette_plasmids', 'phenotype', 'received_from', 'comment',)
+        else:
+            self.fields = ('box_number', 'parent_1', 'parent_2', 'parental_strain', 'mating_type', 'auxotrophic_marker', 'name',
+                'integrated_plasmids', 'cassette_plasmids', 'phenotype', 'received_from', 'comment', 'created_date_time', 'created_approval_by_pi',
+                'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',)
+
         return super(ScPombeStrainPage,self).change_view(request,object_id)
 
     def changeform_view(self, request, object_id=None, form_url='', extra_context=None):

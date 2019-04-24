@@ -652,19 +652,19 @@ class SearchFieldOptLastname(StrField):
 
 from .models import SaCerevisiaeStrain as collection_management_SaCerevisiaeStrain
 
-class IntegratedPlasmidM2M(IntField):
+class FieldIntegratedPlasmidM2M(IntField):
     name = 'integrated_plasmid_id'
 
     def get_lookup_name(self):
         return 'integrated_plasmids__id'
 
-class CassettePlasmidM2M(IntField):
+class FieldCassettePlasmidM2M(IntField):
     name = 'cassette_plasmid_id'
 
     def get_lookup_name(self):
         return 'cassette_plasmids__id'
 
-class Parent1(IntField):
+class FieldParent1(IntField):
     """Create a list of unique users' usernames for search"""
 
     name = 'parent_1_id'
@@ -672,7 +672,7 @@ class Parent1(IntField):
     def get_lookup_name(self):
         return 'parent_1__id'
 
-class Parent2(IntField):
+class FieldParent2(IntField):
     """Create a list of unique users' usernames for search"""
 
     name = 'parent_2_id'
@@ -689,8 +689,8 @@ class SaCerevisiaeStrainQLSchema(DjangoQLSchema):
         ''' Define fields that can be searched'''
         
         if model == collection_management_SaCerevisiaeStrain:
-            return ['id', 'name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', Parent1(), Parent2(), 'parental_strain',
-                'construction', 'modification', IntegratedPlasmidM2M(), CassettePlasmidM2M(), 'plasmids', 'selection', 
+            return ['id', 'name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', FieldParent1(), FieldParent2(), 'parental_strain',
+                'construction', 'modification', FieldIntegratedPlasmidM2M(), FieldCassettePlasmidM2M(), 'plasmids', 'selection', 
                 'phenotype', 'background', 'received_from', 'us_e', 'note', 'reference', 'created_by',]
         elif model == User:
             return [SearchFieldOptUsername(), SearchFieldOptLastname()]
@@ -1749,6 +1749,14 @@ class AddMammalianLineDocInline(admin.TabularInline):
 #          MAMMALIAN CELL LINE PAGES            #
 #################################################
 
+class FieldParentalLine(IntField):
+    """Create a list of unique users' usernames for search"""
+
+    name = 'parental_line_id'
+    
+    def get_lookup_name(self):
+        return 'parental_line__id'
+
 class MammalianLineQLSchema(DjangoQLSchema):
     '''Customize search functionality'''
     
@@ -1758,8 +1766,8 @@ class MammalianLineQLSchema(DjangoQLSchema):
         '''Define fields that can be searched'''
         
         if model == collection_management_MammalianLine:
-            return ['id', 'name', 'box_name', 'alternative_name', 'parental_line', 'organism', 'cell_type_tissue', 'culture_type', 
-            'growth_condition','freezing_medium', 'received_from', 'description_comment', 'created_by',]
+            return ['id', 'name', 'box_name', 'alternative_name', FieldParentalLine(), 'organism', 'cell_type_tissue', 'culture_type', 
+            'growth_condition','freezing_medium', 'received_from', FieldIntegratedPlasmidM2M(), 'description_comment', 'created_by',]
         elif model == User:
             return [SearchFieldOptUsername(), SearchFieldOptLastname()]
         return super(MammalianLineQLSchema, self).get_fields(model)

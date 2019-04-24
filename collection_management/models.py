@@ -298,7 +298,7 @@ class EColiStrain (models.Model):
 ################################################
 
 class MammalianLine (models.Model):
-    name = models.CharField("name", max_length = 255, blank=False)
+    name = models.CharField("name", max_length = 255, unique=True, blank=False)
     box_name = models.CharField("box", max_length = 255, blank=False)
     alternative_name = models.CharField("alternative name", max_length = 255, blank=True)
     parental_line_old = models.CharField("parental cell line", max_length = 255, blank=False)

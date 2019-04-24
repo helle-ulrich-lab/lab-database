@@ -66,7 +66,7 @@ class Location(models.Model):
 #################################################
 
 class MsdsForm(models.Model):
-    name = models.FileField("File name", upload_to="order_management/msdsform/", blank=False)
+    name = models.FileField("File name", upload_to="order_management/msdsform/", unique=True, blank=False)
     
     created_date_time = models.DateTimeField("Created", auto_now_add=True)
     last_changed_date_time = models.DateTimeField("Last Changed", auto_now=True)

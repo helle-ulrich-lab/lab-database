@@ -850,12 +850,25 @@ class MsdsFormQLSchema(DjangoQLSchema):
             return ['id', SearchFieldOptMsdsName()]
         return super(MsdsFormQLSchema, self).get_fields(model)
 
+from django import forms
+
+class MsdsFormForm(forms.ModelForm):
+    def clean_name(self):
+        """Check if name is unique before saving"""
+        
+        qs = order_management_MsdsForm.objects.filter(name__icontains=self.cleaned_data["name"].name)
+        if qs:
+            raise forms.ValidationError('A form with this name already exists.')
+        else:
+            return self.cleaned_data["name"]
+
 class MsdsFormPage(DjangoQLSearchMixin, admin.ModelAdmin):
-    list_display = ('id','name',)
+    list_display = ('id', 'short_url_name', 'view_file')
     list_per_page = 25
     ordering = ['name']
     djangoql_schema = MsdsFormQLSchema
     search_fields = ['id', 'name']
+    form = MsdsFormForm
     
     def add_view(self,request,extra_content=None):
         '''Override default add_view to show only desired fields'''
@@ -868,6 +881,22 @@ class MsdsFormPage(DjangoQLSearchMixin, admin.ModelAdmin):
 
         self.fields = (['name',])
         return super(MsdsFormPage,self).change_view(request,object_id)
+
+    def short_url_name(self, instance):
+        from os.path import basename
+
+        short_name = basename(instance.name.name).split('.')
+        short_name = ".".join(short_name[:-1]).replace("_", " ")
+
+        return(short_name)
+
+    short_url_name.short_description = "File name"
+    short_url_name.admin_order_field = 'name'
+
+    def view_file(self, instance):
+        return(mark_safe("<a href='{}'>{}</a>".format(instance.name.url, "View")))
+        
+    view_file.short_description = ""
 
 #################################################
 #            ORDER EXTRA DOC PAGES              #

@@ -616,17 +616,24 @@ class SearchFieldOptUsername(StrField):
     model = User
     name = 'username'
     suggest_options = True
+    id_list = []
 
     def get_options(self):
-        """exclude(id__in=[1,20]) removes admin and guest accounts from 
+        """exclude(id__in=[1,20,36]) removes admin, guest and anaonymous accounts from 
         the list of options, distinct() returns only unique values
         sorted in alphabetical order"""
 
-        return super(SearchFieldOptUsername, self).get_options().\
-        exclude(id__in=[1,20,36,]).\
-        distinct().\
-        order_by(self.name).\
-        values_list(self.name, flat=True)
+        if self.id_list:
+            return super(SearchFieldOptUsername, self).get_options().\
+            filter(id__in=self.id_list).\
+            order_by(self.name).\
+            values_list(self.name, flat=True)
+        else:
+            return super(SearchFieldOptUsername, self).\
+            get_options().\
+            exclude(id__in=[1,20,36]).\
+            distinct().order_by(self.name).\
+            values_list(self.name, flat=True)
 
 class SearchFieldOptLastname(StrField):
     """Create a list of unique user's last names for search"""
@@ -634,17 +641,24 @@ class SearchFieldOptLastname(StrField):
     model = User
     name = 'last_name'
     suggest_options = True
+    id_list = []
 
     def get_options(self):
-        """exclude(id__in=[1,20]) removes admin and guest accounts from 
+        """exclude(id__in=[1,20,36]) removes admin, guest and anaonymous accounts from 
         the list of options, distinct() returns only unique values
         sorted in alphabetical order"""
         
-        return super(SearchFieldOptLastname, self).\
-        get_options().\
-        exclude(id__in=[1,20]).\
-        distinct().order_by(self.name).\
-        values_list(self.name, flat=True)
+        if self.id_list:
+            return super(SearchFieldOptLastname, self).get_options().\
+            filter(id__in=self.id_list).\
+            order_by(self.name).\
+            values_list(self.name, flat=True)
+        else:
+            return super(SearchFieldOptLastname, self).\
+            get_options().\
+            exclude(id__in=[1,20,36]).\
+            distinct().order_by(self.name).\
+            values_list(self.name, flat=True)
 
 #################################################
 #          SA. CEREVISIAE STRAIN PAGES          #
@@ -680,6 +694,16 @@ class FieldParent2(IntField):
     def get_lookup_name(self):
         return 'parent_2__id'
 
+class SearchFieldOptUsernameSaCerStrain(SearchFieldOptUsername):
+    """Create a list of unique users' usernames for search"""
+
+    id_list = collection_management_SaCerevisiaeStrain.objects.all().values_list('created_by', flat=True).distinct()
+
+class SearchFieldOptLastnameSaCerStrain(SearchFieldOptLastname):
+    """Create a list of unique users' usernames for search"""
+
+    id_list = collection_management_SaCerevisiaeStrain.objects.all().values_list('created_by', flat=True).distinct()
+
 class SaCerevisiaeStrainQLSchema(DjangoQLSchema):
     '''Customize search functionality'''
     
@@ -693,7 +717,7 @@ class SaCerevisiaeStrainQLSchema(DjangoQLSchema):
                 'construction', 'modification', FieldIntegratedPlasmidM2M(), FieldCassettePlasmidM2M(), 'plasmids', 'selection', 
                 'phenotype', 'background', 'received_from', 'us_e', 'note', 'reference', 'created_by',]
         elif model == User:
-            return [SearchFieldOptUsername(), SearchFieldOptLastname()]
+            return [SearchFieldOptUsernameSaCerStrain(), SearchFieldOptLastnameSaCerStrain()]
         return super(SaCerevisiaeStrainQLSchema, self).get_fields(model)
 
 class SaCerevisiaeStrainExportResource(resources.ModelResource):
@@ -872,6 +896,16 @@ my_admin_site.register(collection_management_SaCerevisiaeStrain, SaCerevisiaeStr
 
 from .models import HuPlasmid as collection_management_HuPlasmid
 
+class SearchFieldOptUsernameHuPlasmid(SearchFieldOptUsername):
+    """Create a list of unique users' usernames for search"""
+
+    id_list = collection_management_HuPlasmid.objects.all().values_list('created_by', flat=True).distinct()
+
+class SearchFieldOptLastnameHuPlasmid(SearchFieldOptLastname):
+    """Create a list of unique users' usernames for search"""
+
+    id_list = collection_management_HuPlasmid.objects.all().values_list('created_by', flat=True).distinct()
+
 class HuPlasmidQLSchema(DjangoQLSchema):
     '''Customize search functionality'''
     
@@ -884,7 +918,7 @@ class HuPlasmidQLSchema(DjangoQLSchema):
             return ['id', 'name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
                 'reference', 'created_by',]
         elif model == User:
-            return [SearchFieldOptUsername(), SearchFieldOptLastname()]
+            return [SearchFieldOptUsernameHuPlasmid(), SearchFieldOptLastnameHuPlasmid()]
         return super(HuPlasmidQLSchema, self).get_fields(model)
 
 class HuPlasmidExportResource(resources.ModelResource):
@@ -1125,6 +1159,16 @@ my_admin_site.register(collection_management_HuPlasmid, HuPlasmidPage)
 
 from .models import Oligo as collection_management_Oligo
 
+class SearchFieldOptUsernameOligo(SearchFieldOptUsername):
+    """Create a list of unique users' usernames for search"""
+
+    id_list = collection_management_Oligo.objects.all().values_list('created_by', flat=True).distinct()
+
+class SearchFieldOptLastnameOligo(SearchFieldOptLastname):
+    """Create a list of unique users' usernames for search"""
+
+    id_list = collection_management_Oligo.objects.all().values_list('created_by', flat=True).distinct()
+
 class OligoQLSchema(DjangoQLSchema):
     '''Customize search functionality'''
     
@@ -1136,7 +1180,7 @@ class OligoQLSchema(DjangoQLSchema):
         if model == collection_management_Oligo:
             return ['id', 'name','sequence', 'us_e', 'gene', 'restriction_site', 'description', 'comment', 'created_by',]
         elif model == User:
-            return [SearchFieldOptUsername(), SearchFieldOptLastname()]
+            return [SearchFieldOptUsernameOligo(), SearchFieldOptLastnameOligo()]
         return super(OligoQLSchema, self).get_fields(model)
 
 class OligoExportResource(resources.ModelResource):
@@ -1248,6 +1292,16 @@ my_admin_site.register(collection_management_Oligo, OligoPage)
 
 from .models import ScPombeStrain as collection_management_ScPombeStrain
 
+class SearchFieldOptUsernameScPom(SearchFieldOptUsername):
+    """Create a list of unique users' usernames for search"""
+
+    id_list = collection_management_ScPombeStrain.objects.all().values_list('created_by', flat=True).distinct()
+
+class SearchFieldOptLastnameScPom(SearchFieldOptLastname):
+    """Create a list of unique users' usernames for search"""
+
+    id_list = collection_management_ScPombeStrain.objects.all().values_list('created_by', flat=True).distinct()
+
 class ScPombeStrainQLSchema(DjangoQLSchema):
     '''Customize search functionality'''
     
@@ -1260,7 +1314,7 @@ class ScPombeStrainQLSchema(DjangoQLSchema):
             return ['id', 'box_number', 'parental_strain', 'mating_type', 'auxotrophic_marker', 'name',
                     'phenotype', 'received_from', 'comment', 'created_by',]
         elif model == User:
-            return [SearchFieldOptUsername(), SearchFieldOptLastname()]
+            return [SearchFieldOptUsernameScPom(), SearchFieldOptLastnameScPom()]
         return super(ScPombeStrainQLSchema, self).get_fields(model)
 
 class ScPombeStrainExportResource(resources.ModelResource):
@@ -1549,6 +1603,16 @@ my_admin_site.register(collection_management_ScPombeStrain, ScPombeStrainPage)
 
 from .models import EColiStrain as collection_management_EColiStrain
 
+class SearchFieldOptUsernameEColi(SearchFieldOptUsername):
+    """Create a list of unique users' usernames for search"""
+
+    id_list = collection_management_EColiStrain.objects.all().values_list('created_by', flat=True).distinct()
+
+class SearchFieldOptLastnameEColi(SearchFieldOptLastname):
+    """Create a list of unique users' usernames for search"""
+
+    id_list = collection_management_EColiStrain.objects.all().values_list('created_by', flat=True).distinct()
+
 class EColiStrainQLSchema(DjangoQLSchema):
     '''Customize search functionality'''
     
@@ -1560,7 +1624,7 @@ class EColiStrainQLSchema(DjangoQLSchema):
         if model == collection_management_EColiStrain:
             return ['id', 'name', 'resistance', 'genotype', 'supplier', 'us_e', 'purpose', 'note', 'created_by',]
         elif model == User:
-            return [SearchFieldOptUsername(), SearchFieldOptLastname()]
+            return [SearchFieldOptUsernameEColi(), SearchFieldOptLastnameEColi()]
         return super(EColiStrainQLSchema, self).get_fields(model)
 
 class EColiStrainExportResource(resources.ModelResource):
@@ -1757,6 +1821,16 @@ class FieldParentalLine(IntField):
     def get_lookup_name(self):
         return 'parental_line__id'
 
+class SearchFieldOptUsernameMamma(SearchFieldOptUsername):
+    """Create a list of unique users' usernames for search"""
+
+    id_list = collection_management_MammalianLine.objects.all().values_list('created_by', flat=True).distinct()
+
+class SearchFieldOptLastnameMamma(SearchFieldOptLastname):
+    """Create a list of unique users' usernames for search"""
+
+    id_list = collection_management_MammalianLine.objects.all().values_list('created_by', flat=True).distinct()
+
 class MammalianLineQLSchema(DjangoQLSchema):
     '''Customize search functionality'''
     
@@ -1769,7 +1843,7 @@ class MammalianLineQLSchema(DjangoQLSchema):
             return ['id', 'name', 'box_name', 'alternative_name', FieldParentalLine(), 'organism', 'cell_type_tissue', 'culture_type', 
             'growth_condition','freezing_medium', 'received_from', FieldIntegratedPlasmidM2M(), 'description_comment', 'created_by',]
         elif model == User:
-            return [SearchFieldOptUsername(), SearchFieldOptLastname()]
+            return [SearchFieldOptUsernameMamma(), SearchFieldOptLastnameMamma()]
         return super(MammalianLineQLSchema, self).get_fields(model)
 
 class MammalianLineExportResource(resources.ModelResource):
@@ -1948,16 +2022,12 @@ from .models import Antibody as collection_management_Antibody
 class AntibodyQLSchema(DjangoQLSchema):
     '''Customize search functionality'''
     
-    include = (collection_management_Antibody, User) # Include only the relevant models to be searched
-
     def get_fields(self, model):
         '''Define fields that can be searched'''
         
         if model == collection_management_Antibody:
             return ['id', 'name', 'species_isotype', 'clone', 'received_from', 'catalogue_number', 'info_sheet',
-                'l_ocation', 'a_pplication', 'description_comment','info_sheet', 'created_by', ]
-        elif model == User:
-            return [SearchFieldOptUsername(), SearchFieldOptLastname()]
+                'l_ocation', 'a_pplication', 'description_comment','info_sheet', ]
         return super(AntibodyQLSchema, self).get_fields(model)
 
 class AntibodyExportResource(resources.ModelResource):

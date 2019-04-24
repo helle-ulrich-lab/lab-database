@@ -496,6 +496,16 @@ class SearchFieldOptPartDescription(StrField):
         return super(SearchFieldOptPartDescription, self).\
         get_options().all().distinct()
 
+class SearchFieldOptUsernameOrder(SearchFieldOptUsername):
+    """Create a list of unique users' usernames for search"""
+
+    id_list = order_management_Order.objects.all().values_list('created_by', flat=True).distinct()
+
+class SearchFieldOptLastnameOrder(SearchFieldOptLastname):
+    """Create a list of unique users' usernames for search"""
+
+    id_list = order_management_Order.objects.all().values_list('created_by', flat=True).distinct()
+
 class OrderQLSchema(DjangoQLSchema):
     '''Customize search functionality'''
     
@@ -513,7 +523,7 @@ class OrderQLSchema(DjangoQLSchema):
             'status', 'urgent', 'location', 'comment', 'delivered_date', 'cas_number', 
             'ghs_pictogram', 'msds_form', 'created_date_time', 'last_changed_date_time', 'created_by',]
         elif model == User:
-            return [SearchFieldOptUsername(), SearchFieldOptLastname()]
+            return [SearchFieldOptUsernameOrder(), SearchFieldOptLastnameOrder()]
         elif model == order_management_CostUnit:
             return [SearchFieldOptCostUnit()]
         elif model == order_management_Location:

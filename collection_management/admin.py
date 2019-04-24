@@ -1794,7 +1794,7 @@ class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Cust
     actions = [export_mammalianline]
 
     search_fields = ['id', 'name']
-    autocomplete_fields = ['parental_line']
+    autocomplete_fields = ['parental_line', 'integrated_plasmids']
 
     def save_model(self, request, obj, form, change):
         '''Override default save_model to limit a user's ability to save a record
@@ -1825,7 +1825,7 @@ class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Cust
                     return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by']
                 else:
                     return ['name', 'box_name', 'alternative_name', 'parental_line', 'organism', 'cell_type_tissue', 'culture_type', 'growth_condition',
-                    'freezing_medium', 'received_from', 'description_comment', 'created_date_time', 'created_approval_by_pi',
+                    'freezing_medium', 'received_from', 'integrated_plasmids', 'description_comment', 'created_date_time', 'created_approval_by_pi',
                     'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',]
             else:
                 return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by']
@@ -1863,7 +1863,7 @@ class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Cust
         '''Override default add_view to show only desired fields'''
 
         self.fields = ('name', 'box_name', 'alternative_name', 'parental_line', 'organism', 'cell_type_tissue', 'culture_type', 'growth_condition',
-                'freezing_medium', 'received_from', 'description_comment',)
+                'freezing_medium', 'received_from', 'integrated_plasmids', 'description_comment',)
         return super(MammalianLinePage,self).add_view(request)
 
     def change_view(self,request,object_id,extra_content=None):
@@ -1875,8 +1875,12 @@ class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Cust
                 if request.user == obj.created_by:
                     self.save_as = True
 
-        self.fields = ('name', 'box_name', 'alternative_name', 'parental_line', 'organism', 'cell_type_tissue', 'culture_type', 'growth_condition',
-                'freezing_medium', 'received_from', 'description_comment', 'created_date_time', 'created_approval_by_pi',
+        if '_saveasnew' in request.POST:
+            self.fields = ('name', 'box_name', 'alternative_name', 'parental_line', 'organism', 'cell_type_tissue', 'culture_type', 'growth_condition',
+                'freezing_medium', 'received_from', 'integrated_plasmids', 'description_comment',)
+        else:
+            self.fields = ('name', 'box_name', 'alternative_name', 'parental_line', 'organism', 'cell_type_tissue', 'culture_type', 'growth_condition',
+                'freezing_medium', 'received_from', 'integrated_plasmids', 'description_comment', 'created_date_time', 'created_approval_by_pi',
                 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',)
         return super(MammalianLinePage,self).change_view(request,object_id)
 

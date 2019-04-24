@@ -309,6 +309,7 @@ class MammalianLine (models.Model):
     growth_condition = models.CharField("growth conditions", max_length = 255, blank=True)
     freezing_medium = models.CharField("freezing medium", max_length = 255, blank=True)
     received_from = models.CharField("received from", max_length = 255, blank=True)
+    integrated_plasmids = models.ManyToManyField('HuPlasmid', related_name='int_pl', blank= True)
     description_comment = models.TextField("description/comments", blank=True)
     
     created_date_time = models.DateTimeField("created", auto_now_add=True)

@@ -671,6 +671,8 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
     def change_view(self,request,object_id,extra_content=None):
         '''Override default change_view to show only desired fields'''
         
+        self.autocomplete_fields = ['msds_form']
+
         self.fields = ('supplier','supplier_part_no', 'internal_order_no', 'part_description', 'quantity', 
             'price', 'cost_unit', 'status', 'urgent', 'delivery_alert', 'location', 'comment', 'url', 'cas_number', 
             'ghs_pictogram', 'msds_form', 'created_date_time', 'order_manager_created_date_time', 'delivered_date', 'created_by',)
@@ -853,6 +855,7 @@ class MsdsFormPage(DjangoQLSearchMixin, admin.ModelAdmin):
     list_per_page = 25
     ordering = ['name']
     djangoql_schema = MsdsFormQLSchema
+    search_fields = ['id', 'name']
     
     def add_view(self,request,extra_content=None):
         '''Override default add_view to show only desired fields'''

@@ -1221,8 +1221,7 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
         '''Override default change_view to show only desired fields'''
         
         if '_saveasnew' in request.POST:
-            self.fields = ('name','sequence', 'us_e', 'gene', 'restriction_site', 'description', 'comment',
-                'created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', )
+            self.fields = ('name','sequence', 'us_e', 'gene', 'restriction_site', 'description', 'comment' )
         else:
             self.fields = ('name','sequence', 'us_e', 'gene', 'restriction_site', 'description', 'comment',
                 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',)

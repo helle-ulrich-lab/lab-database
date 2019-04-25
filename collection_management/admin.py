@@ -778,7 +778,6 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
     djangoql_schema = SaCerevisiaeStrainQLSchema
     actions = [export_sacerevisiaestrain]
     form = SaCerevisiaeStrainForm
-
     search_fields = ['id', 'name']
     autocomplete_fields = ['parent_1', 'parent_2', 'integrated_plasmids', 'cassette_plasmids']
     
@@ -1230,6 +1229,7 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
     models.CharField: {'widget': TextInput(attrs={'size':'93'})},} # Make TextInput fields wider
     djangoql_schema = OligoQLSchema
     actions = [export_oligo]
+    search_fields = ['id', 'name']
     save_as = True
 
     def get_oligo_short_sequence(self, instance):
@@ -1375,7 +1375,6 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admi
     djangoql_schema = ScPombeStrainQLSchema
     actions = [export_scpombestrain]
     form = ScPombeStrainForm
-
     search_fields = ['id', 'name']
     autocomplete_fields = ['parent_1', 'parent_2', 'integrated_plasmids', 'cassette_plasmids']
 
@@ -1699,6 +1698,7 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.
     formfield_overrides = {models.CharField: {'widget': TextInput(attrs={'size':'93'})},}
     djangoql_schema = EColiStrainQLSchema
     actions = [export_ecolistrain]
+    search_fields = ['id', 'name']
     
     def save_model(self, request, obj, form, change):
         '''Override default save_model to limit a user's ability to save a record
@@ -1773,7 +1773,6 @@ class MammalianLinePageDoc(admin.ModelAdmin):
     list_display_links = ('id','name', )
     list_per_page = 25
     ordering = ['id']
-
 
     def has_module_permission(self, request):
         '''Hide module from Admin'''
@@ -1920,7 +1919,6 @@ class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Cust
     djangoql_schema = MammalianLineQLSchema
     inlines = [MammalianLineDocInline, AddMammalianLineDocInline]
     actions = [export_mammalianline]
-
     search_fields = ['id', 'name']
     autocomplete_fields = ['parental_line', 'integrated_plasmids']
 
@@ -2102,6 +2100,7 @@ class AntibodyPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.Mod
     formfield_overrides = {models.CharField: {'widget': TextInput(attrs={'size':'93'})},}
     djangoql_schema = AntibodyQLSchema
     actions = [export_antibody]
+    search_fields = ['id', 'name']
     
     def save_model(self, request, obj, form, change):
         '''Override default save_model to limit a user's ability to save a record

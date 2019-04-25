@@ -660,6 +660,27 @@ class SearchFieldOptLastname(StrField):
             distinct().order_by(self.name).\
             values_list(self.name, flat=True)
 
+class FieldUse(StrField):
+
+    name = 'use'
+    
+    def get_lookup_name(self):
+        return 'us_e'
+
+class FieldLocation(StrField):
+
+    name = 'location'
+
+    def get_lookup_name(self):
+        return 'l_ocation'
+
+class FieldApplication(StrField):
+
+    name = 'application'
+
+    def get_lookup_name(self):
+        return 'a_pplication'
+
 #################################################
 #          SA. CEREVISIAE STRAIN PAGES          #
 #################################################
@@ -715,7 +736,7 @@ class SaCerevisiaeStrainQLSchema(DjangoQLSchema):
         if model == collection_management_SaCerevisiaeStrain:
             return ['id', 'name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', FieldParent1(), FieldParent2(), 'parental_strain',
                 'construction', 'modification', FieldIntegratedPlasmidM2M(), FieldCassettePlasmidM2M(), 'plasmids', 'selection', 
-                'phenotype', 'background', 'received_from', 'us_e', 'note', 'reference', 'created_by',]
+                'phenotype', 'background', 'received_from', FieldUse(), 'note', 'reference', 'created_by',]
         elif model == User:
             return [SearchFieldOptUsernameSaCerStrain(), SearchFieldOptLastnameSaCerStrain()]
         return super(SaCerevisiaeStrainQLSchema, self).get_fields(model)
@@ -915,7 +936,7 @@ class HuPlasmidQLSchema(DjangoQLSchema):
         '''Define fields that can be searched'''
         
         if model == collection_management_HuPlasmid:
-            return ['id', 'name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
+            return ['id', 'name', 'other_name', 'parent_vector', 'selection', FieldUse(), 'construction_feature', 'received_from', 'note', 
                 'reference', 'created_by',]
         elif model == User:
             return [SearchFieldOptUsernameHuPlasmid(), SearchFieldOptLastnameHuPlasmid()]
@@ -1178,7 +1199,7 @@ class OligoQLSchema(DjangoQLSchema):
         '''Define fields that can be searched'''
         
         if model == collection_management_Oligo:
-            return ['id', 'name','sequence', 'us_e', 'gene', 'restriction_site', 'description', 'comment', 'created_by',]
+            return ['id', 'name','sequence', FieldUse(), 'gene', 'restriction_site', 'description', 'comment', 'created_by',]
         elif model == User:
             return [SearchFieldOptUsernameOligo(), SearchFieldOptLastnameOligo()]
         return super(OligoQLSchema, self).get_fields(model)
@@ -1648,7 +1669,7 @@ class EColiStrainQLSchema(DjangoQLSchema):
         '''Define fields that can be searched'''
         
         if model == collection_management_EColiStrain:
-            return ['id', 'name', 'resistance', 'genotype', 'supplier', 'us_e', 'purpose', 'note', 'created_by',]
+            return ['id', 'name', 'resistance', 'genotype', 'supplier', FieldUse(), 'purpose', 'note', 'created_by',]
         elif model == User:
             return [SearchFieldOptUsernameEColi(), SearchFieldOptLastnameEColi()]
         return super(EColiStrainQLSchema, self).get_fields(model)
@@ -2053,7 +2074,7 @@ class AntibodyQLSchema(DjangoQLSchema):
         
         if model == collection_management_Antibody:
             return ['id', 'name', 'species_isotype', 'clone', 'received_from', 'catalogue_number', 'info_sheet',
-                'l_ocation', 'a_pplication', 'description_comment','info_sheet', ]
+                FieldLocation(), FieldApplication(), 'description_comment','info_sheet', ]
         return super(AntibodyQLSchema, self).get_fields(model)
 
 class AntibodyExportResource(resources.ModelResource):

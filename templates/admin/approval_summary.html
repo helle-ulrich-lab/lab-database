@@ -46,7 +46,7 @@
             {% if data %}
                 <div class='results'>
                     <table style="margin-top:10px;">
-                        <thead>
+                        <!-- <thead>
                             <tr>
                                 <th style="padding:8px 10px;background-color:#79aec8; color:white; font-size:14px">
                                 ID
@@ -61,7 +61,7 @@
                                 History
                                 </th>
                             </tr>
-                        </thead>
+                        </thead> -->
                         <tbody>
                             {% for model in data %}
                                 <tr>
@@ -71,7 +71,16 @@
                                 </tr>
                                 {% if model.2 %}
                                     <tr style="background-color:#ddddddb8; text-transform:uppercase; color:#666;">
-                                        <th colspan=4 style="font-size: 11px;">Added</th>
+                                        <th style="font-size: 11px; text-decoration: underline;">Added</th>
+                                        <th style="font-size: 11px;">
+                                            Name
+                                        </th style="font-size: 11px;">
+                                        <th style="font-size: 11px;">
+                                            Created by
+                                        </th>
+                                        <th style="font-size: 11px;">
+                                            
+                                        </th>
                                     </tr>
                                     {% for row in model.2 %}
                                         <tr class=”{% cycle 'row1' 'row2' %}”>
@@ -84,20 +93,29 @@
                                                 {% endif %}
                                             </td>
                                             <td> {{ row.created_by }} </td>
-                                            <td> <a href='/{{model.4}}/{{model.1}}/{{ row.id }}/history/'>View</a></td>
+                                            <td> <a href='/{{model.4}}/{{model.1}}/{{ row.id }}/history/'>History</a></td>
                                         </tr>
                                     {% endfor %}
                                 {% endif %}
                                 {% if model.3 %}
                                     <tr style="background-color:#ddddddb8; text-transform:uppercase; color:#666;">
-                                        <th colspan=4 style="font-size: 11px;">Changed</th>
+                                        <th style="font-size: 11px; text-decoration: underline;">Changed</th>
+                                        <th style="font-size: 11px;">
+                                            Name
+                                        </th style="font-size: 11px;">
+                                        <th style="font-size: 11px;">
+                                            Created by
+                                        </th>
+                                        <th style="font-size: 11px;">
+                                            
+                                        </th>
                                     </tr>
                                     {% for row in model.3 %}
                                         <tr class=”{% cycle 'row1' 'row2' %}”>
                                             <td> <a href='/{{model.4}}/{{model.1}}/{{ row.id }}' style="font-weight:bold">{{ row.id }} </a></td>
                                             <td> {{ row.name }} </td>
                                             <td> {{ row.created_by }} </td>
-                                            <td> <a href='/{{model.4}}/{{model.1}}/{{ row.id }}/history/'>View</a></td>
+                                            <td> <a href='/{{model.4}}/{{model.1}}/{{ row.id }}/history/'>History</a></td>
                                         </tr>
                                     {% endfor %}
                                 {% endif %}

@@ -99,7 +99,8 @@ class SaCerevisiaeStrain (models.Model):
 class HuPlasmid (models.Model, SaveWithoutHistoricalRecord):
     name = models.CharField("name", max_length = 255, unique=True, blank=False)
     other_name = models.CharField("other name", max_length = 255, blank=True)
-    parent_vector = models.CharField("parent vector", max_length = 255, blank=True)
+    parent_vector = models.ForeignKey('self', verbose_name = 'parent vector', related_name = 'par_vect', on_delete=models.PROTECT, blank=True, null=True)
+    old_parent_vector = models.CharField("orig. parent vector field", help_text='Use only when strictly necessary', max_length = 255, blank=True)
     selection = models.CharField("selection", max_length = 50, blank=False)
     us_e = models.CharField("use", max_length = 255, blank=True)
     construction_feature = models.TextField("construction/features", blank=True)

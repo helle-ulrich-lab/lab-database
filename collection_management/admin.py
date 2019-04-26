@@ -968,7 +968,8 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
     actions = [export_huplasmid]
     filter_horizontal = ['formz_elements',]
     search_fields = ['id', 'name']
-    
+    autocomplete_fields = ['parent_vector']
+
     def save_model(self, request, obj, form, change):
         '''Override default save_model to limit a user's ability to save a record
         Superusers and lab managers can change all records
@@ -1054,12 +1055,12 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
             if request.user.has_perm('collection_management.change_huplasmid', obj):
                 return ['plasmid_map_png', 'plasmid_map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',]
             if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by.id == 6) or request.user.groups.filter(name='Guest').exists():
-                return ['name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
+                return ['name', 'other_name', 'parent_vector', 'old_parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
                     'reference', 'plasmid_map', 'plasmid_map_png', 'plasmid_map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
                     'last_changed_approval_by_pi', 'created_by', 'vector_known_zkbs', 'vector_zkbs','formz_elements']
             else:
                 if obj.created_by.id == 6 and not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists()): # Show plasmid_map and note as editable fields, if record belongs to Helle (user id = 6)
-                    return ['name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 
+                    return ['name', 'other_name', 'parent_vector', 'old_parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 
                     'reference', 'plasmid_map_png', 'plasmid_map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
                     'last_changed_approval_by_pi', 'created_by', 'vector_known_zkbs', 'vector_zkbs','formz_elements']
                 else:
@@ -1070,7 +1071,7 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
     def add_view(self,request,extra_content=None):
         '''Override default add_view to show only desired fields'''
         
-        self.fields = ('name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
+        self.fields = ('name', 'other_name', 'parent_vector', 'old_parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
                 'reference', 'plasmid_map',)
 
         # self.fieldsets = (
@@ -1095,10 +1096,10 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
                     self.save_as = True
         
         if '_saveasnew' in request.POST:
-            self.fields = ('name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
+            self.fields = ('name', 'other_name', 'parent_vector', 'old_parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
                 'reference', 'plasmid_map',)
         else:
-            self.fields = ('name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
+            self.fields = ('name', 'other_name', 'parent_vector', 'old_parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
                 'reference', 'plasmid_map', 'plasmid_map_png', 'plasmid_map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
                 'last_changed_approval_by_pi', 'created_by',)
 

@@ -764,9 +764,12 @@ class SaCerevisiaeStrainForm(forms.ModelForm):
     def clean_name(self):
         """Check if name is unique before saving"""
         
-        qs = collection_management_SaCerevisiaeStrain.objects.filter(name=self.cleaned_data["name"])
-        if qs:
-            raise forms.ValidationError('Strain with this name already exists.')
+        if not self.instance.pk:
+            qs = collection_management_SaCerevisiaeStrain.objects.filter(name=self.cleaned_data["name"])
+            if qs:
+                raise forms.ValidationError('Strain with this name already exists.')
+            else:
+                return self.cleaned_data["name"]
         else:
             return self.cleaned_data["name"]
 
@@ -1362,9 +1365,12 @@ class ScPombeStrainForm(forms.ModelForm):
     def clean_name(self):
         """Check if name is unique before saving"""
         
-        qs = collection_management_ScPombeStrain.objects.filter(name=self.cleaned_data["name"])
-        if qs:
-            raise forms.ValidationError('Strain with this name already exists.')
+        if not self.instance.pk:
+            qs = collection_management_ScPombeStrain.objects.filter(name=self.cleaned_data["name"])
+            if qs:
+                raise forms.ValidationError('Strain with this name already exists.')
+            else:
+                return self.cleaned_data["name"]
         else:
             return self.cleaned_data["name"]
 

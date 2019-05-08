@@ -643,15 +643,14 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
                     update_autocomplete_js()
             except:
                 messages.warning(request, 'Could not update the order autocomplete function')
-                
-    
+
     def get_queryset(self, request):
         """Allows sorting of custom changelist_view fields by adding admin_order_field
-        propoerty to said custom field"""
+        propoerty to said custom field, also excludes cancelled orders, to make things prettier"""
 
         qs = super(OrderPage, self).get_queryset(request)
         qs = qs.annotate(models.Count('id'), models.Count('part_description'), models.Count('status'))
-        return qs
+        return qs.exclude(status='cancelled')
 
     def get_readonly_fields(self, request, obj=None):
         '''Override default get_readonly_fields to define user-specific read-only fields'''

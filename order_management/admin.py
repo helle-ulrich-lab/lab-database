@@ -650,7 +650,11 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
 
         qs = super(OrderPage, self).get_queryset(request)
         qs = qs.annotate(models.Count('id'), models.Count('part_description'), models.Count('status'))
-        return qs.exclude(status='cancelled')
+        
+        if not (request.user.groups.filter(name='Lab manager').exists() or request.user.groups.filter(name='Order manager').exists() or request.user.is_superuser):
+            return qs.exclude(status='cancelled')
+        else:
+            return qs
 
     def get_readonly_fields(self, request, obj=None):
         '''Override default get_readonly_fields to define user-specific read-only fields'''

@@ -454,7 +454,7 @@ class MyAdminSite(admin.AdminSite):
                     ))
             app = apps.get_app_config('collection_management')
             for model in app.models.values():
-                if model._meta.verbose_name.lower().startswith(("strain", "plasmid", "oligo", "mammmalian")): # Skip certain models within collection_management
+                if model._meta.verbose_name.lower().startswith(("strain", "plasmid", "oligo", "mammmalian")): # Only do this for certain models within collection_management
                     added = model.objects.all().filter(created_approval_by_pi=False)
                     changed = model.objects.all().filter(last_changed_approval_by_pi=False).exclude(id__in=added)
                     if added or changed:
@@ -484,7 +484,7 @@ class MyAdminSite(admin.AdminSite):
             try:
                 app = apps.get_app_config('collection_management')
                 for model in app.models.values():
-                    if not model._meta.verbose_name.lower().startswith(("historical", "antibody", "mammalian cell line document")): # Skip certain models within collection_management 
+                    if model._meta.verbose_name.lower().startswith(("strain", "plasmid", "oligo", "mammmalian")): # Only do this for certain models within collection_management
                         model.objects.all().filter(created_approval_by_pi=False).update(created_approval_by_pi=True, approval_by_pi_date_time = timezone.now())
                         model.objects.all().filter(last_changed_approval_by_pi=False).update(last_changed_approval_by_pi=True, approval_by_pi_date_time = timezone.now())
                 order_model = apps.get_app_config('order_management').get_model("order")

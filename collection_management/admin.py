@@ -774,7 +774,7 @@ class SaCerevisiaeStrainForm(forms.ModelForm):
             return self.cleaned_data["name"]
 
 class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin, Approval):
-    list_display = ('id', 'name', 'mating_type','created_by', 'approval')
+    list_display = ('id', 'name', 'mating_type', 'background', 'created_by', 'approval')
     list_display_links = ('id', )
     list_per_page = 25
     formfield_overrides = {models.CharField: {'widget': TextInput(attrs={'size':'93'})},} # Make TextInput fields wider

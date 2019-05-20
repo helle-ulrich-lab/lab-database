@@ -23,6 +23,7 @@ class FormZProjectPage(admin.ModelAdmin):
     list_display = ('id', 'title')
     list_display_links = ('id', )
     list_per_page = 25
+    search_fields = ['id', 'title']
 
 class FormZBaseElementPage(admin.ModelAdmin):
     list_display = ('id', 'name')

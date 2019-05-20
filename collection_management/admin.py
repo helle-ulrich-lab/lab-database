@@ -686,6 +686,7 @@ class FieldApplication(StrField):
 #################################################
 
 from .models import SaCerevisiaeStrain as collection_management_SaCerevisiaeStrain
+from .models import SaCerevisiaeStrainEpisomalPlasmid
 
 class FieldIntegratedPlasmidM2M(IntField):
     name = 'integrated_plasmid_id'
@@ -773,6 +774,14 @@ class SaCerevisiaeStrainForm(forms.ModelForm):
         else:
             return self.cleaned_data["name"]
 
+class SaCerevisiaeStrainEpisomalPlasmidInline(admin.TabularInline):
+    autocomplete_fields = ['huplasmid', 'formz_project']
+    model = SaCerevisiaeStrainEpisomalPlasmid
+    verbose_name_plural = "Episomal plasmids"
+    verbose_name = 'Episomal Plasmid'
+    classes = ['collapse']
+    extra = 0
+
 class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin, Approval):
     list_display = ('id', 'name', 'mating_type', 'background', 'created_by', 'approval')
     list_display_links = ('id', )
@@ -783,6 +792,7 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
     form = SaCerevisiaeStrainForm
     search_fields = ['id', 'name']
     autocomplete_fields = ['parent_1', 'parent_2', 'integrated_plasmids', 'cassette_plasmids']
+    inlines = [SaCerevisiaeStrainEpisomalPlasmidInline]
     
     def save_model(self, request, obj, form, change):
         '''Override default save_model to limit a user's ability to save a record

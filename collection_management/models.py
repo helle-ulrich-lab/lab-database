@@ -13,6 +13,7 @@ from django.utils.encoding import force_text
 
 from formz.models import ZkbsPlasmid
 from formz.models import FormZBaseElement
+from formz.models import FormZProject
 
 #################################################
 #        ADDED FUNCTIONALITIES IMPORTS          #
@@ -61,9 +62,12 @@ class SaCerevisiaeStrain (models.Model):
     parental_strain = models.CharField("parental strain", help_text = "Use only when 'Parent 1' does not apply", max_length = 255, blank=True)
     construction = models.TextField("construction", blank=True)
     modification = models.CharField("modification", max_length = 255, blank=True)
+    
     integrated_plasmids = models.ManyToManyField('HuPlasmid', related_name='integrated_pl', blank= True)
     cassette_plasmids = models.ManyToManyField('HuPlasmid', related_name='cassette_pl', help_text= 'Tagging and knock out plasmids', blank= True)
+    episomal_plasmids = models.ManyToManyField('HuPlasmid', related_name='episomal_pl', blank= True, through='SaCerevisiaeStrainEpisomalPlasmid')
     plasmids = models.CharField("plasmids", max_length = 255, help_text = 'Use only when the other plasmid fields do not apply', blank=True)
+    
     selection = models.CharField("selection", max_length = 255, blank=True)
     phenotype = models.CharField("phenotype", max_length = 255, blank=True)
     background = models.CharField("background", max_length = 255, blank=True)
@@ -91,6 +95,13 @@ class SaCerevisiaeStrain (models.Model):
         it is just the ID of the object, but it could be its name'''
         
         return "{} - {}".format(self.id, self.name)
+
+class SaCerevisiaeStrainEpisomalPlasmid (models.Model):
+    sacerevisiae_strain = models.ForeignKey(SaCerevisiaeStrain, on_delete=models.PROTECT)
+    huplasmid = models.ForeignKey('HuPlasmid', verbose_name = 'Plasmid', on_delete=models.PROTECT)
+    present_in_stocked_strain = models.BooleanField("Present in stock?", default = False, null = True)
+    formz_project = models.ManyToManyField(FormZProject, related_name='sc_epi_plasmid', blank= True)
+    created_date = models.DateField()
 
 #################################################
 #               HU PLASMID MODEL                #

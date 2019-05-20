@@ -25,6 +25,9 @@ from collection_management.admin import AntibodyExportResource
 from order_management.models import Order
 from order_management.admin import OrderExportResource
 
+import warnings
+# Suppress silly warning "UserWarning: Using a coordinate with ws.cell is deprecated..."
+warnings.simplefilter("ignore")
 
 def export_xlsx(model,export_resource):
     

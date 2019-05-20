@@ -762,6 +762,7 @@ def export_sacerevisiaestrain(modeladmin, request, queryset):
 export_sacerevisiaestrain.short_description = "Export selected strains as xlsx"
 
 class SaCerevisiaeStrainForm(forms.ModelForm):
+    
     def clean_name(self):
         """Check if name is unique before saving"""
         
@@ -781,6 +782,12 @@ class SaCerevisiaeStrainEpisomalPlasmidInline(admin.TabularInline):
     verbose_name = 'Episomal Plasmid'
     classes = ['collapse']
     extra = 0
+
+    def get_queryset(self, request):
+        qs = super(SaCerevisiaeStrainEpisomalPlasmidInline, self).get_queryset(request)
+        if qs:
+            self.classes = []
+        return qs
 
 class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin, Approval):
     list_display = ('id', 'name', 'mating_type', 'background', 'created_by', 'approval')

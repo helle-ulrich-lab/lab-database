@@ -99,9 +99,9 @@ class SaCerevisiaeStrain (models.Model):
 class SaCerevisiaeStrainEpisomalPlasmid (models.Model):
     sacerevisiae_strain = models.ForeignKey(SaCerevisiaeStrain, on_delete=models.PROTECT)
     huplasmid = models.ForeignKey('HuPlasmid', verbose_name = 'Plasmid', on_delete=models.PROTECT)
-    present_in_stocked_strain = models.BooleanField("Present in stock?", default = False, null = True)
+    present_in_stocked_strain = models.BooleanField("Present in -80° C stock?", default = False, null=True)
     formz_project = models.ManyToManyField(FormZProject, related_name='sc_epi_plasmid', blank= True)
-    created_date = models.DateField()
+    created_date = models.DateField(null=True)
 
 #################################################
 #               HU PLASMID MODEL                #

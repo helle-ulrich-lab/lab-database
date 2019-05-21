@@ -117,9 +117,9 @@ class HuPlasmid (models.Model, SaveWithoutHistoricalRecord):
     received_from = models.CharField("received from", max_length=255, blank=True, null=True)
     note = models.CharField("note", max_length=300, blank=True, null=True)
     reference = models.CharField("reference", max_length=255, blank=True, null=True)
-    plasmid_map = models.FileField("plasmid map (max. 2 MB)", upload_to="collection_management/huplasmid/dna/", blank=True, null=True)
-    plasmid_map_png = models.ImageField("plasmid image" , upload_to="collection_management/huplasmid/png/", blank=True, null=True)
-    plasmid_map_gbk = models.FileField("plasmid map (.gbk)", upload_to="collection_management/huplasmid/gb/", blank=True, null=True)
+    map = models.FileField("plasmid map (max. 2 MB)", upload_to="collection_management/huplasmid/dna/", blank=True, null=True)
+    map_png = models.ImageField("plasmid image" , upload_to="collection_management/huplasmid/png/", blank=True, null=True)
+    map_gbk = models.FileField("plasmid map (.gbk)", upload_to="collection_management/huplasmid/gb/", blank=True, null=True)
 
     created_date_time = models.DateTimeField("created", auto_now_add=True)
     created_approval_by_pi = models.BooleanField("record creation approval", default = False)
@@ -138,20 +138,20 @@ class HuPlasmid (models.Model, SaveWithoutHistoricalRecord):
         verbose_name_plural = 'plasmids'
 
     def clean(self):
-        """Check if plasmid_map is bigger than 2 MB"""
+        """Check if map is bigger than 2 MB"""
     
         errors = []
         
         limit = 2 * 1024 * 1024
-        if self.plasmid_map:
-            if self.plasmid_map.size > limit:
+        if self.map:
+            if self.map.size > limit:
                 errors.append(ValidationError('Plasmid map too large. Size cannot exceed 2 MB.'))
         
             try:
-                plasmid_map_ext = self.plasmid_map.name.split('.')[-1].lower()
+                map_ext = self.map.name.split('.')[-1].lower()
             except:
-                plasmid_map_ext = None
-            if plasmid_map_ext == None or plasmid_map_ext != 'dna':
+                map_ext = None
+            if map_ext == None or map_ext != 'dna':
                 errors.append(ValidationError('Invalid file format. Please select a valid SnapGene .dna file'))
 
         if len(errors) > 0:

@@ -28,8 +28,9 @@ import time
 #################################################
 
 class SaveWithoutHistoricalRecord():
-    """Allows inheritance of method to save a object without
-    saving a historical record"""
+    """Allows inheritance of method to save an object without
+    saving a historical record as described in  
+    https://django-simple-history.readthedocs.io/en/2.7.2/querying_history.html?highlight=save_without_historical_record"""
 
     def save_without_historical_record(self, *args, **kwargs):
         self.skip_history_when_saving = True
@@ -40,10 +41,10 @@ class SaveWithoutHistoricalRecord():
         return ret
 
 #################################################
-#         SA. CEREVISIAE STRAIN MODEL           #
+#            SA. CEREVISIAE STRAIN              #
 #################################################
 
-mating_type_choice = (
+MATING_TYPE_CHOICE = (
     ('a','a'),
     ('alpha','alpha'),
     ('unknown','unknown'),
@@ -52,75 +53,73 @@ mating_type_choice = (
     ('a/alpha','a/alpha')   
 )
 
-class SaCerevisiaeStrain (models.Model):
-    name = models.CharField("name", max_length = 255, blank=False)
-    relevant_genotype = models.CharField("relevant genotype", max_length = 255, blank=False)
-    mating_type = models.CharField("mating type", choices = mating_type_choice, max_length = 20, blank=True)
-    chromosomal_genotype = models.TextField("chromosomal genotype", blank=True)
-    parent_1 = models.ForeignKey('self', verbose_name = 'Parent 1', on_delete=models.PROTECT, related_name='parent_strain_1', help_text='Main parental strain', blank=True, null=True)
-    parent_2 = models.ForeignKey('self', verbose_name = 'Parent 2', on_delete=models.PROTECT, related_name='parent_strain_2', help_text='Only for crosses', blank=True, null=True)
-    parental_strain = models.CharField("parental strain", help_text = "Use only when 'Parent 1' does not apply", max_length = 255, blank=True)
-    construction = models.TextField("construction", blank=True)
-    modification = models.CharField("modification", max_length = 255, blank=True)
+class SaCerevisiaeStrain (models.Model, SaveWithoutHistoricalRecord):
     
-    integrated_plasmids = models.ManyToManyField('HuPlasmid', related_name='integrated_pl', blank= True)
-    cassette_plasmids = models.ManyToManyField('HuPlasmid', related_name='cassette_pl', help_text= 'Tagging and knock out plasmids', blank= True)
-    episomal_plasmids = models.ManyToManyField('HuPlasmid', related_name='episomal_pl', blank= True, through='SaCerevisiaeStrainEpisomalPlasmid')
-    plasmids = models.CharField("plasmids", max_length = 255, help_text = 'Use only when the other plasmid fields do not apply', blank=True)
+    name = models.CharField("name", max_length=255, blank=False, null=True)
+    relevant_genotype = models.CharField("relevant genotype", max_length=255, blank=False, null=True)
+    mating_type = models.CharField("mating type", choices = MATING_TYPE_CHOICE, max_length=20, blank=True, null=True)
+    chromosomal_genotype = models.TextField("chromosomal genotype", blank=True, null=True)
+    parent_1 = models.ForeignKey('self', verbose_name='Parent 1', on_delete=models.PROTECT, related_name='cerevisiae_parent_1', help_text='Main parental strain', blank=True, null=True)
+    parent_2 = models.ForeignKey('self', verbose_name='Parent 2', on_delete=models.PROTECT, related_name='cerevisiae_parent_2', help_text='Only for crosses', blank=True, null=True)
+    parental_strain = models.CharField("parental strain", help_text="Use only when 'Parent 1' does not apply", max_length=255, blank=True, null=True)
+    construction = models.TextField("construction", blank=True, null=True)
+    modification = models.CharField("modification", max_length=255, blank=True, null=True)
     
-    selection = models.CharField("selection", max_length = 255, blank=True)
-    phenotype = models.CharField("phenotype", max_length = 255, blank=True)
-    background = models.CharField("background", max_length = 255, blank=True)
-    received_from = models.CharField("received from", max_length = 255, blank=True)
-    us_e = models.CharField("use", max_length = 255, blank=True)
-    note = models.CharField("note", max_length = 255, blank=True)
-    reference = models.CharField("reference", max_length = 255, blank=True)
+    integrated_plasmids = models.ManyToManyField('HuPlasmid', related_name='cerevisiae_integrated_plasmids', blank=True)
+    cassette_plasmids = models.ManyToManyField('HuPlasmid', related_name='cerevisiae_cassette_plasmids', help_text='Tagging and knock out plasmids', blank=True)
+    episomal_plasmids = models.ManyToManyField('HuPlasmid', related_name='cerevisiae_episomal_plasmids', blank=True, through='SaCerevisiaeStrainEpisomalPlasmid')
+    plasmids = models.CharField("plasmids", max_length=255, help_text='Use only when the other plasmid fields do not apply', blank=True, null=True)
+    
+    selection = models.CharField("selection", max_length=255, blank=True, null=True)
+    phenotype = models.CharField("phenotype", max_length=255, blank=True, null=True)
+    background = models.CharField("background", max_length=255, blank=True, null=True)
+    received_from = models.CharField("received from", max_length=255, blank=True, null=True)
+    us_e = models.CharField("use", max_length=255, blank=True, null=True)
+    note = models.CharField("note", max_length=255, blank=True, null=True)
+    reference = models.CharField("reference", max_length=255, blank=True, null=True)
     
     created_date_time = models.DateTimeField("created", auto_now_add=True)
-    created_approval_by_pi = models.BooleanField("record creation approval", default = False)
+    created_approval_by_pi = models.BooleanField("record creation approval", default=False)
     last_changed_date_time = models.DateTimeField("last changed", auto_now=True)
-    last_changed_approval_by_pi = models.NullBooleanField("record change approval", default = None)
-    approval_by_pi_date_time = models.DateTimeField(null = True, default = None)
+    last_changed_approval_by_pi = models.NullBooleanField("record change approval", default=None)
+    approval_by_pi_date_time = models.DateTimeField(null = True, default=None)
     created_by = models.ForeignKey(User, on_delete=models.PROTECT)
     history = HistoricalRecords()
     
     class Meta:
-        '''Set a custom name to be used throughout the admin pages'''
-        
         verbose_name = 'strain - Sa. cerevisiae'
         verbose_name_plural = 'strains - Sa. cerevisiae'
     
     def __str__(self):
-        '''Set what to show as an object's unicode attribute, in this case
-        it is just the ID of the object, but it could be its name'''
-        
         return "{} - {}".format(self.id, self.name)
 
 class SaCerevisiaeStrainEpisomalPlasmid (models.Model):
+    
     sacerevisiae_strain = models.ForeignKey(SaCerevisiaeStrain, on_delete=models.PROTECT)
     huplasmid = models.ForeignKey('HuPlasmid', verbose_name = 'Plasmid', on_delete=models.PROTECT)
-    present_in_stocked_strain = models.BooleanField("Present in -80° C stock?", default = False, null=True)
-    formz_project = models.ManyToManyField(FormZProject, related_name='sc_epi_plasmid', blank= True)
-    created_date = models.DateField(null=True)
+    present_in_stocked_strain = models.BooleanField("present in -80° C stock?", default = False, null=True)
+    formz_projects = models.ManyToManyField(FormZProject, related_name='cerevisiae_episomal_plasmids_projects', blank= True)
+    created_date = models.DateField('created date', blank= True, null=True)
 
 #################################################
-#               HU PLASMID MODEL                #
+#                    PLASMID                    #
 #################################################
 
 class HuPlasmid (models.Model, SaveWithoutHistoricalRecord):
-    name = models.CharField("name", max_length = 255, unique=True, blank=False)
-    other_name = models.CharField("other name", max_length = 255, blank=True)
-    parent_vector = models.ForeignKey('self', verbose_name = 'parent vector', related_name = 'par_vect', on_delete=models.PROTECT, blank=True, null=True)
-    old_parent_vector = models.CharField("orig. parent vector field", help_text='Use only when strictly necessary', max_length = 255, blank=True)
-    selection = models.CharField("selection", max_length = 50, blank=False)
-    us_e = models.CharField("use", max_length = 255, blank=True)
-    construction_feature = models.TextField("construction/features", blank=True)
-    received_from = models.CharField("received from", max_length = 255, blank=True)
-    note = models.CharField("note", max_length = 300, blank=True)
-    reference = models.CharField("reference", max_length = 255, blank=True)
-    plasmid_map = models.FileField("plasmid map (max. 2 MB)", upload_to="collection_management/huplasmid/dna/", blank=True)
-    plasmid_map_png = models.ImageField("plasmid image" , upload_to="collection_management/huplasmid/png/", blank=True)
-    plasmid_map_gbk = models.FileField("plasmid map (.gbk)", upload_to="collection_management/huplasmid/gb/", blank=True)
+    
+    name = models.CharField("name", max_length=255, unique=True, blank=False, null=True)
+    other_name = models.CharField("other name", max_length=255, blank=True, null=True)
+    parent_vector = models.ForeignKey('self', verbose_name='parent vector', related_name = 'plasmid_parent_vector', on_delete=models.PROTECT, blank=True, null=True)
+    old_parent_vector = models.CharField("orig. parent vector field", help_text='Use only when strictly necessary', max_length=255, blank=True, null=True)
+    selection = models.CharField("selection", max_length=50, blank=False, null=True)
+    us_e = models.CharField("use", max_length=255, blank=True, null=True)
+    construction_feature = models.TextField("construction/features", blank=True, null=True)
+    received_from = models.CharField("received from", max_length=255, blank=True, null=True)
+    note = models.CharField("note", max_length=300, blank=True, null=True)
+    reference = models.CharField("reference", max_length=255, blank=True, null=True)
+    plasmid_map = models.FileField("plasmid map (max. 2 MB)", upload_to="collection_management/huplasmid/dna/", blank=True, null=True)
+    plasmid_map_png = models.ImageField("plasmid image" , upload_to="collection_management/huplasmid/png/", blank=True, null=True)
+    plasmid_map_gbk = models.FileField("plasmid map (.gbk)", upload_to="collection_management/huplasmid/gb/", blank=True, null=True)
 
     created_date_time = models.DateTimeField("created", auto_now_add=True)
     created_approval_by_pi = models.BooleanField("record creation approval", default = False)
@@ -130,18 +129,16 @@ class HuPlasmid (models.Model, SaveWithoutHistoricalRecord):
     created_by = models.ForeignKey(User, on_delete=models.PROTECT)
     history = HistoricalRecords()
 
-    vector_known_zkbs = models.NullBooleanField("backbone in ZKBS database?", default = None, blank=True, null=True)
+    vector_known_zkbs = models.NullBooleanField("backbone in ZKBS database?", default=None, blank=True, null=True)
     vector_zkbs = models.ForeignKey(ZkbsPlasmid, verbose_name = 'ZKBS database vector', on_delete=models.PROTECT, blank=True, null=True)
-    formz_elements = models.ManyToManyField(FormZBaseElement, verbose_name = 'Elements', blank=True)
+    formz_elements = models.ManyToManyField(FormZBaseElement, verbose_name ='elements', blank=True)
     
     class Meta:
-        '''Set a custom name to be used throughout the admin pages'''
-        
         verbose_name = 'plasmid'
         verbose_name_plural = 'plasmids'
 
     def clean(self):
-        """Check if file is bigger than 2 MB"""
+        """Check if plasmid_map is bigger than 2 MB"""
     
         errors = []
         
@@ -164,24 +161,25 @@ class HuPlasmid (models.Model, SaveWithoutHistoricalRecord):
         return "{} - {}".format(self.id, self.name)
 
 #################################################
-#                 OLIGO MODEL                   #
+#                     OLIGO                     #
 #################################################
 
-class Oligo (models.Model):
-    name = models.CharField("name", max_length = 255, unique = True, blank=False)
-    sequence = models.CharField("sequence", max_length = 255, unique = True, blank=False)
-    length = models.SmallIntegerField("length", null=True, blank=True)
-    us_e = models.CharField("use", max_length = 255, blank=True)
-    gene = models.CharField("gene", max_length = 255, blank=True)
-    restriction_site = models.CharField("restriction sites", max_length = 255, blank=True)
-    description = models.TextField("description", blank=True)
-    comment = models.CharField("comments", max_length = 255, blank=True)
+class Oligo (models.Model, SaveWithoutHistoricalRecord):
+    
+    name = models.CharField("name", max_length=255, unique=True, blank=False, null=True)
+    sequence = models.CharField("sequence", max_length=255, unique=True, blank=False, null=True)
+    length = models.SmallIntegerField("length", null=True)
+    us_e = models.CharField("use", max_length=255, blank=True, null=True)
+    gene = models.CharField("gene", max_length=255, blank=True, null=True)
+    restriction_site = models.CharField("restriction sites", max_length=255, blank=True, null=True)
+    description = models.TextField("description", blank=True, null=True)
+    comment = models.CharField("comments", max_length=255, blank=True, null=True)
     
     created_date_time = models.DateTimeField("created", auto_now_add=True)
-    created_approval_by_pi = models.BooleanField("record creation approval", default = False)
+    created_approval_by_pi = models.BooleanField("record creation approval", default=False)
     last_changed_date_time = models.DateTimeField("last changed", auto_now=True)
-    last_changed_approval_by_pi = models.NullBooleanField("record change approval", default = None)
-    approval_by_pi_date_time = models.DateTimeField(null = True, default = None)
+    last_changed_approval_by_pi = models.NullBooleanField("record change approval", default=None)
+    approval_by_pi_date_time = models.DateTimeField(null =True, default=None)
     created_by = models.ForeignKey(User, on_delete=models.PROTECT)
     history = HistoricalRecords()
     
@@ -190,7 +188,7 @@ class Oligo (models.Model):
 
     def save(self, force_insert=False, force_update=False):
         """Automatically capitalize the sequence of an oligo and remove all white spaces
-        from it. Also set the lenght of the oligo"""
+        from it. Also set its lenght"""
         
         upper_sequence = self.sequence.upper()
         self.sequence = "".join(upper_sequence.split())
@@ -198,28 +196,30 @@ class Oligo (models.Model):
         super(Oligo, self).save(force_insert, force_update)
 
 #################################################
-#            SC. POMBE STRAIN MODEL             #
+#               SC. POMBE STRAIN                #
 #################################################
 
-class ScPombeStrain (models.Model):
-    box_number = models.SmallIntegerField("box number", blank=False)
-    parent_1 = models.ForeignKey('self', verbose_name = 'Parent 1', on_delete=models.PROTECT, related_name='pom_parent_strain_1', help_text='Main parental strain', blank=True, null=True)
-    parent_2 = models.ForeignKey('self', verbose_name = 'Parent 2', on_delete=models.PROTECT, related_name='pom_parent_strain_2', help_text='Only for crosses', blank=True, null=True)
-    parental_strain = models.CharField("parental strains", max_length = 255, blank=True)
-    mating_type = models.CharField("mating type", max_length = 20, blank=True)
-    auxotrophic_marker = models.CharField("auxotrophic markers", max_length = 255, blank=True)
-    name = models.TextField("genotype", blank=False)
-    integrated_plasmids = models.ManyToManyField('HuPlasmid', related_name='pom_integrated_pl', blank= True)
-    cassette_plasmids = models.ManyToManyField('HuPlasmid', related_name='pom_cassette_pl', help_text= 'Tagging and knock out plasmids', blank= True)
-    phenotype = models.CharField("phenotype", max_length = 255, blank=True)
-    received_from = models.CharField("received from", max_length = 255, blank=True)
-    comment = models.CharField("comments", max_length = 300, blank=True)
+class ScPombeStrain (models.Model, SaveWithoutHistoricalRecord):
+    
+    box_number = models.SmallIntegerField("box number", blank=False, null=True)
+    parent_1 = models.ForeignKey('self', verbose_name='Parent 1', on_delete=models.PROTECT, related_name='pombe_parent_1', help_text='Main parental strain', blank=True, null=True)
+    parent_2 = models.ForeignKey('self', verbose_name='Parent 2', on_delete=models.PROTECT, related_name='pombe_parent_2', help_text='Only for crosses', blank=True, null=True)
+    parental_strain = models.CharField("parental strains", max_length=255, blank=True, null=True)
+    mating_type = models.CharField("mating type", max_length=20, blank=True, null=True)
+    auxotrophic_marker = models.CharField("auxotrophic markers", max_length=255, blank=True, null=True)
+    name = models.TextField("genotype", blank=False, null=True)
+    phenotype = models.CharField("phenotype", max_length=255, blank=True, null=True)
+    received_from = models.CharField("received from", max_length=255, blank=True, null=True)
+    comment = models.CharField("comments", max_length=300, blank=True, null=True)
+
+    integrated_plasmids = models.ManyToManyField('HuPlasmid', related_name='pombe_integrated_plasmids', blank=True)
+    cassette_plasmids = models.ManyToManyField('HuPlasmid', related_name='pombe_cassette_plasmids', help_text='Tagging and knock out plasmids', blank=True)
 
     created_date_time = models.DateTimeField("created", auto_now_add=True)
-    created_approval_by_pi = models.BooleanField("record creation approval", default = False)
+    created_approval_by_pi = models.BooleanField("record creation approval", default=False)
     last_changed_date_time = models.DateTimeField("last changed", auto_now=True)
-    last_changed_approval_by_pi = models.NullBooleanField("record change approval", default = None)
-    approval_by_pi_date_time = models.DateTimeField(null = True, default = None)
+    last_changed_approval_by_pi = models.NullBooleanField("record change approval", default=None)
+    approval_by_pi_date_time = models.DateTimeField(null=True, default=None)
     created_by = models.ForeignKey(User, on_delete=models.PROTECT)
     history = HistoricalRecords()
     
@@ -231,74 +231,24 @@ class ScPombeStrain (models.Model):
         return "{} - {}".format(self.id, self.name)
 
 #################################################
-#                NZ PLASMID MODEL               #
+#                E. COLI STRAIN                 #
 #################################################
 
-class NzPlasmid (models.Model, SaveWithoutHistoricalRecord):
-    name = models.CharField("name", max_length = 255, blank=False)
-    other_name = models.CharField("other name", max_length = 255, blank=True)
-    parent_vector = models.CharField("parent vector", max_length = 255, blank=True)
-    selection = models.CharField("selection", max_length = 50, blank=False)
-    us_e = models.CharField("use", max_length = 255, blank=True)
-    construction_feature = models.TextField("construction/Features", blank=True)
-    received_from = models.CharField("received from", max_length = 255, blank=True)
-    note = models.CharField("Note", max_length = 300, blank=True)
-    reference = models.CharField("reference", max_length = 255, blank=True)
-    plasmid_map = models.FileField("plasmid map (max. 2 MB)", upload_to="collection_management/nzplasmid/", blank=True)
+class EColiStrain (models.Model, SaveWithoutHistoricalRecord):
+    
+    name = models.CharField("name", max_length=255, blank=False, null=True)
+    resistance = models.CharField("resistance", max_length=255, blank=True, null=True)
+    genotype = models.TextField("genotype", blank=True, null=True)
+    supplier = models.CharField("supplier", max_length=255, blank=True)
+    us_e = models.CharField("use", max_length=255, choices=(('Cloning', 'Cloning'),('Expression', 'Expression'),('Other', 'Other'),), null=True)
+    purpose = models.TextField("purpose", blank=True, null=True)
+    note =  models.CharField("note", max_length=255, blank=True, null=True)
     
     created_date_time = models.DateTimeField("created", auto_now_add=True)
-    created_approval_by_pi = models.BooleanField("record creation approval", default = False)
+    created_approval_by_pi = models.BooleanField("record creation approval", default=False)
     last_changed_date_time = models.DateTimeField("last changed", auto_now=True)
-    last_changed_approval_by_pi = models.NullBooleanField("record change approval", default = None)
-    approval_by_pi_date_time = models.DateTimeField(null = True, default = None)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT)
-    history = HistoricalRecords()
-
-    def clean(self): 
-        """Check if file is bigger than 2 MB"""
-        
-        errors = []
-        
-        limit = 2 * 1024 * 1024
-        if self.plasmid_map:
-            if self.plasmid_map.size > limit:
-                errors.append(ValidationError('Plasmid map too large. Size cannot exceed 2 MB.'))
-        
-            try:
-                plasmid_map_ext = self.plasmid_map.name.split('.')[-1].lower()
-            except:
-                plasmid_map_ext = None
-            if plasmid_map_ext == None or plasmid_map_ext != 'dna':
-                errors.append(ValidationError('Invalid file format. Please select a valid SnapGene .dna file'))
-
-        if len(errors) > 0:
-            raise ValidationError(errors)
-    
-    class Meta:
-        verbose_name = "nicola's plasmid"
-        verbose_name_plural = "nicola's plasmids"
-        
-    def __str__(self):
-        return str(self.id)
-
-#################################################
-#              E. COLI STRAIN MODEL             #
-#################################################
-
-class EColiStrain (models.Model):
-    name = models.CharField("name", max_length = 255, blank=False)
-    resistance = models.CharField("resistance", max_length = 255, blank=True)
-    genotype = models.TextField("genotype", blank=True)
-    supplier = models.CharField("supplier", max_length = 255, blank=True)
-    us_e = models.CharField("use", max_length = 255, choices=(('Cloning', 'Cloning'),('Expression', 'Expression'),('Other', 'Other'),))
-    purpose = models.TextField("purpose", blank=True)
-    note =  models.CharField("note", max_length = 255, blank=True)
-    
-    created_date_time = models.DateTimeField("created", auto_now_add=True)
-    created_approval_by_pi = models.BooleanField("record creation approval", default = False)
-    last_changed_date_time = models.DateTimeField("last changed", auto_now=True)
-    last_changed_approval_by_pi = models.NullBooleanField("record change approval", default = None)
-    approval_by_pi_date_time = models.DateTimeField(null = True, default = None)
+    last_changed_approval_by_pi = models.NullBooleanField("record change approval", default=None)
+    approval_by_pi_date_time = models.DateTimeField(null=True, default=None)
     created_by = models.ForeignKey(User, on_delete=models.PROTECT)
     history = HistoricalRecords()
     
@@ -310,23 +260,25 @@ class EColiStrain (models.Model):
        return str(self.id)
 
 ################################################
-#         MAMMALIAN CELL LINE MODEL            #
+#             MAMMALIAN CELL LINE              #
 ################################################
 
-class MammalianLine (models.Model):
-    name = models.CharField("name", max_length = 255, unique=True, blank=False)
-    box_name = models.CharField("box", max_length = 255, blank=False)
-    alternative_name = models.CharField("alternative name", max_length = 255, blank=True)
-    parental_line_old = models.CharField("parental cell line", max_length = 255, blank=False)
+class MammalianLine (models.Model, SaveWithoutHistoricalRecord):
+    
+    name = models.CharField("name", max_length=255, unique=True, blank=False, null=True)
+    box_name = models.CharField("box", max_length=255, blank=False, null=True)
+    alternative_name = models.CharField("alternative name", max_length=255, blank=True, null=True)
+    parental_line_old = models.CharField("parental cell line", max_length=255, blank=False, null=True)
     parental_line = models.ForeignKey('self', on_delete=models.PROTECT, verbose_name = 'parental line', blank=True, null=True)
-    organism = models.CharField("organism", max_length = 20, blank=True)
-    cell_type_tissue = models.CharField("cell type/tissue", max_length = 255, blank=True)
-    culture_type = models.CharField("culture type", max_length = 255, blank=True)
-    growth_condition = models.CharField("growth conditions", max_length = 255, blank=True)
-    freezing_medium = models.CharField("freezing medium", max_length = 255, blank=True)
-    received_from = models.CharField("received from", max_length = 255, blank=True)
-    integrated_plasmids = models.ManyToManyField('HuPlasmid', related_name='int_pl', blank= True)
-    description_comment = models.TextField("description/comments", blank=True)
+    organism = models.CharField("organism", max_length=20, blank=True, null=True)
+    cell_type_tissue = models.CharField("cell type/tissue", max_length=255, blank=True, null=True)
+    culture_type = models.CharField("culture type", max_length=255, blank=True, null=True)
+    growth_condition = models.CharField("growth conditions", max_length=255, blank=True, null=True)
+    freezing_medium = models.CharField("freezing medium", max_length=255, blank=True, null=True)
+    received_from = models.CharField("received from", max_length=255, blank=True, null=True)
+    description_comment = models.TextField("description/comments", blank=True, null=True)
+
+    integrated_plasmids = models.ManyToManyField('HuPlasmid', related_name='mammalian_integrated_plasmids', blank= True)
     
     created_date_time = models.DateTimeField("created", auto_now_add=True)
     created_approval_by_pi = models.BooleanField("record creation approval", default = False)
@@ -344,14 +296,15 @@ class MammalianLine (models.Model):
         return "{} - {}".format(self.id, self.name)
 
 ################################################
-#        MAMMALIAN CELL LINE DOC MODEL         #
+#            MAMMALIAN CELL LINE DOC           #
 ################################################
 
 class MammalianLineDoc(models.Model):
-    name = models.FileField("file name", upload_to="temp/", blank=False)
-    typ_e = models.CharField("doc type", max_length=255, choices=[["virus", "Virus test"], ["mycoplasma", "Mycoplasma test"], ["fingerprint", "Fingerprinting"], ["other", "Other"]], blank=False)
-    date_of_test = models.DateField("date of test", blank=False)
-    comment = models.CharField("comment", max_length=150, blank=True)
+    
+    name = models.FileField("file name", upload_to="temp/", blank=False, null=True)
+    typ_e = models.CharField("doc type", max_length=255, choices=[["virus", "Virus test"], ["mycoplasma", "Mycoplasma test"], ["fingerprint", "Fingerprinting"], ["other", "Other"]], blank=False, null=True)
+    date_of_test = models.DateField("date of test", blank=False, null=True)
+    comment = models.CharField("comment", max_length=150, blank=True, null=True)
     mammalian_line = models.ForeignKey(MammalianLine, on_delete=models.PROTECT)
     
     created_date_time = models.DateTimeField("created", auto_now_add=True)
@@ -400,7 +353,7 @@ class MammalianLineDoc(models.Model):
          return str(self.id)
 
     def clean(self):
-        """Check if file is bigger than 2 MB"""
+        """Check if name file is bigger than 2 MB"""
 
         errors = []
         
@@ -417,19 +370,20 @@ class MammalianLineDoc(models.Model):
             raise ValidationError(errors)
 
 #################################################
-#                ANTIBODY MODEL                 #
+#                   ANTIBODY                    #
 #################################################
 
 class Antibody (models.Model, SaveWithoutHistoricalRecord):
-    name = models.CharField("name", max_length = 255, blank=False)
-    species_isotype = models.CharField("species/isotype", max_length = 255, blank=False)
-    clone = models.CharField("clone", max_length = 255, blank=True)
-    received_from = models.CharField("receieved from", max_length = 255, blank=True)
-    catalogue_number = models.CharField("catalogue number", max_length = 255, blank=True)
-    l_ocation = models.CharField("location", max_length = 255, blank=True)
-    a_pplication = models.CharField("application", max_length = 255, blank=True)
-    description_comment = models.TextField("description/comments", blank=True)
-    info_sheet = models.FileField("info sheet (max. 2 MB)", upload_to="collection_management/antibody/", blank=True)
+    
+    name = models.CharField("name", max_length = 255, blank=False, null=True)
+    species_isotype = models.CharField("species/isotype", max_length = 255, blank=False, null=True)
+    clone = models.CharField("clone", max_length = 255, blank=True, null=True)
+    received_from = models.CharField("receieved from", max_length = 255, blank=True, null=True)
+    catalogue_number = models.CharField("catalogue number", max_length = 255, blank=True, null=True)
+    l_ocation = models.CharField("location", max_length = 255, blank=True, null=True)
+    a_pplication = models.CharField("application", max_length = 255, blank=True, null=True)
+    description_comment = models.TextField("description/comments", blank=True, null=True)
+    info_sheet = models.FileField("info sheet (max. 2 MB)", upload_to="collection_management/antibody/", blank=True, null=True)
 
     created_date_time = models.DateTimeField("created", auto_now_add=True)
     last_changed_date_time = models.DateTimeField("last changed", auto_now=True)
@@ -437,7 +391,7 @@ class Antibody (models.Model, SaveWithoutHistoricalRecord):
     history = HistoricalRecords()
 
     def clean(self):
-        """Check if file is bigger than 2 MB"""
+        """Check if info_sheet file is bigger than 2 MB"""
 
         errors = []
         

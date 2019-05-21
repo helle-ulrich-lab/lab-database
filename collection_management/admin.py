@@ -432,6 +432,14 @@ class MyAdminSite(admin.AdminSite):
         ] + urls
         return urls
 
+    MODELS_TO_APPROVE = {'collection_management' : 'sacerevisiaestrain',
+                         'collection_management' : 'huplasmid',
+                         'collection_management' : 'oligo',
+                         'collection_management' : 'scpombestrain', 
+                         'collection_management' : 'ecolistrain',
+                         'collection_management' : 'mammalianline',
+                         'order_management'      : 'order'}
+
     def approval_summary(self, request):
         """ View to show all added and changed records from 
         collection_management that have been added or changed
@@ -442,19 +450,9 @@ class MyAdminSite(admin.AdminSite):
 
         if request.user.is_superuser or request.user.id == 6: # Only allow superusers and Helle to access the page
             data = []
-            order_model = apps.get_app_config('order_management').get_model("order")
-            added = order_model.objects.all().filter(created_approval_by_pi=False)
-            if added:
-                data.append(
-                    (str(order_model._meta.verbose_name_plural).capitalize(),
-                    str(order_model.__name__).lower(), 
-                    list(added.only('id','part_description','created_by')),
-                    [],
-                    str(order_model._meta.app_label)
-                    ))
-            app = apps.get_app_config('collection_management')
-            for model in app.models.values():
-                if model._meta.verbose_name.lower().startswith(("strain", "plasmid", "oligo", "mammmalian")): # Only do this for certain models within collection_management
+            for app, model in self.MODELS_TO_APPROVE.items():
+                model = apps.get_app_config(app).get_model(model)
+                if app == 'collection_management':
                     added = model.objects.all().filter(created_approval_by_pi=False)
                     changed = model.objects.all().filter(last_changed_approval_by_pi=False).exclude(id__in=added)
                     if added or changed:
@@ -465,15 +463,27 @@ class MyAdminSite(admin.AdminSite):
                             list(changed.only('id','name','created_by')),
                             str(model._meta.app_label),
                             ))
+                elif app == 'order_management':
+                    added = model.objects.all().filter(created_approval_by_pi=False)
+                    if added:
+                        data.append(
+                            (str(model._meta.verbose_name_plural).capitalize(),
+                            str(model.__name__).lower(), 
+                            list(added.only('id','part_description','created_by')),
+                            [],
+                            str(model._meta.app_label)
+                            ))
+
             context = {
             'user': request.user,
             'site_header': self.site_header,
             'has_permission': self.has_permission(request), 
             'site_url': self.site_url, 
-            'title':"Records to be approved", 
-            'data':data
+            'title': "Records to be approved", 
+            'data': data
             }
             return render(request, 'admin/approval_summary.html', context)
+        
         else:
             return messages.error(request, 'Nice try, you are not allowed to do that.')
             
@@ -481,19 +491,15 @@ class MyAdminSite(admin.AdminSite):
         """ Approve all records that are pending approval """
 
         if request.user.id == 6: # Only allow Helle to approve records
-            try:
-                app = apps.get_app_config('collection_management')
-                for model in app.models.values():
-                    if model._meta.verbose_name.lower().startswith(("strain", "plasmid", "oligo", "mammmalian")): # Only do this for certain models within collection_management
-                        model.objects.all().filter(created_approval_by_pi=False).update(created_approval_by_pi=True, approval_by_pi_date_time = timezone.now())
-                        model.objects.all().filter(last_changed_approval_by_pi=False).update(last_changed_approval_by_pi=True, approval_by_pi_date_time = timezone.now())
-                order_model = apps.get_app_config('order_management').get_model("order")
-                order_model.objects.all().filter(created_approval_by_pi=False).update(created_approval_by_pi=True)
-                messages.success(request, 'The records have been approved')
-                return HttpResponseRedirect("/approval_summary/")
-            except Exception as err:
-                messages.error(request, 'The records could not be approved. Error: ' + str(err))
-                return HttpResponseRedirect("/approval_summary/")
+            for app, model in self.MODELS_TO_APPROVE.items():
+                model = apps.get_app_config(app).get_model(model)
+                if app == 'collection_management':
+                    model.objects.all().filter(created_approval_by_pi=False).update(created_approval_by_pi=True, approval_by_pi_date_time = timezone.now())
+                    model.objects.all().filter(last_changed_approval_by_pi=False).update(last_changed_approval_by_pi=True, approval_by_pi_date_time = timezone.now())
+                elif app == 'order_management':
+                    model.objects.all().filter(created_approval_by_pi=False).update(created_approval_by_pi=True)
+            messages.success(request, 'The records have been approved')
+            return HttpResponseRedirect("/approval_summary/")
         else:
             messages.error(request, 'Nice try, you are not allowed to do that.')
             return HttpResponseRedirect("/approval_summary/")

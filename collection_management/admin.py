@@ -499,10 +499,10 @@ class MyAdminSite(admin.AdminSite):
                 elif app == 'order_management':
                     model.objects.all().filter(created_approval_by_pi=False).update(created_approval_by_pi=True)
             messages.success(request, 'The records have been approved')
-            return HttpResponseRedirect("/approval_summary/")
+            return HttpResponseRedirect("/")
         else:
             messages.error(request, 'Nice try, you are not allowed to do that.')
-            return HttpResponseRedirect("/approval_summary/")
+            return HttpResponseRedirect("/")
 
     def my_orders_redirect(self, request):
         """ Redirect user to their My Orders page """

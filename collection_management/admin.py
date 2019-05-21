@@ -879,7 +879,7 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
     #                         continue
     #     return form
 
-    def add_view(self,request,extra_content=None):
+    def add_view(self,request,extra_context=None):
         '''Override default add_view to show only desired fields'''
         
         self.fields = ('name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parent_1', 'parent_2', 
@@ -887,12 +887,17 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
         'selection', 'phenotype', 'background', 'received_from', 'us_e', 'note', 'reference',)
         return super(SaCerevisiaeStrainPage,self).add_view(request)
 
-    def change_view(self,request,object_id,extra_content=None):
+    def change_view(self,request,object_id,extra_context=None):
         '''Override default change_view to show only desired fields'''
 
         if object_id:
             obj = collection_management_SaCerevisiaeStrain.objects.get(pk=object_id)
             if obj:
+                plasmid_id_list = obj.integrated_plasmids.all() | obj.cassette_plasmids.all() | obj.episomal_plasmids.all() # Merge querysets
+                if plasmid_id_list:
+                    extra_context = extra_context or {}
+                    plasmid_id_list = tuple(plasmid_id_list.distinct().values_list('id', flat=True))
+                    extra_context['plasmid_id_list'] = str(plasmid_id_list).replace(',)', ')').replace(' ', '')
                 if request.user == obj.created_by:
                     self.save_as = True
 
@@ -906,7 +911,7 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
                 'selection', 'phenotype', 'background', 'received_from','us_e', 'note', 'reference', 'created_date_time', 
                 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',)
 
-        return super(SaCerevisiaeStrainPage,self).change_view(request,object_id)
+        return super(SaCerevisiaeStrainPage,self).change_view(request,object_id,extra_context=extra_context)
     
     def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
         """Override default changeform_view to hide Save buttons when certain conditions (same as
@@ -1096,7 +1101,7 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
         else:
             return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
     
-    def add_view(self,request,extra_content=None):
+    def add_view(self,request,extra_context=None):
         '''Override default add_view to show only desired fields'''
         
         self.fields = ('name', 'other_name', 'parent_vector', 'old_parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
@@ -1305,13 +1310,13 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
         else:
             return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
     
-    def add_view(self,request,extra_content=None):
+    def add_view(self,request,extra_context=None):
         '''Override default add_view to show only desired fields'''
         
         self.fields = ('name','sequence', 'us_e', 'gene', 'restriction_site', 'description', 'comment', )
         return super(OligoPage,self).add_view(request)
 
-    def change_view(self,request,object_id,extra_content=None):
+    def change_view(self,request,object_id,extra_context=None):
         '''Override default change_view to show only desired fields'''
         
         if '_saveasnew' in request.POST:
@@ -1443,14 +1448,14 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admi
         else:
             return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi','created_by',]
 
-    def add_view(self,request,extra_content=None):
+    def add_view(self,request,extra_context=None):
         '''Override default add_view to show only desired fields'''
         
         self.fields = ('box_number', 'parent_1', 'parent_2', 'parental_strain', 'mating_type', 'auxotrophic_marker', 'name',
         'integrated_plasmids', 'cassette_plasmids', 'phenotype', 'received_from', 'comment', )
         return super(ScPombeStrainPage,self).add_view(request)
 
-    def change_view(self,request,object_id,extra_content=None):
+    def change_view(self,request,object_id,extra_context=None):
         '''Override default change_view to show only desired fields'''
         
         if object_id:
@@ -1573,13 +1578,13 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.
         else:
             return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
     
-    def add_view(self,request,extra_content=None):
+    def add_view(self,request,extra_context=None):
         '''Override default add_view to show only desired fields'''
 
         self.fields = ('name', 'resistance', 'genotype', 'supplier', 'us_e', 'purpose', 'note',)
         return super(EColiStrainPage,self).add_view(request)
 
-    def change_view(self,request,object_id,extra_content=None):
+    def change_view(self,request,object_id,extra_context=None):
         '''Override default change_view to show only desired fields'''
 
         self.fields = ('name', 'resistance', 'genotype', 'supplier', 'us_e', 'purpose', 'note',
@@ -1629,13 +1634,13 @@ class MammalianLinePageDoc(admin.ModelAdmin):
         if obj:
             return ['name', 'typ_e', 'date_of_test', 'mammalian_line', 'created_date_time',]
     
-    def add_view(self,request,extra_content=None):
+    def add_view(self,request,extra_context=None):
         '''Override default add_view to show only desired fields'''
 
         self.fields = (['name', 'typ_e', 'mammalian_line', 'comment', 'date_of_test'])
         return super(MammalianLinePageDoc,self).add_view(request)
 
-    def change_view(self,request,object_id,extra_content=None):
+    def change_view(self,request,object_id,extra_context=None):
         '''Override default change_view to show only desired fields'''
 
         self.fields = (['name', 'typ_e', 'date_of_test', 'mammalian_line', 'comment', 'created_date_time',])
@@ -1826,14 +1831,14 @@ class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Cust
     #                 form.fields['parental_line'].disabled = True
     #     return form
 
-    def add_view(self,request,extra_content=None):
+    def add_view(self,request,extra_context=None):
         '''Override default add_view to show only desired fields'''
 
         self.fields = ('name', 'box_name', 'alternative_name', 'parental_line', 'organism', 'cell_type_tissue', 'culture_type', 'growth_condition',
                 'freezing_medium', 'received_from', 'integrated_plasmids', 'description_comment',)
         return super(MammalianLinePage,self).add_view(request)
 
-    def change_view(self,request,object_id,extra_content=None):
+    def change_view(self,request,object_id,extra_context=None):
         '''Override default change_view to show only desired fields'''
 
         if object_id:
@@ -2016,14 +2021,14 @@ class AntibodyPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.Mod
         else:
             return ['created_date_time', 'last_changed_date_time',]
     
-    def add_view(self,request,extra_content=None):
+    def add_view(self,request,extra_context=None):
         '''Override default add_view to show only desired fields'''
 
         self.fields = ('name', 'species_isotype', 'clone', 'received_from', 'catalogue_number', 'l_ocation', 'a_pplication',
                 'description_comment', 'info_sheet', )
         return super(AntibodyPage,self).add_view(request)
     
-    def change_view(self,request,object_id,extra_content=None):
+    def change_view(self,request,object_id,extra_context=None):
         '''Override default change_view to show only desired fields'''
 
         self.fields = ('name', 'species_isotype', 'clone', 'received_from', 'catalogue_number', 'l_ocation', 'a_pplication',

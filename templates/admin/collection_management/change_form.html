@@ -28,6 +28,11 @@
 {% if change %}{% if not is_popup %}
   <ul class="object-tools">
     {% block object-tools-items %}
+    
+    {% if plasmid_id_list %}
+    <li><a href="/collection_management/huplasmid/?q-l=on&q=id+in+{{plasmid_id_list}}">{% trans "Plasmids" %}</a></li>
+    {% endif %}
+    
     <li>
         {% url opts|admin_urlname:'history' original.pk|admin_urlquote as history_url %}
         <a href="{% add_preserved_filters history_url %}" class="historylink">{% trans "History" %}</a>

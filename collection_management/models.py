@@ -44,7 +44,7 @@ class SaveWithoutHistoricalRecord():
 #            SA. CEREVISIAE STRAIN              #
 #################################################
 
-MATING_TYPE_CHOICE = (
+MATING_TYPE_CHOICES = (
     ('a','a'),
     ('alpha','alpha'),
     ('unknown','unknown'),
@@ -57,7 +57,7 @@ class SaCerevisiaeStrain (models.Model, SaveWithoutHistoricalRecord):
     
     name = models.CharField("name", max_length=255, blank=False, null=True)
     relevant_genotype = models.CharField("relevant genotype", max_length=255, blank=False, null=True)
-    mating_type = models.CharField("mating type", choices = MATING_TYPE_CHOICE, max_length=20, blank=True, null=True)
+    mating_type = models.CharField("mating type", choices = MATING_TYPE_CHOICES, max_length=20, blank=True, null=True)
     chromosomal_genotype = models.TextField("chromosomal genotype", blank=True, null=True)
     parent_1 = models.ForeignKey('self', verbose_name='Parent 1', on_delete=models.PROTECT, related_name='cerevisiae_parent_1', help_text='Main parental strain', blank=True, null=True)
     parent_2 = models.ForeignKey('self', verbose_name='Parent 2', on_delete=models.PROTECT, related_name='cerevisiae_parent_2', help_text='Only for crosses', blank=True, null=True)

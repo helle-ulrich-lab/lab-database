@@ -776,7 +776,7 @@ class SaCerevisiaeStrainForm(forms.ModelForm):
             return self.cleaned_data["name"]
 
 class SaCerevisiaeStrainEpisomalPlasmidInline(admin.TabularInline):
-    autocomplete_fields = ['huplasmid', 'formz_project']
+    autocomplete_fields = ['huplasmid', 'formz_projects']
     model = SaCerevisiaeStrainEpisomalPlasmid
     verbose_name_plural = "Episomal plasmids"
     verbose_name = 'Episomal Plasmid'

@@ -401,6 +401,8 @@ class CustomGuardedModelAdmin(GuardedModelAdmin):
 #               CUSTOM ADMIN SITE               #
 #################################################
 
+HU_USER = User.objects.get(id=6) # Helle's user object
+
 class MyAdminSite(admin.AdminSite):
     '''Create a custom admin site called MyAdminSite'''
     
@@ -448,7 +450,7 @@ class MyAdminSite(admin.AdminSite):
         from django.shortcuts import render
         from django.apps import apps
 
-        if request.user.is_superuser or request.user.id == 6: # Only allow superusers and Helle to access the page
+        if request.user.is_superuser or request.user == HU_USER: # Only allow superusers and Helle to access the page
             data = []
             for app, model in self.MODELS_TO_APPROVE.items():
                 model = apps.get_app_config(app).get_model(model)
@@ -490,7 +492,7 @@ class MyAdminSite(admin.AdminSite):
     def approve_approval_summary(self, request):
         """ Approve all records that are pending approval """
 
-        if request.user.id == 6: # Only allow Helle to approve records
+        if request.user == HU_USER: # Only allow Helle to approve records
             for app, model in self.MODELS_TO_APPROVE.items():
                 model = apps.get_app_config(app).get_model(model)
                 if app == 'collection_management':
@@ -818,7 +820,7 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
             obj.save()
         else:
             saved_obj = collection_management_SaCerevisiaeStrain.objects.get(pk=obj.pk)
-            if request.user.is_superuser or request.user == saved_obj.created_by or request.user.groups.filter(name='Lab manager').exists() or saved_obj.created_by.groups.filter(name='Past member').exists() or saved_obj.created_by.id == 6:
+            if request.user.is_superuser or request.user == saved_obj.created_by or request.user.groups.filter(name='Lab manager').exists() or saved_obj.created_by.groups.filter(name='Past member').exists() or saved_obj.created_by == HU_USER:
                 obj.last_changed_approval_by_pi = False
                 obj.save()
             else:
@@ -837,7 +839,7 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
             else:
                 if request.user.has_perm('collection_management.change_sacerevisiaestrain', obj):
                     return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',]
-                if obj.created_by.groups.filter(name='Past member') or obj.created_by.id == 6:
+                if obj.created_by.groups.filter(name='Past member') or obj.created_by == HU_USER:
                     return ['name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parent_1', 'parent_2', 'parental_strain',
                 'construction', 'modification', 'integrated_plasmids', 'cassette_plasmids', 'plasmids', 'selection', 'phenotype', 
                 'background', 'received_from', 'us_e', 'reference', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
@@ -915,7 +917,7 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
         if object_id:
             obj = collection_management_SaCerevisiaeStrain.objects.get(pk=object_id)
             if obj:
-                if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by.id == 6 or obj.created_by.groups.filter(name='Past member'))  or request.user.groups.filter(name='Guest').exists():
+                if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by == HU_USER or obj.created_by.groups.filter(name='Past member'))  or request.user.groups.filter(name='Guest').exists():
                     if not request.user.has_perm('collection_management.change_sacerevisiaestrain', obj):
                         extra_context['show_submit_line'] = False
         return super(SaCerevisiaeStrainPage, self).changeform_view(request, object_id, extra_context=extra_context)
@@ -1023,7 +1025,7 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
                 else:
                     obj.save()
             else:
-                if obj.created_by.id == 6: # Allow saving object, if record belongs to Helle (user id = 6)
+                if obj.created_by == HU_USER: # Allow saving object, if record belongs to Helle (user id = 6)
                     obj.last_changed_approval_by_pi = False
                     if obj.map and obj.map != old_obj.map:
                         rename_and_preview = True
@@ -1080,12 +1082,12 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
         if obj:
             if request.user.has_perm('collection_management.change_huplasmid', obj):
                 return ['map_png', 'map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',]
-            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by.id == 6) or request.user.groups.filter(name='Guest').exists():
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by == HU_USER) or request.user.groups.filter(name='Guest').exists():
                 return ['name', 'other_name', 'parent_vector', 'old_parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
                     'reference', 'map', 'map_png', 'map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
                     'last_changed_approval_by_pi', 'created_by', 'vector_known_zkbs', 'vector_zkbs','formz_elements']
             else:
-                if obj.created_by.id == 6 and not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists()): # Show map and note as editable fields, if record belongs to Helle (user id = 6)
+                if obj.created_by == HU_USER and not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists()): # Show map and note as editable fields, if record belongs to Helle (user id = 6)
                     return ['name', 'other_name', 'parent_vector', 'old_parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 
                     'reference', 'map_png', 'map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
                     'last_changed_approval_by_pi', 'created_by', 'vector_known_zkbs', 'vector_zkbs','formz_elements']
@@ -1163,7 +1165,7 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
         if object_id:
             obj = collection_management_HuPlasmid.objects.get(pk=object_id)
             if obj:
-                if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by.id == 6) or request.user.groups.filter(name='Guest').exists():
+                if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by == HU_USER) or request.user.groups.filter(name='Guest').exists():
                     if not request.user.has_perm('collection_management.change_huplasmid', obj):
                         extra_context['show_submit_line'] = False
         return super(HuPlasmidPage, self).changeform_view(request, object_id, extra_context=extra_context)

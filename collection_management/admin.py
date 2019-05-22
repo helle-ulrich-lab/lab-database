@@ -86,7 +86,7 @@ import time
 #################################################
 
 @background(schedule=1) # Run 1 s after it is called, as "background" process
-def snapgene_plasmid_map_preview(plasmid_map_path, png_plasmid_map_path, gbk_plasmid_map_path, obj_id, obj_name):
+def snapgene_map_preview(plasmid_map_path, png_plasmid_map_path, gbk_plasmid_map_path, obj_id, obj_name):
     """ Given a path to a snapgene plasmid map, use snapegene server
     to detect common features and create map preview as png
     and """

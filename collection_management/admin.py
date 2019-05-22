@@ -434,13 +434,13 @@ class MyAdminSite(admin.AdminSite):
         ] + urls
         return urls
 
-    MODELS_TO_APPROVE = {'collection_management' : 'sacerevisiaestrain',
-                         'collection_management' : 'huplasmid',
-                         'collection_management' : 'oligo',
-                         'collection_management' : 'scpombestrain', 
-                         'collection_management' : 'ecolistrain',
-                         'collection_management' : 'mammalianline',
-                         'order_management'      : 'order'}
+    MODELS_TO_APPROVE = [('collection_management', 'sacerevisiaestrain'),
+                         ('collection_management', 'huplasmid'),
+                         ('collection_management', 'oligo'),
+                         ('collection_management', 'scpombestrain'), 
+                         ('collection_management', 'ecolistrain'),
+                         ('collection_management', 'mammalianline'),
+                         ('order_management'     , 'order')]
 
     def approval_summary(self, request):
         """ View to show all added and changed records from 
@@ -452,7 +452,7 @@ class MyAdminSite(admin.AdminSite):
 
         if request.user.is_superuser or request.user == HU_USER: # Only allow superusers and Helle to access the page
             data = []
-            for app, model in self.MODELS_TO_APPROVE.items():
+            for app, model in self.MODELS_TO_APPROVE:
                 model = apps.get_app_config(app).get_model(model)
                 if app == 'collection_management':
                     added = model.objects.all().filter(created_approval_by_pi=False)
@@ -493,7 +493,7 @@ class MyAdminSite(admin.AdminSite):
         """ Approve all records that are pending approval """
 
         if request.user == HU_USER: # Only allow Helle to approve records
-            for app, model in self.MODELS_TO_APPROVE.items():
+            for app, model in self.MODELS_TO_APPROVE:
                 model = apps.get_app_config(app).get_model(model)
                 if app == 'collection_management':
                     model.objects.all().filter(created_approval_by_pi=False).update(created_approval_by_pi=True, approval_by_pi_date_time = timezone.now())
@@ -789,7 +789,36 @@ class SaCerevisiaeStrainEpisomalPlasmidInline(admin.TabularInline):
     verbose_name_plural = "Episomal plasmids"
     verbose_name = 'Episomal Plasmid'
     classes = ['collapse']
+    ordering = ("present_in_stocked_strain",'id',)
     extra = 0
+    template = 'admin/tabular.html'
+
+    def get_parent_object(self, request):
+        """
+        Returns the parent object from the request or None.
+
+        Note that this only works for Inlines, because the `parent_model`
+        is not available in the regular admin.ModelAdmin as an attribute.
+        """
+
+        from django.urls import resolve
+
+        resolved = resolve(request.path_info)
+        if resolved.kwargs:
+            return self.parent_model.objects.get(pk=resolved.kwargs['object_id'])
+        return None
+
+    def get_queryset(self,request):
+
+        """Modify to conditionally collapse inline if there is an episomal 
+        plasmid in the -80 stock"""
+
+        parent_object = self.get_parent_object(request)
+        if parent_object:
+            parent_obj_episomal_plasmids = parent_object.episomal_plasmids.all()
+            if parent_obj_episomal_plasmids.filter(sacerevisiaestrainepisomalplasmid__present_in_stocked_strain=True):
+                self.classes = []
+        return super(SaCerevisiaeStrainEpisomalPlasmidInline, self).get_queryset(request)
 
 
 class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin, Approval):
@@ -1683,16 +1712,15 @@ class AddMammalianLineDocInline(admin.TabularInline):
     def has_change_permission(self, request, obj=None):
         return False
 
+    def get_queryset(self, request):
+        return collection_management_MammalianLineDoc.objects.none()
     # def get_readonly_fields(self, request, obj=None):
     #     '''Override default get_readonly_fields to define user-specific read-only fields
     #     If a user is not a superuser, lab manager or the user who created a record
     #     return all fields as read-only'''
 
     #     if obj:
-    #         if request.user.groups.filter(name='Guest').exists():
-    #             return ['typ_e', 'date_of_test', 'name', 'comment']
-    #         else:
-    #             return []
+    #         return ['typ_e', 'date_of_test', 'name']
     #     else:
     #         return []
 

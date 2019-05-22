@@ -791,11 +791,6 @@ class SaCerevisiaeStrainEpisomalPlasmidInline(admin.TabularInline):
     classes = ['collapse']
     extra = 0
 
-    def get_queryset(self, request):
-        qs = super(SaCerevisiaeStrainEpisomalPlasmidInline, self).get_queryset(request)
-        if qs:
-            self.classes = []
-        return qs
 
 class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin, Approval):
     list_display = ('id', 'name', 'mating_type', 'background', 'created_by', 'approval')

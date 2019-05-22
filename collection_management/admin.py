@@ -182,8 +182,8 @@ class SimpleHistoryWithSummaryAdmin(SimpleHistoryAdmin):
             except action_list.model.DoesNotExist:
                 raise http.Http404
 
-        if not self.has_change_permission(request, obj):
-            raise PermissionDenied
+        # if not self.has_change_permission(request, obj): # Disable so that guests can access history summary view
+        #     raise PermissionDenied
 
         # Set attribute on each action_list entry from admin methods
         for history_list_entry in history_list_display:
@@ -917,7 +917,7 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
         if object_id:
             obj = collection_management_SaCerevisiaeStrain.objects.get(pk=object_id)
             if obj:
-                if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by == HU_USER or obj.created_by.groups.filter(name='Past member'))  or request.user.groups.filter(name='Guest').exists():
+                if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by == HU_USER or obj.created_by.groups.filter(name='Past member')):
                     if not request.user.has_perm('collection_management.change_sacerevisiaestrain', obj):
                         extra_context['show_submit_line'] = False
         return super(SaCerevisiaeStrainPage, self).changeform_view(request, object_id, extra_context=extra_context)
@@ -931,7 +931,7 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
         obj = collection_management_SaCerevisiaeStrain.objects.get(pk=object_pk)
         
         if obj:
-            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
                 messages.error(request, 'Nice try, you are allowed to change the permissions of your own records only.')
                 return HttpResponseRedirect("..")
         return super(SaCerevisiaeStrainPage,self).obj_perms_manage_view(request, object_pk)
@@ -1082,7 +1082,7 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
         if obj:
             if request.user.has_perm('collection_management.change_huplasmid', obj):
                 return ['map_png', 'map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',]
-            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by == HU_USER) or request.user.groups.filter(name='Guest').exists():
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by == HU_USER):
                 return ['name', 'other_name', 'parent_vector', 'old_parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
                     'reference', 'map', 'map_png', 'map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
                     'last_changed_approval_by_pi', 'created_by', 'vector_known_zkbs', 'vector_zkbs','formz_elements']
@@ -1165,7 +1165,7 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
         if object_id:
             obj = collection_management_HuPlasmid.objects.get(pk=object_id)
             if obj:
-                if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by == HU_USER) or request.user.groups.filter(name='Guest').exists():
+                if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by == HU_USER):
                     if not request.user.has_perm('collection_management.change_huplasmid', obj):
                         extra_context['show_submit_line'] = False
         return super(HuPlasmidPage, self).changeform_view(request, object_id, extra_context=extra_context)
@@ -1195,7 +1195,7 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
         obj = collection_management_HuPlasmid.objects.get(pk=object_pk)
         
         if obj:
-            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
                 messages.error(request, 'Nice try, you are allowed to change the permissions of your own records only.')
                 return HttpResponseRedirect("..")
         return super(HuPlasmidPage,self).obj_perms_manage_view(request, object_pk)
@@ -1297,7 +1297,7 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
         because their set by Django itself'''
         
         if obj:
-            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
                 return ['name','sequence', 'us_e', 'gene', 'restriction_site', 'description', 'comment', 'created_date_time',
                 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',]
             else:
@@ -1330,7 +1330,7 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
         if object_id:
             obj = collection_management_Oligo.objects.get(pk=object_id)
             if obj:
-                if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
+                if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
                     extra_context['show_submit_line'] = False
         return super(OligoPage, self).changeform_view(request, object_id, extra_context=extra_context)
 
@@ -1434,7 +1434,7 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admi
         because their set by Django itself'''
         
         if obj:
-            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
                 return ['box_number', 'parent_1', 'parent_2', 'parental_strain', 'mating_type', 'auxotrophic_marker', 'name',
                         'integrated_plasmids', 'cassette_plasmids', 'phenotype', 'received_from', 'comment', 'created_date_time', 
                         'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',]
@@ -1478,7 +1478,7 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admi
         if object_id:
             obj = collection_management_ScPombeStrain.objects.get(pk=object_id)
             if obj:
-                if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
+                if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
                     extra_context['show_submit_line'] = False
         return super(ScPombeStrainPage, self).changeform_view(request, object_id, extra_context=extra_context)
 
@@ -1565,7 +1565,7 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.
         because their set by Django itself'''
 
         if obj:
-            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
                 return ['name', 'resistance', 'genotype', 'supplier', 'us_e', 'purpose', 'note',
                 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',]
             else:
@@ -1596,7 +1596,7 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.
         if object_id:
             obj = collection_management_EColiStrain.objects.get(pk=object_id)
             if obj:
-                if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
+                if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
                     extra_context['show_submit_line'] = False
         return super(EColiStrainPage, self).changeform_view(request, object_id, extra_context=extra_context)
 
@@ -1683,18 +1683,18 @@ class AddMammalianLineDocInline(admin.TabularInline):
     def has_change_permission(self, request, obj=None):
         return False
 
-    def get_readonly_fields(self, request, obj=None):
-        '''Override default get_readonly_fields to define user-specific read-only fields
-        If a user is not a superuser, lab manager or the user who created a record
-        return all fields as read-only'''
+    # def get_readonly_fields(self, request, obj=None):
+    #     '''Override default get_readonly_fields to define user-specific read-only fields
+    #     If a user is not a superuser, lab manager or the user who created a record
+    #     return all fields as read-only'''
 
-        if obj:
-            if request.user.groups.filter(name='Guest').exists():
-                return ['typ_e', 'date_of_test', 'name', 'comment']
-            else:
-                return []
-        else:
-            return []
+    #     if obj:
+    #         if request.user.groups.filter(name='Guest').exists():
+    #             return ['typ_e', 'date_of_test', 'name', 'comment']
+    #         else:
+    #             return []
+    #     else:
+    #         return []
 
 #################################################
 #          MAMMALIAN CELL LINE PAGES            #
@@ -1773,11 +1773,8 @@ class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Cust
             obj.created_by = request.user
             obj.save()
         else:
-            if not request.user.groups.filter(name='Guest').exists():
-                obj.last_changed_approval_by_pi = False
-                obj.save()
-            else:
-                raise PermissionDenied
+            obj.last_changed_approval_by_pi = False
+            obj.save()
     
     def get_readonly_fields(self, request, obj=None):
         '''Override default get_readonly_fields to define user-specific read-only fields
@@ -1787,7 +1784,7 @@ class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Cust
         because their set by Django itself'''
 
         if obj:
-            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
                 if request.user.has_perm('collection_management.change_mammalianline', obj):
                     return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by']
                 else:
@@ -1857,11 +1854,7 @@ class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Cust
 
         extra_context = extra_context or {}
         extra_context['show_submit_line'] = True
-        if object_id:
-            obj = collection_management_MammalianLine.objects.get(pk=object_id)
-            if obj:
-                if request.user.groups.filter(name='Guest').exists():
-                    extra_context['show_submit_line'] = False
+
         return super(MammalianLinePage, self).changeform_view(request, object_id, extra_context=extra_context)
 
     def get_formsets_with_inlines(self, request, obj=None):
@@ -1892,7 +1885,7 @@ class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Cust
         obj = collection_management_MammalianLine.objects.get(pk=object_pk)
         
         if obj:
-            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
                 messages.error(request, 'Nice try, you are allowed to change the permissions of your own records only.')
                 return HttpResponseRedirect("..")
         return super(MammalianLinePage,self).obj_perms_manage_view(request, object_pk)
@@ -1961,8 +1954,6 @@ class AntibodyPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.Mod
                 new_obj = True
             obj.save()
         else:
-            if request.user.groups.filter(name='Guest').exists():
-                raise PermissionDenied
             old_obj = collection_management_Antibody.objects.get(pk=obj.pk)
             if obj.info_sheet and obj.info_sheet != old_obj.info_sheet:
                 rename_doc = True
@@ -2007,13 +1998,6 @@ class AntibodyPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.Mod
         because their set by Django itself'''
 
         if obj:
-            if request.user.groups.filter(name='Guest').exists():
-                return ['name', 'species_isotype', 'clone', 'received_from', 'catalogue_number', 'info_sheet',
-                'l_ocation', 'a_pplication', 'description_comment','info_sheet', 'created_by', 'created_date_time',
-                'last_changed_date_time',]
-            else:
-                return ['created_date_time', 'last_changed_date_time',]
-        else:
             return ['created_date_time', 'last_changed_date_time',]
     
     def add_view(self,request,extra_context=None):
@@ -2036,11 +2020,7 @@ class AntibodyPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.Mod
 
         extra_context = extra_context or {}
         extra_context['show_submit_line'] = True
-        if object_id:
-            obj = collection_management_Antibody.objects.get(pk=object_id)
-            if obj:
-                if request.user.groups.filter(name='Guest').exists():
-                    extra_context['show_submit_line'] = False
+
         return super(AntibodyPage, self).changeform_view(request, object_id, extra_context=extra_context)
 
     def get_sheet_short_name(self, instance):

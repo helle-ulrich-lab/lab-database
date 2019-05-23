@@ -89,7 +89,7 @@ import time
 def snapgene_map_preview(plasmid_map_path, png_plasmid_map_path, gbk_plasmid_map_path, obj_id, obj_name):
     """ Given a path to a snapgene plasmid map, use snapegene server
     to detect common features and create map preview as png
-    and """
+    and gbk"""
 
     try:
         config = Config()
@@ -117,7 +117,9 @@ def snapgene_map_preview(plasmid_map_path, png_plasmid_map_path, gbk_plasmid_map
         client.requestResponse(argument, 10000)
 
     except:
-        mail_admins("Snapgene server error", "There was an error with creating the preview for {} with snapgene server".format(dna_plasmid_map_path), fail_silently=True)
+        mail_admins("Snapgene server error", 
+                    "There was an error with creating the preview for {} with snapgene server".format(dna_plasmid_map_path), 
+                    fail_silently=True)
         raise Exception
 
 @background(schedule=86400) # Run 1 s after it is called, as "background" process

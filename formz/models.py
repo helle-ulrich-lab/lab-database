@@ -12,8 +12,8 @@ from django.contrib.contenttypes.models import ContentType
 
 class NucleicAcidPurity (models.Model):
     
-    english_name = models.CharField("English name", max_length = 255, blank=False, null=True)
-    german_name = models.CharField("German name", max_length = 255, blank=False, null=True)
+    english_name = models.CharField("English name", max_length=255, blank=False)
+    german_name = models.CharField("German name", max_length=255, blank=False)
 
     class Meta:
         '''Set a custom name to be used throughout the admin pages'''
@@ -29,8 +29,8 @@ class NucleicAcidPurity (models.Model):
 
 class NucleicAcidRisk (models.Model):
     
-    english_name = models.CharField("English name", max_length = 255, blank=False, null=True)
-    german_name = models.CharField("German name", max_length = 255, blank=False, null=True)
+    english_name = models.CharField("English name", max_length=255, blank=False)
+    german_name = models.CharField("German name", max_length=255, blank=False)
 
     class Meta:
         '''Set a custom name to be used throughout the admin pages'''
@@ -46,8 +46,8 @@ class NucleicAcidRisk (models.Model):
 
 class GenTechMethod (models.Model):
         
-    english_name = models.CharField("English name", max_length = 255, blank=False, null=True)
-    german_name = models.CharField("German name", max_length = 255, blank=False, null=True)
+    english_name = models.CharField("English name", max_length=255, blank=False)
+    german_name = models.CharField("German name", max_length=255, blank=False)
 
     class Meta:
         '''Set a custom name to be used throughout the admin pages'''
@@ -63,19 +63,19 @@ class GenTechMethod (models.Model):
 
 class FormZProject (models.Model):
 
-    title = models.CharField("title", max_length = 191, blank=False, null=True)
+    title = models.CharField("title", max_length=191, blank=False)
 
     safety_level = models.PositiveSmallIntegerField('safety level', choices=((1,1), (2,2)), blank=False, null=True)
-    project_leader = models.CharField("project leader", max_length = 255, blank=False, null=True)
-    objectives = models.CharField("objectives of strategy", max_length = 255, blank=True, null=True)
-    description = models.TextField("Description of stratagy/performance", help_text= 'Techniques, organisms, plasmids, etc.', blank=True, null=True)
-    donor_organims = models.CharField("donor organisms", help_text='Used organisms, their risk group and safety-relevant properties', max_length = 255, blank=True, null=True)
-    potential_risk_nuc_acid = models.TextField("potential risks of transferred nucleic acids", help_text='Include safety-relevant properties', blank=True, null=True)
-    vectors = models.TextField("Vectors", help_text='Include safety-relevant properties', blank=True, null=True)
-    recipient_organisms = models.CharField("recipient organisms", help_text='Include risk groups and safety-relevant properties', max_length = 255, blank=True, null=True)
-    generated_gmo = models.TextField("generated GMOs", help_text='Include risk groups and safety-relevant properties', blank=True, null=True)
-    hazard_activity = models.TextField("hazard-relevant characteristics of activity", blank=True, null=True)
-    hazards_employee = models.TextField("severity and likelihood of hazards to employees and/or the environment", blank=True, null=True)
+    project_leader = models.CharField("project leader", max_length=255, blank=False)
+    objectives = models.CharField("objectives of strategy", max_length=255, blank=True)
+    description = models.TextField("Description of stratagy/performance", help_text= 'Techniques, organisms, plasmids, etc.', blank=True)
+    donor_organims = models.CharField("donor organisms", help_text='Used organisms, their risk group and safety-relevant properties', max_length=255, blank=True)
+    potential_risk_nuc_acid = models.TextField("potential risks of transferred nucleic acids", help_text='Include safety-relevant properties', blank=True)
+    vectors = models.TextField("Vectors", help_text='Include safety-relevant properties', blank=True)
+    recipient_organisms = models.CharField("recipient organisms", help_text='Include risk groups and safety-relevant properties', max_length=255, blank=True)
+    generated_gmo = models.TextField("generated GMOs", help_text='Include risk groups and safety-relevant properties', blank=True)
+    hazard_activity = models.TextField("hazard-relevant characteristics of activity", blank=True)
+    hazards_employee = models.TextField("severity and likelihood of hazards to employees and/or the environment", blank=True)
 
     beginning_work_date = models.DateField("beginning of work", blank=False, null=True)
     end_work_date = models.DateField("end of work", blank=True, null=True)
@@ -95,10 +95,11 @@ class FormZProject (models.Model):
         return str(self.title)
 
 class ZkbsPlasmid (models.Model):
-    name = models.CharField("name", max_length = 255, blank=False, null=True)
-    source = models.CharField("source", max_length = 255, blank=False, null=True)
-    purpose = models.CharField("purpose", max_length = 255, blank=False, null=True)
-    description = models.TextField("description", blank=True, null=True)
+    
+    name = models.CharField("name", max_length=255, blank=False)
+    source = models.CharField("source", max_length=255, blank=False)
+    purpose = models.CharField("purpose", max_length=255, blank=False)
+    description = models.TextField("description", blank=True)
 
     class Meta:
         '''Set a custom name to be used throughout the admin pages'''
@@ -114,10 +115,10 @@ class ZkbsPlasmid (models.Model):
 
 class FormZBaseElement (models.Model):
 
-    name = models.CharField("name", max_length = 255, blank=True, null=True)
-    donor_organism = models.CharField("donor organism", max_length = 255, blank=True, null=True)
+    name = models.CharField("name", max_length=255, blank=True)
+    donor_organism = models.CharField("donor organism", max_length=255, blank=True)
     donor_organism_risk = models.PositiveSmallIntegerField('risk group', choices=((1,1), (2,2)), blank=True, null=True)
-    nuc_acid_type = models.CharField("nucleic acid type", max_length = 255, blank=True, null=True)
+    nuc_acid_type = models.CharField("nucleic acid type", max_length=255, blank=True)
     nuc_acid_purity = models.ForeignKey(NucleicAcidPurity, verbose_name = 'nucleic acid purity', on_delete=models.PROTECT, blank=True, null=True)
     nuc_acid_risk = models.ForeignKey(NucleicAcidRisk, verbose_name = 'nucleic acid risk potential', on_delete=models.PROTECT, blank=True, null=True)
 
@@ -134,13 +135,14 @@ class FormZBaseElement (models.Model):
         return str(self.name)
 
 class FormZHeader (models.Model):
-    operator = models.CharField("operator", max_length = 255, help_text = 'Name des Betreibers', blank=False, null=True)
-    address = models.TextField("address of bioengineering facility", help_text = 'Anschrift der gentechnischen Anlage', blank=False, null=True)
-    name_biosafety_officer = models.CharField("name of the biosafety officer", max_length = 255, help_text = 'Name des Beauftragten für die Biologische Sicherheit', blank=False, null=True)
+    
+    operator = models.CharField("operator", max_length=255, help_text = 'Name des Betreibers', blank=False)
+    address = models.TextField("address of bioengineering facility", help_text = 'Anschrift der gentechnischen Anlage', blank=False)
+    name_biosafety_officer = models.CharField("name of the biosafety officer", max_length=255, help_text = 'Name des Beauftragten für die Biologische Sicherheit', blank=False)
 
-    s1_approval_file_num = models.CharField("file number for S1 approval", max_length = 255, help_text = 'e.g. 21-29,8 B 56.01; TgbNr.: 8/29,0/11/36',blank=False, null=True)
+    s1_approval_file_num = models.CharField("file number for S1 approval", max_length=255, help_text = 'e.g. 21-29,8 B 56.01; TgbNr.: 8/29,0/11/36',blank=False)
     s1_approval_date = models.DateField("S1 approval date", blank=False, null=True)
-    s2_approval_file_num = models.CharField("file number for S2 approval", max_length = 255, help_text = 'e.g. 29,8 B 56.02:21; TgbNr.: 8/29,0/13/46', blank=False, null=True)
+    s2_approval_file_num = models.CharField("file number for S2 approval", max_length=255, help_text = 'e.g. 29,8 B 56.02:21; TgbNr.: 8/29,0/13/46', blank=False)
     s2_approval_date = models.DateField("S2 approval date", blank=False, null=True)
 
     class Meta:

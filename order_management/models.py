@@ -24,9 +24,10 @@ import time
 #################################################
 
 class CostUnit(models.Model):
-    name = models.CharField("Name", max_length = 255, unique = True, blank=False)
-    description = models.CharField("Description", max_length = 255, unique = True, blank=False)
-    status = models.BooleanField("Deactivate?", default = False)
+    
+    name = models.CharField("Name", max_length=255, unique=True, blank=False)
+    description = models.CharField("Description", max_length=255, unique=True, blank=False)
+    status = models.BooleanField("Deactivate?", default=False, null=True)
     
     class Meta:
         verbose_name = 'cost unit'
@@ -46,8 +47,9 @@ class CostUnit(models.Model):
 #################################################
 
 class Location(models.Model):
-    name = models.CharField("Name", max_length = 255, unique = True, blank=False)
-    status = models.BooleanField("Deactivate?", default = False)
+    
+    name = models.CharField("Name", max_length=255, unique=True, blank=False)
+    status = models.BooleanField("Deactivate?", default=False, null=True)
     
     class Meta:
         ordering = ["name",]
@@ -66,10 +68,11 @@ class Location(models.Model):
 #################################################
 
 class MsdsForm(models.Model):
+    
     name = models.FileField("File name", upload_to="order_management/msdsform/", unique=True, blank=False)
     
-    created_date_time = models.DateTimeField("Created", auto_now_add=True)
-    last_changed_date_time = models.DateTimeField("Last Changed", auto_now=True)
+    created_date_time = models.DateTimeField("Created", auto_now_add=True, null=True)
+    last_changed_date_time = models.DateTimeField("Last Changed", auto_now=True, null=True)
 
     class Meta:
         verbose_name = 'MSDS form'
@@ -106,30 +109,31 @@ status_choices = (('submitted', 'submitted'),
 ('used up', 'used up'))
 
 class Order(models.Model):
-    supplier = models.CharField("Supplier", max_length = 255, blank=False)
-    supplier_part_no = models.CharField("Supplier Part-No", max_length = 255, blank=False)
-    internal_order_no = models.CharField("Internal order number", max_length = 255, blank=True)
-    part_description = models.CharField("Part Description", max_length = 255, blank=False)
-    quantity = models.CharField("Quantity", max_length = 255, blank=False)
-    price = models.CharField("Price", max_length = 255, blank=True)
-    cost_unit = models.ForeignKey(CostUnit, on_delete=models.PROTECT, default=1)
-    status = models.CharField("Status", max_length = 255, choices= status_choices, default="submitted", blank = False)
-    urgent = models.BooleanField("Is this an urgent order?", default = False)
-    delivery_alert = models.BooleanField("Delivery notification?", default = False)
-    sent_email = models.BooleanField(default=False)
-    location = models.ForeignKey(Location, on_delete=models.PROTECT, null = True)
-    comment =  models.TextField("Comments", blank=True)
-    order_manager_created_date_time = models.DateTimeField("Created in OrderManager", blank = True, null = True)
-    delivered_date = models.DateField("Delivered", blank = True, null = True, default = None)
-    url = models.URLField("URL", max_length = 400, blank = True)
-    cas_number = models.CharField("CAS number", max_length = 255, blank=True)
-    ghs_pictogram = models.CharField("GHS pictogram", max_length = 255, blank=True)
-    msds_form = models.ForeignKey(MsdsForm, on_delete=models.PROTECT, blank=True, null = True)
     
-    created_date_time = models.DateTimeField("Created", auto_now_add=True)
-    last_changed_date_time = models.DateTimeField("Last Changed", auto_now=True)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT)
-    created_approval_by_pi = models.BooleanField(default = False)
+    supplier = models.CharField("Supplier", max_length=255, blank=False)
+    supplier_part_no = models.CharField("Supplier Part-No", max_length=255, blank=False)
+    internal_order_no = models.CharField("Internal order number", max_length=255, blank=True)
+    part_description = models.CharField("Part Description", max_length=255, blank=False)
+    quantity = models.CharField("Quantity", max_length=255, blank=False)
+    price = models.CharField("Price", max_length=255, blank=True)
+    cost_unit = models.ForeignKey(CostUnit, on_delete=models.PROTECT, default=1, null=True)
+    status = models.CharField("Status", max_length=255, choices= status_choices, default="submitted", blank=False)
+    urgent = models.BooleanField("Is this an urgent order?", default=False, null=True)
+    delivery_alert = models.BooleanField("Delivery notification?", default=False, null=True)
+    sent_email = models.BooleanField(default=False, null=True)
+    location = models.ForeignKey(Location, on_delete=models.PROTECT, null=True)
+    comment =  models.TextField("Comments", blank=True)
+    order_manager_created_date_time = models.DateTimeField("Created in OrderManager", blank=True, null=True)
+    delivered_date = models.DateField("Delivered", blank=True, default=None, null=True)
+    url = models.URLField("URL", max_length=400, blank=True)
+    cas_number = models.CharField("CAS number", max_length=255, blank=True)
+    ghs_pictogram = models.CharField("GHS pictogram", max_length=255, blank=True)
+    msds_form = models.ForeignKey(MsdsForm, on_delete=models.PROTECT, blank=True, null=True)
+    
+    created_date_time = models.DateTimeField("Created", auto_now_add=True, null=True)
+    last_changed_date_time = models.DateTimeField("Last Changed", auto_now=True, null=True)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, null=True)
+    created_approval_by_pi = models.BooleanField(default=False, null=True)
     history = HistoricalRecords()
 
     class Meta:
@@ -164,8 +168,8 @@ class Order(models.Model):
 
 class OrderExtraDoc(models.Model):
     name = models.FileField("File name", upload_to="temp/", blank=False)
-    description = models.CharField("Description", max_length = 255, blank=False)
-    order = models.ForeignKey(Order, on_delete=models.PROTECT)
+    description = models.CharField("Description", max_length=255, blank=False)
+    order = models.ForeignKey(Order, on_delete=models.PROTECT, null=True)
     
     created_date_time = models.DateTimeField("Created", auto_now_add=True)
     last_changed_date_time = models.DateTimeField("Last Changed", auto_now=True)

@@ -526,6 +526,7 @@ class MyAdminSite(admin.AdminSite):
         
         if default_storage.exists(url_path): # check if file exists
             
+            # Create HttpResponse and add Content Type and, if present, Encoding
             response = HttpResponse()
             mimetype, encoding = mimetypes.guess_type(url_path)
             mimetype = mimetype if mimetype else 'application/octet-stream'
@@ -533,50 +534,43 @@ class MyAdminSite(admin.AdminSite):
             if encoding:
                 response["Content-Encoding"] = encoding
             
-            if url_path.startswith('collection_management') and not url_path.endswith('png'):
-                if '/huplasmid/' in url_path:
-                    try:
-                        app_name, model_name, file_type, file_name = url_path.split('/')
-                        file_prefix = file_name.split('_')[0]
-                        file_ext = file_name.split('.')[-1]
-                        model = apps.get_model(app_name, model_name)
-                        obj_id = int(re.findall('\d+(?=_)', file_name)[0])
-                    except:
-                        raise Http404()
+            # Get app and model names
+            try:
+                #app_name, model_name, file_type, file_name = url_path.split('/')
+                url_path_split = url_path.split('/')
+                app_name = url_path_split[0]
+                model_name = url_path_split[1]
+            except:
+                raise Http404()
+
+            # Generate name for download file
+            if app_name == 'collection_management':
+
+                # Get object 
+                file_name, file_ext = os.path.splitext(url_path_split[-1]) 
+                file_prefix = file_name.split('_')[0]
+                if model_name == 'mammalianlinedoc':
+                    obj_id = int(file_name.split('_')[-1])
                 else:
-                    try:
-                        app_name, model_name, file_name = url_path.split('/')
-                        file_prefix = file_name.split('_')[0]
-                        file_ext = file_name.split('.')[-1]
-                        model = apps.get_model(app_name, model_name)
-                        obj_id = int(re.findall('\d+(?=_)', file_name)[0])
-                    except:
-                        raise Http404()
+                    obj_id = int(re.findall('\d+(?=_)', file_name)[0])
+                obj = apps.get_model(app_name, model_name).objects.get(id=obj_id)  
 
                 if model_name == 'mammalianlinedoc':
-                    mammalianline = apps.get_model(app_name, "mammalianline")
-                    obj_name = mammalianline.objects.get(id=obj_id).name + " Test #" + re.findall('\d+(?=.)', file_name)[-1]
+                    obj_name = "{} - {} Doc# {}".format(obj.mammalian_line.name, obj.typ_e.title(), obj.id)
                 else:
-                    obj_name = model.objects.get(id=obj_id).name
+                    obj_name = obj.name
 
-                download_file_name = "{file_prefix} - {obj_name}.{file_ext}".format(
-                    file_prefix = file_prefix,
-                    obj_name = obj_name,
-                    file_ext = file_ext,
-                    ).replace(',','')
-
-                if 'pdf' in mimetype.lower():
-                    response["Content-Disposition"] = "inline; filename={download_file_name}".format(download_file_name=download_file_name)
-                else:
-                    response["Content-Disposition"] = "attachment; filename={download_file_name}".format(download_file_name=download_file_name)
+                download_file_name = "{} - {}{}".format(file_prefix, obj_name, file_ext).replace(',','')
             else:
-                file_name = os.path.basename(url_path)
-                if 'pdf' in mimetype.lower():
-                    response["Content-Disposition"] = "inline; filename={download_file_name}".format(download_file_name=file_name)
-                elif 'png' in mimetype.lower():
-                    response["Content-Disposition"] = ""
-                else:
-                    response["Content-Disposition"] = "attachment; filename={download_file_name}".format(download_file_name=file_name)
+                download_file_name = os.path.basename(url_path)
+
+            # Set content disposition based on file type
+            if 'pdf' in mimetype.lower():
+                response["Content-Disposition"] = "inline; filename={}".format(download_file_name)
+            elif 'png' in mimetype.lower():
+                response["Content-Disposition"] = ""
+            else:
+                response["Content-Disposition"] = "attachment; filename={}".format(download_file_name)
             
             response['X-Accel-Redirect'] = "/secret/{url_path}".format(url_path=url_path)
             return response

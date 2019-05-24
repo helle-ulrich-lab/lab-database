@@ -8,7 +8,7 @@ BACKUP_DIR=$DJANGO_BASE_DIR/ulrich_lab_intranet_db_backup
 
 # Create datadump for django database and gzip it
 CURRENT_DATE_TIME=`date +'%Y%m%d_%H%M'`
-/usr/bin/mysqldump -u django -pdFf3CpE8yqpVzadIn5VJ django | gzip > $BACKUP_DIR/db_dumps/ulrich_lab_intranet_db_dump_${CURRENT_DATE_TIME}.sql.gz
+/usr/bin/mysqldump -u django -p$MYSQL_DB_PASSWORD django | gzip > $BACKUP_DIR/db_dumps/ulrich_lab_intranet_db_dump_${CURRENT_DATE_TIME}.sql.gz
 
 /home/nzilio/ulrich_lab_intranet/bin/python $DJANGO_BASE_DIR/manage.py shell < $DJANGO_BASE_DIR/beyond_django/export_db_tables_as_xlsx.py
 

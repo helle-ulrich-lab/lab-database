@@ -2023,6 +2023,8 @@ class AntibodyPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.Mod
 
         if obj:
             return ['created_date_time', 'last_changed_date_time',]
+        else:
+            return []
     
     def add_view(self,request,extra_context=None):
         '''Override default add_view to show only desired fields'''

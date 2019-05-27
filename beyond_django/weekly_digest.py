@@ -21,3 +21,8 @@ send_mail(
     DJANGO_PRIVATE_DATA["server_email_address"],
     [H_ULRICH_USER.email],
 )
+
+# Delete all completed tasks
+
+from background_task.models_completed import CompletedTask
+CompletedTask.objects.all().delete()

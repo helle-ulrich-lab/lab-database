@@ -543,28 +543,29 @@ class MyAdminSite(admin.AdminSite):
                 url_path_split = url_path.split('/')
                 app_name = url_path_split[0]
                 model_name = url_path_split[1]
+
+                # Generate name for download file
+                if app_name == 'collection_management':
+
+                    # Get object 
+                    file_name, file_ext = os.path.splitext(url_path_split[-1]) 
+                    file_prefix = file_name.split('_')[0]
+                    if model_name == 'mammalianlinedoc':
+                        obj_id = int(file_name.split('_')[-1])
+                    else:
+                        obj_id = int(re.findall('\d+(?=_)', file_name)[0])
+                    obj = apps.get_model(app_name, model_name).objects.get(id=obj_id)  
+
+                    if model_name == 'mammalianlinedoc':
+                        obj_name = "{} - {} Doc# {}".format(obj.mammalian_line.name, obj.typ_e.title(), obj.id)
+                    else:
+                        obj_name = obj.name
+
+                    download_file_name = "{} - {}{}".format(file_prefix, obj_name, file_ext).replace(',','')
+                else:
+                    download_file_name = os.path.basename(url_path)
+            
             except:
-                raise Http404()
-
-            # Generate name for download file
-            if app_name == 'collection_management':
-
-                # Get object 
-                file_name, file_ext = os.path.splitext(url_path_split[-1]) 
-                file_prefix = file_name.split('_')[0]
-                if model_name == 'mammalianlinedoc':
-                    obj_id = int(file_name.split('_')[-1])
-                else:
-                    obj_id = int(re.findall('\d+(?=_)', file_name)[0])
-                obj = apps.get_model(app_name, model_name).objects.get(id=obj_id)  
-
-                if model_name == 'mammalianlinedoc':
-                    obj_name = "{} - {} Doc# {}".format(obj.mammalian_line.name, obj.typ_e.title(), obj.id)
-                else:
-                    obj_name = obj.name
-
-                download_file_name = "{} - {}{}".format(file_prefix, obj_name, file_ext).replace(',','')
-            else:
                 download_file_name = os.path.basename(url_path)
 
             # Set content disposition based on file type
@@ -577,6 +578,7 @@ class MyAdminSite(admin.AdminSite):
             
             response['X-Accel-Redirect'] = "/secret/{url_path}".format(url_path=url_path)
             return response
+            
         else:
             raise Http404
 

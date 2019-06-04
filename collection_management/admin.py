@@ -118,7 +118,7 @@ def snapgene_map_preview(plasmid_map_path, png_plasmid_map_path, gbk_plasmid_map
 
     except:
         mail_admins("Snapgene server error", 
-                    "There was an error with creating the preview for {} with snapgene server".format(dna_plasmid_map_path), 
+                    "There was an error with creating the preview for {} with snapgene server".format(plasmid_map_path), 
                     fail_silently=True)
         raise Exception
 
@@ -157,6 +157,8 @@ class SimpleHistoryWithSummaryAdmin(SimpleHistoryAdmin):
     def history_view(self, request, object_id, extra_context=None):
         """The 'history' admin view for this model."""
 
+        from django.http import Http404
+
         def pairwise(iterable):
             """ Create pairs of consecutive items from
             iterable"""
@@ -182,7 +184,7 @@ class SimpleHistoryWithSummaryAdmin(SimpleHistoryAdmin):
             try:
                 obj = action_list.latest('history_date').instance
             except action_list.model.DoesNotExist:
-                raise http.Http404
+                raise Http404
 
         # if not self.has_change_permission(request, obj): # Disable so that guests can access history summary view
         #     raise PermissionDenied
@@ -325,6 +327,7 @@ class CustomGuardedModelAdmin(GuardedModelAdmin):
         from guardian.shortcuts import get_users_with_perms
         from collections import OrderedDict
         from django.contrib.admin.utils import unquote
+        from django.shortcuts import redirect
 
         if not self.has_change_permission(request, None):
             post_url = reverse('admin:index', current_app=self.admin_site.name)

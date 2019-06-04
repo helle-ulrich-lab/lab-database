@@ -9,11 +9,11 @@ H_ULRICH_USER = User.objects.get(username='hprofdru')
 
 EMAIL_MESSAGE_TXT = inspect.cleandoc("""Dear {},
 
-Please visit https://imbc2.imb.uni-mainz.de:8443/approval_summary/ to check for new or modified records that need to be approved.
+Please visit https://{}/approval_summary/ to check for new or modified records that need to be approved.
 
 Best wishes,
 The Ulrich lab intranet
-""".format(H_ULRICH_USER.first_name))
+""".format(H_ULRICH_USER.first_name, DJANGO_PRIVATE_DATA['allowed_hosts'][0]))
 
 send_mail(
     "Ulrich lab intranet weekly notification",

@@ -116,12 +116,12 @@ class Order(models.Model):
     part_description = models.CharField("Part Description", max_length=255, blank=False)
     quantity = models.CharField("Quantity", max_length=255, blank=False)
     price = models.CharField("Price", max_length=255, blank=True)
-    cost_unit = models.ForeignKey(CostUnit, on_delete=models.PROTECT, default=1, null=True)
+    cost_unit = models.ForeignKey(CostUnit, on_delete=models.PROTECT, default=1, null=True, blank=False)
     status = models.CharField("Status", max_length=255, choices= status_choices, default="submitted", blank=False)
     urgent = models.BooleanField("Is this an urgent order?", default=False, null=True)
     delivery_alert = models.BooleanField("Delivery notification?", default=False, null=True)
     sent_email = models.BooleanField(default=False, null=True)
-    location = models.ForeignKey(Location, on_delete=models.PROTECT, null=True)
+    location = models.ForeignKey(Location, on_delete=models.PROTECT, null=True, blank=False)
     comment =  models.TextField("Comments", blank=True)
     order_manager_created_date_time = models.DateTimeField("Created in OrderManager", blank=True, null=True)
     delivered_date = models.DateField("Delivered", blank=True, default=None, null=True)
@@ -132,7 +132,7 @@ class Order(models.Model):
     
     created_date_time = models.DateTimeField("Created", auto_now_add=True, null=True)
     last_changed_date_time = models.DateTimeField("Last Changed", auto_now=True, null=True)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT, null=True)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT)
     created_approval_by_pi = models.BooleanField(default=False, null=True)
     history = HistoricalRecords()
 

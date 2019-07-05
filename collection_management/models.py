@@ -85,7 +85,11 @@ class SaCerevisiaeStrain (models.Model, SaveWithoutHistoricalRecord):
     approval_by_pi_date_time = models.DateTimeField(null = True, default=None)
     created_by = models.ForeignKey(User, on_delete=models.PROTECT)
     history = HistoricalRecords()
-    
+
+    formz_projects = models.ManyToManyField(FormZProject, verbose_name='formZ projects', related_name='cerevisiae_strain_projects', blank= True)
+    formz_risk_group = models.PositiveSmallIntegerField('risk group', choices=((1,1), (2,2)), blank=True, null=True)
+    destroyed_date = models.DateField("destroyed", blank=True, null=True)
+
     class Meta:
         verbose_name = 'strain - Sa. cerevisiae'
         verbose_name_plural = 'strains - Sa. cerevisiae'

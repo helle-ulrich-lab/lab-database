@@ -772,6 +772,12 @@ export_sacerevisiaestrain.short_description = "Export selected strains as xlsx"
 
 class SaCerevisiaeStrainForm(forms.ModelForm):
     
+    change_reason = forms.CharField()
+
+    class Meta:
+        model = collection_management_SaCerevisiaeStrain
+        fields = '__all__'
+
     def clean_name(self):
         """Check if name is unique before saving"""
         
@@ -819,6 +825,8 @@ class SaCerevisiaeStrainEpisomalPlasmidInline(admin.TabularInline):
             parent_obj_episomal_plasmids = parent_object.episomal_plasmids.all()
             if parent_obj_episomal_plasmids.filter(sacerevisiaestrainepisomalplasmid__present_in_stocked_strain=True):
                 self.classes = []
+        else:
+            self.classes = []
         return super(SaCerevisiaeStrainEpisomalPlasmidInline, self).get_queryset(request)
 
 
@@ -826,12 +834,12 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
     list_display = ('id', 'name', 'mating_type', 'background', 'created_by', 'approval')
     list_display_links = ('id', )
     list_per_page = 25
-    formfield_overrides = {models.CharField: {'widget': TextInput(attrs={'size':'93'})},} # Make TextInput fields wider
     djangoql_schema = SaCerevisiaeStrainQLSchema
     actions = [export_sacerevisiaestrain]
     form = SaCerevisiaeStrainForm
+    formfield_overrides = {models.CharField: {'widget': TextInput(attrs={'size':'93'})},} # Make TextInput fields wider
     search_fields = ['id', 'name']
-    autocomplete_fields = ['parent_1', 'parent_2', 'integrated_plasmids', 'cassette_plasmids']
+    autocomplete_fields = ['parent_1', 'parent_2', 'integrated_plasmids', 'cassette_plasmids', 'formz_projects']
     inlines = [SaCerevisiaeStrainEpisomalPlasmidInline]
     
     def save_model(self, request, obj, form, change):
@@ -845,6 +853,10 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
             obj.save()
         else:
             saved_obj = collection_management_SaCerevisiaeStrain.objects.get(pk=obj.pk)
+
+            if 'change_reason' in request.POST:
+                obj.changeReason = request.POST['change_reason']
+
             if request.user.is_superuser or request.user == saved_obj.created_by or request.user.groups.filter(name='Lab manager').exists() or saved_obj.created_by.groups.filter(name='Past member').exists() or saved_obj.created_by == HU_USER:
                 obj.last_changed_approval_by_pi = False
                 obj.save()
@@ -907,9 +919,21 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
     def add_view(self,request,extra_context=None):
         '''Override default add_view to show only desired fields'''
         
-        self.fields = ('name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parent_1', 'parent_2', 
+        # self.fields = ('name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parent_1', 'parent_2', 
+        # 'parental_strain', 'construction', 'modification','integrated_plasmids', 'cassette_plasmids', 'plasmids', 
+        # 'selection', 'phenotype', 'background', 'received_from', 'us_e', 'note', 'reference',)
+
+        self.fieldsets = (
+        (None, {
+            'fields': ('name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parent_1', 'parent_2', 
         'parental_strain', 'construction', 'modification','integrated_plasmids', 'cassette_plasmids', 'plasmids', 
         'selection', 'phenotype', 'background', 'received_from', 'us_e', 'note', 'reference',)
+        }),
+        ('FORMBLATT Z', {
+            'fields': ('formz_projects', 'formz_risk_group','destroyed_date')
+        }),
+        )
+
         return super(SaCerevisiaeStrainPage,self).add_view(request)
 
     def change_view(self,request,object_id,extra_context=None):
@@ -927,14 +951,52 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
                     self.save_as = True
 
         if '_saveasnew' in request.POST:
-            self.fields = ('name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parent_1', 'parent_2', 
-                'parental_strain', 'construction', 'modification', 'integrated_plasmids', 'cassette_plasmids', 'plasmids', 
-                'selection', 'phenotype', 'background', 'received_from','us_e', 'note', 'reference',)
+            # self.fields = ('name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parent_1', 'parent_2', 
+            #     'parental_strain', 'construction', 'modification', 'integrated_plasmids', 'cassette_plasmids', 'plasmids', 
+            #     'selection', 'phenotype', 'background', 'received_from','us_e', 'note', 'reference',)
+            
+            self.fieldsets = (
+            (None, {
+                'fields': ('name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parent_1', 'parent_2', 
+            'parental_strain', 'construction', 'modification','integrated_plasmids', 'cassette_plasmids', 'plasmids', 
+            'selection', 'phenotype', 'background', 'received_from', 'us_e', 'note', 'reference',)
+            }),
+            ('FORMBLATT Z', {
+                'fields': ('formz_projects', 'formz_risk_group','destroyed_date')
+            }),
+            )
         else:
-            self.fields = ('name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parent_1', 'parent_2', 
-                'parental_strain', 'construction', 'modification', 'integrated_plasmids', 'cassette_plasmids', 'plasmids', 
-                'selection', 'phenotype', 'background', 'received_from','us_e', 'note', 'reference', 'created_date_time', 
-                'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',)
+            # self.fields = ('name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parent_1', 'parent_2', 
+            #     'parental_strain', 'construction', 'modification', 'integrated_plasmids', 'cassette_plasmids', 'plasmids', 
+            #     'selection', 'phenotype', 'background', 'received_from','us_e', 'note', 'reference', 'created_date_time', 
+            #     'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by', 'change_reason')
+
+            if request.user == obj.created_by or not obj.created_by.groups.filter(name='Past member').exists():
+                self.fieldsets = (
+                (None, {
+                    'fields': ('name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parent_1', 'parent_2', 
+                    'parental_strain', 'construction', 'modification', 'integrated_plasmids', 'cassette_plasmids', 'plasmids', 
+                    'selection', 'phenotype', 'background', 'received_from','us_e', 'note', 'reference', 'created_date_time', 
+                    'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',)
+                }),
+                ('FORMBLATT Z', {
+                    'classes': ('collapse',),
+                    'fields': ('formz_projects', 'formz_risk_group','destroyed_date')
+                }),
+                )
+            else:
+                self.fieldsets = (
+                (None, {
+                    'fields': ('name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parent_1', 'parent_2', 
+                    'parental_strain', 'construction', 'modification', 'integrated_plasmids', 'cassette_plasmids', 'plasmids', 
+                    'selection', 'phenotype', 'background', 'received_from','us_e', 'note', 'reference', 'created_date_time', 
+                    'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by', 'change_reason')
+                }),
+                ('FORMBLATT Z', {
+                    'classes': ('collapse',),
+                    'fields': ('formz_projects', 'formz_risk_group','destroyed_date')
+                }),
+                )
 
         return super(SaCerevisiaeStrainPage,self).change_view(request,object_id,extra_context=extra_context)
     

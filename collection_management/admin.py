@@ -772,7 +772,7 @@ export_sacerevisiaestrain.short_description = "Export selected strains as xlsx"
 
 class SaCerevisiaeStrainForm(forms.ModelForm):
     
-    change_reason = forms.CharField()
+    change_reason = forms.CharField(required=False)
 
     class Meta:
         model = collection_management_SaCerevisiaeStrain
@@ -796,7 +796,7 @@ class SaCerevisiaeStrainEpisomalPlasmidInline(admin.TabularInline):
     verbose_name_plural = "Episomal plasmids"
     verbose_name = 'Episomal Plasmid'
     classes = ['collapse']
-    ordering = ("present_in_stocked_strain",'id',)
+    ordering = ("-present_in_stocked_strain",'id',)
     extra = 0
     template = 'admin/tabular.html'
 
@@ -847,13 +847,13 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
         Superusers and lab managers can change all records
         Regular users can change only their own records
         Guests cannot change any record'''
-        
+
         if obj.pk == None:
             obj.created_by = request.user
             obj.save()
         else:
             saved_obj = collection_management_SaCerevisiaeStrain.objects.get(pk=obj.pk)
-
+            
             if 'change_reason' in request.POST:
                 obj.changeReason = request.POST['change_reason']
 
@@ -863,6 +863,40 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
             else:
                 raise PermissionDenied
     
+    def save_related(self, request, form, formsets, change):
+        
+        super(SaCerevisiaeStrainPage, self).save_related(request, form, formsets, change)
+
+        # Keep a record of the IDs of linked M2M fields in the main strain record
+        # Not pretty, but it works
+
+        obj = collection_management_SaCerevisiaeStrain.objects.get(pk=form.instance.id)
+        
+        integrated_plasmids = obj.integrated_plasmids.all().order_by('id')
+        cassette_plasmids = obj.cassette_plasmids.all().order_by('id')
+        episomal_plasmids = obj.episomal_plasmids.all().order_by('id')
+
+        obj.history_integrated_plasmids = str(tuple(integrated_plasmids.values_list('id', flat=True))) if integrated_plasmids else ""
+        obj.history_cassette_plasmids = str(tuple(cassette_plasmids.values_list('id', flat=True))) if cassette_plasmids else ""
+        obj.history_episomal_plasmids = str(tuple(episomal_plasmids.values_list('id', flat=True))) if episomal_plasmids else ""
+
+        plasmid_id_list = integrated_plasmids | cassette_plasmids | episomal_plasmids.filter(sacerevisiaestrainepisomalplasmid__present_in_stocked_strain=True) # Merge querysets
+        if plasmid_id_list:
+            plasmid_id_list = tuple(plasmid_id_list.distinct().order_by('id').values_list('id', flat=True))
+            obj.history_all_plasmids_in_stocked_strain = str(plasmid_id_list)
+
+        obj.history_formz_projects = str(tuple(obj.formz_projects.all().values_list('id', flat=True))) if obj.formz_projects.all() else ""
+
+        obj.save_without_historical_record()
+
+        history_obj = obj.history.latest()
+        history_obj.history_integrated_plasmids = obj.history_integrated_plasmids
+        history_obj.history_cassette_plasmids = obj.history_cassette_plasmids
+        history_obj.history_episomal_plasmids = obj.history_episomal_plasmids
+        history_obj.history_all_plasmids_in_stocked_strain = obj.history_all_plasmids_in_stocked_strain
+        history_obj.history_formz_projects = obj.history_formz_projects
+        history_obj.save()
+
     def get_readonly_fields(self, request, obj=None):
         '''Override default get_readonly_fields to define user-specific read-only fields
         If a user is not a superuser, lab manager or the user who created a record
@@ -942,11 +976,9 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
         if object_id:
             obj = collection_management_SaCerevisiaeStrain.objects.get(pk=object_id)
             if obj:
-                plasmid_id_list = obj.integrated_plasmids.all() | obj.cassette_plasmids.all() | obj.episomal_plasmids.all() # Merge querysets
-                if plasmid_id_list:
+                if obj.history_all_plasmids_in_stocked_strain:
                     extra_context = extra_context or {}
-                    plasmid_id_list = tuple(plasmid_id_list.distinct().values_list('id', flat=True))
-                    extra_context['plasmid_id_list'] = str(plasmid_id_list).replace(',)', ')').replace(' ', '')
+                    extra_context['plasmid_id_list'] = obj.history_all_plasmids_in_stocked_strain
                 if request.user == obj.created_by:
                     self.save_as = True
 

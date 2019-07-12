@@ -90,6 +90,13 @@ class SaCerevisiaeStrain (models.Model, SaveWithoutHistoricalRecord):
     formz_risk_group = models.PositiveSmallIntegerField('risk group', choices=((1,1), (2,2)), blank=True, null=True)
     destroyed_date = models.DateField("destroyed", blank=True, null=True)
 
+    # Fields to keep a record of M2M field values (only IDs!) in the main strain record
+    history_integrated_plasmids = models.TextField(blank=True)
+    history_cassette_plasmids = models.TextField(blank=True)
+    history_episomal_plasmids = models.TextField(blank=True)
+    history_all_plasmids_in_stocked_strain = models.TextField(blank=True) # Integrated, cassete and episomal (only if present in -80 stock)
+    history_formz_projects = models.TextField(blank=True)
+
     class Meta:
         verbose_name = 'strain - Sa. cerevisiae'
         verbose_name_plural = 'strains - Sa. cerevisiae'

@@ -153,13 +153,13 @@ class Order(models.Model):
         return ret
     
     def save(self, force_insert=False, force_update=False):
-        self.supplier = self.supplier.strip().replace("'","").replace('\n'," ").replace('#'," ")
-        self.supplier_part_no = self.supplier_part_no.strip().replace("'","").replace('\n'," ").replace('#'," ")
-        self.part_description = self.part_description.strip().replace("'","").replace('\n'," ").replace('#'," ")
-        self.quantity = self.quantity.strip().replace("'","").replace('\n'," ").replace('#'," ")
-        self.price = self.price.strip().replace("'","").replace('\n'," ").replace('#'," ")
-        self.cas_number = self.cas_number.strip().replace("'","").replace('\n'," ").replace('#'," ")
-        self.ghs_pictogram = self.ghs_pictogram.strip().replace("'","").replace('\n'," ").replace('#'," ")
+        self.supplier = self.supplier.strip().replace("'","").replace('"',"").replace('\n'," ").replace('#'," ")
+        self.supplier_part_no = self.supplier_part_no.strip().replace("'","").replace('"',"").replace('\n'," ").replace('#'," ")
+        self.part_description = self.part_description.strip().replace("'","").replace('"',"").replace('\n'," ").replace('#'," ")
+        self.quantity = self.quantity.strip().replace("'","").replace('"',"").replace('\n'," ").replace('#'," ")
+        self.price = self.price.strip().replace("'","").replace('"',"").replace('\n'," ").replace('#'," ")
+        self.cas_number = self.cas_number.strip().replace("'","").replace('"',"").replace('\n'," ").replace('#'," ")
+        self.ghs_pictogram = self.ghs_pictogram.strip().replace("'","").replace('"',"").replace('\n'," ").replace('#'," ")
         super(Order, self).save(force_insert, force_update)
 
 #################################################

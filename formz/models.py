@@ -115,24 +115,28 @@ class ZkbsPlasmid (models.Model):
 
 class FormZBaseElement (models.Model):
 
-    name = models.CharField("name", max_length=255, blank=True)
+    name = models.CharField("name", max_length=255, unique=True, blank=True)
     donor_organism = models.CharField("donor organism", max_length=255, blank=True)
     donor_organism_risk = models.PositiveSmallIntegerField('risk group', choices=((1,1), (2,2)), blank=True, null=True)
-    nuc_acid_type = models.CharField("nucleic acid type", max_length=255, blank=True)
     nuc_acid_purity = models.ForeignKey(NucleicAcidPurity, verbose_name = 'nucleic acid purity', on_delete=models.PROTECT, blank=True, null=True)
     nuc_acid_risk = models.ForeignKey(NucleicAcidRisk, verbose_name = 'nucleic acid risk potential', on_delete=models.PROTECT, blank=True, null=True)
+    description = models.TextField("description", blank=True)
 
     class Meta:
-        '''Set a custom name to be used throughout the admin pages'''
         
         verbose_name = 'base element'
         verbose_name_plural = 'base elements'
 
     def __str__(self):
-        '''Set what to show as an object's unicode attribute, in this case
-        it is just the ID of the object, but it could be its name'''
         
         return str(self.name)
+
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+        
+        # Remove any leading and trailing white spaces from name field
+        self.name = self.name.strip()
+        
+        super(FormZBaseElement, self).save(force_insert, force_update, using, update_fields)
 
 class FormZHeader (models.Model):
     

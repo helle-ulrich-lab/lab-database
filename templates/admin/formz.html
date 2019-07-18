@@ -1,0 +1,64 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static admin_list %}
+
+{% block extrastyle %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="{% static "admin/css/changelists.css" %}" />
+    {% if cl.formset %}
+        <link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}" />
+        {% endif %}
+    {% if cl.formset or action_form %}
+        <script type="text/javascript" src="{% url 'admin:jsi18n' %}"></script>
+    {% endif %}
+    {{ media.css }}
+    {% if not actions_on_top and not actions_on_bottom %}
+        <style>
+        #changelist table thead th:first-child {width: inherit}
+        </style>
+    {% endif %}
+{% endblock %}
+
+{% block extrahead %}
+    {{ block.super }}
+    {{ media.js }}
+{% endblock %}
+
+{% block coltype %}flex{% endblock %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url "admin:index" %}">{% trans "Home" %}</a> &rsaquo;
+    <a href="{% url "admin:app_list" app_label %}">{{opts.app_config.verbose_name}}</a> &rsaquo;
+    <a href="{{changelist_url}}">{{opts.verbose_name_plural|capfirst}}</a> &rsaquo;
+    <a href="../">{{object|truncatewords:"18"}}</a> &rsaquo;
+    {% trans "FormZ" %}
+  </div>
+{% endblock %}
+
+{% block content %}
+    <div id="content-main">
+        {% block object-tools %}
+            <ul class="object-tools">
+            {% block object-tools-items %}
+            {% endblock %}
+            </ul>
+        {% endblock %}
+        
+        <div class='results'>
+            <div>Strain n. {{object.id}} contains the following plasmids:</div>
+
+            <ul>
+                {% for plasmid in object.episomal_plasmids.all %}
+                    <li>
+                            {{plasmid}}
+                    </li>
+                {% endfor %}
+            </ul>
+
+        
+        </div>
+        
+    
+        
+    </div>
+{% endblock %}

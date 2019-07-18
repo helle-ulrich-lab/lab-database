@@ -25,15 +25,35 @@ class FormZProjectPage(admin.ModelAdmin):
     list_per_page = 25
     search_fields = ['id', 'title']
 
+    def has_module_permission(self, request):
+        if request.user.groups.filter(name='Lab manager').exists() or request.user.is_superuser:
+            return True
+        else:
+            return False
+
 class FormZBaseElementPage(admin.ModelAdmin):
     list_display = ('id', 'name')
     list_display_links = ('id', )
     list_per_page = 25
+    search_fields = ['id', 'name']
+
+    def has_module_permission(self, request):
+        if request.user.groups.filter(name='Lab manager').exists() or request.user.is_superuser:
+            return True
+        else:
+            return False
 
 class ZkbsPlasmidPage(admin.ModelAdmin):
     list_display = ('id', 'name', 'source')
     list_display_links = ('id', )
     list_per_page = 25
+    search_fields = ['name']
+
+    def has_module_permission(self, request):
+        if request.user.groups.filter(name='Lab manager').exists() or request.user.is_superuser:
+            return True
+        else:
+            return False
 
 class FormZHeaderPage(admin.ModelAdmin):
     list_display = ('operator',)

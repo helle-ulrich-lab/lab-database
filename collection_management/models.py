@@ -110,7 +110,7 @@ class SaCerevisiaeStrainEpisomalPlasmid (models.Model):
     huplasmid = models.ForeignKey('HuPlasmid', verbose_name = 'Plasmid', on_delete=models.PROTECT)
     present_in_stocked_strain = models.BooleanField("present in -80° C stock?", default = False, null=True)
     formz_projects = models.ManyToManyField(FormZProject, related_name='cerevisiae_episomal_plasmids_projects', blank= True)
-    created_date = models.DateField('created date', blank= True, null=True)
+    created_date = models.DateField('created', blank= True, null=True)
 
 #################################################
 #                    PLASMID                    #
@@ -140,9 +140,17 @@ class HuPlasmid (models.Model, SaveWithoutHistoricalRecord):
     created_by = models.ForeignKey(User, on_delete=models.PROTECT)
     history = HistoricalRecords()
 
+    formz_projects = models.ManyToManyField(FormZProject, verbose_name='formZ projects', related_name='plasmid_formz_projects', blank= True)
+    formz_risk_group = models.PositiveSmallIntegerField('risk group', choices=((1,1), (2,2)), blank=True, null=True)
+    destroyed_date = models.DateField("destroyed", blank=True, null=True)
     vector_known_zkbs = models.NullBooleanField("backbone in ZKBS database?", default=None, blank=True, null=True)
     vector_zkbs = models.ForeignKey(ZkbsPlasmid, verbose_name = 'ZKBS database vector', on_delete=models.PROTECT, blank=True, null=True)
     formz_elements = models.ManyToManyField(FormZBaseElement, verbose_name ='elements', blank=True)
+
+    # Fields to keep a record of M2M field values in the main plasmid record: IDs for formz_projects
+    # and names for formz_elements
+    history_formz_projects = models.TextField(blank=True)
+    history_formz_elements = models.TextField(blank=True)
     
     class Meta:
         verbose_name = 'plasmid'

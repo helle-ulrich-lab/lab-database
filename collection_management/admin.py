@@ -85,8 +85,8 @@ import time
 #               CUSTOM FUNCTIONS                #
 #################################################
 
-@background(schedule=1) # Run 1 s after it is called, as "background" process
-def snapgene_map_preview(plasmid_map_path, png_plasmid_map_path, gbk_plasmid_map_path, obj_id, obj_name):
+#@background(schedule=1) # Run 1 s after it is called, as "background" process
+def create_plasmid_map_preview(plasmid_map_path, png_plasmid_map_path, gbk_plasmid_map_path, obj_id, obj_name):
     """ Given a path to a snapgene plasmid map, use snapegene server
     to detect common features and create map preview as png
     and gbk"""
@@ -119,6 +119,29 @@ def snapgene_map_preview(plasmid_map_path, png_plasmid_map_path, gbk_plasmid_map
     except:
         mail_admins("Snapgene server error", 
                     "There was an error with creating the preview for {} with snapgene server".format(plasmid_map_path), 
+                    fail_silently=True)
+        raise Exception
+
+def get_plasmid_map_features(plasmid_map_path):
+    """ Given a path to a snapgene plasmid map (.dna), use snapegene server
+    to return features, as json"""
+
+    try:
+        config = Config()
+        server_ports = config.get_server_ports()
+        for port in server_ports.values():
+            try:
+                client = Client(port, zmq.Context())
+            except:
+                continue
+            break
+    
+        argument = {"request":"reportFeatures", "inputFile": plasmid_map_path}
+        return client.requestResponse(argument, 10000)
+    
+    except:
+        mail_admins("Snapgene server error", 
+                    "There was an error with getting plasmif features for {} with snapgene server".format(plasmid_map_path), 
                     fail_silently=True)
         raise Exception
 
@@ -426,6 +449,7 @@ class MyAdminSite(admin.AdminSite):
     def get_urls(self):
         
         from django.conf.urls import url
+        from django.urls import path
         
         urls = super(MyAdminSite, self).get_urls()
         # Note that custom urls get pushed to the list (not appended)
@@ -436,6 +460,7 @@ class MyAdminSite(admin.AdminSite):
             url(r'^order_management/my_orders_redirect$', self.admin_view(self.my_orders_redirect)),
             url(r'uploads/(?P<url_path>.*)$', self.admin_view(self.uploads)),
             url(r'^temp_control/$', self.temp_control),
+            path('<path:object_id>/formz/', self.admin_view(self.formz))
         ] + urls
         return urls
 
@@ -608,6 +633,25 @@ class MyAdminSite(admin.AdminSite):
         }
         
         return render(request, 'admin/temp_control.html', context)
+
+    def formz(self, request, *args, **kwargs) :
+        
+        app_label, model_name, obj_id = kwargs['object_id'].split('/')
+        model = apps.get_model(app_label, model_name)
+        opts = model._meta
+        obj = model.objects.get(id=int(obj_id))
+        context = {
+        'title': 'FormZ: {}'.format(obj),
+        'module_name': capfirst(force_text(opts.verbose_name_plural)),
+        'site_header': self.site_header,
+        'has_permission': self.has_permission(request),
+        'app_label': app_label,
+        'opts': opts,
+        'site_url': self.site_url, 
+        'app_label': app_label,
+        'object':obj}
+
+        return render(request, 'admin/formz.html', context)
 
 # Instantiate custom admin site 
 my_admin_site = MyAdminSite()
@@ -799,7 +843,7 @@ class SaCerevisiaeStrainEpisomalPlasmidInline(admin.TabularInline):
     ordering = ("-present_in_stocked_strain",'id',)
     extra = 0
     template = 'admin/tabular.html'
-
+    
     def get_parent_object(self, request):
         """
         Returns the parent object from the request or None.
@@ -828,7 +872,6 @@ class SaCerevisiaeStrainEpisomalPlasmidInline(admin.TabularInline):
         else:
             self.classes = []
         return super(SaCerevisiaeStrainEpisomalPlasmidInline, self).get_queryset(request)
-
 
 class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin, Approval):
     list_display = ('id', 'name', 'mating_type', 'background', 'created_by', 'approval')
@@ -885,7 +928,7 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
             plasmid_id_list = tuple(plasmid_id_list.distinct().order_by('id').values_list('id', flat=True))
             obj.history_all_plasmids_in_stocked_strain = str(plasmid_id_list)
 
-        obj.history_formz_projects = str(tuple(obj.formz_projects.all().values_list('id', flat=True))) if obj.formz_projects.all() else ""
+        obj.history_formz_projects = str(tuple(obj.formz_projects.all().order_by('id').values_list('id', flat=True))) if obj.formz_projects.all() else ""
 
         obj.save_without_historical_record()
 
@@ -1118,9 +1161,12 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
     formfield_overrides = {models.CharField: {'widget': TextInput(attrs={'size':'93'})},} # Make TextInput fields wider
     djangoql_schema = HuPlasmidQLSchema
     actions = [export_huplasmid]
-    filter_horizontal = ['formz_elements',]
     search_fields = ['id', 'name']
-    autocomplete_fields = ['parent_vector']
+    autocomplete_fields = ['parent_vector', 'formz_projects', 'formz_elements', 'vector_zkbs']
+    redirect_to_obj_page = False
+
+    change_form_template = "admin/collection_management/huplasmid/change_form.html"
+    add_form_template = "admin/collection_management/huplasmid/change_form.html"
 
     def save_model(self, request, obj, form, change):
         '''Override default save_model to limit a user's ability to save a record
@@ -1131,13 +1177,17 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
         and whenever possible creates a plasmid map preview with snapegene server'''
         
         rename_and_preview = False
+        self.rename_and_preview = False
         new_obj = False
+        self.new_obj = False
 
         if obj.pk == None:
             obj.created_by = request.user
             if obj.map:
                 rename_and_preview = True
+                self.rename_and_preview = True
                 new_obj = True
+                self.new_obj = True
             obj.save()
         else:
             old_obj = collection_management_HuPlasmid.objects.get(pk=obj.pk)
@@ -1145,6 +1195,7 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
                 obj.last_changed_approval_by_pi = False
                 if obj.map and obj.map != old_obj.map:
                     rename_and_preview = True
+                    self.rename_and_preview = True
                     obj.save_without_historical_record()
                 else:
                     obj.save()
@@ -1153,6 +1204,7 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
                     obj.last_changed_approval_by_pi = False
                     if obj.map and obj.map != old_obj.map:
                         rename_and_preview = True
+                        self.rename_and_preview = True
                         obj.save_without_historical_record()
                     else:
                         obj.save()
@@ -1161,6 +1213,7 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
         
         # Rename plasmid map
         if rename_and_preview:
+
             map_dir_path = os.path.join(MEDIA_ROOT, 'collection_management/huplasmid/dna/')
             old_file_name_abs_path = os.path.join(MEDIA_ROOT, obj.map.name)
             old_file_name, ext = os.path.splitext(os.path.basename(old_file_name_abs_path)) 
@@ -1192,10 +1245,46 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
             
             # For plasmid map, detect common features and save as png using snapgene server
             try:
-                snapgene_map_preview(obj.map.path, obj.map_png.path, obj.map_gbk.path, obj.id, obj.name)
+                create_plasmid_map_preview(obj.map.path, obj.map_png.path, obj.map_gbk.path, obj.id, obj.name)
             except:
                 messages.warning(request, 'Could not detect common features or save map preview')
     
+    def save_related(self, request, form, formsets, change):
+        
+        super(HuPlasmidPage, self).save_related(request, form, formsets, change)
+
+        obj = collection_management_HuPlasmid.objects.get(pk=form.instance.id)
+
+        if self.rename_and_preview:
+            unknown_feat_name_list = []
+            r = get_plasmid_map_features(obj.map.path)
+            if not self.new_obj:
+                obj.formz_elements.clear()
+            for feat in r["features"]:
+                base_elems = FormZBaseElement.objects.filter(name = feat['name'])
+                if base_elems:
+                    for elem in base_elems:
+                        obj.formz_elements.add(elem)
+                else:
+                    unknown_feat_name_list.append(feat['name'])
+            if unknown_feat_name_list:
+                self.redirect_to_obj_page = True
+                unknown_feat_name_list = str(unknown_feat_name_list)[1:-1].replace("'", "")
+                messages.warning(request, "The following plasmid features were not added to the list of FormZ Base Element of your plasmid,"
+                                      " because they cannot be found in the database: {}.".format(unknown_feat_name_list))
+
+        # Keep a record of the IDs of linked M2M fields in the main strain record
+        # Not pretty, but it works
+
+        obj.history_formz_projects = str(tuple(obj.formz_projects.all().order_by('id').values_list('id', flat=True))) if obj.formz_projects.all() else ""
+        obj.history_formz_elements = str(tuple(obj.formz_elements.all().order_by('name').values_list('name', flat=True))) if obj.formz_elements.all() else ""
+        obj.save_without_historical_record()
+
+        history_obj = obj.history.latest()
+        history_obj.history_formz_projects = obj.history_formz_projects
+        history_obj.history_formz_elements = obj.history_formz_elements
+        history_obj.save()
+
     def get_readonly_fields(self, request, obj=None):
         '''Override default get_readonly_fields to define user-specific read-only fields
         If a user is not a superuser, lab manager or the user who created a record
@@ -1209,12 +1298,14 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
             if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by == HU_USER):
                 return ['name', 'other_name', 'parent_vector', 'old_parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
                     'reference', 'map', 'map_png', 'map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
-                    'last_changed_approval_by_pi', 'created_by', 'vector_known_zkbs', 'vector_zkbs','formz_elements']
+                    'last_changed_approval_by_pi', 'created_by', 'formz_projects', 'formz_risk_group','vector_known_zkbs', 'vector_zkbs', 
+                    'destroyed_date', 'formz_elements']
             else:
                 if obj.created_by == HU_USER and not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists()): # Show map and note as editable fields, if record belongs to Helle (user id = 6)
                     return ['name', 'other_name', 'parent_vector', 'old_parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 
                     'reference', 'map_png', 'map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
-                    'last_changed_approval_by_pi', 'created_by', 'vector_known_zkbs', 'vector_zkbs','formz_elements']
+                    'last_changed_approval_by_pi', 'created_by', 'formz_projects', 'formz_risk_group','vector_known_zkbs',
+                    'vector_zkbs', 'destroyed_date', 'formz_elements']
                 else:
                     return ['map_png', 'map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi','created_by',]
         else:
@@ -1223,18 +1314,18 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
     def add_view(self,request,extra_context=None):
         '''Override default add_view to show only desired fields'''
         
-        self.fields = ('name', 'other_name', 'parent_vector', 'old_parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
-                'reference', 'map',)
-
-        # self.fieldsets = (
-        # (None, {
-        #     'fields': ('name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
+        # self.fields = ('name', 'other_name', 'parent_vector', 'old_parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
         #         'reference', 'map',)
-        # }),
-        # ('Formablatt Z', {
-        #     'fields': ('vector_known_zkbs', 'vector_zkbs','formz_elements')
-        # }),
-        # )
+
+        self.fieldsets = (
+        (None, {
+            'fields': ('name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
+                'reference', 'map',)
+        }),
+        ('Formablatt Z', {
+            'fields': ('formz_projects', 'formz_risk_group','vector_known_zkbs', 'vector_zkbs', 'destroyed_date', 'formz_elements')
+        }),
+        )
 
         return super(HuPlasmidPage,self).add_view(request)
     
@@ -1247,36 +1338,36 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
                 if request.user == obj.created_by:
                     self.save_as = True
         
-        if '_saveasnew' in request.POST:
-            self.fields = ('name', 'other_name', 'parent_vector', 'old_parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
-                'reference', 'map',)
-        else:
-            self.fields = ('name', 'other_name', 'parent_vector', 'old_parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
-                'reference', 'map', 'map_png', 'map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
-                'last_changed_approval_by_pi', 'created_by',)
-
         # if '_saveasnew' in request.POST:
-        #     self.fieldsets = (
-        #         (None, {
-        #             'fields': ('name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
+        #     self.fields = ('name', 'other_name', 'parent_vector', 'old_parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
         #         'reference', 'map',)
-        #         }),
-        #         ('Formablatt Z', {
-        #             'fields': ('vector_known_zkbs', 'vector_zkbs','formz_elements')
-        #             }),
-        #         )
         # else:
-        #     self.fieldsets = (
-        #     (None, {
-        #         'fields': ('name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
-        #             'reference', 'map', 'map_png', 'map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
-        #             'last_changed_approval_by_pi', 'created_by',)
-        #     }),
-        #     ('Formablatt Z', {
-        #         'classes': ('collapse',),
-        #         'fields': ('vector_known_zkbs', 'vector_zkbs','formz_elements')
-        #     }),
-        #     )
+        #     self.fields = ('name', 'other_name', 'parent_vector', 'old_parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
+        #         'reference', 'map', 'map_png', 'map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
+        #         'last_changed_approval_by_pi', 'created_by',)
+
+        if '_saveasnew' in request.POST:
+            self.fieldsets = (
+                (None, {
+                    'fields': ('name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
+                'reference', 'map',)
+                }),
+                ('FormZ', {
+                    'fields': ('formz_projects', 'formz_risk_group','vector_known_zkbs', 'vector_zkbs', 'destroyed_date', 'formz_elements')
+                    }),
+                )
+        else:
+            self.fieldsets = (
+            (None, {
+                'fields': ('name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
+                    'reference', 'map', 'map_png', 'map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
+                    'last_changed_approval_by_pi', 'created_by',)
+            }),
+            ('FormZ', {
+                'classes': ('collapse',),
+                'fields': ('formz_projects', 'formz_risk_group','vector_known_zkbs', 'vector_zkbs', 'destroyed_date', 'formz_elements')
+            }),
+            )
         
         return super(HuPlasmidPage,self).change_view(request,object_id,extra_context)
 
@@ -2223,6 +2314,7 @@ from formz.models import GenTechMethod as formz_GenTechMethod
 from formz.models import FormZProject
 from formz.models import FormZBaseElement
 from formz.models import FormZHeader
+from formz.models import ZkbsPlasmid
 
 from formz.admin import NucleicAcidPurityPage as formz_NucleicAcidPurityPage
 from formz.admin import NucleicAcidRiskPage as formz_NucleicAcidRiskPage
@@ -2230,6 +2322,7 @@ from formz.admin import GenTechMethodPage as formz_GenTechMethodPage
 from formz.admin import FormZProjectPage
 from formz.admin import FormZBaseElementPage
 from formz.admin import FormZHeaderPage
+from formz.admin import ZkbsPlasmidPage
 
 my_admin_site.register(formz_NucleicAcidPurity, formz_NucleicAcidPurityPage)
 my_admin_site.register(formz_NucleicAcidRisk, formz_NucleicAcidRiskPage)
@@ -2237,3 +2330,4 @@ my_admin_site.register(formz_GenTechMethod, formz_GenTechMethodPage)
 my_admin_site.register(FormZProject, FormZProjectPage)
 my_admin_site.register(FormZBaseElement, FormZBaseElementPage)
 my_admin_site.register(FormZHeader, FormZHeaderPage)
+my_admin_site.register(ZkbsPlasmid, ZkbsPlasmidPage)

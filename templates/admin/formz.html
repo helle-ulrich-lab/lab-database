@@ -29,36 +29,588 @@
   <div class="breadcrumbs">
     <a href="{% url "admin:index" %}">{% trans "Home" %}</a> &rsaquo;
     <a href="{% url "admin:app_list" app_label %}">{{opts.app_config.verbose_name}}</a> &rsaquo;
-    <a href="{{changelist_url}}">{{opts.verbose_name_plural|capfirst}}</a> &rsaquo;
+    <a href="../..">{{opts.verbose_name_plural|capfirst}}</a> &rsaquo;
     <a href="../">{{object|truncatewords:"18"}}</a> &rsaquo;
     {% trans "FormZ" %}
   </div>
 {% endblock %}
 
 {% block content %}
-    <div id="content-main">
-        {% block object-tools %}
-            <ul class="object-tools">
+<div id="content-main">
+   {% block object-tools %}
+        <ul class="object-tools">
             {% block object-tools-items %}
             {% endblock %}
-            </ul>
-        {% endblock %}
-        
-        <div class='results'>
-            <div>Strain n. {{object.id}} contains the following plasmids:</div>
+        </ul>
+   {% endblock %}
+   
+   <div class='results'>
+      <div>
 
-            <ul>
-                {% for plasmid in object.episomal_plasmids.all %}
-                    <li>
-                            {{plasmid}}
-                    </li>
+        <h2>Betreiber</h2>
+        <div><span style='font-weight: bold'>Name:</span> {{formz_header.operator}}</div>
+        <div><span style='font-weight: bold'>Anschrift:</span> {{formz_header.address}}</div>
+        <div><span style='font-weight: bold'>Beauftragter für Biologische Sicherheit:</span> {{formz_header.name_biosafety_officer}}</div>
+        <div><span style='font-weight: bold'>S1 Genehmigung:</span> {{formz_header.s1_approval_file_num}}; erteilt am {{formz_header.s1_approval_date | date:"d.m.Y"}}</div>
+        {% if object.s2_work %}
+            <div><span style='font-weight: bold'>S2 Genehmigung:</span> {{formz_header.s2_approval_file_num}}; erteilt am {{formz_header.s2_approval_date | date:"d.m.Y"}}</div>
+        {% endif %}
+    </br>
+
+        <h2>Details zum Organismus</h2>
+         <div><span style='font-weight: bold'>Name:</span> {{object}}</div>
+         <div><span style='font-weight: bold'>Empfängerorganismus:</span> <span style='font-style: italic'>{{organism}}</span> {% if object.formz_ecoli_strains %}
+            {% if object.formz_ecoli_strains.all|length == 1 %}
+                    {% for ecoli in object.formz_ecoli_strains.all %}
+                        Stamm: <a style='color:#447e9b;' href="{% url 'admin:collection_management_ecolistrain_change' ecoli.id %}">{{ecoli.name}}</a> - Hintergrund {{ecoli.background}})
+                    {% endfor %}
+                {% else %}
+                    {% for ecoli in object.formz_ecoli_strains.all %}
+                        {% if forloop.first %}
+                            (Stamm: <a style='color:#447e9b;' href="{% url 'admin:collection_management_ecolistrain_change' ecoli.id %}">{{ecoli.name}}</a> - Hintergrund {{ecoli.background}},
+                        {% elif forloop.last %}
+                            <a style='color:#447e9b;' href="{% url 'admin:collection_management_ecolistrain_change' ecoli.id %}">{{ecoli.name}}</a> - Hintergrund {{ecoli.background}})
+                        {% else %}
+                            <a style='color:#447e9b;' href="{% url 'admin:collection_management_ecolistrain_change' ecoli.id %}">{{ecoli.name}}</a> - Hintergrund {{ecoli.background}},
+                        {% endif %}
+                    {% endfor %}
+            {% endif %}
+        {%endif%}</div>
+
+         {% if object.chromosomal_genotype %}
+            <div><span style='font-weight: bold'>Genotyp:</span> {{object.chromosomal_genotype}}</div>
+         {% endif %}
+         <div><span style='font-weight: bold'>Risikogruppe:</span> {{object.formz_risk_group}}</div>
+         <div><span style='font-weight: bold'>Projekt/e:</span>
+            {% if object.formz_projects.all|length == 1 %}
+                {% for project in object.formz_projects.all %}
+                    <a style='color:#447e9b;' href="{% url 'admin:formz_formzproject_change' project.id %}">{{project.short_title}}</a>
+                    {% if project.parent_project%}
+                        (Hauptproject <a style='color:#447e9b;' href="{% url 'admin:formz_formzproject_change' project.parent_project.id %}">{{project.parent_project.short_title}}</a>)
+                    {% endif %}
                 {% endfor %}
-            </ul>
-
-        
+            {% else %}
+                {% for project in object.formz_projects.all %}
+                    {% if forloop.last %}
+                        <a style='color:#447e9b;' href="{% url 'admin:formz_formzproject_change' project.id %}">{{project.short_title}}</a>
+                        {% if project.parent_project%}
+                            (Hauptproject: <a style='color:#447e9b;' href="{% url 'admin:formz_formzproject_change' project.parent_project.id %}">{{project.parent_project.short_title}}</a>)
+                        {% endif %}
+                    {% else %}
+                        <a style='color:#447e9b;' href="{% url 'admin:formz_formzproject_change' project.id %}">{{project.short_title}}</a>
+                        {% if project.parent_project%}
+                            (Hauptproject: <a style='color:#447e9b;' href="{% url 'admin:formz_formzproject_change' project.parent_project.id %}">{{project.parent_project.short_title}}</a>),
+                        {% else %}
+                        ,
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+         </div>
+        <div><span style='font-weight: bold'>Gentechnische Arbeitsmethod/en:</span>
+        {% if object.formz_gentech_methods.all %}
+            {% if object.formz_gentech_methods.all|length == 1 %}
+                {% for method in object.formz_gentech_methods.all %}
+                    {{method.german_name}}
+                {% endfor %}
+            {% else %}
+                {% for method in object.formz_gentech_methods.all %}
+                    {% if forloop.last %}
+                        {{method.german_name}}
+                    {% else %}
+                        {{method.german_name}},
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+        {% else %}
+            Kein
+        {% endif %}
         </div>
+         {% if object.zkbs_cell_line %}
+            <div><span style='font-weight: bold'>ZKBS Datenbank Zelllinien:</span> <a href="{% url 'admin:formz_zkbscellline_change' object.zkbs_cell_line.id %}">{{object.zkbs_cell_line}}</a></div>
+         {% endif %}
+         <div><span style='font-weight: bold'>Erzeugt:</span> {{object.created_date_time | date:"d.m.Y"}}</div>
+         <div><span style='font-weight: bold'>Entsorgt:</span> 
+            {% if object.destroyed_date %}
+                {{object.destroyed_date | date:"d.m.Y"}}
+            {% else %}
+                Nein
+            {% endif %}
+         </div>
+         <div><span style='font-weight: bold'>Bestätigt durch Projektleiter:</span> 
+            {% if object.last_changed_approval_by_pi is not None %}
+                {% if object.last_changed_approval_by_pi %}
+                    {{object.approval_by_pi_date_time | date:"d.m.Y, H:i:s"}}
+                {% else %}
+                    Nein
+                {% endif %}
+            {% else %}
+                {% if object.created_approval_by_pi %}
+                    {{object.approval_by_pi_date_time | date:"d.m.Y, H:i:s"}}
+                {% else %}
+                    Nein
+                {% endif %}
+            {% endif %}
+         </div>
+         <div><span style='font-weight: bold'>Lagerort:</span> {{storage_location}}</div>
+      </div>
+      
+      </br>
+
+      {% if not in_stock_plasmids and not lenti_construction_plasmids and not object.formz_elements.all and not transient_episomal_plasmids %}
+      <div>Keine Information vorhanden</div>
+      {% endif %}
+
+      {% if in_stock_plasmids %}
+      
+      <h3>Plasmid/e die zur Erschaffung des Organismus genutzt wurden</h3>
+      
+      {% if object.s2_work %}
+        <div>Dieser Organismus wurde durch virale Transduktion des folgenden Plasmids/der folgenden Plasmide geschaffen.</div>
+      {% else %}
+        <div>Dieser Organismus wurde mit Hilfe des folgenden Plasmids/der folgenden Plasmide geschaffen.</div>
+      {% endif %}
+
+      {% for plasmid_type in in_stock_plasmids %}
+        {% if plasmid_type.1 %}
+        <h4>{{plasmid_type.0 }}</h4>
+            {% for plasmid in plasmid_type.1 %}
+                <div class="results-{{plasmid.id}}">
+                    <table id="result_list">
+                        <thead >
+                        <tr>
+                            <th  colspan="5" scope="col" style="background:#ccc;" class="column-plasmid">
+                                <a style='color:#447e9b;' href="{% url 'admin:collection_management_huplasmid_change' plasmid.id %}">{{plasmid}}</a>
+                                {% if plasmid.map %}
+                                    (<a style='color:#447e9b;text-transform: none' href="{{plasmid.map_gbk.url}}">.gbk</a>,
+                                    <a  class="image-link" style='color:#447e9b; text-transform: none' href="{{plasmid.map_png.url}}">.png</a>)
+                                {% endif %}
+                                {% if plasmid.vector_zkbs %}
+                                    <span style='text-transform: none'>- ZKBS Plasmid </span><a style='color:#447e9b;text-transform: none' href="{% url 'admin:formz_zkbsplasmid_change' plasmid.vector_zkbs.id %}">{{plasmid.vector_zkbs.name}}</a>
+                                {% endif %}
+                            </th>
+                        </tr>
+                        </thead>
+                        
+                    {% if plasmid.formz_elements.all %}    
+
+                        {% if plasmid.get_uncommon_formz_elements %}
+                            <thead>
+                            <tr>
+                                <th scope="col" class="column-name">
+                                    <div>Merkmale</div>
+                                </th>
+                                <th scope="col" class="sortable column-donor_organism">
+                                    <div >Spenderorganismus</div>
+                                </th>
+                                <th scope="col" class="sortable column-donor_organism_risk">
+                                    <div>Risikogruppe des Spenderorganismus</div>
+                                </th>
+                                <th scope="col" class="sortable column-nuc_acid_purity">
+                                    <div>Nukleinsäure Reinheit</div>
+                                </th>
+                                <th scope="col" class="column-nuc_acid_risk">
+                                    <div>Nukleinsäure Gefährdungspotential</div>
+                                </th>
+                            </tr>
+                            </thead>
+
+                            <tbody>
+                                    {% for formz_elem in plasmid.get_uncommon_formz_elements %}
+                                        <tr class="row">
+                                            <td class="field-name"><a href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}">{{formz_elem.name}}</a></td>
+                                            <td class="field-donor_organism">{% if formz_elem.donor_organism and formz_elem.donor_organism != 'none' %}{{formz_elem.donor_organism}}{% else %}Artifiziell{% endif %}</td>
+                                            <td class="field-donor_organism_risk">{% if formz_elem.donor_organism_risk %}{{formz_elem.donor_organism_risk}}{% else %}Keine{% endif %}</td>
+                                            <td class="field-nuc_acid_purity">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
+                                            <td class="field-nuc_acid_risk">{{formz_elem.nuc_acid_risk.german_name|capfirst}}</td>
+                                        </tr>
+                                    {% endfor %}
+                            </tbody>
+                        {% else %}
+                            <tbody>
+                            <tr class="row">
+                                <td colspan="5" class="field">Keine unübliche Merkmale</td>
+                            </tr>
+                            </tbody>
+                        {% endif %}
+                        {% if plasmid.get_common_formz_elements %}
+                            <thead>
+                                <th  colspan="5" scope="col" class="column-common_features">
+                                        Andere übliche Merkmale
+                                    </th>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td  colspan="5" scope="col" class="column-common_features">
+                                        {% for formz_elem in plasmid.get_common_formz_elements %}
+                                            {% if not forloop.last %}
+                                                <a href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}">{{formz_elem.name}}</a>,
+                                            {% else %}
+                                                <a href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}">{{formz_elem.name}}</a>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        {% endif %}
+                    {% else %}
+                    <tbody>
+                            <tr>
+                                <td  colspan="5" scope="col" class="column-common_features">Keine Merkmale</td>
+                            </tr>
+                    </tbody>  
+                    {% endif %}
+                    </table>
+                </br>
+                </div>
+            {% endfor %}
+        {% endif %}
         
-    
+      {% endfor %}
+
+
+      {% if lenti_construction_plasmids %}
+      
+      <h4>Virusverpackung</h4>
+      <div>Das oben genannten Plasmid/die oben genannten Plasmide wurden mit dem/ den unten genannten Plasmid/Plasmiden zum verpacken viraler Partikel in <a href="{% url 'admin:collection_management_mammalianline_change' 157 %}">HEK293T cells</a> genutzt.</div>
+          
+        {% for plasmid in lenti_construction_plasmids %}
+                
+            <div class="results-{{plasmid.id}}">
+                </br>
+                <table id="result_list">
+                    <thead>
+                        <tr>
+                            <th  colspan="5" scope="col" style="background:#ccc;" class="column-plasmid">
+                                <a style='color:#447e9b;' href="{% url 'admin:collection_management_huplasmid_change' plasmid.huplasmid.id %}">{{plasmid.huplasmid}} </a>
+                                <span style="text-transform: none">
+                                    
+                                    {% if plasmid.huplasmid.map %}
+                                        (<a style='color:#447e9b;' href="{{plasmid.huplasmid.map_gbk.url}}">.gbk</a>,
+                                        <a  class="image-link" style='color:#447e9b;' href="{{plasmid.huplasmid.map_png.url}}">.png</a>;
+                                    {% endif%}
+                                    {% if not plasmid.huplasmid.map and plasmid.created_date %}
+                                        (Organismus transfiziert am {{plasmid.created_date | date:"d.m.Y"}},
+                                    {% else %}
+                                        Organismus transfiziert am {{plasmid.created_date | date:"d.m.Y"}},
+                                    {% endif %}
+
+                                    unter Projekt/e:
+
+                                    {% if plasmid.formz_projects.all|length == 1 %}
+                                        {% for project in plasmid.formz_projects.all %}
+                                            <a style='color:#447e9b;' href="{% url 'admin:formz_formzproject_change' project.id %}">{{project.short_title}}</a>;
+                                        {% endfor %}
+                                    {% else %}
+                                        {% for project in plasmid.formz_projects.all %}
+                                            {% if forloop.last %}
+                                                <a style='color:#447e9b;' href="{% url 'admin:formz_formzproject_change' project.id %}">{{project.short_title}}</a>;
+                                            {% else %}
+                                                <a style='color:#447e9b;' href="{% url 'admin:formz_formzproject_change' project.id %}">{{project.short_title}}</a>,
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endif %}
+
+                                    {% if plasmid.destroyed_date %}
+                                        entsorgt am {{plasmid.destroyed_date | date:"d.m.Y"}})
+                                    {% else %}
+                                        noch nicht entsorgt)
+                                    {% endif %}
+                                </span>
+                                {% if plasmid.huplasmid.vector_zkbs %}
+                                    <span style='text-transform: none'>- ZKBS Plasmid </span><a style='color:#447e9b;text-transform: none' href="{% url 'admin:formz_zkbsplasmid_change' plasmid.huplasmid.vector_zkbs.id %}">{{plasmid.huplasmid.vector_zkbs.name}}</a>
+                                {% endif %}
+                            </th>
+                        </tr>
+                    </thead>
+                {% if plasmid.huplasmid.formz_elements.all %}    
+                    {% if plasmid.huplasmid.get_uncommon_formz_elements %}
+                            <thead>
+                            <tr>
+                                <th scope="col" class="column-name">
+                                    <div>Merkmale</div>
+                                </th>
+                                <th scope="col" class="sortable column-donor_organism">
+                                    <div >Spenderorganismus</div>
+                                </th>
+                                <th scope="col" class="sortable column-donor_organism_risk">
+                                    <div>Risikogruppe des Spenderorganismus</div>
+                                </th>
+                                <th scope="col" class="sortable column-nuc_acid_purity">
+                                    <div>Nukleinsäure Reinheit</div>
+                                </th>
+                                <th scope="col" class="column-nuc_acid_risk">
+                                    <div>Nukleinsäure Gefährdungspotential</div>
+                                </th>
+                            </tr>
+                            </thead>
+
+                            <tbody>
+                                    {% for formz_elem in plasmid.huplasmid.get_uncommon_formz_elements %}
+                                        <tr class="row">
+                                            <td class="field-name"><a href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}">{{formz_elem.name}}</a></td>
+                                            <td class="field-donor_organism">{% if formz_elem.donor_organism and formz_elem.donor_organism != 'none' %}{{formz_elem.donor_organism}}{% else %}Artifiziell{% endif %}</td>
+                                            <td class="field-donor_organism_risk">{% if formz_elem.donor_organism_risk %}{{formz_elem.donor_organism_risk}}{% else %}Keine{% endif %}</td>
+                                            <td class="field-nuc_acid_purity">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
+                                            <td class="field-nuc_acid_risk">{{formz_elem.nuc_acid_risk.german_name|capfirst}}</td>
+                                        </tr>
+                                    {% endfor %}
+                            </tbody>
+                        {% else %}
+                            <tbody>
+                            <tr class="row">
+                                <td colspan="5" class="field">Keine unübliche Merkmale</td>
+                            </tr>
+                            </tbody>
+                        {% endif %}
+                        {% if plasmid.huplasmid.get_common_formz_elements %}
+                            <thead>
+                                <th  colspan="5" scope="col" class="column-common_features">
+                                        Andere übliche Merkmale
+                                    </th>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td  colspan="5" scope="col" class="column-common_features">
+                                        {% for formz_elem in plasmid.huplasmid.get_common_formz_elements %}
+                                            {% if not forloop.last %}
+                                                <a href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}">{{formz_elem.name}}</a>,
+                                            {% else %}
+                                                <a href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}">{{formz_elem.name}}</a>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        {% endif %}
+                {% else %}
+
+                <tbody>
+                    <tr>
+                        <td  colspan="5" scope="col" class="column-common_features">Keine Merkmale</td>
+                    </tr>
+                </tbody>
+
+                {% endif %}
+                </table>
+            </div>
+        {% endfor %}
+      {% endif %}
+
+      {% endif %}
+
+      {% if object.formz_elements.all %}
+        {% if object.is_plasmid_object %} <!-- Just to check if this is a plasmid object -->
+            <h3>Merkmale des Organismus</h3>
+        {% else %}
+            <h3>Andere Merkmale des Organismus die nicht in den bereits genannten Plasmiden aufgelistet sind</h3>
+        {% endif %}
+        <div class="results-formz_elements">
+            </br>
+            <table id="result_list">
+
+                {% if object.get_uncommon_formz_elements %}
+                <thead>
+                <tr>
+                    <th scope="col" class="column-name">
+                        <div>Merkmale</div>
+                    </th>
+                    <th scope="col" class="sortable column-donor_organism">
+                        <div >Spenderorganismus</div>
+                    </th>
+                    <th scope="col" class="sortable column-donor_organism_risk">
+                        <div>Risikogruppe des Spenderorganismus</div>
+                    </th>
+                    <th scope="col" class="sortable column-nuc_acid_purity">
+                        <div>Nukleinsäure Reinheit</div>
+                    </th>
+                    <th scope="col" class="column-nuc_acid_risk">
+                        <div>Nukleinsäure Gefährdungspotential</div>
+                    </th>
+                </tr>
+                </thead>
+
+                <tbody>
+                        {% for formz_elem in object.get_uncommon_formz_elements %}
+                            <tr class="row">
+                                <td class="field-name"><a href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}">{{formz_elem.name}}</a></td>
+                                <td class="field-donor_organism">{% if formz_elem.donor_organism and formz_elem.donor_organism != 'none' %}{{formz_elem.donor_organism}}{% else %}Artifiziell{% endif %}</td>
+                                <td class="field-donor_organism_risk">{% if formz_elem.donor_organism_risk %}{{formz_elem.donor_organism_risk}}{% else %}Keine{% endif %}</td>
+                                <td class="field-nuc_acid_purity">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
+                                <td class="field-nuc_acid_risk">{{formz_elem.nuc_acid_risk.german_name|capfirst}}</td>
+                            </tr>
+                        {% endfor %}
+                </tbody>
+            {% else %}
+                <thead>
+                <tr class="row">
+                    <td colspan="5" class="field">Keine unübliche Merkmale</td>
+                </tr>
+                </thead>
+            {% endif %}
+            {% if object.get_common_formz_elements %}
+                <thead>
+                    <th colspan="5" scope="col" class="column-common_features">
+                            Andere übliche Merkmale
+                        </th>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td  colspan="5" scope="col" class="column-common_features">
+                            {% for formz_elem in object.get_common_formz_elements %}
+                                {% if not forloop.last %}
+                                    <a href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}">{{formz_elem.name}}</a>,
+                                {% else %}
+                                    <a href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}">{{formz_elem.name}}</a>
+                                {% endif %}
+                            {% endfor %}
+                        </td>
+                    </tr>
+                </tbody>
+            {% endif %}
+            </table>
+        </div>
+
+      {% endif %}
+
+      {% if transient_episomal_plasmids %}
         
+        </br>
+        <h2> In den Organismus transient {% if transfected %}transfizierte{% else %}transformierte{% endif %} Plasmide</h2>
+        <div>Dieser Organismus wurde mit dem/n folgenen Plasmid/en transient {% if transfected %}transfiziert{% else %}transformiert{% endif %}.</div>
+        {% for plasmid in transient_episomal_plasmids %}
+        
+            <div class="results-{{plasmid.id}}">
+                </br>
+                <table id="result_list">
+                    <thead>
+                        <tr>
+                            <th  colspan="5" scope="col" style="background:#ccc;" class="column-plasmid">
+                                <a style='color:#447e9b;' href="{% url 'admin:collection_management_huplasmid_change' plasmid.huplasmid.id %}">{{plasmid.huplasmid}} </a>
+                                <span style="text-transform: none">
+                                    {% if plasmid.huplasmid.map %}
+                                        <a style='color:#447e9b;' href="{{plasmid.huplasmid.map_gbk.url}}">.gbk</a>,
+                                        <a  class="image-link" style='color:#447e9b;' href="{{plasmid.huplasmid.map_png.url}}">.png</a>;
+                                    {% endif %}
+                                    {% if not plasmid.huplasmid.map and plasmid.created_date %}
+                                    (Organismus {% if transfected %}transfiziert{% else %}transformiert{% endif %} am {{plasmid.created_date | date:"d.m.Y"}},
+                                    {% else %}
+                                    Organismus {% if transfected %}transfiziert{% else %}transformiert{% endif %} am {{plasmid.created_date | date:"d.m.Y"}},
+                                    {% endif %}
+
+                                    unter Projekt/e:
+
+                                    {% if plasmid.formz_projects.all|length == 1 %}
+                                        {% for project in plasmid.formz_projects.all %}
+                                            <a style='color:#447e9b;' href="{% url 'admin:formz_formzproject_change' project.id %}">{{project.short_title}}</a>;
+                                        {% endfor %}
+                                    {% else %}
+                                        {% for project in plasmid.formz_projects.all %}
+                                            {% if forloop.last %}
+                                                <a style='color:#447e9b;' href="{% url 'admin:formz_formzproject_change' project.id %}">{{project.short_title}}</a>;
+                                            {% else %}
+                                                <a style='color:#447e9b;' href="{% url 'admin:formz_formzproject_change' project.id %}">{{project.short_title}}</a>,
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endif %}
+
+                                    {% if plasmid.destroyed_date %}
+                                        entsorgt am {{plasmid.destroyed_date | date:"d.m.Y"}})
+                                    {% else %}
+                                        noch nicht entsorgt)
+                                    {% endif %}
+                                </span>
+                                {% if plasmid.huplasmid.vector_zkbs %}
+                                    <span style='text-transform: none'>- ZKBS Plasmid </span><a style='color:#447e9b;text-transform: none' href="{% url 'admin:formz_zkbsplasmid_change' plasmid.huplasmid.vector_zkbs.id %}">{{plasmid.huplasmid.vector_zkbs.name}}</a>
+                                {% endif %}
+                            </th>
+                        </tr>
+                    </thead>
+                    <thead>
+                        {% if plasmid.huplasmid.formz_elements.all %}
+                            {% if plasmid.huplasmid.get_uncommon_formz_elements %}
+                            <thead>
+                            <tr>
+                                <th scope="col" class="column-name">
+                                    <div>Merkmale</div>
+                                </th>
+                                <th scope="col" class="sortable column-donor_organism">
+                                    <div >Spenderorganismus</div>
+                                </th>
+                                <th scope="col" class="sortable column-donor_organism_risk">
+                                    <div>Risikogruppe des Spenderorganismus</div>
+                                </th>
+                                <th scope="col" class="sortable column-nuc_acid_purity">
+                                    <div>Nukleinsäure Reinheit</div>
+                                </th>
+                                <th scope="col" class="column-nuc_acid_risk">
+                                    <div>Nukleinsäure Gefährdungspotential</div>
+                                </th>
+                            </tr>
+                            </thead>
+
+                            <tbody>
+                                    {% for formz_elem in plasmid.huplasmid.get_uncommon_formz_elements %}
+                                        <tr class="row">
+                                            <td class="field-name"><a href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}">{{formz_elem.name}}</a></td>
+                                            <td class="field-donor_organism">{% if formz_elem.donor_organism and formz_elem.donor_organism != 'none' %}{{formz_elem.donor_organism}}{% else %}Artifiziell{% endif %}</td>
+                                            <td class="field-donor_organism_risk">{% if formz_elem.donor_organism_risk %}{{formz_elem.donor_organism_risk}}{% else %}Keine{% endif %}</td>
+                                            <td class="field-nuc_acid_purity">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
+                                            <td class="field-nuc_acid_risk">{{formz_elem.nuc_acid_risk.german_name|capfirst}}</td>
+                                        </tr>
+                                    {% endfor %}
+                            </tbody>
+                        {% else %}
+                            <tbody>
+                            <tr class="row">
+                                <td colspan="5" class="field">Keine unübliche Merkmale</td>
+                            </tr>
+                            </tbody>
+                        {% endif %}
+                        {% if plasmid.huplasmid.get_common_formz_elements %}
+                            <thead>
+                                <th  colspan="5" scope="col" class="column-common_features">
+                                        Andere übliche Merkmale
+                                    </th>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td  colspan="5" scope="col" class="column-common_features">
+                                        {% for formz_elem in plasmid.huplasmid.get_common_formz_elements %}
+                                            {% if not forloop.last %}
+                                                <a href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}">{{formz_elem.name}}</a>,
+                                            {% else %}
+                                                <a href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}">{{formz_elem.name}}</a>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        {% endif %}
+                    {% else %}
+                        <tbody>
+                            <tr>
+                                <td  colspan="5" scope="col" class="column-common_features">Keine Merkmale</td>
+                            </tr>
+                        </tbody>
+                    {% endif %}
+                </table>
+            </div>
+        {% endfor %}
+      {% endif %}
+   
     </div>
+</div>
+{% endblock %}
+
+{% block footer %}
+    <div id="footer"></div>
+    <script type="text/javascript" src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
+    <script type="text/javascript" src="{% static 'admin/js/vendor/jquery.magnific-popup.min.js' %}"></script>
+    <script type="text/javascript">
+        $(document).ready(function() {
+        $('.image-link').magnificPopup({type:'image'});
+        });
+    </script>
+    <link href="/static/admin/css/vendor/magnific-popup.css" type="text/css" media="all" rel="stylesheet">
 {% endblock %}

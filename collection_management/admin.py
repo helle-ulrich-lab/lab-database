@@ -13,7 +13,7 @@ from django.contrib.auth.admin import UserAdmin
 from django.apps import apps
 from django.db import models
 
-from django.urls import reverse
+from django.urls import reverse, resolve
 from django.core.mail import send_mail, mail_admins
 from django.utils import timezone
 from django.core.exceptions import PermissionDenied
@@ -25,7 +25,6 @@ from django import forms
 from django.forms import TextInput
 from django.http import HttpResponseRedirect
 from django.http import HttpResponse
-from django.urls import reverse
 
 from django_project.settings import MEDIA_ROOT
 from django_project.settings import BASE_DIR
@@ -42,6 +41,16 @@ from django.utils.encoding import force_text
 from django.shortcuts import get_object_or_404, render
 from django.utils.safestring import mark_safe
 
+from django.contrib.admin.utils import quote
+from django.utils.html import format_html
+from urllib.parse import quote as urlquote
+from django.contrib.admin.templatetags.admin_urls import add_preserved_filters
+import json
+from django.template.response import TemplateResponse
+
+IS_POPUP_VAR = '_popup'
+TO_FIELD_VAR = '_to_field'
+
 #################################################
 #        ADDED FUNCTIONALITIES IMPORTS          #
 #################################################
@@ -57,6 +66,8 @@ from simple_history.admin import SimpleHistoryAdmin
 
 # Import/Export functionalities from django-import-export
 from import_export import resources
+from import_export.fields import Field
+
 
 # Background tasks
 from background_task import background
@@ -80,6 +91,9 @@ from snapgene.pyclasses.config import Config
 import zmq
 import os
 import time
+
+from formz.models import FormZBaseElement
+from formz.models import FormZProject
 
 #################################################
 #               CUSTOM FUNCTIONS                #
@@ -230,15 +244,24 @@ class SimpleHistoryWithSummaryAdmin(SimpleHistoryAdmin):
                     delta = history_element[0].diff_against(history_element[1])
                     if delta:
                         changes_list = []
-                        changes = delta.changes
                         if delta.changes:
                             for change in delta.changes:
-                                if not change.field.endswith(("time", "_pi")): # Do not show created/changed date/time or approval by PI fields
+                                if not change.field.endswith(("time", "_pi", "map_png", "map_gbk")): # Do not show created/changed date/time or approval by PI fields, and png/gbk map fields
+                                    
                                     field_name = model._meta.get_field(change.field).verbose_name
-                                    changes_list.append(
-                                        (field_name.replace("_", " ").capitalize(), 
-                                        change.old if change.old else 'None', 
-                                        change.new if change.new else 'None'))
+                                    field_type = model._meta.get_field(change.field).get_internal_type()
+                                    
+                                    if field_type == 'FileField':
+                                        changes_list.append(
+                                            (field_name.capitalize(), 
+                                            os.path.basename(change.old) if change.old else 'None', 
+                                            os.path.basename(change.new) if change.new else 'None'))
+                                    else:
+                                        changes_list.append(
+                                            (field_name.capitalize(), 
+                                            change.old if change.old else 'None', 
+                                            change.new if change.new else 'None'))
+
                             if changes_list:
                                 history_summary_data.append(
                                     (history_element[0].last_changed_date_time, 
@@ -595,11 +618,11 @@ class MyAdminSite(admin.AdminSite):
 
             # Set content disposition based on file type
             if 'pdf' in mimetype.lower():
-                response["Content-Disposition"] = "inline; filename={}".format(download_file_name)
+                response["Content-Disposition"] = 'inline; filename="{}"'.format(download_file_name)
             elif 'png' in mimetype.lower():
                 response["Content-Disposition"] = ""
             else:
-                response["Content-Disposition"] = "attachment; filename={}".format(download_file_name)
+                response["Content-Disposition"] = 'attachment; filename="{}"'.format(download_file_name)
             
             response['X-Accel-Redirect'] = "/secret/{url_path}".format(url_path=url_path)
             return response
@@ -634,12 +657,60 @@ class MyAdminSite(admin.AdminSite):
         
         return render(request, 'admin/temp_control.html', context)
 
-    def formz(self, request, *args, **kwargs) :
+    def formz(self, request, *args, **kwargs):
+
+        from formz.models import FormZStorageLocation
+        from formz.models import FormZHeader
         
         app_label, model_name, obj_id = kwargs['object_id'].split('/')
         model = apps.get_model(app_label, model_name)
+        model_content_type = ContentType.objects.get(app_label=app_label, model=model_name)
         opts = model._meta
         obj = model.objects.get(id=int(obj_id))
+        
+        if FormZStorageLocation.objects.get(collection_model=model_content_type):
+            storage_location_obj = FormZStorageLocation.objects.get(collection_model=model_content_type)
+            storage_location = storage_location_obj.storage_location
+            organism = storage_location_obj.species_name
+        else:
+            storage_location = None
+            organism = None
+
+        if FormZHeader.objects.all().first():
+            header = FormZHeader.objects.all().first()
+        else:
+            header = None
+
+        if model_name == 'sacerevisiaestrain':
+            in_stock_plasmids = [("Integriert", obj.integrated_plasmids.all().order_by('id')),
+                                 (mark_safe("Teilweise integriert durch PCR Vervielfältigung eines bestimmtem Bereichs des Plasmids <span style='font-weight:normal'>(Details ersichtlich unter 'Konstruktion' des Organismus)</span>"), obj.cassette_plasmids.all().order_by('id')),
+                                 ("Episomal", obj.episomal_plasmids.all().order_by('id').filter(sacerevisiaestrainepisomalplasmid__present_in_stocked_strain=True).distinct())]
+            transient_episomal_plasmids = obj.sacerevisiaestrainepisomalplasmid_set.all().order_by('id').distinct().filter(present_in_stocked_strain=False)
+            formz_base_elements = obj.formz_elements.all().order_by('name')
+            lenti_construction_plasmids = None
+        
+        elif model_name == 'scpombestrain':
+
+            in_stock_plasmids = [("Fully integrated", obj.integrated_plasmids.all().order_by('id')),
+                                 (mark_safe("Teilweise integriert durch PCR Vervielfältigung eines bestimmtem Bereichs des Plasmids <span style='font-weight:normal'>(Details ersichtlich unter 'Konstruktion' des Organismus)</span>"), obj.cassette_plasmids.all().order_by('id')),
+                                 ("Episomal", obj.episomal_plasmids.all().order_by('id').filter(scpombestrainepisomalplasmid__present_in_stocked_strain=True).distinct())]
+            transient_episomal_plasmids = obj.scpombestrainepisomalplasmid_set.all().order_by('id').distinct().filter(present_in_stocked_strain=False)
+            formz_base_elements = obj.formz_elements.all().order_by('name')
+            lenti_construction_plasmids = None
+        
+        elif model_name == 'huplasmid':
+            in_stock_plasmids = None
+            transient_episomal_plasmids = None
+            formz_base_elements = obj.formz_elements.all().order_by('name')
+            lenti_construction_plasmids = None
+
+        elif model_name == 'mammalianline':
+            organism = obj.organism
+            in_stock_plasmids = [("Integriert", obj.integrated_plasmids.all().order_by('id'))]
+            transient_episomal_plasmids = obj.mammalianlineepisomalplasmid_set.all().order_by('id').distinct().filter(s2_work_episomal_plasmid=False)
+            lenti_construction_plasmids = obj.mammalianlineepisomalplasmid_set.all().order_by('id').distinct().filter(s2_work_episomal_plasmid=True)
+            formz_base_elements = obj.formz_elements.all().order_by('name')
+
         context = {
         'title': 'FormZ: {}'.format(obj),
         'module_name': capfirst(force_text(opts.verbose_name_plural)),
@@ -648,8 +719,14 @@ class MyAdminSite(admin.AdminSite):
         'app_label': app_label,
         'opts': opts,
         'site_url': self.site_url, 
-        'app_label': app_label,
-        'object':obj}
+        'object': obj,
+        'in_stock_plasmids': in_stock_plasmids,
+        'transient_episomal_plasmids': transient_episomal_plasmids,
+        'storage_location': storage_location,
+        'formz_header': header,
+        'organism':organism,
+        'lenti_construction_plasmids': lenti_construction_plasmids,
+        'transfected': True if model_name == 'mammalianline' else False}
 
         return render(request, 'admin/formz.html', context)
 
@@ -742,16 +819,22 @@ from .models import SaCerevisiaeStrain as collection_management_SaCerevisiaeStra
 from .models import SaCerevisiaeStrainEpisomalPlasmid
 
 class FieldIntegratedPlasmidM2M(IntField):
-    name = 'integrated_plasmid_id'
+    name = 'integrated_plasmids_id'
 
     def get_lookup_name(self):
         return 'integrated_plasmids__id'
 
 class FieldCassettePlasmidM2M(IntField):
-    name = 'cassette_plasmid_id'
+    name = 'cassette_plasmids_id'
 
     def get_lookup_name(self):
         return 'cassette_plasmids__id'
+
+class FieldEpisomalPlasmidM2M(IntField):
+    name = 'episomal_plasmids_id'
+    
+    def get_lookup_name(self):
+        return 'episomal_plasmids__id'
 
 class FieldParent1(IntField):
     """Create a list of unique users' usernames for search"""
@@ -779,6 +862,26 @@ class SearchFieldOptLastnameSaCerStrain(SearchFieldOptLastname):
 
     id_list = collection_management_SaCerevisiaeStrain.objects.all().values_list('created_by', flat=True).distinct()
 
+class FieldFormZProject(StrField):
+    name = 'formz_projects_title'
+    suggest_options = True
+
+    def get_options(self):
+        return FormZProject.objects.all().values_list('short_title', flat=True)
+
+    def get_lookup_name(self):
+        return 'formz_projects__short_title'
+
+class FieldEpisomalPlasmidFormZProjectSaCerStrain(StrField):
+    name = 'episomal_plasmids_formz_projects_title'
+    suggest_options = True
+
+    def get_options(self):
+        return FormZProject.objects.all().values_list('short_title', flat=True)
+
+    def get_lookup_name(self):
+        return 'sacerevisiaestrainepisomalplasmid__formz_projects__short_title'
+
 class SaCerevisiaeStrainQLSchema(DjangoQLSchema):
     '''Customize search functionality'''
     
@@ -789,8 +892,8 @@ class SaCerevisiaeStrainQLSchema(DjangoQLSchema):
         
         if model == collection_management_SaCerevisiaeStrain:
             return ['id', 'name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', FieldParent1(), FieldParent2(), 'parental_strain',
-                'construction', 'modification', FieldIntegratedPlasmidM2M(), FieldCassettePlasmidM2M(), 'plasmids', 'selection', 
-                'phenotype', 'background', 'received_from', FieldUse(), 'note', 'reference', 'created_by',]
+                'construction', 'modification', FieldIntegratedPlasmidM2M(), FieldCassettePlasmidM2M(), FieldEpisomalPlasmidM2M(), 'plasmids', 'selection', 
+                'phenotype', 'background', 'received_from', FieldUse(), 'note', 'reference', 'created_by', FieldFormZProject(), FieldEpisomalPlasmidFormZProjectSaCerStrain()]
         elif model == User:
             return [SearchFieldOptUsernameSaCerStrain(), SearchFieldOptLastnameSaCerStrain()]
         return super(SaCerevisiaeStrainQLSchema, self).get_fields(model)
@@ -798,11 +901,23 @@ class SaCerevisiaeStrainQLSchema(DjangoQLSchema):
 class SaCerevisiaeStrainExportResource(resources.ModelResource):
     """Defines a custom export resource class for SaCerevisiaeStrain"""
     
+    episomal_plasmids_in_stock = Field()
+    other_plasmids = Field(attribute='plasmids', column_name='other_plasmids_info')
+    additional_parental_strain_info = Field(attribute='parental_strain', column_name='additional_parental_strain_info')
+
+    def dehydrate_episomal_plasmids_in_stock(self, strain):
+        return str(tuple(strain.episomal_plasmids.filter(sacerevisiaestrainepisomalplasmid__present_in_stocked_strain=True).values_list('id', flat=True))).replace(" ", "").replace(',)', ')')[1:-1]
+
     class Meta:
         model = collection_management_SaCerevisiaeStrain
-        fields = ('id', 'name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parental_strain',
-        'construction', 'modification', 'plasmids', 'selection', 'phenotype', 'background', 'received_from',
-        'us_e', 'note', 'reference', 'created_date_time', 'last_changed_date_time', 'created_by__username',)
+        fields = ('id', 'name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parent_1', 'parent_2','additional_parental_strain_info',
+        'construction', 'modification', 'integrated_plasmids', 'cassette_plasmids', 'episomal_plasmids_in_stock', 'other_plasmids', 
+        'selection', 'phenotype', 'background', 'received_from','us_e', 'note', 'reference', 'created_date_time', 
+        'created_by__username',)
+        export_order = fields = ('id', 'name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parent_1', 'parent_2','additional_parental_strain_info',
+        'construction', 'modification', 'integrated_plasmids', 'cassette_plasmids', 'episomal_plasmids_in_stock', 'other_plasmids', 
+        'selection', 'phenotype', 'background', 'received_from','us_e', 'note', 'reference', 'created_date_time', 
+        'created_by__username',)
 
 def export_sacerevisiaestrain(modeladmin, request, queryset):
     """Export SaCerevisiaeStrain as xlsx"""
@@ -852,8 +967,6 @@ class SaCerevisiaeStrainEpisomalPlasmidInline(admin.TabularInline):
         is not available in the regular admin.ModelAdmin as an attribute.
         """
 
-        from django.urls import resolve
-
         resolved = resolve(request.path_info)
         if resolved.kwargs:
             return self.parent_model.objects.get(pk=resolved.kwargs['object_id'])
@@ -882,7 +995,8 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
     form = SaCerevisiaeStrainForm
     formfield_overrides = {models.CharField: {'widget': TextInput(attrs={'size':'93'})},} # Make TextInput fields wider
     search_fields = ['id', 'name']
-    autocomplete_fields = ['parent_1', 'parent_2', 'integrated_plasmids', 'cassette_plasmids', 'formz_projects']
+    autocomplete_fields = ['parent_1', 'parent_2', 'integrated_plasmids', 'cassette_plasmids', 
+                           'formz_projects', 'formz_gentech_methods', 'formz_elements']
     inlines = [SaCerevisiaeStrainEpisomalPlasmidInline]
     
     def save_model(self, request, obj, form, change):
@@ -919,16 +1033,18 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
         cassette_plasmids = obj.cassette_plasmids.all().order_by('id')
         episomal_plasmids = obj.episomal_plasmids.all().order_by('id')
 
-        obj.history_integrated_plasmids = str(tuple(integrated_plasmids.values_list('id', flat=True))) if integrated_plasmids else ""
-        obj.history_cassette_plasmids = str(tuple(cassette_plasmids.values_list('id', flat=True))) if cassette_plasmids else ""
-        obj.history_episomal_plasmids = str(tuple(episomal_plasmids.values_list('id', flat=True))) if episomal_plasmids else ""
+        obj.history_integrated_plasmids = str(tuple(integrated_plasmids.values_list('id', flat=True))).replace(',)', ')') if integrated_plasmids else ""
+        obj.history_cassette_plasmids = str(tuple(cassette_plasmids.values_list('id', flat=True))).replace(',)', ')') if cassette_plasmids else ""
+        obj.history_episomal_plasmids = str(tuple(episomal_plasmids.values_list('id', flat=True))).replace(',)', ')') if episomal_plasmids else ""
 
         plasmid_id_list = integrated_plasmids | cassette_plasmids | episomal_plasmids.filter(sacerevisiaestrainepisomalplasmid__present_in_stocked_strain=True) # Merge querysets
         if plasmid_id_list:
             plasmid_id_list = tuple(plasmid_id_list.distinct().order_by('id').values_list('id', flat=True))
-            obj.history_all_plasmids_in_stocked_strain = str(plasmid_id_list)
+            obj.history_all_plasmids_in_stocked_strain = str(plasmid_id_list).replace(',)', ')')
 
-        obj.history_formz_projects = str(tuple(obj.formz_projects.all().order_by('id').values_list('id', flat=True))) if obj.formz_projects.all() else ""
+        obj.history_formz_projects = str(tuple(obj.formz_projects.all().order_by('short_title_english').values_list('short_title_english', flat=True))).replace(',)', ')') if obj.formz_projects.all() else ""
+        obj.history_formz_gentech_methods = str(tuple(obj.formz_gentech_methods.all().order_by('english_name').values_list('english_name', flat=True))).replace(',)', ')') if obj.formz_gentech_methods.all() else ""
+        obj.history_formz_elements = str(tuple(obj.formz_elements.all().order_by('name').values_list('name', flat=True))).replace(',)', ')') if obj.formz_elements.all() else ""
 
         obj.save_without_historical_record()
 
@@ -938,7 +1054,14 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
         history_obj.history_episomal_plasmids = obj.history_episomal_plasmids
         history_obj.history_all_plasmids_in_stocked_strain = obj.history_all_plasmids_in_stocked_strain
         history_obj.history_formz_projects = obj.history_formz_projects
+        history_obj.history_formz_gentech_methods = obj.history_formz_gentech_methods
+        history_obj.history_formz_elements = obj.history_formz_elements
         history_obj.save()
+
+        # Clear non-relevant fields for in-stock episomal plasmids
+
+        for in_stock_episomal_plasmid in SaCerevisiaeStrainEpisomalPlasmid.objects.filter(sacerevisiae_strain__id=form.instance.id).filter(present_in_stocked_strain=True):
+            in_stock_episomal_plasmid.formz_projects.clear()
 
     def get_readonly_fields(self, request, obj=None):
         '''Override default get_readonly_fields to define user-specific read-only fields
@@ -957,48 +1080,19 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
                     return ['name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parent_1', 'parent_2', 'parental_strain',
                 'construction', 'modification', 'integrated_plasmids', 'cassette_plasmids', 'plasmids', 'selection', 'phenotype', 
                 'background', 'received_from', 'us_e', 'reference', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
-                'last_changed_approval_by_pi', 'created_by',]
+                'last_changed_approval_by_pi', 'created_by', 'formz_projects', 'formz_risk_group', 'formz_gentech_methods', 'formz_elements', 
+                'destroyed_date']
                 else:
                     return ['name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parent_1', 'parent_2', 'parental_strain',
                     'construction', 'modification', 'integrated_plasmids', 'cassette_plasmids', 'plasmids', 'selection', 'phenotype', 
                     'background', 'received_from', 'us_e', 'note', 'reference', 'created_date_time', 'created_approval_by_pi', 
-                    'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',]
+                    'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by', 'formz_projects', 'formz_risk_group', 
+                    'formz_gentech_methods', 'formz_elements', 'destroyed_date']
         else:
             return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
-    
-    # def get_form(self, request, obj=None, **kwargs):
-    #     """
-    #     Modify the default factory to change form fields based on the request/object.
-    #     """
-    #     default_factory = super(SaCerevisiaeStrainPage, self).get_form(request, obj=obj, **kwargs)
-
-    #     def factory(*args, **_kwargs):
-    #         form = default_factory(*args, **_kwargs)
-    #         return self.modify_form(form, request, obj, **_kwargs)
-
-    #     return factory
-
-    # @staticmethod
-    # def modify_form(form, request, obj, **kwargs):
-    #     """
-    #     Edit 'parental_line' field
-    #     """
-    #     if obj:
-    #         if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
-    #             if not request.user.has_perm('collection_management.change_sacerevisiaestrain', obj):
-    #                 for field in ['parent_1', 'parent_2', 'integrated_plasmids', 'cassette_plasmids']:
-    #                     try:
-    #                         form.fields[field].disabled = True
-    #                     except:
-    #                         continue
-    #     return form
 
     def add_view(self,request,extra_context=None):
         '''Override default add_view to show only desired fields'''
-        
-        # self.fields = ('name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parent_1', 'parent_2', 
-        # 'parental_strain', 'construction', 'modification','integrated_plasmids', 'cassette_plasmids', 'plasmids', 
-        # 'selection', 'phenotype', 'background', 'received_from', 'us_e', 'note', 'reference',)
 
         self.fieldsets = (
         (None, {
@@ -1006,8 +1100,8 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
         'parental_strain', 'construction', 'modification','integrated_plasmids', 'cassette_plasmids', 'plasmids', 
         'selection', 'phenotype', 'background', 'received_from', 'us_e', 'note', 'reference',)
         }),
-        ('FORMBLATT Z', {
-            'fields': ('formz_projects', 'formz_risk_group','destroyed_date')
+        ('FormZ', {
+            'fields': ('formz_projects', 'formz_risk_group', 'formz_gentech_methods', 'formz_elements', 'destroyed_date')
         }),
         )
 
@@ -1017,18 +1111,16 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
         '''Override default change_view to show only desired fields'''
 
         if object_id:
+            extra_context = extra_context or {}
+            extra_context['show_formz'] = True
             obj = collection_management_SaCerevisiaeStrain.objects.get(pk=object_id)
             if obj:
                 if obj.history_all_plasmids_in_stocked_strain:
-                    extra_context = extra_context or {}
                     extra_context['plasmid_id_list'] = obj.history_all_plasmids_in_stocked_strain
                 if request.user == obj.created_by:
                     self.save_as = True
 
         if '_saveasnew' in request.POST:
-            # self.fields = ('name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parent_1', 'parent_2', 
-            #     'parental_strain', 'construction', 'modification', 'integrated_plasmids', 'cassette_plasmids', 'plasmids', 
-            #     'selection', 'phenotype', 'background', 'received_from','us_e', 'note', 'reference',)
             
             self.fieldsets = (
             (None, {
@@ -1036,15 +1128,12 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
             'parental_strain', 'construction', 'modification','integrated_plasmids', 'cassette_plasmids', 'plasmids', 
             'selection', 'phenotype', 'background', 'received_from', 'us_e', 'note', 'reference',)
             }),
-            ('FORMBLATT Z', {
-                'fields': ('formz_projects', 'formz_risk_group','destroyed_date')
+            ('FormZ', {
+                'fields': ('formz_projects', 'formz_risk_group', 'formz_gentech_methods', 'formz_elements', 'destroyed_date')
             }),
             )
+
         else:
-            # self.fields = ('name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parent_1', 'parent_2', 
-            #     'parental_strain', 'construction', 'modification', 'integrated_plasmids', 'cassette_plasmids', 'plasmids', 
-            #     'selection', 'phenotype', 'background', 'received_from','us_e', 'note', 'reference', 'created_date_time', 
-            #     'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by', 'change_reason')
 
             if request.user == obj.created_by or not obj.created_by.groups.filter(name='Past member').exists():
                 self.fieldsets = (
@@ -1054,9 +1143,9 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
                     'selection', 'phenotype', 'background', 'received_from','us_e', 'note', 'reference', 'created_date_time', 
                     'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',)
                 }),
-                ('FORMBLATT Z', {
+                ('FormZ', {
                     'classes': ('collapse',),
-                    'fields': ('formz_projects', 'formz_risk_group','destroyed_date')
+                    'fields': ('formz_projects', 'formz_risk_group', 'formz_gentech_methods', 'formz_elements','destroyed_date')
                 }),
                 )
             else:
@@ -1067,9 +1156,9 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
                     'selection', 'phenotype', 'background', 'received_from','us_e', 'note', 'reference', 'created_date_time', 
                     'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by', 'change_reason')
                 }),
-                ('FORMBLATT Z', {
+                ('FormZ', {
                     'classes': ('collapse',),
-                    'fields': ('formz_projects', 'formz_risk_group','destroyed_date')
+                    'fields': ('formz_projects', 'formz_risk_group', 'formz_gentech_methods', 'formz_elements', 'destroyed_date')
                 }),
                 )
 
@@ -1121,6 +1210,17 @@ class SearchFieldOptLastnameHuPlasmid(SearchFieldOptLastname):
 
     id_list = collection_management_HuPlasmid.objects.all().values_list('created_by', flat=True).distinct()
 
+class FieldFormZBaseElement(StrField):
+    name = 'formz_elements_name'
+    model = collection_management_HuPlasmid
+    suggest_options = True
+
+    def get_options(self):
+        return FormZBaseElement.objects.all().values_list('name', flat=True)
+
+    def get_lookup_name(self):
+        return 'formz_elements__name'
+
 class HuPlasmidQLSchema(DjangoQLSchema):
     '''Customize search functionality'''
     
@@ -1131,7 +1231,7 @@ class HuPlasmidQLSchema(DjangoQLSchema):
         
         if model == collection_management_HuPlasmid:
             return ['id', 'name', 'other_name', 'parent_vector', 'selection', FieldUse(), 'construction_feature', 'received_from', 'note', 
-                'reference', 'created_by',]
+                'reference', 'created_by', FieldFormZBaseElement(), FieldFormZProject()]
         elif model == User:
             return [SearchFieldOptUsernameHuPlasmid(), SearchFieldOptLastnameHuPlasmid()]
         return super(HuPlasmidQLSchema, self).get_fields(model)
@@ -1139,10 +1239,16 @@ class HuPlasmidQLSchema(DjangoQLSchema):
 class HuPlasmidExportResource(resources.ModelResource):
     """Defines a custom export resource class for HuPlasmid"""
     
+    additional_parent_vector_info = Field(attribute='old_parent_vector', column_name='additional_parent_vector_info')
+
     class Meta:
         model = collection_management_HuPlasmid
-        fields = ('id', 'name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
-                'reference', 'map', 'created_date_time', 'last_changed_date_time', 'created_by__username',)
+        fields = ('id', 'name', 'other_name', 'parent_vector', 'additional_parent_vector_info', 'selection', 'us_e', 
+                  'construction_feature', 'received_from', 'note', 'reference', 'map', 'created_date_time',
+                  'created_by__username',)
+        export_order = ('id', 'name', 'other_name', 'parent_vector', 'additional_parent_vector_info', 'selection', 'us_e', 
+                  'construction_feature', 'received_from', 'note', 'reference', 'map', 'created_date_time',
+                  'created_by__username',)
 
 def export_huplasmid(modeladmin, request, queryset):
     """Export HuPlasmid as xlsx"""
@@ -1162,7 +1268,7 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
     djangoql_schema = HuPlasmidQLSchema
     actions = [export_huplasmid]
     search_fields = ['id', 'name']
-    autocomplete_fields = ['parent_vector', 'formz_projects', 'formz_elements', 'vector_zkbs']
+    autocomplete_fields = ['parent_vector', 'formz_projects', 'formz_elements', 'vector_zkbs', 'formz_ecoli_strains', 'formz_gentech_methods']
     redirect_to_obj_page = False
 
     change_form_template = "admin/collection_management/huplasmid/change_form.html"
@@ -1180,6 +1286,7 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
         self.rename_and_preview = False
         new_obj = False
         self.new_obj = False
+        self.clear_formz_elements = False
 
         if obj.pk == None:
             obj.created_by = request.user
@@ -1193,20 +1300,34 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
             old_obj = collection_management_HuPlasmid.objects.get(pk=obj.pk)
             if request.user.is_superuser or request.user == old_obj.created_by or request.user.groups.filter(name='Lab manager').exists():
                 obj.last_changed_approval_by_pi = False
-                if obj.map and obj.map != old_obj.map:
-                    rename_and_preview = True
-                    self.rename_and_preview = True
-                    obj.save_without_historical_record()
-                else:
-                    obj.save()
-            else:
-                if obj.created_by == HU_USER: # Allow saving object, if record belongs to Helle (user id = 6)
-                    obj.last_changed_approval_by_pi = False
-                    if obj.map and obj.map != old_obj.map:
+                if obj.map:
+                    if obj.map != old_obj.map:
                         rename_and_preview = True
                         self.rename_and_preview = True
                         obj.save_without_historical_record()
                     else:
+                        obj.save()
+                else:
+                    if obj.map != old_obj.map:
+                        obj.map_png = obj.map
+                        obj.map_gbk = obj.map
+                        self.clear_formz_elements = True
+                    obj.save()
+            else:
+                if obj.created_by == HU_USER: # Allow saving object, if record belongs to Helle (user id = 6)
+                    obj.last_changed_approval_by_pi = False
+                    if obj.map:
+                        if obj.map != old_obj.map:
+                            rename_and_preview = True
+                            self.rename_and_preview = True
+                            obj.save_without_historical_record()
+                        else:
+                            obj.save()
+                    else:
+                        if obj.map != old_obj.map:
+                            obj.map_png = obj.map
+                            obj.map_gbk = obj.map
+                            self.clear_formz_elements = True
                         obj.save()
                 else:
                     raise PermissionDenied
@@ -1255,14 +1376,17 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
 
         obj = collection_management_HuPlasmid.objects.get(pk=form.instance.id)
 
-        if self.rename_and_preview:
+        if self.clear_formz_elements:
+            obj.formz_elements.clear()
+
+        if self.rename_and_preview or "_redetect_formz_elements" in request.POST:
             unknown_feat_name_list = []
             r = get_plasmid_map_features(obj.map.path)
             if not self.new_obj:
                 obj.formz_elements.clear()
             for feat in r["features"]:
-                base_elems = FormZBaseElement.objects.filter(name = feat['name'])
-                if base_elems:
+                base_elems = FormZBaseElement.objects.filter(name = feat['name'].strip()) | FormZBaseElement.objects.filter(extra_label__label = feat['name'].strip())
+                if base_elems.distinct():
                     for elem in base_elems:
                         obj.formz_elements.add(elem)
                 else:
@@ -1270,20 +1394,180 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
             if unknown_feat_name_list:
                 self.redirect_to_obj_page = True
                 unknown_feat_name_list = str(unknown_feat_name_list)[1:-1].replace("'", "")
-                messages.warning(request, "The following plasmid features were not added to the list of FormZ Base Element of your plasmid,"
-                                      " because they cannot be found in the database: {}.".format(unknown_feat_name_list))
+                messages.warning(request, mark_safe("The following plasmid features were not added to <span style='background-color:rgba(0,0,0,0.1);'>FormZ Elements</span>,"
+                                      " because they cannot be found in the database: <span class='missing-formz-features' style='background-color:rgba(255,0,0,0.2)'>{}</span>. You may want to add them manually "
+                                      "yourself below.".format(unknown_feat_name_list)))
+            else:
+                self.redirect_to_obj_page = False
 
         # Keep a record of the IDs of linked M2M fields in the main strain record
         # Not pretty, but it works
 
-        obj.history_formz_projects = str(tuple(obj.formz_projects.all().order_by('id').values_list('id', flat=True))) if obj.formz_projects.all() else ""
-        obj.history_formz_elements = str(tuple(obj.formz_elements.all().order_by('name').values_list('name', flat=True))) if obj.formz_elements.all() else ""
+        obj.history_formz_projects = str(tuple(obj.formz_projects.all().order_by('short_title_english').values_list('short_title_english', flat=True))).replace(',)', ')') if obj.formz_projects.all() else ""
+        obj.history_formz_elements = str(tuple(obj.formz_elements.all().order_by('name').values_list('name', flat=True))).replace(',)', ')') if obj.formz_elements.all() else ""
+        obj.history_formz_ecoli_strains = str(tuple(obj.formz_ecoli_strains.all().order_by('id').values_list('id', flat=True))).replace(',)', ')') if obj.formz_ecoli_strains.all() else ""
+        obj.history_formz_gentech_methods = str(tuple(obj.formz_gentech_methods.all().order_by('english_name').values_list('english_name', flat=True))).replace(',)', ')') if obj.formz_gentech_methods.all() else ""
         obj.save_without_historical_record()
 
         history_obj = obj.history.latest()
         history_obj.history_formz_projects = obj.history_formz_projects
         history_obj.history_formz_elements = obj.history_formz_elements
+        history_obj.history_formz_ecoli_strains = obj.history_formz_ecoli_strains
+        history_obj.history_formz_gentech_methods = obj.history_formz_gentech_methods
         history_obj.save()
+
+    def response_add(self, request, obj, post_url_continue=None):
+        """
+        Determine the HttpResponse for the add_view stage.
+        """
+
+        opts = obj._meta
+        preserved_filters = self.get_preserved_filters(request)
+        obj_url = reverse(
+            'admin:%s_%s_change' % (opts.app_label, opts.model_name),
+            args=(quote(obj.pk),),
+            current_app=self.admin_site.name,
+        )
+        # Add a link to the object's change form if the user can edit the obj.
+        if self.has_change_permission(request, obj):
+            obj_repr = format_html('<a href="{}">{}</a>', urlquote(obj_url), obj)
+        else:
+            obj_repr = str(obj)
+        msg_dict = {
+            'name': opts.verbose_name,
+            'obj': obj_repr,
+        }
+        # Here, we distinguish between different save types by checking for
+        # the presence of keys in request.POST.
+
+        if IS_POPUP_VAR in request.POST:
+            to_field = request.POST.get(TO_FIELD_VAR)
+            if to_field:
+                attr = str(to_field)
+            else:
+                attr = obj._meta.pk.attname
+            value = obj.serializable_value(attr)
+            popup_response_data = json.dumps({
+                'value': str(value),
+                'obj': str(obj),
+            })
+            return TemplateResponse(request, self.popup_response_template or [
+                'admin/%s/%s/popup_response.html' % (opts.app_label, opts.model_name),
+                'admin/%s/popup_response.html' % opts.app_label,
+                'admin/popup_response.html',
+            ], {
+                'popup_response_data': popup_response_data,
+            })
+
+        elif "_continue" in request.POST or (
+                # Redirecting after "Save as new".
+                "_saveasnew" in request.POST and self.save_as_continue and
+                self.has_change_permission(request, obj)
+        ) or self.redirect_to_obj_page: # Check if obj has unidentified FormZ Elements
+            msg = _('The {name} "{obj}" was added successfully.')
+            if self.has_change_permission(request, obj):
+                msg += ' ' + _('You may edit it again below.')
+            self.message_user(request, format_html(msg, **msg_dict), messages.SUCCESS)
+            if post_url_continue is None:
+                post_url_continue = obj_url
+            post_url_continue = add_preserved_filters(
+                {'preserved_filters': preserved_filters, 'opts': opts},
+                post_url_continue
+            )
+            return HttpResponseRedirect(post_url_continue)
+
+        elif "_addanother" in request.POST:
+            msg = format_html(
+                _('The {name} "{obj}" was added successfully. You may add another {name} below.'),
+                **msg_dict
+            )
+            self.message_user(request, msg, messages.SUCCESS)
+            redirect_url = request.path
+            redirect_url = add_preserved_filters({'preserved_filters': preserved_filters, 'opts': opts}, redirect_url)
+            return HttpResponseRedirect(redirect_url)            
+
+        else:
+            msg = format_html(
+                _('The {name} "{obj}" was added successfully.'),
+                **msg_dict
+            )
+            self.message_user(request, msg, messages.SUCCESS)
+            return self.response_post_save_add(request, obj)
+
+    def response_change(self, request, obj):
+        """
+        Determine the HttpResponse for the change_view stage.
+        """
+
+        if IS_POPUP_VAR in request.POST:
+            opts = obj._meta
+            to_field = request.POST.get(TO_FIELD_VAR)
+            attr = str(to_field) if to_field else opts.pk.attname
+            value = request.resolver_match.kwargs['object_id']
+            new_value = obj.serializable_value(attr)
+            popup_response_data = json.dumps({
+                'action': 'change',
+                'value': str(value),
+                'obj': str(obj),
+                'new_value': str(new_value),
+            })
+            return TemplateResponse(request, self.popup_response_template or [
+                'admin/%s/%s/popup_response.html' % (opts.app_label, opts.model_name),
+                'admin/%s/popup_response.html' % opts.app_label,
+                'admin/popup_response.html',
+            ], {
+                'popup_response_data': popup_response_data,
+            })
+
+        opts = self.model._meta
+        preserved_filters = self.get_preserved_filters(request)
+
+        msg_dict = {
+            'name': opts.verbose_name,
+            'obj': format_html('<a href="{}">{}</a>', urlquote(request.path), obj),
+        }
+        if "_continue" in request.POST or self.redirect_to_obj_page: # Check if obj has unidentified FormZ Elements:
+            msg = format_html(
+                _('The {name} "{obj}" was changed successfully. You may edit it again below.'),
+                **msg_dict
+            )
+            self.message_user(request, msg, messages.SUCCESS)
+            redirect_url = request.path
+            redirect_url = add_preserved_filters({'preserved_filters': preserved_filters, 'opts': opts}, redirect_url)
+            return HttpResponseRedirect(redirect_url)
+
+        elif "_saveasnew" in request.POST:
+            msg = format_html(
+                _('The {name} "{obj}" was added successfully. You may edit it again below.'),
+                **msg_dict
+            )
+            self.message_user(request, msg, messages.SUCCESS)
+            redirect_url = reverse('admin:%s_%s_change' %
+                                   (opts.app_label, opts.model_name),
+                                   args=(obj.pk,),
+                                   current_app=self.admin_site.name)
+            redirect_url = add_preserved_filters({'preserved_filters': preserved_filters, 'opts': opts}, redirect_url)
+            return HttpResponseRedirect(redirect_url)
+
+        elif "_addanother" in request.POST:
+            msg = format_html(
+                _('The {name} "{obj}" was changed successfully. You may add another {name} below.'),
+                **msg_dict
+            )
+            self.message_user(request, msg, messages.SUCCESS)
+            redirect_url = reverse('admin:%s_%s_add' %
+                                   (opts.app_label, opts.model_name),
+                                   current_app=self.admin_site.name)
+            redirect_url = add_preserved_filters({'preserved_filters': preserved_filters, 'opts': opts}, redirect_url)
+            return HttpResponseRedirect(redirect_url)
+
+        else:
+            msg = format_html(
+                _('The {name} "{obj}" was changed successfully.'),
+                **msg_dict
+            )
+            self.message_user(request, msg, messages.SUCCESS)
+            return self.response_post_save_change(request, obj)
 
     def get_readonly_fields(self, request, obj=None):
         '''Override default get_readonly_fields to define user-specific read-only fields
@@ -1298,14 +1582,14 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
             if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by == HU_USER):
                 return ['name', 'other_name', 'parent_vector', 'old_parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
                     'reference', 'map', 'map_png', 'map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
-                    'last_changed_approval_by_pi', 'created_by', 'formz_projects', 'formz_risk_group','vector_known_zkbs', 'vector_zkbs', 
-                    'destroyed_date', 'formz_elements']
+                    'last_changed_approval_by_pi', 'created_by', 'formz_projects', 'formz_risk_group', 'vector_zkbs', 
+                    'destroyed_date', 'formz_elements', 'formz_gentech_methods', 'formz_ecoli_strains']
             else:
                 if obj.created_by == HU_USER and not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists()): # Show map and note as editable fields, if record belongs to Helle (user id = 6)
                     return ['name', 'other_name', 'parent_vector', 'old_parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 
                     'reference', 'map_png', 'map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
-                    'last_changed_approval_by_pi', 'created_by', 'formz_projects', 'formz_risk_group','vector_known_zkbs',
-                    'vector_zkbs', 'destroyed_date', 'formz_elements']
+                    'last_changed_approval_by_pi', 'created_by', 'formz_projects', 'formz_risk_group', 'vector_zkbs', 
+                    'destroyed_date', 'formz_elements', 'formz_gentech_methods', 'formz_ecoli_strains']
                 else:
                     return ['map_png', 'map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi','created_by',]
         else:
@@ -1313,38 +1597,53 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
     
     def add_view(self,request,extra_context=None):
         '''Override default add_view to show only desired fields'''
-        
-        # self.fields = ('name', 'other_name', 'parent_vector', 'old_parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
-        #         'reference', 'map',)
 
         self.fieldsets = (
         (None, {
             'fields': ('name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
                 'reference', 'map',)
         }),
-        ('Formablatt Z', {
-            'fields': ('formz_projects', 'formz_risk_group','vector_known_zkbs', 'vector_zkbs', 'destroyed_date', 'formz_elements')
+        ('FormZ', {
+            'fields': ('formz_projects', 'formz_risk_group', 'vector_zkbs', 'formz_gentech_methods', 'formz_elements', 'formz_ecoli_strains', 'destroyed_date',)
         }),
         )
-
+        
         return super(HuPlasmidPage,self).add_view(request)
     
     def change_view(self,request,object_id,extra_context=None):
         '''Override default change_view to show only desired fields'''
 
         if object_id:
+            extra_context = extra_context or {}
+            extra_context['show_formz'] = True
             obj = collection_management_HuPlasmid.objects.get(pk=object_id)
             if obj:
                 if request.user == obj.created_by:
                     self.save_as = True
-        
-        # if '_saveasnew' in request.POST:
-        #     self.fields = ('name', 'other_name', 'parent_vector', 'old_parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
-        #         'reference', 'map',)
-        # else:
-        #     self.fields = ('name', 'other_name', 'parent_vector', 'old_parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
-        #         'reference', 'map', 'map_png', 'map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
-        #         'last_changed_approval_by_pi', 'created_by',)
+
+        fieldsets_with_keep = (
+                (None, {
+                    'fields': ('name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
+                        'reference', 'map', 'map_png', 'map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
+                        'last_changed_approval_by_pi', 'created_by', )
+                }),
+                ('FormZ', {
+                    'classes': ('collapse',),
+                    'fields': ('formz_projects', 'formz_risk_group', 'vector_zkbs', 'formz_gentech_methods', 'formz_elements', 'formz_ecoli_strains', 'destroyed_date',)
+                }),
+                )
+
+        fieldsets_wo_keep = (
+                (None, {
+                    'fields': ('name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
+                        'reference', 'map', 'map_png', 'map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
+                        'last_changed_approval_by_pi', 'created_by', )
+                }),
+                ('FormZ', {
+                    'classes': ('collapse',),
+                    'fields': ('formz_projects', 'formz_risk_group', 'vector_zkbs', 'formz_gentech_methods', 'formz_elements', 'formz_ecoli_strains', 'destroyed_date',)
+                }),
+                )
 
         if '_saveasnew' in request.POST:
             self.fieldsets = (
@@ -1353,23 +1652,21 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
                 'reference', 'map',)
                 }),
                 ('FormZ', {
-                    'fields': ('formz_projects', 'formz_risk_group','vector_known_zkbs', 'vector_zkbs', 'destroyed_date', 'formz_elements')
+                    'fields': ('formz_projects', 'formz_risk_group', 'vector_zkbs', 'formz_gentech_methods', 'formz_elements', 'formz_ecoli_strains', 'destroyed_date',)
                     }),
                 )
         else:
-            self.fieldsets = (
-            (None, {
-                'fields': ('name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
-                    'reference', 'map', 'map_png', 'map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
-                    'last_changed_approval_by_pi', 'created_by',)
-            }),
-            ('FormZ', {
-                'classes': ('collapse',),
-                'fields': ('formz_projects', 'formz_risk_group','vector_known_zkbs', 'vector_zkbs', 'destroyed_date', 'formz_elements')
-            }),
-            )
+            if request.user.has_perm('collection_management.change_huplasmid', obj):
+                self.fieldsets = fieldsets_with_keep
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by == HU_USER):
+                self.fieldsets = fieldsets_wo_keep
+            else:
+                if obj.created_by == HU_USER and not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists()): # Show map and note as editable fields, if record belongs to Helle (user id = 6)
+                    self.fieldsets = fieldsets_with_keep
+                else:
+                    self.fieldsets = fieldsets_wo_keep
         
-        return super(HuPlasmidPage,self).change_view(request,object_id,extra_context)
+        return super(HuPlasmidPage,self).change_view(request,object_id,extra_context=extra_context)
 
     def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
         """Override default changeform_view to hide Save buttons when certain conditions (same as
@@ -1453,7 +1750,7 @@ class OligoExportResource(resources.ModelResource):
     class Meta:
         model = collection_management_Oligo
         fields = ('id', 'name','sequence', 'us_e', 'gene', 'restriction_site', 'description', 'comment',
-        'created_date_time', 'last_changed_date_time', 'created_by__username',)
+        'created_date_time', 'created_by__username',)
 
 def export_oligo(modeladmin, request, queryset):
     """Export Oligo as xlsx"""
@@ -1556,6 +1853,7 @@ my_admin_site.register(collection_management_Oligo, OligoPage)
 #################################################
 
 from .models import ScPombeStrain as collection_management_ScPombeStrain
+from .models import ScPombeStrainEpisomalPlasmid
 
 class SearchFieldOptUsernameScPom(SearchFieldOptUsername):
     """Create a list of unique users' usernames for search"""
@@ -1567,6 +1865,16 @@ class SearchFieldOptLastnameScPom(SearchFieldOptLastname):
 
     id_list = collection_management_ScPombeStrain.objects.all().values_list('created_by', flat=True).distinct()
 
+class FieldEpisomalPlasmidFormZProjectScPom(StrField):
+    name = 'episomal_plasmids_formz_projects_title'
+    suggest_options = True
+
+    def get_options(self):
+        return FormZProject.objects.all().values_list('short_title', flat=True)
+
+    def get_lookup_name(self):
+        return 'scpombestrainepisomalplasmid__formz_projects__short_title'
+
 class ScPombeStrainQLSchema(DjangoQLSchema):
     '''Customize search functionality'''
     
@@ -1577,19 +1885,29 @@ class ScPombeStrainQLSchema(DjangoQLSchema):
         
         if model == collection_management_ScPombeStrain:
             return ['id', 'box_number', FieldParent1(), FieldParent2(), 'parental_strain', 'mating_type', 
-            'auxotrophic_marker', 'name', FieldIntegratedPlasmidM2M(), FieldCassettePlasmidM2M(),
-            'phenotype', 'received_from', 'comment', 'created_by',]
+            'auxotrophic_marker', 'name', FieldIntegratedPlasmidM2M(), FieldCassettePlasmidM2M(), FieldEpisomalPlasmidM2M(),
+            'phenotype', 'received_from', 'comment', 'created_by', FieldFormZProject(), FieldEpisomalPlasmidFormZProjectScPom()]
         elif model == User:
             return [SearchFieldOptUsernameScPom(), SearchFieldOptLastnameScPom()]
         return super(ScPombeStrainQLSchema, self).get_fields(model)
 
 class ScPombeStrainExportResource(resources.ModelResource):
     """Defines a custom export resource class for ScPombeStrain"""
-    
+
+    additional_parental_strain_info = Field(attribute='parental_strain', column_name='additional_parental_strain_info')
+    episomal_plasmids_in_stock = Field()
+
+    def dehydrate_episomal_plasmids_in_stock(self, strain):
+        return str(tuple(strain.episomal_plasmids.filter(scpombestrainepisomalplasmid__present_in_stocked_strain=True).values_list('id', flat=True))).replace(" ", "").replace(',)', ')')[1:-1]
+
     class Meta:
         model = collection_management_ScPombeStrain
-        fields = ('id', 'box_number', 'parental_strain', 'mating_type', 'auxotrophic_marker', 'name',
-        'phenotype', 'received_from', 'comment', 'created_date_time', 'last_changed_date_time', 'created_by__username')
+        fields = ('id', 'box_number', 'parent_1', 'parent_2', 'additional_parental_strain_info', 'mating_type',
+        'auxotrophic_marker', 'name', 'phenotype', 'integrated_plasmids', 'cassette_plasmids', 'episomal_plasmids_in_stock',
+        'received_from', 'comment', 'created_date_time', 'created_by__username')
+        export_order = ('id', 'box_number', 'parent_1', 'parent_2', 'additional_parental_strain_info', 'mating_type',
+        'auxotrophic_marker', 'name', 'phenotype', 'integrated_plasmids', 'cassette_plasmids', 'episomal_plasmids_in_stock',
+        'received_from', 'comment', 'created_date_time', 'created_by__username')
 
 def export_scpombestrain(modeladmin, request, queryset):
     """Export ScPombeStrain as xlsx"""
@@ -1614,6 +1932,43 @@ class ScPombeStrainForm(forms.ModelForm):
         else:
             return self.cleaned_data["name"]
 
+class ScPombeStrainEpisomalPlasmidInline(admin.TabularInline):
+    autocomplete_fields = ['huplasmid', 'formz_projects']
+    model = ScPombeStrainEpisomalPlasmid
+    verbose_name_plural = "Episomal plasmids"
+    verbose_name = 'Episomal Plasmid'
+    classes = ['collapse']
+    ordering = ("-present_in_stocked_strain",'id',)
+    extra = 0
+    template = 'admin/tabular.html'
+    
+    def get_parent_object(self, request):
+        """
+        Returns the parent object from the request or None.
+
+        Note that this only works for Inlines, because the `parent_model`
+        is not available in the regular admin.ModelAdmin as an attribute.
+        """
+
+        resolved = resolve(request.path_info)
+        if resolved.kwargs:
+            return self.parent_model.objects.get(pk=resolved.kwargs['object_id'])
+        return None
+
+    def get_queryset(self,request):
+
+        """Modify to conditionally collapse inline if there is an episomal 
+        plasmid in the -80 stock"""
+
+        parent_object = self.get_parent_object(request)
+        if parent_object:
+            parent_obj_episomal_plasmids = parent_object.episomal_plasmids.all()
+            if parent_obj_episomal_plasmids.filter(scpombestrainepisomalplasmid__present_in_stocked_strain=True):
+                self.classes = []
+        else:
+            self.classes = []
+        return super(ScPombeStrainEpisomalPlasmidInline, self).get_queryset(request)
+
 class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelAdmin, Approval):
     list_display = ('id', 'name', 'auxotrophic_marker', 'mating_type', 'approval',)
     list_display_links = ('id', )
@@ -1623,7 +1978,9 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admi
     actions = [export_scpombestrain]
     form = ScPombeStrainForm
     search_fields = ['id', 'name']
-    autocomplete_fields = ['parent_1', 'parent_2', 'integrated_plasmids', 'cassette_plasmids']
+    autocomplete_fields = ['parent_1', 'parent_2', 'integrated_plasmids', 'cassette_plasmids', 
+                           'formz_projects', 'formz_gentech_methods', 'formz_elements']
+    inlines = [ScPombeStrainEpisomalPlasmidInline]
 
     def save_model(self, request, obj, form, change):
         '''Override default save_model to limit a user's ability to save a record
@@ -1652,37 +2009,118 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admi
             if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
                 return ['box_number', 'parent_1', 'parent_2', 'parental_strain', 'mating_type', 'auxotrophic_marker', 'name',
                         'integrated_plasmids', 'cassette_plasmids', 'phenotype', 'received_from', 'comment', 'created_date_time', 
-                        'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',]
+                        'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',
+                        'formz_projects', 'formz_risk_group', 'formz_gentech_methods', 'formz_elements', 'destroyed_date']
             else:
                 return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi','created_by',]
         else:
             return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi','created_by',]
 
+    def save_related(self, request, form, formsets, change):
+        
+        super(ScPombeStrainPage, self).save_related(request, form, formsets, change)
+
+        # Keep a record of the IDs of linked M2M fields in the main strain record
+        # Not pretty, but it works
+
+        obj = collection_management_ScPombeStrain.objects.get(pk=form.instance.id)
+        
+        integrated_plasmids = obj.integrated_plasmids.all().order_by('id')
+        cassette_plasmids = obj.cassette_plasmids.all().order_by('id')
+        episomal_plasmids = obj.episomal_plasmids.all().order_by('id')
+
+        obj.history_integrated_plasmids = str(tuple(integrated_plasmids.values_list('id', flat=True))).replace(',)', ')') if integrated_plasmids else ""
+        obj.history_cassette_plasmids = str(tuple(cassette_plasmids.values_list('id', flat=True))).replace(',)', ')') if cassette_plasmids else ""
+        obj.history_episomal_plasmids = str(tuple(episomal_plasmids.values_list('id', flat=True))).replace(',)', ')') if episomal_plasmids else ""
+
+        plasmid_id_list = integrated_plasmids | cassette_plasmids | episomal_plasmids.filter(scpombestrainepisomalplasmid__present_in_stocked_strain=True) # Merge querysets
+        if plasmid_id_list:
+            plasmid_id_list = tuple(plasmid_id_list.distinct().order_by('id').values_list('id', flat=True))
+            obj.history_all_plasmids_in_stocked_strain = str(plasmid_id_list).replace(',)', ')')
+
+        obj.history_formz_projects = str(tuple(obj.formz_projects.all().order_by('short_title_english').values_list('short_title_english', flat=True))).replace(',)', ')') if obj.formz_projects.all() else ""
+        obj.history_formz_gentech_methods = str(tuple(obj.formz_gentech_methods.all().order_by('english_name').values_list('english_name', flat=True))).replace(',)', ')') if obj.formz_gentech_methods.all() else ""
+        obj.history_formz_elements = str(tuple(obj.formz_elements.all().order_by('name').values_list('name', flat=True))).replace(',)', ')') if obj.formz_elements.all() else ""
+
+        obj.save_without_historical_record()
+
+        history_obj = obj.history.latest()
+        history_obj.history_integrated_plasmids = obj.history_integrated_plasmids
+        history_obj.history_cassette_plasmids = obj.history_cassette_plasmids
+        history_obj.history_episomal_plasmids = obj.history_episomal_plasmids
+        history_obj.history_all_plasmids_in_stocked_strain = obj.history_all_plasmids_in_stocked_strain
+        history_obj.history_formz_projects = obj.history_formz_projects
+        history_obj.history_formz_gentech_methods = obj.history_formz_gentech_methods
+        history_obj.history_formz_elements = obj.history_formz_elements
+        history_obj.save()
+
+        # Clear non-relevant fields for in-stock episomal plasmids
+
+        for in_stock_episomal_plasmid in ScPombeStrainEpisomalPlasmid.objects.filter(scpombe_strain__id=form.instance.id).filter(present_in_stocked_strain=True):
+            in_stock_episomal_plasmid.formz_projects.clear()
+
     def add_view(self,request,extra_context=None):
         '''Override default add_view to show only desired fields'''
-        
-        self.fields = ('box_number', 'parent_1', 'parent_2', 'parental_strain', 'mating_type', 'auxotrophic_marker', 'name',
-        'integrated_plasmids', 'cassette_plasmids', 'phenotype', 'received_from', 'comment', )
+
+        self.fieldsets = (
+        (None, {
+            'fields': ('box_number', 'parent_1', 'parent_2', 'parental_strain', 'mating_type', 'auxotrophic_marker', 'name',
+        'integrated_plasmids', 'cassette_plasmids', 'phenotype', 'received_from', 'comment',)
+        }),
+        ('FormZ', {
+            'fields': ('formz_projects', 'formz_risk_group', 'formz_gentech_methods', 'formz_elements', 'destroyed_date')
+        }),
+        )
+
         return super(ScPombeStrainPage,self).add_view(request)
 
     def change_view(self,request,object_id,extra_context=None):
         '''Override default change_view to show only desired fields'''
         
         if object_id:
+            extra_context = extra_context or {}
+            extra_context['show_formz'] = True
             obj = collection_management_ScPombeStrain.objects.get(pk=object_id)
             if obj:
+                if obj.history_all_plasmids_in_stocked_strain:
+                    extra_context['plasmid_id_list'] = obj.history_all_plasmids_in_stocked_strain
                 if request.user == obj.created_by:
                     self.save_as = True
+
+        extra_context = extra_context or {}
+        extra_context['show_formz'] = True
         
         if '_saveasnew' in request.POST:
-            self.fields = ('box_number', 'parent_1', 'parent_2', 'parental_strain', 'mating_type', 'auxotrophic_marker', 'name',
-                'integrated_plasmids', 'cassette_plasmids', 'phenotype', 'received_from', 'comment',)
+            self.fields = ()
         else:
             self.fields = ('box_number', 'parent_1', 'parent_2', 'parental_strain', 'mating_type', 'auxotrophic_marker', 'name',
                 'integrated_plasmids', 'cassette_plasmids', 'phenotype', 'received_from', 'comment', 'created_date_time', 'created_approval_by_pi',
                 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',)
 
-        return super(ScPombeStrainPage,self).change_view(request,object_id)
+
+        if '_saveasnew' in request.POST:
+            self.fieldsets = (
+            (None, {
+                'fields': ('box_number', 'parent_1', 'parent_2', 'parental_strain', 'mating_type', 'auxotrophic_marker', 'name',
+                'integrated_plasmids', 'cassette_plasmids', 'phenotype', 'received_from', 'comment',)
+            }),
+            ('FormZ', {
+                'fields': ('formz_projects', 'formz_risk_group', 'formz_gentech_methods', 'formz_elements', 'destroyed_date')
+            }),
+            )
+        else:
+            self.fieldsets = (
+            (None, {
+                'fields': ('box_number', 'parent_1', 'parent_2', 'parental_strain', 'mating_type', 'auxotrophic_marker', 'name',
+                'integrated_plasmids', 'cassette_plasmids', 'phenotype', 'received_from', 'comment',)
+            }),
+            ('FormZ', {
+                'classes': ('collapse',),
+                'fields': ('formz_projects', 'formz_risk_group', 'formz_gentech_methods', 'formz_elements', 'destroyed_date')
+            }),
+            )
+
+        return super(ScPombeStrainPage,self).change_view(request,object_id, extra_context=extra_context)
 
     def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
         """Override default changeform_view to hide Save buttons when certain conditions (same as
@@ -1735,7 +2173,7 @@ class EColiStrainExportResource(resources.ModelResource):
     class Meta:
         model = collection_management_EColiStrain
         fields = ('id' ,'name', 'resistance', 'genotype', 'supplier', 'us_e', 'purpose', 'note',
-                'created_date_time', 'last_changed_date_time', 'created_by__username',)
+                'created_date_time', 'created_by__username',)
 
 def export_ecolistrain(modeladmin, request, queryset):
     """Export EColiStrain as xlsx"""
@@ -1781,8 +2219,8 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.
 
         if obj:
             if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
-                return ['name', 'resistance', 'genotype', 'supplier', 'us_e', 'purpose', 'note',
-                'created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',]
+                return ['name', 'resistance', 'genotype', 'background', 'supplier', 'us_e', 'purpose', 'note',
+                'created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by', 'risk_group']
             else:
                 return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
         else:
@@ -1791,13 +2229,13 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.
     def add_view(self,request,extra_context=None):
         '''Override default add_view to show only desired fields'''
 
-        self.fields = ('name', 'resistance', 'genotype', 'supplier', 'us_e', 'purpose', 'note',)
+        self.fields = ('name', 'resistance', 'genotype', 'background', 'risk_group', 'supplier', 'us_e', 'purpose', 'note',)
         return super(EColiStrainPage,self).add_view(request)
 
     def change_view(self,request,object_id,extra_context=None):
         '''Override default change_view to show only desired fields'''
 
-        self.fields = ('name', 'resistance', 'genotype', 'supplier', 'us_e', 'purpose', 'note',
+        self.fields = ('name', 'resistance', 'genotype', 'background', 'risk_group', 'supplier', 'us_e', 'purpose', 'note',
                 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
                 'last_changed_approval_by_pi', 'created_by',)
         return super(EColiStrainPage,self).change_view(request,object_id)
@@ -1823,6 +2261,7 @@ my_admin_site.register(collection_management_EColiStrain, EColiStrainPage)
 
 from .models import MammalianLineDoc as collection_management_MammalianLineDoc
 from .models import MammalianLine as collection_management_MammalianLine
+from .models import MammalianLineEpisomalPlasmid
 
 class MammalianLinePageDoc(admin.ModelAdmin):
     list_display = ('id','name',)
@@ -1900,15 +2339,6 @@ class AddMammalianLineDocInline(admin.TabularInline):
 
     def get_queryset(self, request):
         return collection_management_MammalianLineDoc.objects.none()
-    # def get_readonly_fields(self, request, obj=None):
-    #     '''Override default get_readonly_fields to define user-specific read-only fields
-    #     If a user is not a superuser, lab manager or the user who created a record
-    #     return all fields as read-only'''
-
-    #     if obj:
-    #         return ['typ_e', 'date_of_test', 'name']
-    #     else:
-    #         return []
 
 #################################################
 #          MAMMALIAN CELL LINE PAGES            #
@@ -1932,6 +2362,17 @@ class SearchFieldOptLastnameMamma(SearchFieldOptLastname):
 
     id_list = collection_management_MammalianLine.objects.all().values_list('created_by', flat=True).distinct()
 
+
+class FieldEpisomalPlasmidFormZProjectMamma(StrField):
+    name = 'episomal_plasmids_formz_projects_title'
+    suggest_options = True
+
+    def get_options(self):
+        return FormZProject.objects.all().values_list('short_title', flat=True)
+
+    def get_lookup_name(self):
+        return 'mammalianlineepisomalplasmid__formz_projects__short_title'
+
 class MammalianLineQLSchema(DjangoQLSchema):
     '''Customize search functionality'''
     
@@ -1942,7 +2383,8 @@ class MammalianLineQLSchema(DjangoQLSchema):
         
         if model == collection_management_MammalianLine:
             return ['id', 'name', 'box_name', 'alternative_name', FieldParentalLine(), 'organism', 'cell_type_tissue', 'culture_type', 
-            'growth_condition','freezing_medium', 'received_from', FieldIntegratedPlasmidM2M(), 'description_comment', 'created_by',]
+            'growth_condition','freezing_medium', 'received_from', FieldIntegratedPlasmidM2M(), FieldEpisomalPlasmidM2M(),'description_comment', 
+            'created_by', FieldFormZProject(), FieldEpisomalPlasmidFormZProjectMamma()]
         elif model == User:
             return [SearchFieldOptUsernameMamma(), SearchFieldOptLastnameMamma()]
         return super(MammalianLineQLSchema, self).get_fields(model)
@@ -1952,9 +2394,9 @@ class MammalianLineExportResource(resources.ModelResource):
     
     class Meta:
         model = collection_management_MammalianLine
-        fields = ('id','name', 'box_name', 'alternative_name', 'parental_line', 'organism', 'cell_type_tissue', 
+        fields = ('id', 'name', 'box_name', 'alternative_name', 'parental_line', 'organism', 'cell_type_tissue', 
                 'culture_type', 'growth_condition', 'freezing_medium', 'received_from', 'description_comment', 
-                'created_date_time', 'last_changed_date_time', 'created_by__username',)
+                'integrated_plasmids', 'created_date_time', 'created_by__username',)
 
 def export_mammalianline(modeladmin, request, queryset):
     """Export MammalianLine as xlsx"""
@@ -1966,16 +2408,52 @@ def export_mammalianline(modeladmin, request, queryset):
     return response
 export_mammalianline.short_description = "Export selected cell lines as xlsx"
 
+class MammalianEpisomalPlasmidInline(admin.TabularInline):
+    autocomplete_fields = ['huplasmid', 'formz_projects']
+    model = MammalianLineEpisomalPlasmid
+    verbose_name_plural = "Transiently transfected plasmids"
+    verbose_name = 'Episomal Plasmid'
+    classes = ['collapse']
+    extra = 0
+    template = 'admin/tabular.html'
+
+    def get_parent_object(self, request):
+        """
+        Returns the parent object from the request or None.
+
+        Note that this only works for Inlines, because the `parent_model`
+        is not available in the regular admin.ModelAdmin as an attribute.
+        """
+
+        resolved = resolve(request.path_info)
+        if resolved.kwargs:
+            return self.parent_model.objects.get(pk=resolved.kwargs['object_id'])
+        return None
+
+    def get_queryset(self,request):
+
+        """Do not show as collapsed in add view"""
+
+        parent_object = self.get_parent_object(request)
+
+        if parent_object:
+            parent_obj_episomal_plasmids = parent_object.episomal_plasmids.all()
+            if parent_obj_episomal_plasmids.filter(mammalianlineepisomalplasmid__s2_work_episomal_plasmid=True):
+                self.classes = []
+        else:
+            self.classes = []
+        return super(MammalianEpisomalPlasmidInline, self).get_queryset(request)
+
 class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin, Approval):
     list_display = ('id', 'name', 'box_name', 'created_by', 'approval')
     list_display_links = ('id', )
     list_per_page = 25
     formfield_overrides = {models.CharField: {'widget': TextInput(attrs={'size':'93'})},}
     djangoql_schema = MammalianLineQLSchema
-    inlines = [MammalianLineDocInline, AddMammalianLineDocInline]
+    inlines = [MammalianEpisomalPlasmidInline, MammalianLineDocInline, AddMammalianLineDocInline]
     actions = [export_mammalianline]
     search_fields = ['id', 'name']
-    autocomplete_fields = ['parental_line', 'integrated_plasmids']
+    autocomplete_fields = ['parental_line', 'integrated_plasmids', 'formz_projects', 'zkbs_cell_line', 'formz_gentech_methods', 'formz_elements']
 
     def save_model(self, request, obj, form, change):
         '''Override default save_model to limit a user's ability to save a record
@@ -2003,45 +2481,58 @@ class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Cust
                     return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by']
                 else:
                     return ['name', 'box_name', 'alternative_name', 'parental_line', 'organism', 'cell_type_tissue', 'culture_type', 'growth_condition',
-                    'freezing_medium', 'received_from', 'integrated_plasmids', 'description_comment', 'created_date_time', 'created_approval_by_pi',
-                    'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',]
+                    'freezing_medium', 'received_from', 'integrated_plasmids', 'description_comment', 's2_work', 'created_date_time', 'created_approval_by_pi',
+                    'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by', 'formz_projects', 'formz_risk_group','zkbs_cell_line', 
+                    'formz_gentech_methods', 'formz_elements', 'destroyed_date',]
             else:
                 return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by']
         else:
             return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
+    
+    def save_related(self, request, form, formsets, change):
+        
+        super(MammalianLinePage, self).save_related(request, form, formsets, change)
 
-    # def get_form(self, request, obj=None, **kwargs):
-    #     """
-    #     Modify the default factory to change form fields based on the request/object.
-    #     """
-    #     default_factory = super(MammalianLinePage, self).get_form(request, obj=obj, **kwargs)
+        # Keep a record of the IDs of linked M2M fields in the main strain record
+        # Not pretty, but it works
 
-    #     def factory(*args, **_kwargs):
-    #         form = default_factory(*args, **_kwargs)
-    #         return self.modify_form(form, request, obj, **_kwargs)
+        obj = collection_management_MammalianLine.objects.get(pk=form.instance.id)
+        
+        integrated_plasmids = obj.integrated_plasmids.all().order_by('id')
+        episomal_plasmids = obj.episomal_plasmids.all().order_by('id')
 
-    #     return factory
+        obj.history_integrated_plasmids = str(tuple(integrated_plasmids.values_list('id', flat=True))).replace(',)', ')') if integrated_plasmids else ""
+        obj.history_episomal_plasmids = str(tuple(episomal_plasmids.values_list('id', flat=True))).replace(',)', ')') if episomal_plasmids else ""
 
-    # @staticmethod
-    # def modify_form(form, request, obj, **kwargs):
-    #     """
-    #     Edit 'parental_line' field
-    #     """
-    #     if obj:
-    #         # try:
-    #         #     form.fields['parental_line'].help_text = mark_safe( '<a target="_blank" href="{}">View</a>'.format(reverse("admin:{}_{}_change".format(obj._meta.app_label, obj._meta.model_name), args=(obj.parental_line.id,))))
-    #         # except:
-    #         #     pass
-    #         if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by) or request.user.groups.filter(name='Guest').exists():
-    #             if not request.user.has_perm('collection_management.change_mammalianline', obj):
-    #                 form.fields['parental_line'].disabled = True
-    #     return form
+        obj.history_formz_projects = str(tuple(obj.formz_projects.all().order_by('short_title_english').values_list('short_title_english', flat=True))).replace(',)', ')') if obj.formz_projects.all() else ""
+        obj.history_formz_gentech_methods = str(tuple(obj.formz_gentech_methods.all().order_by('english_name').values_list('english_name', flat=True))).replace(',)', ')') if obj.formz_gentech_methods.all() else ""
+        obj.history_formz_elements = str(tuple(obj.formz_elements.all().order_by('name').values_list('name', flat=True))).replace(',)', ')') if obj.formz_elements.all() else ""
+        obj.history_documents = str(tuple(obj.mammalianlinedoc_set.all().order_by('id').values_list('id', flat=True))).replace(',)', ')') if obj.mammalianlinedoc_set.all() else ""
+
+        obj.save_without_historical_record()
+
+        history_obj = obj.history.latest()
+        history_obj.history_integrated_plasmids = obj.history_integrated_plasmids
+        history_obj.history_episomal_plasmids = obj.history_episomal_plasmids
+        history_obj.history_formz_projects = obj.history_formz_projects
+        history_obj.history_formz_gentech_methods = obj.history_formz_gentech_methods
+        history_obj.history_formz_elements = obj.history_formz_elements
+        history_obj.history_documents = obj.history_documents
+        history_obj.save()
 
     def add_view(self,request,extra_context=None):
         '''Override default add_view to show only desired fields'''
 
-        self.fields = ('name', 'box_name', 'alternative_name', 'parental_line', 'organism', 'cell_type_tissue', 'culture_type', 'growth_condition',
-                'freezing_medium', 'received_from', 'integrated_plasmids', 'description_comment',)
+        self.fieldsets = (
+        (None, {
+            'fields': ('name', 'box_name', 'alternative_name', 'parental_line', 'organism', 'cell_type_tissue', 'culture_type', 'growth_condition',
+                'freezing_medium', 'received_from', 'integrated_plasmids', 'description_comment', 's2_work',)
+        }),
+        ('FormZ', {
+            'fields': ('formz_projects', 'formz_risk_group','zkbs_cell_line', 'formz_gentech_methods', 'formz_elements', 'destroyed_date',)
+        }),
+        )
+
         return super(MammalianLinePage,self).add_view(request)
 
     def change_view(self,request,object_id,extra_context=None):
@@ -2049,18 +2540,39 @@ class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Cust
 
         if object_id:
             obj = collection_management_MammalianLine.objects.get(pk=object_id)
+            extra_context = extra_context or {}
+            extra_context['show_formz'] = True
             if obj:
+                if obj.history_integrated_plasmids:
+                    extra_context['plasmid_id_list'] = obj.history_integrated_plasmids
                 if request.user == obj.created_by:
                     self.save_as = True
 
         if '_saveasnew' in request.POST:
-            self.fields = ('name', 'box_name', 'alternative_name', 'parental_line', 'organism', 'cell_type_tissue', 'culture_type', 'growth_condition',
-                'freezing_medium', 'received_from', 'integrated_plasmids', 'description_comment',)
+            self.fieldsets = (
+            (None, {
+                'fields': ('name', 'box_name', 'alternative_name', 'parental_line', 'organism', 'cell_type_tissue', 'culture_type', 'growth_condition',
+                    'freezing_medium', 'received_from', 'integrated_plasmids', 'description_comment', 's2_work',)
+            }),
+            ('FormZ', {
+                'fields': ('formz_projects', 'formz_risk_group','zkbs_cell_line', 'formz_gentech_methods', 'formz_elements', 'destroyed_date',)
+            }),
+            )
+
         else:
-            self.fields = ('name', 'box_name', 'alternative_name', 'parental_line', 'organism', 'cell_type_tissue', 'culture_type', 'growth_condition',
-                'freezing_medium', 'received_from', 'integrated_plasmids', 'description_comment', 'created_date_time', 'created_approval_by_pi',
+            self.fieldsets = (
+            (None, {
+                'fields': ('name', 'box_name', 'alternative_name', 'parental_line', 'organism', 'cell_type_tissue', 'culture_type', 'growth_condition',
+                    'freezing_medium', 'received_from', 'integrated_plasmids', 'description_comment', 's2_work', 'created_date_time', 'created_approval_by_pi',
                 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',)
-        return super(MammalianLinePage,self).change_view(request,object_id)
+            }),
+            ('FormZ', {
+                'classes': ('collapse',),
+                'fields': ('formz_projects', 'formz_risk_group','zkbs_cell_line', 'formz_gentech_methods', 'formz_elements', 'destroyed_date',)
+            }),
+            )
+            
+        return super(MammalianLinePage,self).change_view(request,object_id,extra_context=extra_context)
 
     def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
         """Override default changeform_view to hide Save buttons when certain conditions (same as
@@ -2129,7 +2641,7 @@ class AntibodyExportResource(resources.ModelResource):
     class Meta:
         model = collection_management_Antibody
         fields = ('id', 'name', 'species_isotype', 'clone', 'received_from', 'catalogue_number', 'l_ocation', 'a_pplication',
-                'description_comment', 'info_sheet','created_date_time','last_changed_date_time',)
+                'description_comment', 'info_sheet',)
 
 def export_antibody(modeladmin, request, queryset):
     """Export Antibody as xlsx"""
@@ -2311,10 +2823,11 @@ my_admin_site.register(CompletedTask, CompletedTaskAdmin)
 from formz.models import NucleicAcidPurity as formz_NucleicAcidPurity
 from formz.models import NucleicAcidRisk as formz_NucleicAcidRisk
 from formz.models import GenTechMethod as formz_GenTechMethod
-from formz.models import FormZProject
-from formz.models import FormZBaseElement
 from formz.models import FormZHeader
 from formz.models import ZkbsPlasmid
+from formz.models import ZkbsOncogene
+from formz.models import ZkbsCellLine
+from formz.models import FormZStorageLocation
 
 from formz.admin import NucleicAcidPurityPage as formz_NucleicAcidPurityPage
 from formz.admin import NucleicAcidRiskPage as formz_NucleicAcidRiskPage
@@ -2323,6 +2836,9 @@ from formz.admin import FormZProjectPage
 from formz.admin import FormZBaseElementPage
 from formz.admin import FormZHeaderPage
 from formz.admin import ZkbsPlasmidPage
+from formz.admin import ZkbsOncogenePage
+from formz.admin import ZkbsCellLinePage
+from formz.admin import FormZStorageLocationPage
 
 my_admin_site.register(formz_NucleicAcidPurity, formz_NucleicAcidPurityPage)
 my_admin_site.register(formz_NucleicAcidRisk, formz_NucleicAcidRiskPage)
@@ -2331,3 +2847,6 @@ my_admin_site.register(FormZProject, FormZProjectPage)
 my_admin_site.register(FormZBaseElement, FormZBaseElementPage)
 my_admin_site.register(FormZHeader, FormZHeaderPage)
 my_admin_site.register(ZkbsPlasmid, ZkbsPlasmidPage)
+my_admin_site.register(ZkbsOncogene, ZkbsOncogenePage)
+my_admin_site.register(ZkbsCellLine, ZkbsCellLinePage)
+my_admin_site.register(FormZStorageLocation, FormZStorageLocationPage)

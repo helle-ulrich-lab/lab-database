@@ -7,9 +7,7 @@
 {% endblock %}
 
 {% block extrastyle %}{{ block.super }}<link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}" />
-<script type="text/javascript" src="{% static  "admin/js/admin/ShowLoading.js" %}"></script>
-{% endblock %}
-
+<script type="text/javascript" src="{% static  "admin/js/admin/ShowLoading.js" %}"></script>{% endblock %}
 {% block coltype %}colM{% endblock %}
 
 {% block bodyclass %}{{ block.super }} app-{{ opts.app_label }} model-{{ opts.model_name }} change-form{% endblock %}
@@ -26,27 +24,35 @@
 {% endif %}
 
 {% block content %}<div id="content-main">
-
-  lalalalal
 {% block object-tools %}
 {% if change %}{% if not is_popup %}
   <ul class="object-tools">
     {% block object-tools-items %}
-    
+
+    {% url opts|admin_urlname:'permissions' original.pk|admin_urlquote as history_url %}
+    <li><a href="{% add_preserved_filters history_url %}" class="permissionslink">{% trans "Object permissions" %}</a></li>
+
     {% if plasmid_id_list %}
-    <li><a href="/collection_management/huplasmid/?q-l=on&q=id+in+{{plasmid_id_list}}">{% trans "Plasmids" %}</a></li>
+      <li><a href="/collection_management/huplasmid/?q-l=on&q=id+in+{{plasmid_id_list}}">{% trans "Plasmids" %}</a></li>
     {% endif %}
     
     <li>
         {% url opts|admin_urlname:'history' original.pk|admin_urlquote as history_url %}
         <a href="{% add_preserved_filters history_url %}" class="historylink">{% trans "History" %}</a>
     </li>
+ 
+    {% if show_formz %}
+      <li>
+        <a href="{% url "admin:app_list" app_label %}/{{opts.model_name}}/{{object_id}}/formz">{% trans "FormZ" %}</a>
+      </li>
+    {% endif %}
+
     {% if has_absolute_url %}<li><a href="{{ absolute_url }}" class="viewsitelink">{% trans "View on site" %}</a></li>{% endif %}
     {% endblock %}
   </ul>
 {% endif %}{% endif %}
 {% endblock %}
-<form {% if has_file_field %}enctype="multipart/form-data" {% endif %}action="{{ form_url }}" method="post" id="{{ opts.model_name }}_form" novalidate onsubmit="ShowLoading()">{% csrf_token %}{% block form_top %}{% endblock %}
+<form {% if has_file_field %}enctype="multipart/form-data" {% endif %}action="{{ form_url }}" method="post" id="{{ opts.model_name }}_form" novalidate>{% csrf_token %}{% block form_top %}{% endblock %}
 <div>
 {% if is_popup %}<input type="hidden" name="{{ is_popup_var }}" value="1" />{% endif %}
 {% if to_field %}<input type="hidden" name="{{ to_field_var }}" value="{{ to_field }}" />{% endif %}
@@ -83,6 +89,57 @@
             {% if adminform and add %}
                 data-model-name="{{ opts.model_name }}"
             {% endif %}>
+    </script>
+
+    <script type="text/javascript" src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
+    <script type="text/javascript" src="{% static 'admin/js/vendor/jqueryui/jquery-ui.js' %}"></script>
+
+    <script type="text/javascript">
+      
+      $(window).on('load', function() {
+
+        // If there is a formz feature warning uncollapse formz section and highlight formz element field
+        if (document.getElementsByClassName("missing-formz-features").length > 0)
+        {
+          var formz_element_field = document.getElementsByClassName("form-row field-formz_elements")[0];
+          formz_element_field.closest('fieldset').classList.remove('collapsed');
+          formz_element_field.classList.add('errors');
+          
+          var warning_in_field = document.createElement('ul');
+          var warning_message = document.createElement('li');
+          warning_in_field.classList.add('errorlist');
+          warning_message.innerText = "Missing elements: " + document.getElementsByClassName('missing-formz-features')[0].innerText;
+          warning_message.style = 'color: #efb829;';;
+          warning_in_field.appendChild(warning_message);
+          formz_element_field.appendChild(warning_in_field);
+
+          formz_element_field.getElementsByClassName("select2-selection select2-selection--multiple")[0].style = 'border:solid 1px #efb829;';
+        }
+
+        // If map field changes add ShowLoading to form onsubmit
+        $("#id_map").change(function(){
+          $("#huplasmid_form").attr('onsubmit', 'ShowLoading()');
+        });
+
+        // Add 'Save and re-detect FormZ elements' button to submit row
+        
+        if (window.location.pathname.endsWith('change/'))
+        {
+          var submit_row = document.getElementsByClassName("submit-row")[0];
+          var redetect_feat_button = document.createElement('input');
+          redetect_feat_button.id = 'save-redetect';
+          redetect_feat_button.type = 'submit';
+          redetect_feat_button.value = 'Re-detect FormZ elements and save';
+          redetect_feat_button.name = '_redetect_formz_elements';
+          submit_row.appendChild(redetect_feat_button);
+
+          $("#save-redetect").click(function() {
+            $("#huplasmid_form").attr('onsubmit', 'ShowLoading()');
+          });
+        }
+
+      });
+
     </script>
 {% endblock %}
 

@@ -1,7 +1,3 @@
-# -*- coding: utf-8 -*-
-
-from __future__ import unicode_literals
-
 #################################################
 #    DJANGO 'CORE' FUNCTIONALITIES IMPORTS      #
 #################################################
@@ -17,6 +13,7 @@ from django.http import HttpResponse
 from django.db.models.functions import Length
 from django.core.exceptions import PermissionDenied
 from django.utils.translation import ugettext as _
+from django import forms
 
 #################################################
 #        ADDED FUNCTIONALITIES IMPORTS          #
@@ -38,7 +35,8 @@ from import_export.admin import ExportActionModelAdmin
 from background_task import background
 
 # Mass update
-from adminactions.mass_update import *
+from adminactions.mass_update import MassUpdateForm, get_permission_codename,\
+    ActionInterrupted, adminaction_requested, adminaction_start, adminaction_end
 
 #################################################
 #                OTHER IMPORTS                  #
@@ -61,20 +59,19 @@ import inspect
 
 @background(schedule=60) # Run update_autocomplete_js 1 min after it is called, as "background" process
 def update_autocomplete_js():
-    """Updates product-autocomplete.js file with unique products from the order database
-    to supply information to the autocomplete function of the order add page"""
+    """Updates /static/admin/js/order_management/product-autocomplete.js with info of unique 
+    products from the order database. In turn, this supplies information to the autocomplete 
+    function of the order add page"""
 
     from django_project.settings import BASE_DIR
 
-    header_js = "$(function(){var product_names = ["
-
-    # Loop through all the elements (= rows) in the order list
     jsonlin = ""
     lstofprodname = []
     
+    # Loop through all elements (= rows) in the order list
     for order in order_management_Order.objects.all().order_by('-id').values("supplier", "supplier_part_no", "part_description", "location", "msds_form", "price", "cas_number", "ghs_pictogram"):
         
-        # Output specific order field to file new order form's autocomplete functionality
+        # Output specific order attributes
         part_description_lower = order["part_description"].lower()
         supplier_part_no = order["supplier_part_no"].strip().replace('#'," ")
         if (part_description_lower not in lstofprodname) and (part_description_lower != "none"):
@@ -90,6 +87,8 @@ def update_autocomplete_js():
                     order["ghs_pictogram"])
                 lstofprodname.append(part_description_lower)
 
+    header_js = "$(function(){var product_names = ["
+
     footer_js = """];$('#id_part_description').autocomplete({source: function(request, response){var results =\
     $.ui.autocomplete.filter(product_names, request.term);response(results.slice(0, 10));},select: function(e,\
     ui){var extra_data = ui.item.data.split('#');\
@@ -103,6 +102,7 @@ def update_autocomplete_js():
     }});\
     });"""
     
+    # Write to file
     with open(BASE_DIR + "/static/admin/js/order_management/product-autocomplete.js","w") as out_handle_js:
         out_handle_js.write(header_js + jsonlin + footer_js)
 
@@ -110,9 +110,11 @@ def update_autocomplete_js():
 #         CUSTOM MASS UPDATE FUNCTION           #
 #################################################
 
-def mass_update(modeladmin, request, queryset):  # noqa
+def mass_update(modeladmin, request, queryset):
     """
         mass update queryset
+        From adminactions.mass_update. Modified to allow specifiying a custom form
+        and run update_autocomplete_js()
     """
 
     import json
@@ -178,7 +180,7 @@ def mass_update(modeladmin, request, queryset):  # noqa
         messages.error(request, str(e))
         return
 
-    # Allows to specified a custom mass update Form in the ModelAdmin
+    # Allows to specify a custom mass update Form in ModelAdmin
     mass_update_form = getattr(modeladmin, 'mass_update_form', MassUpdateForm)
 
     MForm = modelform_factory(modeladmin.model, form=mass_update_form,
@@ -308,12 +310,13 @@ class OrderExtraDocInline(admin.TabularInline):
     readonly_fields = ['get_doc_short_name', 'description']
 
     def has_add_permission(self, request):
+        
+        # Prevent users from adding new objects with this inline
         return False
     
     def get_doc_short_name(self, instance):
-        '''This function allows you to define a custom field for the list view to
-        be defined in list_display as the name of the function, e.g. in this case
-        list_display = ('id', 'name', 'selection', 'get_plasmidmap_short_name','created_by',)'''
+        '''Returns the url of an order document as a HTML <a> tag with 
+        text View'''
         if instance.name:
             return mark_safe('<a href="{}">View</a>'.format(instance.name.url))
         else:
@@ -329,13 +332,14 @@ class AddOrderExtraDocInline(admin.TabularInline):
     fields = ['name','description']
 
     def has_change_permission(self, request, obj=None):
+        
+        # Prevent users from changing existing objects with this inline
         return False
 
     def get_readonly_fields(self, request, obj=None):
-        '''Override default get_readonly_fields to define user-specific read-only fields
-        If a user is not a superuser, lab manager or order manager
-        return all fields as read-only'''
+        '''Defines which fields should be shown as read-only under which conditions'''
 
+        # If user is not a Lab or Order Manager set the name and description attributes as read-only
         if obj:
             if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user.groups.filter(name='Order manager').exists()):
                 return ['name','description']
@@ -352,12 +356,14 @@ from import_export import resources
 
 class OrderChemicalExportResource(resources.ModelResource):
     """Defines a custom export resource class for chemicals"""
+    
     class Meta:
         model = order_management_Order
         fields = ('id','supplier', 'supplier_part_no', 'part_description', 'quantity', "location__name", "cas_number", "ghs_pictogram")
 
 class OrderExportResource(resources.ModelResource):
     """Defines a custom export resource class for orders"""
+    
     class Meta:
         model = order_management_Order
         fields = ('id', 'internal_order_no', 'supplier', 'supplier_part_no', 'part_description', 'quantity', 
@@ -368,9 +374,10 @@ class OrderExportResource(resources.ModelResource):
 #                   ACTIONS                     #
 #################################################
 
-def status_to_arranged(modeladmin, request, queryset):
+def change_order_status_to_arranged(modeladmin, request, queryset):
     """Change the status of selected orders from open to arranged"""
     
+    # Only Lab or Order Manager can use this action
     if not (request.user.groups.filter(name='Lab manager').exists() or request.user.groups.filter(name='Order manager').exists()):
         messages.error(request, 'Nice try, you are not allowed to do that.')
         return
@@ -378,11 +385,13 @@ def status_to_arranged(modeladmin, request, queryset):
         for order in queryset.filter(status = "open"):
             order.status = 'arranged'
             order.save()
-status_to_arranged.short_description = "Change STATUS of selected to ARRANGED"
+change_order_status_to_arranged.short_description = "Change STATUS of selected to ARRANGED"
+change_order_status_to_arranged.acts_on_all = True
 
-def status_to_delivered(modeladmin, request, queryset):
+def change_order_status_to_delivered(modeladmin, request, queryset):
     """Change the status of selected orders from arranged to delivered"""
     
+    # Only Lab or Order Manager can use this action
     if not (request.user.groups.filter(name='Lab manager').exists() or request.user.groups.filter(name='Order manager').exists()):
         messages.error(request, 'Nice try, you are not allowed to do that.')
         return
@@ -390,6 +399,12 @@ def status_to_delivered(modeladmin, request, queryset):
         for order in queryset.filter(status = "arranged"):
             order.status = 'delivered'
             order.delivered_date = datetime.date.today()
+            
+            # If an order does not have a delivery date and its status changes
+            # to 'delivered', set the date for delivered_date to the current
+            # date. If somebody requested a delivery notification, send it and
+            # set sent_email to true to remember that an email has already been 
+            # sent out
             if order.delivery_alert:
                 if not order.sent_email:
                     order.sent_email = True
@@ -409,11 +424,13 @@ def status_to_delivered(modeladmin, request, queryset):
                     [order.created_by.email],
                     fail_silently=True)
             order.save()
-status_to_delivered.short_description = "Change STATUS of selected to DELIVERED"
 
-def status_to_used_up(modeladmin, request, queryset):
+change_order_status_to_delivered.short_description = "Change STATUS of selected to DELIVERED"
+
+def change_order_status_to_used_up(modeladmin, request, queryset):
     """Change the status of selected orders from delivered to used up"""
     
+    # Only Lab or Order Manager can use this action
     if not (request.user.groups.filter(name='Lab manager').exists() or request.user.groups.filter(name='Order manager').exists()):
         messages.error(request, 'Nice try, you are not allowed to do that.')
         return
@@ -421,7 +438,7 @@ def status_to_used_up(modeladmin, request, queryset):
         for order in queryset.filter(status = "delivered"):
             order.status = 'used up'
             order.save()
-status_to_used_up.short_description = "Change STATUS of selected to USED UP"
+change_order_status_to_used_up.short_description = "Change STATUS of selected to USED UP"
 
 def export_chemicals(modeladmin, request, queryset):
     """Export all chemicals as xlsx. A chemical is defines as an order
@@ -434,7 +451,6 @@ def export_chemicals(modeladmin, request, queryset):
     response.write(export_data.xlsx)
     return response
 export_chemicals.short_description = "Export chemicals as xlsx"
-status_to_arranged.acts_on_all = True
 
 def export_orders(modeladmin, request, queryset):
     """Export orders as xlsx"""
@@ -548,24 +564,33 @@ class MyMassUpdateOrderForm(MassUpdateForm):
         return False
 
 class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelAdmin):
+    
     list_display = ('custom_internal_order_no', 'item_description', 'supplier_and_part_no', 'quantity', 'trimmed_comment' ,'location', 'msds_link', 'coloured_status', "created_by")
     list_display_links = ('custom_internal_order_no', )
     list_per_page = 25
     inlines = [OrderExtraDocInline, AddOrderExtraDocInline]
     djangoql_schema = OrderQLSchema
     mass_update_form = MyMassUpdateOrderForm
-    actions = [status_to_arranged, status_to_delivered, status_to_used_up, export_orders, export_chemicals, mass_update]
+    actions = [change_order_status_to_arranged, change_order_status_to_delivered, change_order_status_to_used_up, export_orders, export_chemicals, mass_update]
     
     def save_model(self, request, obj, form, change):
-        """Override default save_model to add some extra functionalities,
-        like sending emails when required"""
         
         if obj.pk == None:
+
+            # New orders
+
+            # If an order is new, assign the request user to it only if the order's created_by
+            # attribute is not null
+
             try:
                 obj.created_by
             except:
                 obj.created_by = request.user
             try:
+                
+                # If a product name is not already present in the database,
+                # update the automplete js file
+
                 if not order_management_Order.objects.filter(part_description=obj.part_description):
                     update_autocomplete_js()
             except:
@@ -584,6 +609,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
             history_obj.history_type = "+"
             history_obj.save()
 
+            # Send email to Lab Managers if an order is set as urgent
             if obj.urgent:
                 message = """Dear lab managers,
 
@@ -604,14 +630,31 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
                 except:
                     messages.warning(request, 'Your urgent order was added to the Order list. However, the lab managers have not been informed of it.')
         else:
+            
+            # Existing orders
+            
+            # Allow only Lab and Order managers to change an order
             if not (request.user.groups.filter(name='Lab manager').exists() or request.user.groups.filter(name='Order manager').exists()):
                 raise PermissionDenied
+            
             else:
                 order = order_management_Order.objects.get(pk=obj.pk)
+                
+                # If the status of an order changes to the following
                 if obj.status != order.status:
                     if not order.order_manager_created_date_time:
+                        
+                        # If an order's status changed from 'submitted' to any other, 
+                        # set the date-time for order_manager_created_date_time to the
+                        # current date-time
                         if obj.status in ['open', 'arranged', 'delivered']:
                             obj.order_manager_created_date_time = timezone.now()
+                    
+                    # If an order does not have a delivery date and its status changes
+                    # to 'delivered', set the date for delivered_date to the current
+                    # date. If somebody requested a delivery notification, send it and
+                    # set sent_email to true to remember that an email has already been 
+                    # sent out
                     if not order.delivered_date:
                         if obj.status == "delivered":
                             obj.delivered_date = datetime.date.today()
@@ -645,8 +688,9 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
                 messages.warning(request, 'Could not update the order autocomplete function')
 
     def get_queryset(self, request):
-        """Allows sorting of custom changelist_view fields by adding admin_order_field
-        propoerty to said custom field, also excludes cancelled orders, to make things prettier"""
+        
+        # Allows sorting of custom changelist_view fields by adding admin_order_field
+        # property to said custom field, also excludes cancelled orders, to make things prettier"""
 
         qs = super(OrderPage, self).get_queryset(request)
         qs = qs.annotate(models.Count('id'), models.Count('part_description'), models.Count('status'))
@@ -657,7 +701,8 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
             return qs
 
     def get_readonly_fields(self, request, obj=None):
-        '''Override default get_readonly_fields to define user-specific read-only fields'''
+        
+        # Specifies which fields should be shown as read-only and when
         
         if obj:
             if not (request.user.groups.filter(name='Lab manager').exists() or request.user.groups.filter(name='Order manager').exists()):
@@ -669,31 +714,37 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
         else:
             return ['order_manager_created_date_time', 'created_date_time',  'last_changed_date_time',]
 
-    def add_view(self,request,extra_content=None):
-        '''Override default add_view to show only desired fields'''
+    def add_view(self, request, extra_context=None):
         
-        if request.user.groups.filter(name='Lab manager').exists() or request.user.groups.filter(name='Order manager').exists():
+        # Specifies which fields should be shown in the add view
+
+        self.raw_id_fields = ['msds_form']
+
+        if request.user.groups.filter(name='Lab manager').exists() or request.user.groups.filter(name='Order manager').exists():            
             self.fields = ('supplier','supplier_part_no', 'part_description', 'quantity', 
             'price', 'cost_unit', 'status', 'urgent', 'delivery_alert', 'location', 'comment', 'url', 'cas_number', 
             'ghs_pictogram', 'msds_form', 'created_by')
+            
         else:
             self.fields = ('supplier','supplier_part_no', 'part_description', 'quantity', 'price', 'cost_unit', 'urgent',
             'delivery_alert', 'location', 'comment', 'url', 'cas_number', 'ghs_pictogram', 'msds_form')
-        return super(OrderPage,self).add_view(request)
+        
+        return super(OrderPage,self).add_view(request, extra_context=extra_context)
 
-    def change_view(self,request,object_id,extra_content=None):
-        '''Override default change_view to show only desired fields'''
+    def change_view(self, request, object_id, extra_context=None):
+        
+        # Specifies which fields should be shown in the change view
         
         self.autocomplete_fields = ['msds_form']
 
         self.fields = ('supplier','supplier_part_no', 'internal_order_no', 'part_description', 'quantity', 
             'price', 'cost_unit', 'status', 'urgent', 'delivery_alert', 'location', 'comment', 'url', 'cas_number', 
             'ghs_pictogram', 'msds_form', 'created_date_time', 'order_manager_created_date_time', 'delivered_date', 'created_by',)
-        return super(OrderPage,self).change_view(request,object_id)
+        return super(OrderPage,self).change_view(request, object_id, extra_context=extra_context)
 
     def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
-        """Override default changeform_view to hide Save buttons when certain conditions (same as
-        those in get_readonly_fields method) are met"""
+        
+        # Hide Save buttons when certain conditions (same as those in get_readonly_fields method) are met
 
         extra_context = extra_context or {}
         extra_context['show_submit_line'] = True
@@ -702,10 +753,12 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
             if obj:
                 if not (request.user.groups.filter(name='Lab manager').exists() or request.user.groups.filter(name='Order manager').exists()):
                     extra_context['show_submit_line'] = False
-        return super(OrderPage, self).changeform_view(request, object_id, extra_context=extra_context)
+        
+        return super(OrderPage, self).changeform_view(request, object_id, form_url, extra_context=extra_context)
     
     def changelist_view(self, request, extra_context=None):
-        """Override default changelist_view to set queryset of action export_chemicals to all orders"""
+        
+        # Set queryset of action export_chemicals to all orders
 
         if 'action' in request.POST and request.POST['action'] == 'export_chemicals':
             if not request.POST.getlist(admin.ACTION_CHECKBOX_NAME):
@@ -713,12 +766,14 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
                 for u in order_management_Order.objects.all():
                     post.update({admin.ACTION_CHECKBOX_NAME: str(u.id)})
                 request._set_post(post)
-        return super(OrderPage, self).changelist_view(request, extra_context)
+        
+        return super(OrderPage, self).changelist_view(request, extra_context=extra_context)
 
     def get_formsets_with_inlines(self, request, obj=None):
-        """Remove AddOrderExtraDocInline from add/change form if user who
-        created an Order object is not the request user a lab manager
-        or a superuser"""
+        
+        # Remove AddOrderExtraDocInline from add/change form if user who
+        # created an Order object is not the request user a Lab manager
+        # or a superuser
         
         if obj:
             for inline in self.get_inline_instances(request, obj):
@@ -735,7 +790,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
                     yield inline.get_formset(request, obj), inline
     
     def item_description(self, instance):
-        '''Define a custom item description field for changelist_view'''
+        '''Custom item description field for changelist_view'''
 
         part_description = instance.part_description.strip()
         part_description = part_description[:50] + "..." if len(part_description) > 50 else part_description
@@ -747,7 +802,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
     item_description.admin_order_field = 'part_description'
 
     def supplier_and_part_no(self, instance):
-        '''Define a custom supplier and part number field for changelist_view'''
+        '''Custom supplier and part number field for changelist_view'''
 
         supplier = instance.supplier.strip() if instance.supplier.lower() != "none" else ""
         for string in ["GmbH", 'Chemie']:
@@ -766,7 +821,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
     supplier_and_part_no.short_description = 'Supplier - Part no.'
 
     def coloured_status(self, instance):
-        '''Define a custom status field for changelist_view'''
+        '''Custom coloured status field for changelist_view'''
 
         status = instance.status
         urgent = instance.urgent
@@ -791,7 +846,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
     coloured_status.admin_order_field = 'status'
 
     def trimmed_comment(self, instance):
-        '''Define a custom comment field for changelist_view'''
+        '''Custom comment field for changelist_view'''
 
         comment = instance.comment
         if comment: 
@@ -801,7 +856,8 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
     trimmed_comment.short_description = 'Comments'
     
     def msds_link (self, instance):
-        '''Define a custom comment field for changelist_view'''
+        '''Custom comment field for changelist_view'''
+        
         if instance.msds_form:
             return mark_safe('<a href="{0}">View</a>'.format(instance.msds_form.name.url))
         else:
@@ -809,7 +865,8 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
     msds_link.short_description = 'MSDS'
 
     def custom_internal_order_no (self, instance):
-        
+        '''Custom internal order no field for changelist_view'''
+
         if str(instance.internal_order_no).startswith(str(instance.id)):
             return mark_safe('<span style="white-space: nowrap;">{}</span>'.format(instance.internal_order_no))
         else:
@@ -823,13 +880,16 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
         try:
             request.resolver_match.args[0]
         except:
+            
+            # Exclude certain users from the 'Created by' field in the order form
+
             if db_field.name == 'created_by':
-                if request.user.is_superuser:
-                    kwargs["queryset"] = User.objects.exclude(groups__name = 'Past member').exclude(id__in=[20]).order_by('last_name')
-                else:
-                    kwargs["queryset"] = User.objects.exclude(groups__name = 'Past member').exclude(id__in=[1,20]).order_by('last_name')
+                if request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user.groups.filter(name='Order manager').exists():
+                    kwargs["queryset"] = User.objects.exclude(id__in=[1, 20, 36]).order_by('last_name')
                 kwargs['initial'] = request.user.id
 
+            # Sort cost_unit and locations fields by name
+            
             if db_field.name == "cost_unit":
                 kwargs["queryset"] = order_management_CostUnit.objects.exclude(status=True).order_by('name')
 
@@ -863,11 +923,10 @@ class MsdsFormQLSchema(DjangoQLSchema):
             return ['id', SearchFieldOptMsdsName()]
         return super(MsdsFormQLSchema, self).get_fields(model)
 
-from django import forms
-
 class MsdsFormForm(forms.ModelForm):
     def clean_name(self):
-        """Check if name is unique before saving"""
+        
+        # Check if the name of a MSDS form is unique before saving
         
         qs = order_management_MsdsForm.objects.filter(name__icontains=self.cleaned_data["name"].name)
         if qs:
@@ -876,40 +935,36 @@ class MsdsFormForm(forms.ModelForm):
             return self.cleaned_data["name"]
 
 class MsdsFormPage(DjangoQLSearchMixin, admin.ModelAdmin):
-    list_display = ('id', 'short_url_name', 'view_file')
+    
+    list_display = ('id', 'pretty_file_name', 'view_file_link')
     list_per_page = 25
     ordering = ['name']
     djangoql_schema = MsdsFormQLSchema
     search_fields = ['id', 'name']
     form = MsdsFormForm
     
-    def add_view(self,request,extra_content=None):
-        '''Override default add_view to show only desired fields'''
-
+    def add_view(self,request,extra_context=None):
         self.fields = (['name',])
         return super(MsdsFormPage,self).add_view(request)
 
-    def change_view(self,request,object_id,extra_content=None):
-        '''Override default change_view to show only desired fields'''
-
+    def change_view(self,request,object_id,extra_context=None):
         self.fields = (['name',])
         return super(MsdsFormPage,self).change_view(request,object_id)
 
-    def short_url_name(self, instance):
+    def pretty_file_name(self, instance):
+        '''Custom file name field for changelist_view'''
         from os.path import basename
-
         short_name = basename(instance.name.name).split('.')
         short_name = ".".join(short_name[:-1]).replace("_", " ")
-
         return(short_name)
+    pretty_file_name.short_description = "File name"
+    pretty_file_name.admin_order_field = 'name'
 
-    short_url_name.short_description = "File name"
-    short_url_name.admin_order_field = 'name'
-
-    def view_file(self, instance):
+    def view_file_link(self, instance):
+        '''Custom field which shows the url of a MSDS form as a HTML <a> tag with 
+        text View'''
         return(mark_safe("<a href='{}'>{}</a>".format(instance.name.url, "View")))
-        
-    view_file.short_description = ""
+    view_file_link.short_description = ""
 
 #################################################
 #            ORDER EXTRA DOC PAGES              #
@@ -922,46 +977,44 @@ class OrderExtraDocPage(DjangoQLSearchMixin, admin.ModelAdmin):
     ordering = ['id']
 
     def has_module_permission(self, request):
-        '''Hide module from Admin'''
+        
+        # Hide module from Admin
         return False
 
     def get_readonly_fields(self, request, obj=None):
-        '''Override default get_readonly_fields to define user-specific read-only fields
-        If a user is not a superuser, lab manager or the user who created a record
-        return all fields as read-only 
-        'created_date_time' and 'last_changed_date_time' fields must always be read-only
-        because their set by Django itself'''
+        
+        # Specifies which fields should be shown as read-only and when
 
         if obj:
             return ['name', 'order', 'created_date_time',]
     
-    def add_view(self,request,extra_content=None):
-        '''Override default add_view to show only desired fields'''
+    def add_view(self,request,extra_context=None):
 
+        # Specifies which fields should be shown in the add view
         self.fields = (['name', 'order', 'created_date_time',])
         return super(OrderExtraDocPage,self).add_view(request)
 
-    def change_view(self,request,object_id,extra_content=None):
-        '''Override default change_view to show only desired fields'''
-
+    def change_view(self,request,object_id,extra_context=None):
+        
+        # Specifies which fields should be shown in the change view
         self.fields = (['name', 'order', 'created_date_time',])
         return super(OrderExtraDocPage,self).change_view(request,object_id)
 
     def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
-        """Override default changeform_view to hide Save buttons when certain conditions (same as
-        those in get_readonly_fields method) are met"""
-
+ 
+        # Hide Save buttons when certain conditions (same as those in get_readonly_fields method) are met
         extra_context = extra_context or {}
         extra_context['show_submit_line'] = True
         if object_id:
             extra_context['show_submit_line'] = False
-        return super(OrderExtraDocPage, self).changeform_view(request, object_id, extra_context=extra_context)
+        return super(OrderExtraDocPage, self).changeform_view(request, object_id, form_url, extra_context=extra_context)
 
 #################################################
 #           ORDER COST UNIT PAGES               #
 #################################################
 
 class CostUnitPage(admin.ModelAdmin):
+    
     list_display = ('name', 'description', 'status')
     list_display_links = ('name',)
     list_per_page = 25
@@ -972,6 +1025,7 @@ class CostUnitPage(admin.ModelAdmin):
 #################################################
 
 class LocationPage(admin.ModelAdmin):
+    
     list_display = ('name', 'status')
     list_display_links = ('name', )
     list_per_page = 25

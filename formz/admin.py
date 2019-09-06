@@ -37,8 +37,8 @@ from .models import FormZProject
 
 class FormZProjectPage(admin.ModelAdmin):
     
-    list_display = ('short_title', 'main_project','model_search_link')
-    list_display_links = ('short_title', )
+    list_display = ('title', 'short_title_english', 'main_project','model_search_link')
+    list_display_links = ('title', )
     list_per_page = 25
     search_fields = ['id', 'short_title']
 
@@ -50,6 +50,26 @@ class FormZProjectPage(admin.ModelAdmin):
     #         return True
     #     else:
     #         return False
+
+    def get_readonly_fields(self, request, obj=None):
+        '''Override default get_readonly_fields to define user-specific read-only fields
+        If a user is not a superuser, lab manager or the user who created a record
+        return all fields as read-only
+        'created_date_time' and 'last_changed_date_time' fields must always be read-only
+        because their set by Django itself'''
+        
+        if obj:
+            return ['short_title_english', 'short_title']
+        else:
+            return []
+
+    def change_view(self,request,object_id,extra_context=None):
+        '''Override default change_view to show only desired fields'''
+
+        self.fields = ('title', 'short_title', 'short_title_english', 'parent_project', 'safety_level', 'project_leader', 'objectives',
+                       'description', 'donor_organims', 'potential_risk_nuc_acid', 'vectors', 'recipient_organisms', 'generated_gmo', 
+                       'hazard_activity', 'hazards_employee', 'beginning_work_date', 'end_work_date',)
+        return super(FormZProjectPage,self).change_view(request,object_id)
 
     def model_search_link(self, instance):
         projects = str(tuple([instance.short_title] + list(FormZProject.objects.filter(parent_project_id=instance.id).values_list('short_title', flat=True)))).replace("'", '"').replace(',)', ')')
@@ -165,8 +185,8 @@ class FormZHeaderPage(admin.ModelAdmin):
 
 class FormZStorageLocationPage(admin.ModelAdmin):
     
-    list_display = ('storage_location', 'collection_model', 'species_name')
-    list_display_links = ('storage_location',)
+    list_display = ('collection_model', 'storage_location', 'species_name')
+    list_display_links = ('collection_model',)
     list_per_page = 25
 
     def has_module_permission(self, request):

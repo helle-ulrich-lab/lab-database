@@ -163,7 +163,7 @@ class FormZBaseElement (models.Model):
         super(FormZBaseElement, self).save(force_insert, force_update, using, update_fields)
 
 class FormZBaseElementExtraLabel (models.Model):
-    label = models.CharField("alias", max_length=255, unique=True, blank=True)
+    label = models.CharField("alias", max_length=255, blank=True)
     formz_base_element = models.ForeignKey(FormZBaseElement, on_delete=models.PROTECT, related_name='extra_label')
 
     class Meta:
@@ -201,8 +201,8 @@ class FormZHeader (models.Model):
 
 class FormZStorageLocation (models.Model):
 
-    storage_location = models.CharField("storage location", help_text='Room where the collection is stored', max_length=255, blank=False)
     collection_model = models.OneToOneField(ContentType, verbose_name='collection', help_text = 'Strain, plasmids, cell lines, etc.', on_delete=models.PROTECT, blank=False, null=True, unique=True)
+    storage_location = models.CharField("storage location", help_text='Room where the collection is stored', max_length=255, blank=False)
     species_name = models.CharField("species name", help_text="Full species name, e.g. Homo sapiens" , max_length=255, blank=True)
 
     class Meta:        

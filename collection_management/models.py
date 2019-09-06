@@ -88,9 +88,10 @@ class SaCerevisiaeStrain (models.Model, SaveWithoutHistoricalRecord):
     created_by = models.ForeignKey(User, on_delete=models.PROTECT)
     history = HistoricalRecords()
 
-    formz_projects = models.ManyToManyField(FormZProject, verbose_name='projects', related_name='cerevisiae_formz_project', blank= True)
-    formz_risk_group = models.PositiveSmallIntegerField('risk group', choices=((1,1), (2,2)), blank=True, null=True)
-    formz_gentech_methods = models.ManyToManyField(GenTechMethod, verbose_name='genTech methods', related_name='cerevisiae_gentech_method', blank= True)
+    formz_projects = models.ManyToManyField(FormZProject, verbose_name='projects', related_name='cerevisiae_formz_project', blank=False)
+    formz_risk_group = models.PositiveSmallIntegerField('risk group', choices=((1,1), (2,2)), blank=False, null=True)
+    formz_gentech_methods = models.ManyToManyField(GenTechMethod, verbose_name='genTech methods', related_name='cerevisiae_gentech_method', blank= True,
+                                                    help_text='The methods used to create the strain')
     formz_elements = models.ManyToManyField(FormZBaseElement, verbose_name ='elements', related_name='cerevisiae_formz_element', 
                                             help_text='Use only when an element is not present in the chosen plasmid(s), if any. '
                                             '<a href="/formz/formzbaseelement/" target="_blank">View all/Change</a>', blank=True)
@@ -181,15 +182,16 @@ class HuPlasmid (models.Model, SaveWithoutHistoricalRecord):
     created_by = models.ForeignKey(User, on_delete=models.PROTECT)
     history = HistoricalRecords()
 
-    formz_projects = models.ManyToManyField(FormZProject, verbose_name='projects', related_name='plasmid_formz_projects', blank= True)
-    formz_risk_group = models.PositiveSmallIntegerField('risk group', choices=((1,1), (2,2)), blank=True, null=True)
+    formz_projects = models.ManyToManyField(FormZProject, verbose_name='projects', related_name='plasmid_formz_projects', blank= False)
+    formz_risk_group = models.PositiveSmallIntegerField('risk group', choices=((1,1), (2,2)), blank=False, null=True)
     destroyed_date = models.DateField("destroyed", blank=True, null=True)
-    vector_zkbs = models.ForeignKey(ZkbsPlasmid, verbose_name = 'ZKBS database vector', on_delete=models.PROTECT, blank=True, null=True,
-                                    help_text='<a href="/formz/zkbsplasmid/" target="_blank">View all</a>')
+    vector_zkbs = models.ForeignKey(ZkbsPlasmid, verbose_name = 'ZKBS database vector', on_delete=models.PROTECT, blank=False, null=True,
+                                    help_text='The backbone of the plasmid, from the ZKBS database. If not applicable, choose none. <a href="/formz/zkbsplasmid/" target="_blank">View all</a>')
     formz_elements = models.ManyToManyField(FormZBaseElement, verbose_name ='elements', blank=True,
                                             help_text='<a href="/formz/formzbaseelement/" target="_blank">View all/Change</a>')
-    formz_gentech_methods = models.ManyToManyField(GenTechMethod, verbose_name='genTech methods', related_name='plasmid_gentech_method', blank= True)
-    formz_ecoli_strains = models.ManyToManyField('EColiStrain', verbose_name='e. coli strains', related_name='plasmid_ecoli_strains', default=1, blank= True)
+    formz_gentech_methods = models.ManyToManyField(GenTechMethod, verbose_name='genTech methods', related_name='plasmid_gentech_method', blank= True,
+                                                    help_text='The methods used to create the plasmid')
+    formz_ecoli_strains = models.ManyToManyField('EColiStrain', verbose_name='e. coli strains', related_name='plasmid_ecoli_strains', default=14, blank= False)
 
     # Fields to keep a record of M2M field values in the main plasmid record: IDs for formz_projects
     # and names for formz_elements
@@ -227,13 +229,13 @@ class HuPlasmid (models.Model, SaveWithoutHistoricalRecord):
     def __str__(self):
         return "{} - {}".format(self.id, self.name)
 
-    # def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         
-    #     # If destroyed date not present, automatically set it
-    #     if not self.destroyed_date:
-    #         self.destroyed_date = datetime.now().date() + timedelta(days=random.randint(7,21))
+        # If destroyed date not present, automatically set it
+        if not self.destroyed_date:
+            self.destroyed_date = datetime.now().date() + timedelta(days=random.randint(7,21))
         
-    #     super(HuPlasmid, self).save(force_insert, force_update, using, update_fields)
+        super(HuPlasmid, self).save(force_insert, force_update, using, update_fields)
     
     def get_common_formz_elements(self):
         return self.formz_elements.all().filter(common_feature=True)
@@ -309,9 +311,10 @@ class ScPombeStrain (models.Model, SaveWithoutHistoricalRecord):
     created_by = models.ForeignKey(User, on_delete=models.PROTECT)
     history = HistoricalRecords()
 
-    formz_projects = models.ManyToManyField(FormZProject, verbose_name='formZ projects', related_name='pombe_formz_project', blank= True)
-    formz_risk_group = models.PositiveSmallIntegerField('risk group', choices=((1,1), (2,2)), blank=True, null=True)
-    formz_gentech_methods = models.ManyToManyField(GenTechMethod, verbose_name='genTech methods', related_name='pombe_gentech_method', blank= True)
+    formz_projects = models.ManyToManyField(FormZProject, verbose_name='formZ projects', related_name='pombe_formz_project', blank=False)
+    formz_risk_group = models.PositiveSmallIntegerField('risk group', choices=((1,1), (2,2)), blank=False, null=True)
+    formz_gentech_methods = models.ManyToManyField(GenTechMethod, verbose_name='genTech methods', related_name='pombe_gentech_method', blank=True,
+                                                    help_text='The methods used to create the strain')
     formz_elements = models.ManyToManyField(FormZBaseElement, verbose_name ='elements', related_name='pombe_formz_element', 
                                             help_text='Use only when an element is not present in the chosen plasmid(s), if any. '
                                             '<a href="/formz/formzbaseelement/" target="_blank">View all/Change</a>', blank=True)
@@ -421,7 +424,7 @@ class MammalianLine (models.Model, SaveWithoutHistoricalRecord):
     freezing_medium = models.CharField("freezing medium", max_length=255, blank=True)
     received_from = models.CharField("received from", max_length=255, blank=True)
     description_comment = models.TextField("description/comments", blank=True)
-    s2_work = models.BooleanField("Used for S2 work?", default=False)
+    s2_work = models.BooleanField("Used for S2 work?", default=False, help_text='Check, for example, for a cell line created by lentiviral trunsdunction')
 
     integrated_plasmids = models.ManyToManyField('HuPlasmid', related_name='mammalian_integrated_plasmids', blank= True)
     episomal_plasmids = models.ManyToManyField('HuPlasmid', related_name='mammalian_episomal_plasmids', blank=True, through='MammalianLineEpisomalPlasmid')
@@ -434,11 +437,12 @@ class MammalianLine (models.Model, SaveWithoutHistoricalRecord):
     created_by = models.ForeignKey(User, on_delete=models.PROTECT)
     history = HistoricalRecords()
     
-    formz_projects = models.ManyToManyField(FormZProject, verbose_name='projects', related_name='mammalian_zprojects', blank= True)
-    formz_risk_group = models.PositiveSmallIntegerField('risk group', choices=((1,1), (2,2)), blank=True, null=True)
-    zkbs_cell_line = models.ForeignKey(ZkbsCellLine, verbose_name = 'ZKBS database cell line', on_delete=models.PROTECT, null=True, blank=True,
-                                       help_text='<a href="/formz/zkbscellline/" target="_blank">View all</a>')
-    formz_gentech_methods = models.ManyToManyField(GenTechMethod, verbose_name='genTech methods', related_name='mammalian_gentech_method', blank= True)
+    formz_projects = models.ManyToManyField(FormZProject, verbose_name='projects', related_name='mammalian_zprojects', blank=False)
+    formz_risk_group = models.PositiveSmallIntegerField('risk group', choices=((1,1), (2,2)), blank=False, null=True)
+    zkbs_cell_line = models.ForeignKey(ZkbsCellLine, verbose_name = 'ZKBS database cell line', on_delete=models.PROTECT, null=True, blank=False,
+                                       help_text='If not applicable, choose none. <a href="/formz/zkbscellline/" target="_blank">View all</a>')
+    formz_gentech_methods = models.ManyToManyField(GenTechMethod, verbose_name='genTech methods', related_name='mammalian_gentech_method', blank= True,
+                                                    help_text='The methods used to create the cell line')
     formz_elements = models.ManyToManyField(FormZBaseElement, verbose_name ='elements', related_name='mammalian_formz_element', 
                                             help_text='Use only when an element is not present in the chosen plasmid(s), if any', blank=True)
     

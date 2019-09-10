@@ -48,7 +48,7 @@
       <div>
 
         <h2>Betreiber</h2>
-        <div><span style='font-weight: bold'>Name:</span> {{formz_header.operator}}</div>
+        <div><span style='font-weight: bold'>Bezeichnung:</span> {{formz_header.operator}}</div>
         <div><span style='font-weight: bold'>Anschrift:</span> {{formz_header.address}}</div>
         <div><span style='font-weight: bold'>Beauftragter für Biologische Sicherheit:</span> {{formz_header.name_biosafety_officer}}</div>
         <div><span style='font-weight: bold'>S1 Genehmigung:</span> {{formz_header.s1_approval_file_num}}; erteilt am {{formz_header.s1_approval_date | date:"d.m.Y"}}</div>
@@ -58,7 +58,7 @@
     </br>
 
         <h2>Details zum Organismus</h2>
-         <div><span style='font-weight: bold'>Name:</span> {{object}}</div>
+         <div><span style='font-weight: bold'>Bezeichnung:</span> {{object}}</div>
          <div><span style='font-weight: bold'>Empfängerorganismus:</span> <span style='font-style: italic'>{{organism}}</span> {% if object.formz_ecoli_strains %}
             {% if object.formz_ecoli_strains.all|length == 1 %}
                     {% for ecoli in object.formz_ecoli_strains.all %}
@@ -107,8 +107,8 @@
                 {% endfor %}
             {% endif %}
          </div>
-        <div><span style='font-weight: bold'>Gentechnische Arbeitsmethod/en:</span>
         {% if object.formz_gentech_methods.all %}
+        <div><span style='font-weight: bold'>Gentechnische Arbeitsmethod/en:</span>
             {% if object.formz_gentech_methods.all|length == 1 %}
                 {% for method in object.formz_gentech_methods.all %}
                     {{method.german_name}}
@@ -122,13 +122,13 @@
                     {% endif %}
                 {% endfor %}
             {% endif %}
-        {% else %}
-            Kein
         {% endif %}
         </div>
          {% if object.zkbs_cell_line %}
-            <div><span style='font-weight: bold'>ZKBS Datenbank Zelllinien:</span> <a href="{% url 'admin:formz_zkbscellline_change' object.zkbs_cell_line.id %}">{{object.zkbs_cell_line}}</a></div>
-         {% endif %}
+            {% if object.zkbs_cell_line.name != 'none' %}
+                <div><span style='font-weight: bold'>ZKBS Datenbank Zelllinien:</span> <a href="{% url 'admin:formz_zkbscellline_change' object.zkbs_cell_line.id %}">{{object.zkbs_cell_line}}</a></div>
+            {% endif %}
+        {% endif %}
          <div><span style='font-weight: bold'>Erzeugt:</span> {{object.created_date_time | date:"d.m.Y"}}</div>
          <div><span style='font-weight: bold'>Entsorgt:</span> 
             {% if object.destroyed_date %}
@@ -180,13 +180,15 @@
                         <thead >
                         <tr>
                             <th  colspan="5" scope="col" style="background:#ccc;" class="column-plasmid">
-                                <a style='color:#447e9b;' href="{% url 'admin:collection_management_huplasmid_change' plasmid.id %}">{{plasmid}}</a>
+                                <a style='color:#447e9b;' href="{% url 'admin:collection_management_huplasmid_change' plasmid.id %}">Plasmid #{{plasmid}}</a>
                                 {% if plasmid.map %}
                                     (<a style='color:#447e9b;text-transform: none' href="{{plasmid.map_gbk.url}}">.gbk</a>,
                                     <a  class="image-link" style='color:#447e9b; text-transform: none' href="{{plasmid.map_png.url}}">.png</a>)
                                 {% endif %}
                                 {% if plasmid.vector_zkbs %}
-                                    <span style='text-transform: none'>- ZKBS Plasmid </span><a style='color:#447e9b;text-transform: none' href="{% url 'admin:formz_zkbsplasmid_change' plasmid.vector_zkbs.id %}">{{plasmid.vector_zkbs.name}}</a>
+                                    {% if plasmid.vector_zkbs.name != 'none' %}
+                                        <span style='text-transform: none'>- ZKBS Plasmid </span><a style='color:#447e9b;text-transform: none' href="{% url 'admin:formz_zkbsplasmid_change' plasmid.vector_zkbs.id %}">{{plasmid.vector_zkbs.name}}</a>
+                                    {% endif %}
                                 {% endif %}
                             </th>
                         </tr>
@@ -197,20 +199,30 @@
                         {% if plasmid.get_uncommon_formz_elements %}
                             <thead>
                             <tr>
-                                <th scope="col" class="column-name">
-                                    <div>Merkmale</div>
+                                <th scope="col" class="column-name" style="text-align:center">
                                 </th>
-                                <th scope="col" class="sortable column-donor_organism">
+                                <th colspan="2" scope="col" class="column-donor_organism" style="text-align:center; border: 1px solid #eee;">
                                     <div >Spenderorganismus</div>
                                 </th>
-                                <th scope="col" class="sortable column-donor_organism_risk">
-                                    <div>Risikogruppe des Spenderorganismus</div>
+                                <th colspan="2" scope="col" class="column-nuc_acid_purity" style="text-align:center">
+                                    <div>Nukleinsäure</div>
                                 </th>
-                                <th scope="col" class="sortable column-nuc_acid_purity">
-                                    <div>Nukleinsäure Reinheit</div>
+                            </tr>
+                            <tr>
+                                <th scope="col" class="column-name">
+                                    <div>Bezeichnung</div>
                                 </th>
-                                <th scope="col" class="column-nuc_acid_risk">
-                                    <div>Nukleinsäure Gefährdungspotential</div>
+                                <th scope="col" class="column-donor_organism" style="text-align:center; border-left: 1px solid #eee;">
+                                    <div >Bezeichnung</div>
+                                </th>
+                                <th scope="col" class="column-donor_organism_risk" style="text-align:center; border-right: 1px solid #eee;"> 
+                                    <div>Risikogruppe</div>
+                                </th>
+                                <th scope="col" class="column-nuc_acid_purity" style="text-align:center">
+                                    <div>Reinheitsgrad</div>
+                                </th>
+                                <th scope="col" class="column-nuc_acid_risk" style="text-align:center">
+                                    <div>Gefährdungspotential</div>
                                 </th>
                             </tr>
                             </thead>
@@ -219,24 +231,24 @@
                                     {% for formz_elem in plasmid.get_uncommon_formz_elements %}
                                         <tr class="row">
                                             <td class="field-name"><a href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}">{{formz_elem.name}}</a></td>
-                                            <td class="field-donor_organism">{% if formz_elem.donor_organism and formz_elem.donor_organism != 'none' %}{{formz_elem.donor_organism}}{% else %}Artifiziell{% endif %}</td>
-                                            <td class="field-donor_organism_risk">{% if formz_elem.donor_organism_risk %}{{formz_elem.donor_organism_risk}}{% else %}Keine{% endif %}</td>
-                                            <td class="field-nuc_acid_purity">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
-                                            <td class="field-nuc_acid_risk">{{formz_elem.nuc_acid_risk.german_name|capfirst}}</td>
+                                            <td class="field-donor_organism" style="text-align:center; border-left: 1px solid #eee;">{% if formz_elem.donor_organism and formz_elem.donor_organism != 'none' %}{{formz_elem.donor_organism}}{% else %}Artifiziell{% endif %}</td>
+                                            <td class="field-donor_organism_risk" style="text-align:center; border-right: 1px solid #eee;">{% if formz_elem.donor_organism_risk %}{{formz_elem.donor_organism_risk}}{% else %}Keine{% endif %}</td>
+                                            <td class="field-nuc_acid_purity" style="text-align:center">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
+                                            <td class="field-nuc_acid_risk" style="text-align:center">{{formz_elem.nuc_acid_risk.german_name|capfirst}}</td>
                                         </tr>
                                     {% endfor %}
                             </tbody>
                         {% else %}
                             <tbody>
                             <tr class="row">
-                                <td colspan="5" class="field">Keine unübliche Merkmale</td>
+                                <td colspan="5" class="field">Keine unüblichen Merkmale</td>
                             </tr>
                             </tbody>
                         {% endif %}
                         {% if plasmid.get_common_formz_elements %}
                             <thead>
                                 <th  colspan="5" scope="col" class="column-common_features">
-                                        Andere übliche Merkmale
+                                        Andere Merkmale, nicht relevant für die Sicherheitsbeurteilung
                                     </th>
                             </thead>
                             <tbody>
@@ -282,7 +294,7 @@
                     <thead>
                         <tr>
                             <th  colspan="5" scope="col" style="background:#ccc;" class="column-plasmid">
-                                <a style='color:#447e9b;' href="{% url 'admin:collection_management_huplasmid_change' plasmid.huplasmid.id %}">{{plasmid.huplasmid}} </a>
+                                <a style='color:#447e9b;' href="{% url 'admin:collection_management_huplasmid_change' plasmid.huplasmid.id %}">Plasmid #{{plasmid.huplasmid}} </a>
                                 <span style="text-transform: none">
                                     
                                     {% if plasmid.huplasmid.map %}
@@ -318,55 +330,67 @@
                                     {% endif %}
                                 </span>
                                 {% if plasmid.huplasmid.vector_zkbs %}
-                                    <span style='text-transform: none'>- ZKBS Plasmid </span><a style='color:#447e9b;text-transform: none' href="{% url 'admin:formz_zkbsplasmid_change' plasmid.huplasmid.vector_zkbs.id %}">{{plasmid.huplasmid.vector_zkbs.name}}</a>
+                                    {% if plasmid.huplasmid.vector_zkbs.name != 'none' %}
+                                        <span style='text-transform: none'>- ZKBS Plasmid </span><a style='color:#447e9b;text-transform: none' href="{% url 'admin:formz_zkbsplasmid_change' plasmid.huplasmid.vector_zkbs.id %}">{{plasmid.huplasmid.vector_zkbs.name}}</a>
+                                    {% endif %}
                                 {% endif %}
                             </th>
                         </tr>
                     </thead>
                 {% if plasmid.huplasmid.formz_elements.all %}    
                     {% if plasmid.huplasmid.get_uncommon_formz_elements %}
-                            <thead>
+                    <thead>
                             <tr>
-                                <th scope="col" class="column-name">
-                                    <div>Merkmale</div>
+                                <th scope="col" class="column-name" style="text-align:center">
                                 </th>
-                                <th scope="col" class="sortable column-donor_organism">
+                                <th colspan="2" scope="col" class="column-donor_organism" style="text-align:center; border: 1px solid #eee;">
                                     <div >Spenderorganismus</div>
                                 </th>
-                                <th scope="col" class="sortable column-donor_organism_risk">
-                                    <div>Risikogruppe des Spenderorganismus</div>
-                                </th>
-                                <th scope="col" class="sortable column-nuc_acid_purity">
-                                    <div>Nukleinsäure Reinheit</div>
-                                </th>
-                                <th scope="col" class="column-nuc_acid_risk">
-                                    <div>Nukleinsäure Gefährdungspotential</div>
+                                <th colspan="2" scope="col" class="column-nuc_acid_purity" style="text-align:center">
+                                    <div>Nukleinsäure</div>
                                 </th>
                             </tr>
-                            </thead>
+                            <tr>
+                                <th scope="col" class="column-name">
+                                    <div>Bezeichnung</div>
+                                </th>
+                                <th scope="col" class="column-donor_organism" style="text-align:center; border-left: 1px solid #eee;">
+                                    <div >Bezeichnung</div>
+                                </th>
+                                <th scope="col" class="column-donor_organism_risk" style="text-align:center; border-right: 1px solid #eee;"> 
+                                    <div>Risikogruppe</div>
+                                </th>
+                                <th scope="col" class="column-nuc_acid_purity" style="text-align:center">
+                                    <div>Reinheitsgrad</div>
+                                </th>
+                                <th scope="col" class="column-nuc_acid_risk" style="text-align:center">
+                                    <div>Gefährdungspotential</div>
+                                </th>
+                            </tr>
+                        </thead>
 
                             <tbody>
                                     {% for formz_elem in plasmid.huplasmid.get_uncommon_formz_elements %}
                                         <tr class="row">
                                             <td class="field-name"><a href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}">{{formz_elem.name}}</a></td>
-                                            <td class="field-donor_organism">{% if formz_elem.donor_organism and formz_elem.donor_organism != 'none' %}{{formz_elem.donor_organism}}{% else %}Artifiziell{% endif %}</td>
-                                            <td class="field-donor_organism_risk">{% if formz_elem.donor_organism_risk %}{{formz_elem.donor_organism_risk}}{% else %}Keine{% endif %}</td>
-                                            <td class="field-nuc_acid_purity">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
-                                            <td class="field-nuc_acid_risk">{{formz_elem.nuc_acid_risk.german_name|capfirst}}</td>
+                                            <td class="field-donor_organism" style="text-align:center; border-left: 1px solid #eee;">{% if formz_elem.donor_organism and formz_elem.donor_organism != 'none' %}{{formz_elem.donor_organism}}{% else %}Artifiziell{% endif %}</td>
+                                            <td class="field-donor_organism_risk" style="text-align:center; border-right: 1px solid #eee;">{% if formz_elem.donor_organism_risk %}{{formz_elem.donor_organism_risk}}{% else %}Keine{% endif %}</td>
+                                            <td class="field-nuc_acid_purity" style="text-align:center">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
+                                            <td class="field-nuc_acid_risk" style="text-align:center">{{formz_elem.nuc_acid_risk.german_name|capfirst}}</td>
                                         </tr>
                                     {% endfor %}
                             </tbody>
                         {% else %}
                             <tbody>
                             <tr class="row">
-                                <td colspan="5" class="field">Keine unübliche Merkmale</td>
+                                <td colspan="5" class="field">Keine unüblichen Merkmale</td>
                             </tr>
                             </tbody>
                         {% endif %}
                         {% if plasmid.huplasmid.get_common_formz_elements %}
                             <thead>
                                 <th  colspan="5" scope="col" class="column-common_features">
-                                        Andere übliche Merkmale
+                                        Andere Merkmale, nicht relevant für die Sicherheitsbeurteilung
                                     </th>
                             </thead>
                             <tbody>
@@ -401,7 +425,7 @@
 
       {% if object.formz_elements.all %}
         {% if object.is_plasmid_object %} <!-- Just to check if this is a plasmid object -->
-            <h3>Merkmale des Organismus</h3>
+            <h3>Bezeichnung und für die Sicherheitsbeurteilung bedeutsame Merkmale des GVO</h3>
         {% else %}
             <h3>Andere Merkmale des Organismus die nicht in den bereits genannten Plasmiden aufgelistet sind</h3>
         {% endif %}
@@ -411,33 +435,43 @@
 
                 {% if object.get_uncommon_formz_elements %}
                 <thead>
-                <tr>
-                    <th scope="col" class="column-name">
-                        <div>Merkmale</div>
-                    </th>
-                    <th scope="col" class="sortable column-donor_organism">
-                        <div >Spenderorganismus</div>
-                    </th>
-                    <th scope="col" class="sortable column-donor_organism_risk">
-                        <div>Risikogruppe des Spenderorganismus</div>
-                    </th>
-                    <th scope="col" class="sortable column-nuc_acid_purity">
-                        <div>Nukleinsäure Reinheit</div>
-                    </th>
-                    <th scope="col" class="column-nuc_acid_risk">
-                        <div>Nukleinsäure Gefährdungspotential</div>
-                    </th>
-                </tr>
+                    <tr>
+                        <th scope="col" class="column-name" style="text-align:center">
+                        </th>
+                        <th colspan="2" scope="col" class="column-donor_organism" style="text-align:center; border: 1px solid #eee;">
+                            <div >Spenderorganismus</div>
+                        </th>
+                        <th colspan="2" scope="col" class="column-nuc_acid_purity" style="text-align:center">
+                            <div>Nukleinsäure</div>
+                        </th>
+                    </tr>
+                    <tr>
+                        <th scope="col" class="column-name">
+                            <div>Bezeichnung</div>
+                        </th>
+                        <th scope="col" class="column-donor_organism" style="text-align:center; border-left: 1px solid #eee;">
+                            <div >Bezeichnung</div>
+                        </th>
+                        <th scope="col" class="column-donor_organism_risk" style="text-align:center; border-right: 1px solid #eee;"> 
+                            <div>Risikogruppe</div>
+                        </th>
+                        <th scope="col" class="column-nuc_acid_purity" style="text-align:center">
+                            <div>Reinheitsgrad</div>
+                        </th>
+                        <th scope="col" class="column-nuc_acid_risk" style="text-align:center">
+                            <div>Gefährdungspotential</div>
+                        </th>
+                    </tr>
                 </thead>
 
                 <tbody>
                         {% for formz_elem in object.get_uncommon_formz_elements %}
                             <tr class="row">
                                 <td class="field-name"><a href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}">{{formz_elem.name}}</a></td>
-                                <td class="field-donor_organism">{% if formz_elem.donor_organism and formz_elem.donor_organism != 'none' %}{{formz_elem.donor_organism}}{% else %}Artifiziell{% endif %}</td>
-                                <td class="field-donor_organism_risk">{% if formz_elem.donor_organism_risk %}{{formz_elem.donor_organism_risk}}{% else %}Keine{% endif %}</td>
-                                <td class="field-nuc_acid_purity">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
-                                <td class="field-nuc_acid_risk">{{formz_elem.nuc_acid_risk.german_name|capfirst}}</td>
+                                <td class="field-donor_organism" style="text-align:center; border-left: 1px solid #eee;">{% if formz_elem.donor_organism and formz_elem.donor_organism != 'none' %}{{formz_elem.donor_organism}}{% else %}Artifiziell{% endif %}</td>
+                                <td class="field-donor_organism_risk" style="text-align:center; border-right: 1px solid #eee;">{% if formz_elem.donor_organism_risk %}{{formz_elem.donor_organism_risk}}{% else %}Keine{% endif %}</td>
+                                <td class="field-nuc_acid_purity" style="text-align:center">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
+                                <td class="field-nuc_acid_risk" style="text-align:center">{{formz_elem.nuc_acid_risk.german_name|capfirst}}</td>
                             </tr>
                         {% endfor %}
                 </tbody>
@@ -451,7 +485,7 @@
             {% if object.get_common_formz_elements %}
                 <thead>
                     <th colspan="5" scope="col" class="column-common_features">
-                            Andere übliche Merkmale
+                            Andere Merkmale, nicht relevant für die Sicherheitsbeurteilung
                         </th>
                 </thead>
                 <tbody>
@@ -486,7 +520,7 @@
                     <thead>
                         <tr>
                             <th  colspan="5" scope="col" style="background:#ccc;" class="column-plasmid">
-                                <a style='color:#447e9b;' href="{% url 'admin:collection_management_huplasmid_change' plasmid.huplasmid.id %}">{{plasmid.huplasmid}} </a>
+                                <a style='color:#447e9b;' href="{% url 'admin:collection_management_huplasmid_change' plasmid.huplasmid.id %}">Plasmid #{{plasmid.huplasmid}} </a>
                                 <span style="text-transform: none">
                                     {% if plasmid.huplasmid.map %}
                                         <a style='color:#447e9b;' href="{{plasmid.huplasmid.map_gbk.url}}">.gbk</a>,
@@ -530,33 +564,42 @@
                         {% if plasmid.huplasmid.formz_elements.all %}
                             {% if plasmid.huplasmid.get_uncommon_formz_elements %}
                             <thead>
-                            <tr>
-                                <th scope="col" class="column-name">
-                                    <div>Merkmale</div>
-                                </th>
-                                <th scope="col" class="sortable column-donor_organism">
-                                    <div >Spenderorganismus</div>
-                                </th>
-                                <th scope="col" class="sortable column-donor_organism_risk">
-                                    <div>Risikogruppe des Spenderorganismus</div>
-                                </th>
-                                <th scope="col" class="sortable column-nuc_acid_purity">
-                                    <div>Nukleinsäure Reinheit</div>
-                                </th>
-                                <th scope="col" class="column-nuc_acid_risk">
-                                    <div>Nukleinsäure Gefährdungspotential</div>
-                                </th>
-                            </tr>
+                                <tr>
+                                    <th scope="col" class="column-name" style="text-align:center">
+                                    </th>
+                                    <th colspan="2" scope="col" class="column-donor_organism" style="text-align:center; border: 1px solid #eee;">
+                                        <div >Spenderorganismus</div>
+                                    </th>
+                                    <th colspan="2" scope="col" class="column-nuc_acid_purity" style="text-align:center">
+                                        <div>Nukleinsäure</div>
+                                    </th>
+                                </tr>
+                                <tr>
+                                    <th scope="col" class="column-name">
+                                        <div>Bezeichnung</div>
+                                    </th>
+                                    <th scope="col" class="column-donor_organism" style="text-align:center; border-left: 1px solid #eee;">
+                                        <div >Bezeichnung</div>
+                                    </th>
+                                    <th scope="col" class="column-donor_organism_risk" style="text-align:center; border-right: 1px solid #eee;"> 
+                                        <div>Risikogruppe</div>
+                                    </th>
+                                    <th scope="col" class="column-nuc_acid_purity" style="text-align:center">
+                                        <div>Reinheitsgrad</div>
+                                    </th>
+                                    <th scope="col" class="column-nuc_acid_risk" style="text-align:center">
+                                        <div>Gefährdungspotential</div>
+                                    </th>
+                                </tr>
                             </thead>
-
                             <tbody>
                                     {% for formz_elem in plasmid.huplasmid.get_uncommon_formz_elements %}
                                         <tr class="row">
                                             <td class="field-name"><a href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}">{{formz_elem.name}}</a></td>
-                                            <td class="field-donor_organism">{% if formz_elem.donor_organism and formz_elem.donor_organism != 'none' %}{{formz_elem.donor_organism}}{% else %}Artifiziell{% endif %}</td>
-                                            <td class="field-donor_organism_risk">{% if formz_elem.donor_organism_risk %}{{formz_elem.donor_organism_risk}}{% else %}Keine{% endif %}</td>
-                                            <td class="field-nuc_acid_purity">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
-                                            <td class="field-nuc_acid_risk">{{formz_elem.nuc_acid_risk.german_name|capfirst}}</td>
+                                            <td class="field-donor_organism" style="text-align:center; border-left: 1px solid #eee;">{% if formz_elem.donor_organism and formz_elem.donor_organism != 'none' %}{{formz_elem.donor_organism}}{% else %}Artifiziell{% endif %}</td>
+                                            <td class="field-donor_organism_risk" style="text-align:center; border-right: 1px solid #eee;">{% if formz_elem.donor_organism_risk %}{{formz_elem.donor_organism_risk}}{% else %}Keine{% endif %}</td>
+                                            <td class="field-nuc_acid_purity" style="text-align:center">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
+                                            <td class="field-nuc_acid_risk" style="text-align:center">{{formz_elem.nuc_acid_risk.german_name|capfirst}}</td>
                                         </tr>
                                     {% endfor %}
                             </tbody>
@@ -570,7 +613,7 @@
                         {% if plasmid.huplasmid.get_common_formz_elements %}
                             <thead>
                                 <th  colspan="5" scope="col" class="column-common_features">
-                                        Andere übliche Merkmale
+                                        Andere Merkmale, nicht relevant für die Sicherheitsbeurteilung
                                     </th>
                             </thead>
                             <tbody>

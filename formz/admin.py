@@ -74,7 +74,7 @@ class FormZProjectPage(admin.ModelAdmin):
     def model_search_link(self, instance):
         projects = str(tuple([instance.short_title] + list(FormZProject.objects.filter(parent_project_id=instance.id).values_list('short_title', flat=True)))).replace("'", '"').replace(',)', ')')
 
-        return mark_safe("""<a href='{}+{projects}'>Mammmalian cell lines</a> | 
+        return mark_safe("""<a href='{}+{projects}'>Mammalian cell lines</a> | 
                             <a href='{}+{projects}'>Plasmids</a> | 
                             <a href='{}+{projects}'>Strains - Sa. cerevisiae</a> | 
                             <a href='{}+{projects}'>Strains - Sc. pombe</a>""".format(

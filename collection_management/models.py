@@ -457,8 +457,8 @@ class MammalianLine (models.Model, SaveWithoutHistoricalRecord):
     history_documents = models.TextField("documents", blank=True)
     
     class Meta:
-        verbose_name = 'mammmalian cell line'
-        verbose_name_plural = 'mammmalian cell lines'
+        verbose_name = 'mammalian cell line'
+        verbose_name_plural = 'mammalian cell lines'
     
     def __str__(self):
         return "{} - {}".format(self.id, self.name)

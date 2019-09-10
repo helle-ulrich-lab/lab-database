@@ -796,11 +796,13 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
             'price', 'cost_unit', 'status', 'urgent', 'delivery_alert', 'location', 'comment', 'url', 'cas_number', 
             'ghs_pictogram', 'msds_form', 'created_by')
             self.raw_id_fields = []
+            self.autocomplete_fields = []
             
         else:
             self.fields = ('supplier','supplier_part_no', 'part_description', 'quantity', 'price', 'cost_unit', 'urgent',
             'delivery_alert', 'location', 'comment', 'url', 'cas_number', 'ghs_pictogram', 'msds_form')
             self.raw_id_fields = ['msds_form']
+            self.autocomplete_fields = []
         
         return super(OrderPage,self).add_view(request, extra_context=extra_context)
 
@@ -808,6 +810,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
         
         # Specifies which fields should be shown in the change view
         
+        self.raw_id_fields = []
         self.autocomplete_fields = ['msds_form']
 
         self.fields = ('supplier','supplier_part_no', 'internal_order_no', 'part_description', 'quantity', 

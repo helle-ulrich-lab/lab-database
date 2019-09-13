@@ -59,34 +59,37 @@
 
         <h2>Details zum Organismus</h2>
          <div><span style='font-weight: bold'>Bezeichnung:</span> {{object}}</div>
-         <div><span style='font-weight: bold'>Empfängerorganismus:</span> <span style='font-style: italic'>{{organism}}</span> {% if object.formz_ecoli_strains %}
+         <div><span style='font-weight: bold'>Empfängerorganismus:</span> <span style='font-style: italic'>{{organism}}</span>
+        {% if object.formz_ecoli_strains %}
             {% if object.formz_ecoli_strains.all|length == 1 %}
                     {% for ecoli in object.formz_ecoli_strains.all %}
-                        Stamm: <a style='color:#447e9b;' href="{% url 'admin:collection_management_ecolistrain_change' ecoli.id %}">{{ecoli.name}}</a> - Hintergrund {{ecoli.background}})
+                        (Stamm: <a style='color:#447e9b;' href="{% url 'admin:collection_management_ecolistrain_change' ecoli.id %}">{{ecoli.name}}</a> - Hintergrund {{ecoli.background}}; Risikogrouppe: {{receiving_organism_risk_group}})
                     {% endfor %}
                 {% else %}
                     {% for ecoli in object.formz_ecoli_strains.all %}
                         {% if forloop.first %}
                             (Stamm: <a style='color:#447e9b;' href="{% url 'admin:collection_management_ecolistrain_change' ecoli.id %}">{{ecoli.name}}</a> - Hintergrund {{ecoli.background}},
                         {% elif forloop.last %}
-                            <a style='color:#447e9b;' href="{% url 'admin:collection_management_ecolistrain_change' ecoli.id %}">{{ecoli.name}}</a> - Hintergrund {{ecoli.background}})
+                            <a style='color:#447e9b;' href="{% url 'admin:collection_management_ecolistrain_change' ecoli.id %}">{{ecoli.name}}</a> - Hintergrund {{ecoli.background}}; Risikogrouppe: {{receiving_organism_risk_group}})
                         {% else %}
                             <a style='color:#447e9b;' href="{% url 'admin:collection_management_ecolistrain_change' ecoli.id %}">{{ecoli.name}}</a> - Hintergrund {{ecoli.background}},
                         {% endif %}
                     {% endfor %}
             {% endif %}
+        {%else%}
+            (Risikogrouppe: {{receiving_organism_risk_group}})
         {%endif%}</div>
+        <div><span style='font-weight: bold'>Risikogruppe:</span> {{object.formz_risk_group}}</div>
 
          {% if object.chromosomal_genotype %}
             <div><span style='font-weight: bold'>Genotyp:</span> {{object.chromosomal_genotype}}</div>
          {% endif %}
-         <div><span style='font-weight: bold'>Risikogruppe:</span> {{object.formz_risk_group}}</div>
          <div><span style='font-weight: bold'>Projekt/e:</span>
             {% if object.formz_projects.all|length == 1 %}
                 {% for project in object.formz_projects.all %}
                     <a style='color:#447e9b;' href="{% url 'admin:formz_formzproject_change' project.id %}">{{project.short_title}}</a>
                     {% if project.parent_project%}
-                        (Hauptproject <a style='color:#447e9b;' href="{% url 'admin:formz_formzproject_change' project.parent_project.id %}">{{project.parent_project.short_title}}</a>)
+                        (Hauptproject: <a style='color:#447e9b;' href="{% url 'admin:formz_formzproject_change' project.parent_project.id %}">{{project.parent_project.short_title}}</a>)
                     {% endif %}
                 {% endfor %}
             {% else %}

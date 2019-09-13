@@ -672,9 +672,11 @@ class MyAdminSite(admin.AdminSite):
             storage_location_obj = FormZStorageLocation.objects.get(collection_model=model_content_type)
             storage_location = storage_location_obj.storage_location
             organism = storage_location_obj.species_name
+            receiving_organism_risk_group = storage_location_obj.species_risk_group
         else:
             storage_location = None
             organism = None
+            receiving_organism_risk_group = None
 
         if FormZHeader.objects.all().first():
             header = FormZHeader.objects.all().first()
@@ -726,7 +728,8 @@ class MyAdminSite(admin.AdminSite):
         'formz_header': header,
         'organism':organism,
         'lenti_construction_plasmids': lenti_construction_plasmids,
-        'transfected': True if model_name == 'mammalianline' else False}
+        'transfected': True if model_name == 'mammalianline' else False,
+        'receiving_organism_risk_group': receiving_organism_risk_group}
 
         return render(request, 'admin/formz.html', context)
 
@@ -2102,7 +2105,8 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admi
             self.fieldsets = (
             (None, {
                 'fields': ('box_number', 'parent_1', 'parent_2', 'parental_strain', 'mating_type', 'auxotrophic_marker', 'name',
-                'integrated_plasmids', 'cassette_plasmids', 'phenotype', 'received_from', 'comment',)
+                'integrated_plasmids', 'cassette_plasmids', 'phenotype', 'received_from', 'comment', 'created_date_time', 
+                'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi','created_by',)
             }),
             ('FormZ', {
                 'fields': ('formz_projects', 'formz_risk_group', 'formz_gentech_methods', 'formz_elements', 'destroyed_date')
@@ -2112,7 +2116,8 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admi
             self.fieldsets = (
             (None, {
                 'fields': ('box_number', 'parent_1', 'parent_2', 'parental_strain', 'mating_type', 'auxotrophic_marker', 'name',
-                'integrated_plasmids', 'cassette_plasmids', 'phenotype', 'received_from', 'comment',)
+                'integrated_plasmids', 'cassette_plasmids', 'phenotype', 'received_from', 'comment', 'created_date_time', 
+                'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi','created_by',)
             }),
             ('FormZ', {
                 'classes': ('collapse',),

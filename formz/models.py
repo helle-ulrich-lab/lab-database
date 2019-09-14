@@ -76,6 +76,8 @@ class FormZProject (models.Model):
     beginning_work_date = models.DateField("beginning of work", help_text='<i>Beginn der Arbeiten</i>', blank=False, null=True)
     end_work_date = models.DateField("end of work", help_text='<i>Ende der Arbeiten</i>', blank=True, null=True)
 
+    users = models.ManyToManyField(User, related_name='formz_project_users', blank=True, through='FormZUsers')
+
     class Meta:        
         verbose_name = 'project'
         verbose_name_plural = 'projects'
@@ -83,6 +85,13 @@ class FormZProject (models.Model):
 
     def __str__(self):
         return str(self.short_title_english)
+
+class FormZUsers (models.Model):
+    
+    formz_project = models.ForeignKey(FormZProject, verbose_name = 'formZ project', on_delete=models.PROTECT)
+    user = models.ForeignKey(User, verbose_name = 'user', on_delete=models.PROTECT)
+    beginning_work_date = models.DateField('beginning of work', blank= True, null=True)
+    end_work_date = models.DateField('end of work', blank= True, null=True)
 
 class ZkbsPlasmid (models.Model):
     

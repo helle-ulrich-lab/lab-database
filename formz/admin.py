@@ -6,6 +6,7 @@ from django.contrib import admin
 from django.core.exceptions import PermissionDenied
 from django.contrib.contenttypes.models import ContentType
 from django.utils.safestring import mark_safe
+from django.contrib.auth.models import User
 
 #################################################
 #             MODEL ADMIN CLASSES               #
@@ -34,6 +35,24 @@ class GenTechMethodPage(admin.ModelAdmin):
     search_fields = ['english_name']
 
 from .models import FormZProject
+from .models import FormZUsers
+
+class FormZUsersInline(admin.TabularInline):
+    # autocomplete_fields = ['user']
+    model = FormZUsers
+    verbose_name_plural = "users"
+    verbose_name = 'user'
+    extra = 0
+    template = 'admin/tabular.html'
+    
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        
+        # Exclude certain users from the 'User' field
+
+        if db_field.name == 'user':
+            kwargs["queryset"] = User.objects.exclude(id__in=[1, 20, 36]).order_by('last_name')
+        
+        return super(FormZUsersInline, self).formfield_for_foreignkey(db_field, request, **kwargs)
 
 class FormZProjectPage(admin.ModelAdmin):
     
@@ -41,15 +60,6 @@ class FormZProjectPage(admin.ModelAdmin):
     list_display_links = ('title', )
     list_per_page = 25
     search_fields = ['id', 'short_title']
-
-    # def has_module_permission(self, request):
-        
-    #     # Show this model on the admin home page only for superusers and
-    #     # lab managers
-    #     if request.user.groups.filter(name='Lab manager').exists() or request.user.is_superuser:
-    #         return True
-    #     else:
-    #         return False
 
     def get_readonly_fields(self, request, obj=None):
         '''Override default get_readonly_fields to define user-specific read-only fields
@@ -63,8 +73,25 @@ class FormZProjectPage(admin.ModelAdmin):
         else:
             return []
 
+    def add_view(self,request,extra_context=None):
+            
+            # Do not show any inlines in add_view
+
+            self.inlines = []
+
+            return super(FormZProjectPage,self).add_view(request)
+
     def change_view(self,request,object_id,extra_context=None):
         '''Override default change_view to show only desired fields'''
+
+        # Show Users inline only if project has safety level 2 
+        if object_id:
+            obj = FormZProject.objects.get(pk=object_id)
+            if obj:
+                if obj.safety_level == 2:
+                    self.inlines = [FormZUsersInline]
+                else:
+                    self.inlines = []
 
         self.fields = ('title', 'short_title', 'short_title_english', 'parent_project', 'safety_level', 'project_leader', 'objectives',
                        'description', 'donor_organims', 'potential_risk_nuc_acid', 'vectors', 'recipient_organisms', 'generated_gmo', 

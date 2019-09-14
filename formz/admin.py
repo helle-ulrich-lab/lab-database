@@ -60,6 +60,7 @@ class FormZProjectPage(admin.ModelAdmin):
     list_display_links = ('title', )
     list_per_page = 25
     search_fields = ['id', 'short_title']
+    autocomplete_fields = ['project_leader'] 
 
     def get_readonly_fields(self, request, obj=None):
         '''Override default get_readonly_fields to define user-specific read-only fields

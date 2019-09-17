@@ -15,3 +15,4 @@ from django.contrib.auth.models import User
 
 class LabUser(models.Model):
     user = models.OneToOneField(User, on_delete=models.PROTECT)
+    is_principal_investigator = models.BooleanField('is principal investigator?', default=False)

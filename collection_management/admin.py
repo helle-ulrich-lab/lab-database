@@ -155,7 +155,7 @@ def get_plasmid_map_features(plasmid_map_path):
     
     except:
         mail_admins("Snapgene server error", 
-                    "There was an error with getting plasmif features for {} with snapgene server".format(plasmid_map_path), 
+                    "There was an error with getting plasmid features for {} with snapgene server".format(plasmid_map_path), 
                     fail_silently=True)
         raise Exception
 
@@ -246,7 +246,7 @@ class SimpleHistoryWithSummaryAdmin(SimpleHistoryAdmin):
                         changes_list = []
                         if delta.changes:
                             for change in delta.changes:
-                                if not change.field.endswith(("time", "_pi", "map_png", "map_gbk")): # Do not show created/changed date/time or approval by PI fields, and png/gbk map fields
+                                if not change.field.endswith(("time", "_pi", "map_png", "map_gbk", '_user')): # Do not show created/changed date/time or approval by PI fields, and png/gbk map fields
                                     
                                     field_name = model._meta.get_field(change.field).verbose_name
                                     field_type = model._meta.get_field(change.field).get_internal_type()
@@ -452,8 +452,6 @@ class CustomGuardedModelAdmin(GuardedModelAdmin):
 #               CUSTOM ADMIN SITE               #
 #################################################
 
-HU_USER = User.objects.get(id=6) # Helle's user object
-
 class MyAdminSite(admin.AdminSite):
     '''Create a custom admin site called MyAdminSite'''
     
@@ -478,86 +476,12 @@ class MyAdminSite(admin.AdminSite):
         # Note that custom urls get pushed to the list (not appended)
         # This doesn't work with urls += ...
         urls = [
-            url(r'^approval_summary/$', self.admin_view(self.approval_summary)),
-            url(r'^approval_summary/approve$', self.admin_view(self.approve_approval_summary)),
             url(r'^order_management/my_orders_redirect$', self.admin_view(self.my_orders_redirect)),
             url(r'uploads/(?P<url_path>.*)$', self.admin_view(self.uploads)),
             url(r'^temp_control/$', self.temp_control),
             path('<path:object_id>/formz/', self.admin_view(self.formz))
         ] + urls
         return urls
-
-    MODELS_TO_APPROVE = [('collection_management', 'sacerevisiaestrain'),
-                         ('collection_management', 'huplasmid'),
-                         ('collection_management', 'oligo'),
-                         ('collection_management', 'scpombestrain'), 
-                         ('collection_management', 'ecolistrain'),
-                         ('collection_management', 'mammalianline'),
-                         ('order_management'     , 'order')]
-
-    def approval_summary(self, request):
-        """ View to show all added and changed records from 
-        collection_management that have been added or changed
-        and that need to be approved by Helle"""
-        
-        from django.shortcuts import render
-        from django.apps import apps
-
-        if request.user.is_superuser or request.user == HU_USER: # Only allow superusers and Helle to access the page
-            data = []
-            for app, model in self.MODELS_TO_APPROVE:
-                model = apps.get_app_config(app).get_model(model)
-                if app == 'collection_management':
-                    added = model.objects.all().filter(created_approval_by_pi=False)
-                    changed = model.objects.all().filter(last_changed_approval_by_pi=False).exclude(id__in=added)
-                    if added or changed:
-                        data.append(
-                            (str(model._meta.verbose_name_plural).capitalize(),
-                            str(model.__name__).lower(), 
-                            list(added.only('id','name','created_by')),
-                            list(changed.only('id','name','created_by')),
-                            str(model._meta.app_label),
-                            ))
-                elif app == 'order_management':
-                    added = model.objects.all().filter(created_approval_by_pi=False)
-                    if added:
-                        data.append(
-                            (str(model._meta.verbose_name_plural).capitalize(),
-                            str(model.__name__).lower(), 
-                            list(added.only('id','part_description','created_by')),
-                            [],
-                            str(model._meta.app_label)
-                            ))
-
-            context = {
-            'user': request.user,
-            'site_header': self.site_header,
-            'has_permission': self.has_permission(request), 
-            'site_url': self.site_url, 
-            'title': "Records to be approved", 
-            'data': data
-            }
-            return render(request, 'admin/approval_summary.html', context)
-        
-        else:
-            return messages.error(request, 'Nice try, you are not allowed to do that.')
-            
-    def approve_approval_summary(self, request):
-        """ Approve all records that are pending approval """
-
-        if request.user == HU_USER: # Only allow Helle to approve records
-            for app, model in self.MODELS_TO_APPROVE:
-                model = apps.get_app_config(app).get_model(model)
-                if app == 'collection_management':
-                    model.objects.all().filter(created_approval_by_pi=False).update(created_approval_by_pi=True, approval_by_pi_date_time = timezone.now())
-                    model.objects.all().filter(last_changed_approval_by_pi=False).update(last_changed_approval_by_pi=True, approval_by_pi_date_time = timezone.now())
-                elif app == 'order_management':
-                    model.objects.all().filter(created_approval_by_pi=False).update(created_approval_by_pi=True)
-            messages.success(request, 'The records have been approved')
-            return HttpResponseRedirect("/")
-        else:
-            messages.error(request, 'Nice try, you are not allowed to do that.')
-            return HttpResponseRedirect("/")
 
     def my_orders_redirect(self, request):
         """ Redirect user to their My Orders page """
@@ -1011,15 +935,29 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
         if obj.pk == None:
             obj.created_by = request.user
             obj.save()
+            obj.approval.create(activity_type='created', activity_user=obj.history.latest().history_user)
         else:
-            saved_obj = collection_management_SaCerevisiaeStrain.objects.get(pk=obj.pk)
-            
-            if 'change_reason' in request.POST:
-                obj.changeReason = request.POST['change_reason']
 
-            if request.user.is_superuser or request.user == saved_obj.created_by or request.user.groups.filter(name='Lab manager').exists() or saved_obj.created_by.groups.filter(name='Past member').exists() or saved_obj.created_by == HU_USER:
+            if "_disapprove_record" in request.POST:
+                if not obj.approval.all():
+                    obj.approval.create(activity_type='changed', activity_user=obj.created_by)
+                    obj.last_changed_approval_by_pi = False
+                    obj.save_without_historical_record()
+                    collection_management_SaCerevisiaeStrain.objects.filter(id=obj.pk).update(last_changed_date_time=obj.history.latest().last_changed_date_time)
+                    return
+
+            saved_obj = collection_management_SaCerevisiaeStrain.objects.get(pk=obj.pk)
+            if request.user.is_superuser or request.user == saved_obj.created_by or request.user.groups.filter(name='Lab manager').exists() or saved_obj.created_by.groups.filter(name='Past member').exists() or saved_obj.created_by.labuser.is_principal_investigator:
                 obj.last_changed_approval_by_pi = False
                 obj.save()
+                if not obj.approval.all():
+                    obj.approval.create(activity_type='changed', activity_user=obj.history.latest().history_user)
+                else:
+                    approval_obj = obj.approval.all().latest(field_name='message_date_time')
+                    if approval_obj.message_date_time:
+                        if obj.last_changed_date_time > approval_obj.message_date_time:
+                            approval_obj.edited = True
+                            approval_obj.save()
             else:
                 raise PermissionDenied
     
@@ -1079,7 +1017,7 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
             else:
                 if request.user.has_perm('collection_management.change_sacerevisiaestrain', obj):
                     return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',]
-                if obj.created_by.groups.filter(name='Past member') or obj.created_by == HU_USER:
+                if obj.created_by.groups.filter(name='Past member') or obj.created_by.labuser.is_principal_investigator:
                     return ['name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parent_1', 'parent_2', 'parental_strain',
                 'construction', 'modification', 'integrated_plasmids', 'cassette_plasmids', 'plasmids', 'selection', 'phenotype', 
                 'background', 'received_from', 'us_e', 'reference', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
@@ -1176,7 +1114,7 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
         if object_id:
             obj = collection_management_SaCerevisiaeStrain.objects.get(pk=object_id)
             if obj:
-                if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by == HU_USER or obj.created_by.groups.filter(name='Past member')):
+                if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by.labuser.is_principal_investigator or obj.created_by.groups.filter(name='Past member')):
                     if not request.user.has_perm('collection_management.change_sacerevisiaestrain', obj):
                         extra_context['show_submit_line'] = False
         return super(SaCerevisiaeStrainPage, self).changeform_view(request, object_id, extra_context=extra_context)
@@ -1194,6 +1132,24 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
                 messages.error(request, 'Nice try, you are allowed to change the permissions of your own records only.')
                 return HttpResponseRedirect("..")
         return super(SaCerevisiaeStrainPage,self).obj_perms_manage_view(request, object_pk)
+
+    def response_change(self, request, obj):
+        opts = self.model._meta
+        preserved_filters = self.get_preserved_filters(request)
+
+        msg_dict = {
+            'name': opts.verbose_name,
+            'obj': format_html('<a href="{}">{}</a>', urlquote(request.path), obj),
+        }
+
+        if "_disapprove_record" in request.POST:
+            msg = format_html(
+                _('The {name} "{obj}" was disapproved.'),
+                **msg_dict)
+            self.message_user(request, msg, messages.SUCCESS)
+            return HttpResponseRedirect(reverse("admin:record_approval_recordtobeapproved_change", args=(obj.approval.latest('created_date_time').id,)))
+        
+        return super(SaCerevisiaeStrainPage,self).response_change(request,obj)
 
 my_admin_site.register(collection_management_SaCerevisiaeStrain, SaCerevisiaeStrainPage)
 
@@ -1299,7 +1255,17 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
                 new_obj = True
                 self.new_obj = True
             obj.save()
+            obj.approval.create(activity_type='created', activity_user=obj.history.latest().history_user)
         else:
+
+            if "_disapprove_record" in request.POST:
+                if not obj.approval.all():
+                    obj.approval.create(activity_type='changed', activity_user=obj.created_by)
+                    obj.last_changed_approval_by_pi = False
+                    obj.save_without_historical_record()
+                    collection_management_HuPlasmid.objects.filter(id=obj.pk).update(last_changed_date_time=obj.history.latest().last_changed_date_time)
+                    return
+
             old_obj = collection_management_HuPlasmid.objects.get(pk=obj.pk)
             if request.user.is_superuser or request.user == old_obj.created_by or request.user.groups.filter(name='Lab manager').exists():
                 obj.last_changed_approval_by_pi = False
@@ -1317,7 +1283,7 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
                         self.clear_formz_elements = True
                     obj.save()
             else:
-                if obj.created_by == HU_USER: # Allow saving object, if record belongs to Helle (user id = 6)
+                if obj.created_by.labuser.is_principal_investigator: # Allow saving object, if record belongs to Helle (user id = 6)
                     obj.last_changed_approval_by_pi = False
                     if obj.map:
                         if obj.map != old_obj.map:
@@ -1334,6 +1300,14 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
                         obj.save()
                 else:
                     raise PermissionDenied
+            if not obj.approval.all():
+                obj.approval.create(activity_type='changed', activity_user=obj.history.latest().history_user)
+            else:
+                approval_obj = obj.approval.all().latest(field_name='message_date_time')
+                if approval_obj.message_date_time:
+                    if obj.last_changed_date_time > approval_obj.message_date_time:
+                        approval_obj.edited = True
+                        approval_obj.save()
         
         # Rename plasmid map
         if rename_and_preview:
@@ -1529,6 +1503,15 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
             'name': opts.verbose_name,
             'obj': format_html('<a href="{}">{}</a>', urlquote(request.path), obj),
         }
+
+        if "_disapprove_record" in request.POST:
+            msg = format_html(
+                _('The {name} "{obj}" was disapproved.'),
+                **msg_dict
+            )
+            self.message_user(request, msg, messages.SUCCESS)
+            return HttpResponseRedirect(reverse("admin:{}_{}_changelist".format(obj._meta.app_label, obj._meta.model_name)))
+
         if "_continue" in request.POST or self.redirect_to_obj_page: # Check if obj has unidentified FormZ Elements:
             msg = format_html(
                 _('The {name} "{obj}" was changed successfully. You may edit it again below.'),
@@ -1582,13 +1565,13 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
         if obj:
             if request.user.has_perm('collection_management.change_huplasmid', obj):
                 return ['map_png', 'map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',]
-            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by == HU_USER):
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by.labuser.is_principal_investigator):
                 return ['name', 'other_name', 'parent_vector', 'old_parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
                     'reference', 'map', 'map_png', 'map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
                     'last_changed_approval_by_pi', 'created_by', 'formz_projects', 'formz_risk_group', 'vector_zkbs', 
                     'destroyed_date', 'formz_elements', 'formz_gentech_methods', 'formz_ecoli_strains']
             else:
-                if obj.created_by == HU_USER and not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists()): # Show map and note as editable fields, if record belongs to Helle (user id = 6)
+                if obj.created_by.labuser.is_principal_investigator and not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists()): # Show map and note as editable fields, if record belongs to Helle (user id = 6)
                     return ['name', 'other_name', 'parent_vector', 'old_parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 
                     'reference', 'map_png', 'map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
                     'last_changed_approval_by_pi', 'created_by', 'formz_projects', 'formz_risk_group', 'vector_zkbs', 
@@ -1661,10 +1644,10 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
         else:
             if request.user.has_perm('collection_management.change_huplasmid', obj):
                 self.fieldsets = fieldsets_with_keep
-            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by == HU_USER):
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by.labuser.is_principal_investigator):
                 self.fieldsets = fieldsets_wo_keep
             else:
-                if obj.created_by == HU_USER and not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists()): # Show map and note as editable fields, if record belongs to Helle (user id = 6)
+                if obj.created_by.labuser.is_principal_investigator and not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists()): # Show map and note as editable fields, if record belongs to Helle (user id = 6)
                     self.fieldsets = fieldsets_with_keep
                 else:
                     self.fieldsets = fieldsets_wo_keep
@@ -1680,7 +1663,7 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
         if object_id:
             obj = collection_management_HuPlasmid.objects.get(pk=object_id)
             if obj:
-                if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by == HU_USER):
+                if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by.labuser.is_principal_investigator):
                     if not request.user.has_perm('collection_management.change_huplasmid', obj):
                         extra_context['show_submit_line'] = False
         return super(HuPlasmidPage, self).changeform_view(request, object_id, extra_context=extra_context)
@@ -1797,10 +1780,28 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
         if obj.pk == None:
             obj.created_by = request.user
             obj.save()
+            obj.approval.create(activity_type='created', activity_user=obj.history.latest().history_user)
         else:
+
+            if "_disapprove_record" in request.POST:
+                if not obj.approval.all():
+                    obj.approval.create(activity_type='changed', activity_user=obj.created_by)
+                    obj.last_changed_approval_by_pi = False
+                    obj.save_without_historical_record()
+                    collection_management_Oligo.objects.filter(id=obj.pk).update(last_changed_date_time=obj.history.latest().last_changed_date_time)
+                    return
+
             if request.user.is_superuser or request.user == collection_management_Oligo.objects.get(pk=obj.pk).created_by or request.user.groups.filter(name='Lab manager').exists():
                 obj.last_changed_approval_by_pi = False
                 obj.save()
+                if not obj.approval.all():
+                    obj.approval.create(activity_type='changed', activity_user=obj.history.latest().history_user)
+                else:
+                    approval_obj = obj.approval.all().latest(field_name='message_date_time')
+                    if approval_obj.message_date_time:
+                        if obj.last_changed_date_time > approval_obj.message_date_time:
+                            approval_obj.edited = True
+                            approval_obj.save()
             else:
                 raise PermissionDenied
     
@@ -1848,6 +1849,24 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
                 if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
                     extra_context['show_submit_line'] = False
         return super(OligoPage, self).changeform_view(request, object_id, extra_context=extra_context)
+
+    def response_change(self, request, obj):
+        opts = self.model._meta
+        preserved_filters = self.get_preserved_filters(request)
+
+        msg_dict = {
+            'name': opts.verbose_name,
+            'obj': format_html('<a href="{}">{}</a>', urlquote(request.path), obj),
+        }
+
+        if "_disapprove_record" in request.POST:
+            msg = format_html(
+                _('The {name} "{obj}" was disapproved.'),
+                **msg_dict)
+            self.message_user(request, msg, messages.SUCCESS)
+            return HttpResponseRedirect(reverse("admin:record_approval_recordtobeapproved_change", args=(obj.approval.latest('created_date_time').id,)))
+        
+        return super(OligoPage,self).response_change(request,obj)
 
 my_admin_site.register(collection_management_Oligo, OligoPage)
 
@@ -1994,10 +2013,28 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admi
         if obj.pk == None:
             obj.created_by = request.user
             obj.save()
+            obj.approval.create(activity_type='created', activity_user=obj.history.latest().history_user)
         else:
+
+            if "_disapprove_record" in request.POST:
+                if not obj.approval.all():
+                    obj.approval.create(activity_type='changed', activity_user=obj.created_by)
+                    obj.last_changed_approval_by_pi = False
+                    obj.save_without_historical_record()
+                    collection_management_ScPombeStrain.objects.filter(id=obj.pk).update(last_changed_date_time=obj.history.latest().last_changed_date_time)
+                    return
+        
             if request.user.is_superuser or request.user == collection_management_ScPombeStrain.objects.get(pk=obj.pk).created_by or request.user.groups.filter(name='Lab manager').exists():
                 obj.last_changed_approval_by_pi = False
                 obj.save()
+                if not obj.approval.all():
+                    obj.approval.create(activity_type='changed', activity_user=obj.history.latest().history_user)
+                else:
+                    approval_obj = obj.approval.all().latest(field_name='message_date_time')
+                    if approval_obj.message_date_time:
+                        if obj.last_changed_date_time > approval_obj.message_date_time:
+                            approval_obj.edited = True
+                            approval_obj.save()
             else:
                 raise PermissionDenied
     
@@ -2140,6 +2177,24 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admi
                     extra_context['show_submit_line'] = False
         return super(ScPombeStrainPage, self).changeform_view(request, object_id, extra_context=extra_context)
 
+    def response_change(self, request, obj):
+        opts = self.model._meta
+        preserved_filters = self.get_preserved_filters(request)
+
+        msg_dict = {
+            'name': opts.verbose_name,
+            'obj': format_html('<a href="{}">{}</a>', urlquote(request.path), obj),
+        }
+
+        if "_disapprove_record" in request.POST:
+            msg = format_html(
+                _('The {name} "{obj}" was disapproved.'),
+                **msg_dict)
+            self.message_user(request, msg, messages.SUCCESS)
+            return HttpResponseRedirect(reverse("admin:record_approval_recordtobeapproved_change", args=(obj.approval.latest('created_date_time').id,)))
+        
+        return super(ScPombeStrainPage,self).response_change(request,obj)
+
 my_admin_site.register(collection_management_ScPombeStrain, ScPombeStrainPage)
 
 #################################################
@@ -2208,10 +2263,28 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.
         if obj.pk == None:
             obj.created_by = request.user
             obj.save()
+            obj.approval.create(activity_type='created', activity_user=obj.history.latest().history_user)
         else:
+            
+            if "_disapprove_record" in request.POST:
+                if not obj.approval.all():
+                    obj.approval.create(activity_type='changed', activity_user=obj.created_by)
+                    obj.last_changed_approval_by_pi = False
+                    obj.save_without_historical_record()
+                    collection_management_EColiStrain.objects.filter(id=obj.pk).update(last_changed_date_time=obj.history.latest().last_changed_date_time)
+                    return
+
             if request.user.is_superuser or request.user == collection_management_EColiStrain.objects.get(pk=obj.pk).created_by or request.user.groups.filter(name='Lab manager').exists():
                 obj.last_changed_approval_by_pi = False
                 obj.save()
+                if not obj.approval.all():
+                    obj.approval.create(activity_type='changed', activity_user=obj.history.latest().history_user)
+                else:
+                    approval_obj = obj.approval.all().latest(field_name='message_date_time')
+                    if approval_obj.message_date_time:
+                        if obj.last_changed_date_time > approval_obj.message_date_time:
+                            approval_obj.edited = True
+                            approval_obj.save()
             else:
                 raise PermissionDenied
                 
@@ -2257,6 +2330,24 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.
                 if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
                     extra_context['show_submit_line'] = False
         return super(EColiStrainPage, self).changeform_view(request, object_id, extra_context=extra_context)
+
+    def response_change(self, request, obj):
+        opts = self.model._meta
+        preserved_filters = self.get_preserved_filters(request)
+
+        msg_dict = {
+            'name': opts.verbose_name,
+            'obj': format_html('<a href="{}">{}</a>', urlquote(request.path), obj),
+        }
+
+        if "_disapprove_record" in request.POST:
+            msg = format_html(
+                _('The {name} "{obj}" was disapproved.'),
+                **msg_dict)
+            self.message_user(request, msg, messages.SUCCESS)
+            return HttpResponseRedirect(reverse("admin:record_approval_recordtobeapproved_change", args=(obj.approval.latest('created_date_time').id,)))
+        
+        return super(EColiStrainPage,self).response_change(request,obj)
 
 my_admin_site.register(collection_management_EColiStrain, EColiStrainPage)
 
@@ -2367,7 +2458,6 @@ class SearchFieldOptLastnameMamma(SearchFieldOptLastname):
 
     id_list = collection_management_MammalianLine.objects.all().values_list('created_by', flat=True).distinct()
 
-
 class FieldEpisomalPlasmidFormZProjectMamma(StrField):
     name = 'episomal_plasmids_formz_projects_title'
     suggest_options = True
@@ -2469,9 +2559,27 @@ class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Cust
         if obj.pk == None:
             obj.created_by = request.user
             obj.save()
+            obj.approval.create(activity_type='created', activity_user=obj.history.latest().history_user)
         else:
+            
+            if "_disapprove_record" in request.POST:
+                if not obj.approval.all():
+                    obj.approval.create(activity_type='changed', activity_user=obj.created_by)
+                    obj.last_changed_approval_by_pi = False
+                    obj.save_without_historical_record()
+                    collection_management_MammalianLine.objects.filter(id=obj.pk).update(last_changed_date_time=obj.history.latest().last_changed_date_time)
+                    return
+
             obj.last_changed_approval_by_pi = False
             obj.save()
+            if not obj.approval.all():
+                obj.approval.create(activity_type='changed', activity_user=obj.history.latest().history_user)
+            else:
+                approval_obj = obj.approval.all().latest(field_name='message_date_time')
+                if approval_obj.message_date_time:
+                    if obj.last_changed_date_time > approval_obj.message_date_time:
+                        approval_obj.edited = True
+                        approval_obj.save()
     
     def get_readonly_fields(self, request, obj=None):
         '''Override default get_readonly_fields to define user-specific read-only fields
@@ -2620,6 +2728,24 @@ class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Cust
                 messages.error(request, 'Nice try, you are allowed to change the permissions of your own records only.')
                 return HttpResponseRedirect("..")
         return super(MammalianLinePage,self).obj_perms_manage_view(request, object_pk)
+    
+    def response_change(self, request, obj):
+        opts = self.model._meta
+        preserved_filters = self.get_preserved_filters(request)
+
+        msg_dict = {
+            'name': opts.verbose_name,
+            'obj': format_html('<a href="{}">{}</a>', urlquote(request.path), obj),
+        }
+
+        if "_disapprove_record" in request.POST:
+            msg = format_html(
+                _('The {name} "{obj}" was disapproved.'),
+                **msg_dict)
+            self.message_user(request, msg, messages.SUCCESS)
+            return HttpResponseRedirect(reverse("admin:record_approval_recordtobeapproved_change", args=(obj.approval.latest('created_date_time').id,)))
+        
+        return super(MammalianLinePage,self).response_change(request,obj)
 
 my_admin_site.register(collection_management_MammalianLine, MammalianLinePage)
 
@@ -2855,3 +2981,12 @@ my_admin_site.register(ZkbsPlasmid, ZkbsPlasmidPage)
 my_admin_site.register(ZkbsOncogene, ZkbsOncogenePage)
 my_admin_site.register(ZkbsCellLine, ZkbsCellLinePage)
 my_admin_site.register(FormZStorageLocation, FormZStorageLocationPage)
+
+#################################################
+#               RECORD APPROVAL                 #
+#################################################
+
+from record_approval.models import RecordToBeApproved
+from record_approval.admin import RecordToBeApprovedPage
+
+my_admin_site.register(RecordToBeApproved, RecordToBeApprovedPage)

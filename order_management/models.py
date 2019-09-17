@@ -5,6 +5,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils.encoding import force_text
+from django.contrib.contenttypes.fields import GenericRelation
 
 #################################################
 #        ADDED FUNCTIONALITIES IMPORTS          #
@@ -13,6 +14,7 @@ from django.utils.encoding import force_text
 from simple_history.models import HistoricalRecords
 import os
 import time
+from record_approval.models import RecordToBeApproved
 
 #################################################
 #            ORDER COST UNIT MODEL              #
@@ -133,13 +135,14 @@ class Order(models.Model):
     last_changed_date_time = models.DateTimeField("last changed", auto_now=True, null=True)
     created_by = models.ForeignKey(User, on_delete=models.PROTECT)
     created_approval_by_pi = models.BooleanField(default=False, null=True)
+    approval = GenericRelation(RecordToBeApproved)
     history = HistoricalRecords()
 
     class Meta:
         verbose_name = 'order'
     
     def __str__(self):
-         return str(self.id)
+         return "{} - {}".format(self.id, self.part_description)
     
     def save_without_historical_record(self, *args, **kwargs):
         """Allows inheritance of a method to save an object without

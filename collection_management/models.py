@@ -6,12 +6,15 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.forms import ValidationError
 from django.utils.encoding import force_text
+from django.contrib.contenttypes.fields import GenericRelation
 
 from formz.models import ZkbsPlasmid
 from formz.models import FormZBaseElement
 from formz.models import FormZProject
 from formz.models import ZkbsCellLine
 from formz.models import GenTechMethod
+
+from record_approval.models import RecordToBeApproved
 
 #################################################
 #        ADDED FUNCTIONALITIES IMPORTS          #
@@ -85,7 +88,9 @@ class SaCerevisiaeStrain (models.Model, SaveWithoutHistoricalRecord):
     last_changed_date_time = models.DateTimeField("last changed", auto_now=True)
     last_changed_approval_by_pi = models.NullBooleanField("record change approval", default=None)
     approval_by_pi_date_time = models.DateTimeField(null = True, default=None)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT)
+    approval = GenericRelation(RecordToBeApproved)
+    approval_user = models.ForeignKey(User, related_name='cerevisiae_approval_user', on_delete=models.PROTECT, null=True)
+    created_by = models.ForeignKey(User, related_name='cerevisiae_createdby_user', on_delete=models.PROTECT)
     history = HistoricalRecords()
 
     formz_projects = models.ManyToManyField(FormZProject, verbose_name='projects', related_name='cerevisiae_formz_project', blank=False)
@@ -179,7 +184,9 @@ class HuPlasmid (models.Model, SaveWithoutHistoricalRecord):
     last_changed_date_time = models.DateTimeField("last changed", auto_now=True)
     last_changed_approval_by_pi = models.NullBooleanField("record change approval", default=None)
     approval_by_pi_date_time = models.DateTimeField(null=True, default=None)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT)
+    approval = GenericRelation(RecordToBeApproved)
+    approval_user = models.ForeignKey(User, related_name='plasmid_approval_user', on_delete=models.PROTECT, null=True)
+    created_by = models.ForeignKey(User, related_name='plasmid_createdby_user', on_delete=models.PROTECT)
     history = HistoricalRecords()
 
     formz_projects = models.ManyToManyField(FormZProject, verbose_name='projects', related_name='plasmid_formz_projects', blank= False)
@@ -266,11 +273,12 @@ class Oligo (models.Model, SaveWithoutHistoricalRecord):
     last_changed_date_time = models.DateTimeField("last changed", auto_now=True)
     last_changed_approval_by_pi = models.NullBooleanField("record change approval", default=None)
     approval_by_pi_date_time = models.DateTimeField(null=True, default=None)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT)
+    approval = GenericRelation(RecordToBeApproved)
+    created_by = models.ForeignKey(User, related_name='oligo_createdby_user', on_delete=models.PROTECT)
     history = HistoricalRecords()
     
     def __str__(self):
-       return str(self.id)
+       return "{} - {}".format(self.id, self.name)
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         
@@ -308,7 +316,9 @@ class ScPombeStrain (models.Model, SaveWithoutHistoricalRecord):
     last_changed_date_time = models.DateTimeField("last changed", auto_now=True)
     last_changed_approval_by_pi = models.NullBooleanField("record change approval", default=None)
     approval_by_pi_date_time = models.DateTimeField(null=True, default=None)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT)
+    approval = GenericRelation(RecordToBeApproved)
+    approval_user = models.ForeignKey(User, related_name='pombe_approval_user', on_delete=models.PROTECT, null=True)
+    created_by = models.ForeignKey(User, related_name='pombe_createdby_user', on_delete=models.PROTECT)
     history = HistoricalRecords()
 
     formz_projects = models.ManyToManyField(FormZProject, verbose_name='formZ projects', related_name='pombe_formz_project', blank=False)
@@ -396,8 +406,12 @@ class EColiStrain (models.Model, SaveWithoutHistoricalRecord):
     last_changed_date_time = models.DateTimeField("last changed", auto_now=True)
     last_changed_approval_by_pi = models.NullBooleanField("record change approval", default=None)
     approval_by_pi_date_time = models.DateTimeField(null=True, default=None)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT)
+    approval = GenericRelation(RecordToBeApproved)
+    approval_user = models.ForeignKey(User, related_name='coli_approval_user', on_delete=models.PROTECT, null=True)
+    created_by = models.ForeignKey(User, related_name='coli_createdby_user', on_delete=models.PROTECT)
     history = HistoricalRecords()
+
+    formz_projects = models.ManyToManyField(FormZProject, verbose_name='formZ projects', related_name='coli_formz_project', blank=False, default=1)
     
     class Meta:
         verbose_name = 'strain - E. coli'
@@ -434,7 +448,9 @@ class MammalianLine (models.Model, SaveWithoutHistoricalRecord):
     last_changed_date_time = models.DateTimeField("last changed", auto_now=True)
     last_changed_approval_by_pi = models.NullBooleanField("record change approval", default=None)
     approval_by_pi_date_time = models.DateTimeField(null=True, default=None)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT)
+    approval = GenericRelation(RecordToBeApproved)
+    approval_user = models.ForeignKey(User, related_name='mammalian_approval_user', on_delete=models.PROTECT, null=True)
+    created_by = models.ForeignKey(User, related_name='mammalian_createdby_user', on_delete=models.PROTECT)
     history = HistoricalRecords()
     
     formz_projects = models.ManyToManyField(FormZProject, verbose_name='projects', related_name='mammalian_zprojects', blank=False)

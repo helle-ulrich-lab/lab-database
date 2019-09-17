@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     'wiki.plugins.macros.apps.MacrosConfig',
     'background_task',
     'formz',
+    'record_approval',
     ]
 
 FORM_RENDERER = 'django.forms.renderers.TemplatesSetting' 

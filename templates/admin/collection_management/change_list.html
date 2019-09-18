@@ -1,5 +1,5 @@
 {% extends "admin/base_site.html" %}
-{% load i18n admin_urls static admin_list %}
+{% load i18n admin_urls static admin_list app_filters %}
 
 {% block extrastyle %}
   {{ block.super }}
@@ -50,12 +50,14 @@
               </a>
             </li>
             {% endif %}
-            <li>
-                <a style="background-color:palevioletred;" 
-                href='?q-l=on&q=created_by.username+%3D+"{{user.username}}"'>
-                {% blocktrans with cl.opts.verbose_name_plural as name_plural %}My {{ name_plural }}{% endblocktrans %}
-                </a>
-            </li>
+            {% if not user|has_group:"Guest"%}
+              <li>
+                  <a style="background-color:palevioletred;" 
+                  href='?q-l=on&q=created_by.username+%3D+"{{user.username}}"'>
+                  {% blocktrans with cl.opts.verbose_name_plural as name_plural %}My {{ name_plural }}{% endblocktrans %}
+                  </a>
+              </li>
+            {% endif %}
           {% endblock %}
         </ul>
     {% endblock %}

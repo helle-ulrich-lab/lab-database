@@ -143,13 +143,13 @@
          <div><span style='font-weight: bold'>Bestätigt durch Projektleiter:</span> 
             {% if object.last_changed_approval_by_pi is not None %}
                 {% if object.last_changed_approval_by_pi %}
-                    {{object.approval_by_pi_date_time | date:"d.m.Y, H:i:s"}}
+                    {{object.approval_by_pi_date_time | date:"d.m.Y, H:i:s"}} ({{object.approval_user}})
                 {% else %}
                     Nein
                 {% endif %}
             {% else %}
                 {% if object.created_approval_by_pi %}
-                    {{object.approval_by_pi_date_time | date:"d.m.Y, H:i:s"}}
+                    {{object.approval_by_pi_date_time | date:"d.m.Y, H:i:s"}} ({{object.approval_user}})
                 {% else %}
                     Nein
                 {% endif %}

@@ -139,7 +139,7 @@
           });
         }
 
-        {% if request.user|has_group:"Approval manager"%}
+        {% if user|has_group:"Approval manager"%}
           if (window.location.pathname.endsWith('change/'))
           {
             var submit_row = document.getElementsByClassName("submit-row")[0];

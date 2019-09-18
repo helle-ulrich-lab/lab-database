@@ -130,7 +130,7 @@
                       }
             }
             
-        {% if request.user|has_group:"Approval manager" and not original.species_isotype %} // 'not original.species_isotype; is to disable this for antibodies
+        {% if user|has_group:"Approval manager" and not original.species_isotype %} // 'not original.species_isotype; is to disable this for antibodies
           if (window.location.pathname.endsWith('change/'))
           {
             var submit_row = document.getElementsByClassName("submit-row")[0];

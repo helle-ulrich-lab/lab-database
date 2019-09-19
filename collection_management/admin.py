@@ -949,6 +949,7 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
             saved_obj = collection_management_SaCerevisiaeStrain.objects.get(pk=obj.pk)
             if request.user.is_superuser or request.user == saved_obj.created_by or request.user.groups.filter(name='Lab manager').exists() or saved_obj.created_by.groups.filter(name='Past member').exists() or saved_obj.created_by.labuser.is_principal_investigator:
                 obj.last_changed_approval_by_pi = False
+                obj.approval_user = None
                 obj.save()
                 if not obj.approval.all():
                     obj.approval.create(activity_type='changed', activity_user=obj.history.latest().history_user)
@@ -1262,6 +1263,7 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
                 if not obj.approval.all():
                     obj.approval.create(activity_type='changed', activity_user=obj.created_by)
                     obj.last_changed_approval_by_pi = False
+                    obj.approval_user = None
                     obj.save_without_historical_record()
                     collection_management_HuPlasmid.objects.filter(id=obj.pk).update(last_changed_date_time=obj.history.latest().last_changed_date_time)
                     return
@@ -1269,6 +1271,7 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
             old_obj = collection_management_HuPlasmid.objects.get(pk=obj.pk)
             if request.user.is_superuser or request.user == old_obj.created_by or request.user.groups.filter(name='Lab manager').exists():
                 obj.last_changed_approval_by_pi = False
+                obj.approval_user = None
                 if obj.map:
                     if obj.map != old_obj.map:
                         rename_and_preview = True
@@ -1285,6 +1288,7 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
             else:
                 if obj.created_by.labuser.is_principal_investigator: # Allow saving object, if record belongs to Helle (user id = 6)
                     obj.last_changed_approval_by_pi = False
+                    obj.approval_user = None
                     if obj.map:
                         if obj.map != old_obj.map:
                             rename_and_preview = True
@@ -1510,7 +1514,7 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
                 **msg_dict
             )
             self.message_user(request, msg, messages.SUCCESS)
-            return HttpResponseRedirect(reverse("admin:{}_{}_changelist".format(obj._meta.app_label, obj._meta.model_name)))
+            return HttpResponseRedirect(reverse("admin:record_approval_recordtobeapproved_change", args=(obj.approval.latest('created_date_time').id,)))
 
         if "_continue" in request.POST or self.redirect_to_obj_page: # Check if obj has unidentified FormZ Elements:
             msg = format_html(
@@ -2020,12 +2024,14 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admi
                 if not obj.approval.all():
                     obj.approval.create(activity_type='changed', activity_user=obj.created_by)
                     obj.last_changed_approval_by_pi = False
+                    obj.approval_user = None
                     obj.save_without_historical_record()
                     collection_management_ScPombeStrain.objects.filter(id=obj.pk).update(last_changed_date_time=obj.history.latest().last_changed_date_time)
                     return
         
             if request.user.is_superuser or request.user == collection_management_ScPombeStrain.objects.get(pk=obj.pk).created_by or request.user.groups.filter(name='Lab manager').exists():
                 obj.last_changed_approval_by_pi = False
+                obj.approval_user = None
                 obj.save()
                 if not obj.approval.all():
                     obj.approval.create(activity_type='changed', activity_user=obj.history.latest().history_user)
@@ -2270,12 +2276,14 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.
                 if not obj.approval.all():
                     obj.approval.create(activity_type='changed', activity_user=obj.created_by)
                     obj.last_changed_approval_by_pi = False
+                    obj.approval_user = None
                     obj.save_without_historical_record()
                     collection_management_EColiStrain.objects.filter(id=obj.pk).update(last_changed_date_time=obj.history.latest().last_changed_date_time)
                     return
 
             if request.user.is_superuser or request.user == collection_management_EColiStrain.objects.get(pk=obj.pk).created_by or request.user.groups.filter(name='Lab manager').exists():
                 obj.last_changed_approval_by_pi = False
+                obj.approval_user = None
                 obj.save()
                 if not obj.approval.all():
                     obj.approval.create(activity_type='changed', activity_user=obj.history.latest().history_user)
@@ -2566,11 +2574,13 @@ class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Cust
                 if not obj.approval.all():
                     obj.approval.create(activity_type='changed', activity_user=obj.created_by)
                     obj.last_changed_approval_by_pi = False
+                    obj.approval_user = None
                     obj.save_without_historical_record()
                     collection_management_MammalianLine.objects.filter(id=obj.pk).update(last_changed_date_time=obj.history.latest().last_changed_date_time)
                     return
 
             obj.last_changed_approval_by_pi = False
+            obj.approval_user = None
             obj.save()
             if not obj.approval.all():
                 obj.approval.create(activity_type='changed', activity_user=obj.history.latest().history_user)

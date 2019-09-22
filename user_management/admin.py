@@ -26,16 +26,21 @@ class LabUserAdmin(BaseUserAdmin):
     
     def save_model(self, request, obj, form, change):
         
-        '''Set is_active and is_staff to True for newly created users'''
+        # Set is_active and is_staff to True for newly created users
         if obj.pk == None:
-            self.is_active = True
-            self.is_staff = True
-        
+            obj.is_active = True
+            obj.is_staff = True
+            obj.save()
+            LabUser.objects.create(user=obj)
+        else:
+            obj.save()
+
+        # If is_principal_investigator is True check whether a principal_investigator already exists
+        # and if so set the field to False
         if obj.labuser.is_principal_investigator:
             if User.objects.filter(labuser__is_principal_investigator=True):
                 obj.labuser.is_principal_investigator = False
-
-        return super(LabUserAdmin,self).save_model(request, obj, form, change)
+                obj.save()
 
     def change_view(self,request,object_id,extra_context=None):
         '''Override default change_view to show only desired fields'''

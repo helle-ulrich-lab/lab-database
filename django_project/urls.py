@@ -20,6 +20,7 @@ from django.urls.conf import include
 from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required
+from django.urls import reverse_lazy
 
 from wiki.urls import get_pattern as get_wiki_pattern
 from django_nyt.urls import get_pattern as get_nyt_pattern
@@ -114,7 +115,7 @@ urlpatterns = [
     url(r'^wiki/(?P<article_id>[0-9]+)/plugin/attachments/download/(?P<attachment_id>[0-9]+)/$', login_required(CustomAttachmentDownloadView.as_view())),
     url(r'^notifications/', include('django_nyt.urls')),
     url(r'^wiki/',  decorated_includes(wiki_check_login_guest, get_wiki_pattern())),
-    url(r'^password_change/$', check_guest(auth_views.PasswordChangeView.as_view())),
+    url(r'^password_change/$', check_guest(auth_views.PasswordChangeView.as_view(success_url=reverse_lazy('admin:password_change_done')))),
     url(r'', my_admin_site.urls),
     ]
 

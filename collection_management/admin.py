@@ -592,50 +592,34 @@ class MyAdminSite(admin.AdminSite):
         opts = model._meta
         obj = model.objects.get(id=int(obj_id))
         
+        # Get storage location object or create a new 'empty' one
         if FormZStorageLocation.objects.get(collection_model=model_content_type):
-            storage_location_obj = FormZStorageLocation.objects.get(collection_model=model_content_type)
-            storage_location = storage_location_obj.storage_location
-            organism = storage_location_obj.species_name
-            receiving_organism_risk_group = storage_location_obj.species_risk_group
+            storage_location = FormZStorageLocation.objects.get(collection_model=model_content_type)
         else:
-            storage_location = None
-            organism = None
-            receiving_organism_risk_group = None
+            storage_location = FormZStorageLocation(
+                collection_model = None,
+                storage_location = None,
+                species_name = None,
+                species_risk_group = None
+            )
 
         if FormZHeader.objects.all().first():
-            header = FormZHeader.objects.all().first()
+            formz_header = FormZHeader.objects.all().first()
         else:
-            header = None
+            formz_header = None
 
-        if model_name == 'sacerevisiaestrain':
-            in_stock_plasmids = [("Integriert", obj.integrated_plasmids.all().order_by('id')),
-                                 (mark_safe("Teilweise integriert durch PCR Vervielfältigung eines bestimmtem Bereichs des Plasmids <span style='font-weight:normal'>(Details ersichtlich unter 'Konstruktion' des Organismus)</span>"), obj.cassette_plasmids.all().order_by('id')),
-                                 ("Episomal", obj.episomal_plasmids.all().order_by('id').filter(sacerevisiaestrainepisomalplasmid__present_in_stocked_strain=True).distinct())]
-            transient_episomal_plasmids = obj.sacerevisiaestrainepisomalplasmid_set.all().order_by('id').distinct().filter(present_in_stocked_strain=False)
-            formz_base_elements = obj.formz_elements.all().order_by('name')
-            lenti_construction_plasmids = None
-        
-        elif model_name == 'scpombestrain':
+        obj.common_formz_elements = obj.get_all_common_formz_elements()
+        obj.uncommon_formz_elements =  obj.get_all_uncommon_formz_elements()
+        obj.instock_plasmids = obj.get_all_instock_plasmids()
+        obj.transient_episomal_plasmids = obj.get_all_transient_episomal_plasmids()
 
-            in_stock_plasmids = [("Fully integrated", obj.integrated_plasmids.all().order_by('id')),
-                                 (mark_safe("Teilweise integriert durch PCR Vervielfältigung eines bestimmtem Bereichs des Plasmids <span style='font-weight:normal'>(Details ersichtlich unter 'Konstruktion' des Organismus)</span>"), obj.cassette_plasmids.all().order_by('id')),
-                                 ("Episomal", obj.episomal_plasmids.all().order_by('id').filter(scpombestrainepisomalplasmid__present_in_stocked_strain=True).distinct())]
-            transient_episomal_plasmids = obj.scpombestrainepisomalplasmid_set.all().order_by('id').distinct().filter(present_in_stocked_strain=False)
-            formz_base_elements = obj.formz_elements.all().order_by('name')
-            lenti_construction_plasmids = None
-        
-        elif model_name == 'huplasmid':
-            in_stock_plasmids = None
-            transient_episomal_plasmids = None
-            formz_base_elements = obj.formz_elements.all().order_by('name')
-            lenti_construction_plasmids = None
-
-        elif model_name == 'mammalianline':
-            organism = obj.organism
-            in_stock_plasmids = [("Integriert", obj.integrated_plasmids.all().order_by('id'))]
-            transient_episomal_plasmids = obj.mammalianlineepisomalplasmid_set.all().order_by('id').distinct().filter(s2_work_episomal_plasmid=False)
-            lenti_construction_plasmids = obj.mammalianlineepisomalplasmid_set.all().order_by('id').distinct().filter(s2_work_episomal_plasmid=True)
-            formz_base_elements = obj.formz_elements.all().order_by('name')
+        if model_name == 'mammalianline':
+            storage_location.species_name = obj.organism
+            obj.s2_plasmids = obj.mammalianlineepisomalplasmid_set.all().filter(s2_work_episomal_plasmid=True).distinct().order_by('id')
+            transfected = True
+        else:
+            obj.s2_plasmids = None
+            transfected = False
 
         context = {
         'title': 'FormZ: {}'.format(obj),
@@ -646,14 +630,9 @@ class MyAdminSite(admin.AdminSite):
         'opts': opts,
         'site_url': self.site_url, 
         'object': obj,
-        'in_stock_plasmids': in_stock_plasmids,
-        'transient_episomal_plasmids': transient_episomal_plasmids,
         'storage_location': storage_location,
-        'formz_header': header,
-        'organism':organism,
-        'lenti_construction_plasmids': lenti_construction_plasmids,
-        'transfected': True if model_name == 'mammalianline' else False,
-        'receiving_organism_risk_group': receiving_organism_risk_group}
+        'formz_header': formz_header,
+        'transfected': transfected}
 
         return render(request, 'admin/formz.html', context)
 

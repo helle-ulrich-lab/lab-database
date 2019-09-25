@@ -118,12 +118,39 @@ class SaCerevisiaeStrain (models.Model, SaveWithoutHistoricalRecord):
     def __str__(self):
         return "{} - {}".format(self.id, self.name)
 
-    def get_common_formz_elements(self):
-        return self.formz_elements.all().filter(common_feature=True)
+    def get_all_instock_plasmids(self):
+        """Returns all plasmids present in the stocked organism"""
 
-    def get_uncommon_formz_elements(self):
-        return self.formz_elements.all().filter(common_feature=False)
+        all_plasmids = (self.integrated_plasmids.all() | \
+            self.cassette_plasmids.all() | \
+            self.episomal_plasmids.filter(sacerevisiaestrainepisomalplasmid__present_in_stocked_strain=True)).distinct().order_by('id')
+        return all_plasmids
+
+    def get_all_transient_episomal_plasmids(self):
+        """Returns all transiently transformed episomal plasmids"""
+
+        all_plasmids = self.sacerevisiaestrainepisomalplasmid_set.filter(present_in_stocked_strain=False).distinct().order_by('huplasmid__id')
+        return all_plasmids
+
+    def get_all_uncommon_formz_elements(self):
+        """Returns all uncommon features in stocked organism"""
+
+        elements = self.formz_elements.all()
+        all_plasmids = self.get_all_instock_plasmids()
+        for pl in all_plasmids:
+            elements = elements | pl.formz_elements.all()
+        elements = elements.distinct().filter(common_feature=False).order_by('name')
+        return elements
     
+    def get_all_common_formz_elements(self):
+        """Returns all common features in stocked organism"""
+
+        elements = self.formz_elements.all()
+        all_plasmids = self.get_all_instock_plasmids()
+        for pl in all_plasmids:
+            elements = elements | pl.formz_elements.all()
+        elements = elements.distinct().filter(common_feature=True).order_by('name')
+        return elements
 
 class SaCerevisiaeStrainEpisomalPlasmid (models.Model):
     
@@ -243,15 +270,28 @@ class HuPlasmid (models.Model, SaveWithoutHistoricalRecord):
             self.destroyed_date = datetime.now().date() + timedelta(days=random.randint(7,21))
         
         super(HuPlasmid, self).save(force_insert, force_update, using, update_fields)
-    
-    def get_common_formz_elements(self):
-        return self.formz_elements.all().filter(common_feature=True)
 
-    def get_uncommon_formz_elements(self):
-        return self.formz_elements.all().filter(common_feature=False)
+    def get_all_instock_plasmids(self):
+        """Returns all plasmids present in the stocked organism"""
+
+        return None
+
+    def get_all_transient_episomal_plasmids(self):
+        """Returns all transiently transformed episomal plasmids"""
+
+        return None
+
+    def get_all_uncommon_formz_elements(self):
+        """Returns all uncommon features in stocked organism"""
+
+        elements = self.formz_elements.filter(common_feature=False).order_by('name')
+        return elements
     
-    def is_plasmid_object(self):
-        return self._meta.model_name
+    def get_all_common_formz_elements(self):
+        """Returns all common features in stocked organism"""
+
+        elements = self.formz_elements.filter(common_feature=True).order_by('name')
+        return elements
 
 #################################################
 #                     OLIGO                     #
@@ -346,12 +386,39 @@ class ScPombeStrain (models.Model, SaveWithoutHistoricalRecord):
     def __str__(self):
         return "{} - {}".format(self.id, self.name)
 
-    def get_common_formz_elements(self):
-        return self.formz_elements.all().filter(common_feature=True)
+    def get_all_instock_plasmids(self):
+        """Returns all plasmids present in the stocked organism"""
 
-    def get_uncommon_formz_elements(self):
-        return self.formz_elements.all().filter(common_feature=False)
+        all_plasmids = (self.integrated_plasmids.all() | \
+            self.cassette_plasmids.all() | \
+            self.episomal_plasmids.all()).distinct().order_by('id')
+        return all_plasmids
+
+    def get_all_transient_episomal_plasmids(self):
+        """Returns all transiently transformed episomal plasmids"""
+
+        all_plasmids = self.scpombestrainepisomalplasmid_set.filter(present_in_stocked_strain=False).distinct().order_by('huplasmid__id')
+        return all_plasmids
+
+    def get_all_uncommon_formz_elements(self):
+        """Returns all uncommon features in stocked organism"""
+
+        elements = self.formz_elements.all()
+        all_plasmids = self.get_all_instock_plasmids()
+        for pl in all_plasmids:
+            elements = elements | pl.formz_elements.all()
+        elements = elements.distinct().filter(common_feature=False).order_by('name')
+        return elements
     
+    def get_all_common_formz_elements(self):
+        """Returns all common features in stocked organism"""
+
+        elements = self.formz_elements.all()
+        all_plasmids = self.get_all_instock_plasmids()
+        for pl in all_plasmids:
+            elements = elements | pl.formz_elements.all()
+        elements = elements.distinct().filter(common_feature=True).order_by('name')
+        return elements
 
 class ScPombeStrainEpisomalPlasmid (models.Model):
     
@@ -479,11 +546,37 @@ class MammalianLine (models.Model, SaveWithoutHistoricalRecord):
     def __str__(self):
         return "{} - {}".format(self.id, self.name)
 
-    def get_common_formz_elements(self):
-        return self.formz_elements.all().filter(common_feature=True)
+    def get_all_instock_plasmids(self):
+        """Returns all plasmids present in the stocked organism"""
 
-    def get_uncommon_formz_elements(self):
-        return self.formz_elements.all().filter(common_feature=False)
+        all_plasmids = self.integrated_plasmids.all().distinct().order_by('id')
+        return all_plasmids
+
+    def get_all_transient_episomal_plasmids(self):
+        """Returns all transiently transformed episomal plasmids"""
+
+        all_plasmids = self.mammalianlineepisomalplasmid_set.filter(s2_work_episomal_plasmid=False).distinct().order_by('huplasmid__id')
+        return all_plasmids
+
+    def get_all_uncommon_formz_elements(self):
+        """Returns all uncommon features in stocked organism"""
+
+        elements = self.formz_elements.all()
+        all_plasmids = self.get_all_instock_plasmids()
+        for pl in all_plasmids:
+            elements = elements | pl.formz_elements.all()
+        elements = elements.distinct().filter(common_feature=False).order_by('name')
+        return elements
+    
+    def get_all_common_formz_elements(self):
+        """Returns all common features in stocked organism"""
+
+        elements = self.formz_elements.all()
+        all_plasmids = self.get_all_instock_plasmids()
+        for pl in all_plasmids:
+            elements = elements | pl.formz_elements.all()
+        elements = elements.distinct().filter(common_feature=True).order_by('name')
+        return elements
     
 
 class MammalianLineEpisomalPlasmid (models.Model):

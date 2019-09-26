@@ -25,7 +25,6 @@ from djangoql.schema import DjangoQLSchema, StrField
 from collection_management.admin import SearchFieldOptUsername, SearchFieldOptLastname
 
 # Object history tracking from django-simple-history
-from simple_history.admin import SimpleHistoryAdmin
 from collection_management.admin import SimpleHistoryWithSummaryAdmin
 
 # Import/Export functionalities from django-import-export

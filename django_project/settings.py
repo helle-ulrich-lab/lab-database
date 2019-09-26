@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'background_task',
     'formz',
     'record_approval',
+    'my_admin',
     ]
 
 FORM_RENDERER = 'django.forms.renderers.TemplatesSetting' 
@@ -202,3 +203,7 @@ en_gb_formats.DATETIME_FORMAT = "j N Y, H:i:s"
 en_gb_formats.DATE_FORMAT = "j N Y"
 
 LOGIN_URL="/login/"
+
+
+# Abbreviation to be appended to files, e.g. HU for Helle Ulrich
+LAB_ABBREVIATION_FOR_FILES = 'HU'

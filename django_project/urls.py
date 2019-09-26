@@ -25,7 +25,7 @@ from django.urls import reverse_lazy
 from wiki.urls import get_pattern as get_wiki_pattern
 from django_nyt.urls import get_pattern as get_nyt_pattern
 
-from collection_management.admin import my_admin_site
+from my_admin.admin import my_admin_site
 
 # Apply a decorator to every urlpattern and URLconf module returned by
 # Django's include() method. From https://djangosnippets.org/snippets/2532/

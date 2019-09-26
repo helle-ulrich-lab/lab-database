@@ -10,9 +10,6 @@ from collection_management.admin import OligoExportResource
 from collection_management.models import ScPombeStrain
 from collection_management.admin import ScPombeStrainExportResource
 
-# from collection_management.models import NzPlasmid
-# from collection_management.admin import NzPlasmidExportResource
-
 from collection_management.models import EColiStrain
 from collection_management.admin import EColiStrainExportResource
 
@@ -40,7 +37,8 @@ def export_xlsx(model,export_resource):
         with open(file_name.replace("xlsx", "tsv"), 'w') as out_handle:
             wr = csv.writer(out_handle, delimiter="\t")
             for rownum in range(sheet.nrows):
-                wr.writerow(sheet.row_values(rownum))
+                row_values = [i.replace("\n", "").replace("\t", "") for i in sheet.row_values(rownum)]
+                wr.writerow(row_values)
     
     import time
     import os
@@ -59,7 +57,6 @@ export_xlsx(SaCerevisiaeStrain, SaCerevisiaeStrainExportResource)
 export_xlsx(HuPlasmid, HuPlasmidExportResource)
 export_xlsx(Oligo, OligoExportResource)
 export_xlsx(ScPombeStrain, ScPombeStrainExportResource)
-# export_xlsx(NzPlasmid, NzPlasmidExportResource)
 export_xlsx(EColiStrain, EColiStrainExportResource)
 export_xlsx(MammalianLine, MammalianLineExportResource)
 export_xlsx(Antibody, AntibodyExportResource)

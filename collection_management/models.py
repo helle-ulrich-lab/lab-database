@@ -15,6 +15,7 @@ from formz.models import ZkbsCellLine
 from formz.models import GenTechMethod
 
 from record_approval.models import RecordToBeApproved
+from django_project.settings import LAB_ABBREVIATION_FOR_FILES
 
 #################################################
 #        ADDED FUNCTIONALITIES IMPORTS          #
@@ -649,7 +650,7 @@ class MammalianLineDoc(models.Model):
                     if callable(final_dest):
                         final_name = final_dest(self, file_name)
                     else:
-                        final_name = os.path.join(final_dest, "mclHU" + str(self.mammalian_line.id) + "_" + self.typ_e + "_" + time.strftime("%Y%m%d") + "_" + time.strftime("%H%M%S") + "_" + str(self.id))
+                        final_name = os.path.join(final_dest, "mcl" + LAB_ABBREVIATION_FOR_FILES + str(self.mammalian_line.id) + "_" + self.typ_e + "_" + time.strftime("%Y%m%d") + "_" + time.strftime("%H%M%S") + "_" + str(self.id))
                         if keep_ext:
                             final_name += ext
                     

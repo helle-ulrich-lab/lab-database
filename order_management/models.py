@@ -15,6 +15,7 @@ from simple_history.models import HistoricalRecords
 import os
 import time
 from record_approval.models import RecordToBeApproved
+from django_project.settings import LAB_ABBREVIATION_FOR_FILES
 
 #################################################
 #            ORDER COST UNIT MODEL              #
@@ -221,7 +222,7 @@ class OrderExtraDoc(models.Model):
                     if callable(final_dest):
                         final_name = final_dest(self, file_name)
                     else:
-                        final_name = os.path.join(final_dest, "ordocHU" + str(self.order.id) + "_" + time.strftime("%Y%m%d") + "_" + time.strftime("%H%M%S") + "_" + str(self.id))
+                        final_name = os.path.join(final_dest, "ordoc" + LAB_ABBREVIATION_FOR_FILES + str(self.order.id) + "_" + time.strftime("%Y%m%d") + "_" + time.strftime("%H%M%S") + "_" + str(self.id))
                         if keep_ext:
                             final_name += ext
                     

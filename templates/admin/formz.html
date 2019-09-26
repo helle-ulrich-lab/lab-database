@@ -126,7 +126,7 @@
             {% endif %}
         {% endif %}
         </div>
-        {% if object.zkbs_cell_line.name != 'none' %}
+        {% if object.zkbs_cell_line and object.zkbs_cell_line.name != 'none' %}
             <div><span style='font-weight: bold'>ZKBS Datenbank Zelllinien:</span> <a href="{% url 'admin:formz_zkbscellline_change' object.zkbs_cell_line.id %}">{{object.zkbs_cell_line}}</a></div>
         {% endif %}
         <div><span style='font-weight: bold'>Erzeugt:</span> {{object.created_date_time | date:"d.m.Y"}}</div>

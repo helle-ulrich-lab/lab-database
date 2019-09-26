@@ -166,8 +166,10 @@
                         (<a style='color:#447e9b;text-transform: none' href="{{plasmid.map_gbk.url}}">.gbk</a>,
                         <a  class="image-link" style='color:#447e9b; text-transform: none' href="{{plasmid.map_png.url}}">.png</a>)
                     {% endif %}
-                    {% if plasmid.vector_zkbs.name != 'none' %}
-                        <span style='text-transform: none'>- ZKBS Plasmid </span><a style='color:#447e9b;text-transform: none' href="{% url 'admin:formz_zkbsplasmid_change' plasmid.vector_zkbs.id %}">{{plasmid.vector_zkbs.name}}</a>
+                    {% if plasmid.vector_zkbs %}
+                        {% if plasmid.vector_zkbs.name != 'none' %}
+                            <span style='text-transform: none'>- ZKBS Plasmid </span><a style='color:#447e9b;text-transform: none' href="{% url 'admin:formz_zkbsplasmid_change' plasmid.vector_zkbs.id %}">{{plasmid.vector_zkbs.name}}</a>
+                        {% endif %}
                     {% endif %}
                 </li>
             {% endfor %}
@@ -310,8 +312,11 @@
                                         noch nicht entsorgt)
                                     {% endif %}
                                 </span>
-                                {% if plasmid.huplasmid.vector_zkbs.name != 'none' %}
-                                    <span style='text-transform: none'>- ZKBS Plasmid </span><a style='color:#447e9b;text-transform: none' href="{% url 'admin:formz_zkbsplasmid_change' plasmid.huplasmid.vector_zkbs.id %}">{{plasmid.huplasmid.vector_zkbs.name}}</a>
+                                
+                                {% if plasmid.huplasmid.vector_zkbs %}
+                                    {% if plasmid.huplasmid.vector_zkbs.name != 'none' %}
+                                        <span style='text-transform: none'>- ZKBS Plasmid </span><a style='color:#447e9b;text-transform: none' href="{% url 'admin:formz_zkbsplasmid_change' plasmid.huplasmid.vector_zkbs.id %}">{{plasmid.huplasmid.vector_zkbs.name}}</a>
+                                    {% endif %}
                                 {% endif %}
                             </th>
                         </tr>
@@ -449,8 +454,10 @@
                                             noch nicht entsorgt)
                                         {% endif %}
                                     </span>
-                                    {% if plasmid.huplasmid.vector_zkbs.name != 'none' %}
-                                        <span style='text-transform: none'>- ZKBS Plasmid </span><a style='color:#447e9b;text-transform: none' href="{% url 'admin:formz_zkbsplasmid_change' plasmid.huplasmid.vector_zkbs.id %}">{{plasmid.huplasmid.vector_zkbs.name}}</a>
+                                    {% if plasmid.huplasmid.vector_zkbs %}
+                                        {% if plasmid.huplasmid.vector_zkbs.name != 'none' %}
+                                            <span style='text-transform: none'>- ZKBS Plasmid </span><a style='color:#447e9b;text-transform: none' href="{% url 'admin:formz_zkbsplasmid_change' plasmid.huplasmid.vector_zkbs.id %}">{{plasmid.huplasmid.vector_zkbs.name}}</a>
+                                        {% endif %}
                                     {% endif %}
                                 </th>
                             </tr>

@@ -62,7 +62,7 @@
         {% if object.formz_ecoli_strains %}
             {% if object.formz_ecoli_strains.all|length == 1 %}
                     {% for ecoli in object.formz_ecoli_strains.all %}
-                        (Stamm: <a style='color:#447e9b;' href="{% url 'admin:collection_management_ecolistrain_change' ecoli.id %}">{{ecoli.name}}</a> - Hintergrund {{ecoli.background}}; Risikogrouppe: {{receiving_organism_risk_group}})
+                        (Stamm: <a style='color:#447e9b;' href="{% url 'admin:collection_management_ecolistrain_change' ecoli.id %}">{{ecoli.name}}</a> - Hintergrund {{ecoli.background}}; Risikogrouppe: {{storage_location.species_risk_group}})
                     {% endfor %}
                 {% else %}
                     {% for ecoli in object.formz_ecoli_strains.all %}

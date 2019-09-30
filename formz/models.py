@@ -5,6 +5,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
+from django.forms import ValidationError
 
 #################################################
 #                 MODEL CLASSES                 #
@@ -146,15 +147,15 @@ class ZkbsCellLine (models.Model):
 class FormZBaseElement (models.Model):
 
     name = models.CharField("name", max_length=255, help_text='Must be identical (CASE-SENSITIVE!) to a feature name in a plasmid map for auto-detection to work. '
-                            'If you want to associate additional names to an element, add them as aliases below', unique=True, blank=True)
-    donor_organism = models.CharField("donor organism", help_text = "As species, e.g. Homo sapiens; use none if no organism applies", max_length=255, blank=True)
-    donor_organism_risk = models.PositiveSmallIntegerField('risk group', choices=((1,1), (2,2), (3,3)), blank=True, null=True)
-    nuc_acid_purity = models.ForeignKey(NucleicAcidPurity, verbose_name = 'nucleic acid purity', on_delete=models.PROTECT, blank=True, null=True)
-    nuc_acid_risk = models.ForeignKey(NucleicAcidRisk, verbose_name = 'nucleic acid risk potential', on_delete=models.PROTECT, blank=True, null=True)
+                            'If you want to associate additional names to an element, add them as aliases below', unique=True, blank=False)
+    donor_organism = models.CharField("donor organism", help_text = "As species, e.g. Homo sapiens; use none if no organism applies", max_length=255, blank=False)
+    donor_organism_risk = models.PositiveSmallIntegerField('Donor organism risk group', choices=((1,1), (2,2), (3,3)), blank=False, null=True)
+    nuc_acid_purity = models.ForeignKey(NucleicAcidPurity, verbose_name = 'nucleic acid purity', on_delete=models.PROTECT, blank=False, null=True)
+    nuc_acid_risk = models.ForeignKey(NucleicAcidRisk, verbose_name = 'nucleic acid risk potential', on_delete=models.PROTECT, blank=False, null=True)
     zkbs_oncogene = models.ForeignKey(ZkbsOncogene, verbose_name = 'ZKBS database oncogene', on_delete=models.PROTECT, blank=True, null=True,
                                       help_text='<a href="/formz/zkbsoncogene/" target="_blank">View</a>')
     description = models.TextField("description", blank=True)
-    common_feature = models.BooleanField("is this a common plasmid feature?", blank=True)
+    common_feature = models.BooleanField("is this a common plasmid feature?", help_text='e.g. an antibiotic resistance marker or a commonly used promoter', default=False, blank=False)
 
     class Meta:
         verbose_name = 'sequence element'
@@ -170,6 +171,20 @@ class FormZBaseElement (models.Model):
         self.name = self.name.strip()
         
         super(FormZBaseElement, self).save(force_insert, force_update, using, update_fields)
+
+    def clean(self):
+
+        errors = []
+
+        if self.name:
+            
+            # Check if description is present for donor_organism_risk > 1
+            if self.donor_organism_risk > 1 and not self.description:
+                errors.append(ValidationError("If the donor's risk group is > 1, a description must be provided"))
+
+        if len(errors) > 0:
+            raise ValidationError(errors)
+    
 
 class FormZBaseElementExtraLabel (models.Model):
     label = models.CharField("alias", max_length=255, blank=True)

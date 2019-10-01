@@ -113,9 +113,7 @@
             {
                 var i;
                 for (i = 0; i < yeast_episomal_plasmids.length; i++) {
-
                       yeast_episomal_plasmids[i].closest('tr').style = 'background-color:#d7e7ee;';
-
                     }
             }
 
@@ -125,25 +123,9 @@
                 var i;
                 for (i = 0; i < mammalian_episomal_plasmids.length; i++) 
                     {
- 
                       mammalian_episomal_plasmids[i].closest('tr').style = 'background-color:#d7e7ee;';
                       }
             }
-            
-        {% if user|has_group:"Approval manager" and not original.species_isotype %} // 'not original.species_isotype; is to disable this for antibodies
-          if (window.location.pathname.endsWith('change/'))
-          {
-            var submit_row = document.getElementsByClassName("submit-row")[0];
-            var disapprove_button = document.createElement('input');
-            disapprove_button.id = 'disapprove-record';
-            disapprove_button.type = 'submit';
-            disapprove_button.value = 'Disapprove';
-            disapprove_button.name = '_disapprove_record';
-            disapprove_button.style = 'background: #ef8258;';
-            submit_row.appendChild(disapprove_button);
-          }
-        {% endif %}
-
         });
     </script>
 {% endblock %}

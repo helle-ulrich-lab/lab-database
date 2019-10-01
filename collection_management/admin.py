@@ -780,6 +780,7 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
                 if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by.labuser.is_principal_investigator or obj.created_by.groups.filter(name='Past member')):
                     if not request.user.has_perm('collection_management.change_sacerevisiaestrain', obj):
                         extra_context['show_submit_line'] = False
+                extra_context['show_disapprove'] = True if request.user.groups.filter(name='Approval manager').exists() else False
         return super(SaCerevisiaeStrainPage, self).changeform_view(request, object_id, extra_context=extra_context)
 
     def obj_perms_manage_view(self, request, object_pk):
@@ -1330,6 +1331,8 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
                 if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by.labuser.is_principal_investigator):
                     if not request.user.has_perm('collection_management.change_huplasmid', obj):
                         extra_context['show_submit_line'] = False
+                extra_context['show_disapprove'] = True if request.user.groups.filter(name='Approval manager').exists() else False
+                extra_context['show_redetect_save'] = True
         return super(HuPlasmidPage, self).changeform_view(request, object_id, extra_context=extra_context)
 
     def get_plasmidmap_short_name(self, instance):
@@ -1568,6 +1571,7 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
             if obj:
                 if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
                     extra_context['show_submit_line'] = False
+                extra_context['show_disapprove'] = True if request.user.groups.filter(name='Approval manager').exists() else False
         return super(OligoPage, self).changeform_view(request, object_id, extra_context=extra_context)
 
     def response_change(self, request, obj):
@@ -1896,6 +1900,7 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admi
             if obj:
                 if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
                     extra_context['show_submit_line'] = False
+                extra_context['show_disapprove'] = True if request.user.groups.filter(name='Approval manager').exists() else False
         return super(ScPombeStrainPage, self).changeform_view(request, object_id, extra_context=extra_context)
 
     def response_change(self, request, obj):
@@ -2407,6 +2412,7 @@ class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Cust
 
         extra_context = extra_context or {}
         extra_context['show_submit_line'] = True
+        extra_context['show_disapprove'] = True if request.user.groups.filter(name='Approval manager').exists() else False
 
         return super(MammalianLinePage, self).changeform_view(request, object_id, extra_context=extra_context)
 

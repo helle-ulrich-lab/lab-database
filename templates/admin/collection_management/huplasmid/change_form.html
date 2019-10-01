@@ -121,38 +121,6 @@
         $("#id_map").change(function(){
           $("#huplasmid_form").attr('onsubmit', 'ShowLoading()');
         });
-
-        // Add 'Save and re-detect FormZ elements' button to submit row
-        
-        if (window.location.pathname.endsWith('change/'))
-        {
-          var submit_row = document.getElementsByClassName("submit-row")[0];
-          var redetect_feat_button = document.createElement('input');
-          redetect_feat_button.id = 'save-redetect';
-          redetect_feat_button.type = 'submit';
-          redetect_feat_button.value = 'Re-detect FormZ elements and save';
-          redetect_feat_button.name = '_redetect_formz_elements';
-          submit_row.appendChild(redetect_feat_button);
-
-          $("#save-redetect").click(function() {
-            $("#huplasmid_form").attr('onsubmit', 'ShowLoading()');
-          });
-        }
-
-        {% if user|has_group:"Approval manager"%}
-          if (window.location.pathname.endsWith('change/'))
-          {
-            var submit_row = document.getElementsByClassName("submit-row")[0];
-            var disapprove_button = document.createElement('input');
-            disapprove_button.id = 'disapprove-record';
-            disapprove_button.type = 'submit';
-            disapprove_button.value = 'Disapprove';
-            disapprove_button.name = '_disapprove_record';
-            disapprove_button.style = 'background: #ef8258;';
-            submit_row.appendChild(disapprove_button);
-          }
-        {% endif %}
-        
       });
 
     </script>

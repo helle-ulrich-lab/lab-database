@@ -22,7 +22,7 @@ class LabUserInline(admin.StackedInline):
 
 class LabUserAdmin(BaseUserAdmin):
     list_display = ('username', 'email', 'first_name', 'last_name', 'is_staff', 'is_active', 'get_user_groups')
-    inlines= ()
+    inlines= (LabUserInline,)
     
     def save_model(self, request, obj, form, change):
         
@@ -48,7 +48,6 @@ class LabUserAdmin(BaseUserAdmin):
         extra_context = extra_context or {}
 
         if request.user.is_superuser:
-            self.inlines = (LabUserInline,)
             self.fieldsets = (
                 (None, {'fields': ('username', 'password')}),
                 (_('Personal info'), {'fields': ('first_name', 'last_name', 'email')}),
@@ -66,7 +65,14 @@ class LabUserAdmin(BaseUserAdmin):
                 )
 
         return super(LabUserAdmin,self).change_view(request,object_id, extra_context=extra_context)
-    
+
+    def get_formsets_with_inlines(self, request, obj=None):
+        """Show is_principal_inevstigator inline only for superusers"""
+        
+        if request.user.is_superuser:
+            for inline in self.get_inline_instances(request, obj):
+                yield inline.get_formset(request, obj), inline
+
     def get_user_groups (self, instance):
         """ Pass a user's group membership to a custom column """
 

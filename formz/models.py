@@ -149,6 +149,7 @@ class Species (models.Model):
     
     latin_name = models.CharField("latin name", help_text='Use FULL latin name, e.g. Homo sapiens', max_length=255, blank=True)
     common_name = models.CharField("common name", max_length=255, blank=True)
+    name_for_search = models.CharField(max_length=255)
     show_in_cell_line_collection = models.BooleanField("show as organism in cell line collection?", default=False)
 
     class Meta:
@@ -164,6 +165,8 @@ class Species (models.Model):
         if self.common_name:
             self.common_name = self.common_name.strip()
         
+        self.name_for_search = self.latin_name if self.latin_name else self.common_name
+        
         super(Species, self).save(force_insert, force_update, using, update_fields)
 
     def clean(self):
@@ -177,7 +180,7 @@ class Species (models.Model):
             raise ValidationError(errors)
 
     def __str__(self):
-        return self.latin_name if self.latin_name else self.common_name
+        return self.name_for_search
 
 class FormZBaseElement (models.Model):
 

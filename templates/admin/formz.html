@@ -213,7 +213,7 @@
                             {% for formz_elem in object.uncommon_formz_elements %}
                                 <tr class="row">
                                     <td class="field-name"><a href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}">{{formz_elem.name}}</a></td>
-                                    <td class="field-donor_organism" style="text-align:center; border-left: 1px solid #eee;">{% if formz_elem.donor_organism and formz_elem.donor_organism != 'none' %}{{formz_elem.donor_organism}}{% else %}Artifiziell{% endif %}</td>
+                                    <td class="field-donor_organism" style="text-align:center; border-left: 1px solid #eee;">{% if formz_elem.get_donor_species_names %}{{formz_elem.get_donor_species_names}}{% else %}Artifiziell{% endif %}</td>
                                     <td class="field-donor_organism_risk" style="text-align:center; border-right: 1px solid #eee;">{% if formz_elem.donor_organism_risk %}{{formz_elem.donor_organism_risk}}{% else %}Keine{% endif %}</td>
                                     <td class="field-nuc_acid_purity" style="text-align:center">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
                                     <td class="field-nuc_acid_risk" style="text-align:center">{{formz_elem.nuc_acid_risk.german_name|capfirst}}</td>
@@ -356,7 +356,7 @@
                                         {% for formz_elem in plasmid.huplasmid.get_all_uncommon_formz_elements %}
                                             <tr class="row">
                                                 <td class="field-name"><a href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}">{{formz_elem.name}}</a></td>
-                                                <td class="field-donor_organism" style="text-align:center; border-left: 1px solid #eee;">{% if formz_elem.donor_organism and formz_elem.donor_organism != 'none' %}{{formz_elem.donor_organism}}{% else %}Artifiziell{% endif %}</td>
+                                                <td class="field-donor_organism" style="text-align:center; border-left: 1px solid #eee;">{% if formz_elem.get_donor_species_names %}{{formz_elem.get_donor_species_names}}{% else %}Artifiziell{% endif %}</td>
                                                 <td class="field-donor_organism_risk" style="text-align:center; border-right: 1px solid #eee;">{% if formz_elem.donor_organism_risk %}{{formz_elem.donor_organism_risk}}{% else %}Keine{% endif %}</td>
                                                 <td class="field-nuc_acid_purity" style="text-align:center">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
                                                 <td class="field-nuc_acid_risk" style="text-align:center">{{formz_elem.nuc_acid_risk.german_name|capfirst}}</td>
@@ -497,7 +497,7 @@
                                             {% for formz_elem in plasmid.huplasmid.get_all_uncommon_formz_elements %}
                                                 <tr class="row">
                                                     <td class="field-name"><a href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}">{{formz_elem.name}}</a></td>
-                                                    <td class="field-donor_organism" style="text-align:center; border-left: 1px solid #eee;">{% if formz_elem.donor_organism and formz_elem.donor_organism != 'none' %}{{formz_elem.donor_organism}}{% else %}Artifiziell{% endif %}</td>
+                                                    <td class="field-donor_organism" style="text-align:center; border-left: 1px solid #eee;">{% if formz_elem.get_donor_species_names %}{{formz_elem.get_donor_species_names}}{% else %}Artifiziell{% endif %}</td>
                                                     <td class="field-donor_organism_risk" style="text-align:center; border-right: 1px solid #eee;">{% if formz_elem.donor_organism_risk %}{{formz_elem.donor_organism_risk}}{% else %}Keine{% endif %}</td>
                                                     <td class="field-nuc_acid_purity" style="text-align:center">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
                                                     <td class="field-nuc_acid_risk" style="text-align:center">{{formz_elem.nuc_acid_risk.german_name|capfirst}}</td>

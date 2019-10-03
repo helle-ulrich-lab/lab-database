@@ -6,6 +6,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.forms import ValidationError
+from django.utils.safestring import mark_safe
 
 #################################################
 #                 MODEL CLASSES                 #
@@ -218,6 +219,18 @@ class FormZBaseElement (models.Model):
 
         if len(errors) > 0:
             raise ValidationError(errors)
+    
+    def get_donor_species_names(self):
+
+        species_names = []
+        for species in self.donor_organism.all():
+            species_names.append('<i>{}</i>'.format(species.latin_name) if species.latin_name else species.common_name)
+
+        try:
+            species_names.remove('none')
+        except:
+            pass
+        return mark_safe(', '.join(species_names))
 
 class FormZBaseElementExtraLabel (models.Model):
     label = models.CharField("alias", max_length=255, blank=True)

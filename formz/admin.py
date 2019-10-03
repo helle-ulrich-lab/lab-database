@@ -131,12 +131,12 @@ class FormZBaseElementExtraLabelPage(admin.TabularInline):
 
 class FormZBaseElementPage(admin.ModelAdmin):
     
-    list_display = ('name', 'description', 'get_donor_organism_species', 'get_extra_labels')
+    list_display = ('name', 'description', 'get_donor_organism', 'get_extra_labels')
     list_display_links = ('name', )
     list_per_page = 25
     search_fields = ['name']
     ordering = ['name']
-    autocomplete_fields = ['zkbs_oncogene', 'donor_organism_species']
+    autocomplete_fields = ['zkbs_oncogene', 'donor_organism']
     inlines = [FormZBaseElementExtraLabelPage]
 
     # def has_module_permission(self, request):
@@ -152,14 +152,14 @@ class FormZBaseElementPage(admin.ModelAdmin):
         return ', '.join(instance.extra_label.all().values_list('label',flat=True))
     get_extra_labels.short_description = 'aliases'
 
-    def get_donor_organism_species(self, instance):
+    def get_donor_organism(self, instance):
         
         species_names = []
-        for species in instance.donor_organism_species.all():
+        for species in instance.donor_organism.all():
             species_names.append(species.latin_name if species.latin_name else species.common_name)
         return ', '.join(species_names)
 
-    get_donor_organism_species.short_description = 'donor organism'
+    get_donor_organism.short_description = 'donor organism'
 
 class ZkbsPlasmidPage(admin.ModelAdmin):
     list_display = ('name', 'source', 'purpose')

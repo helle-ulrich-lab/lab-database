@@ -182,8 +182,7 @@ class FormZBaseElement (models.Model):
 
     name = models.CharField("name", max_length=255, help_text='Must be identical (CASE-SENSITIVE!) to a feature name in a plasmid map for auto-detection to work. '
                             'If you want to associate additional names to an element, add them as aliases below', unique=True, blank=False)
-    donor_organism = models.CharField("donor organism", help_text = "As species, e.g. Homo sapiens; use none if no organism applies", max_length=255, blank=False)
-    donor_organism_species = models.ManyToManyField(Species, blank=False)
+    donor_organism = models.ManyToManyField(Species, verbose_name = 'donor organism', help_text='Choose none, for artificial elements', blank=False)
     donor_organism_risk = models.PositiveSmallIntegerField('Donor organism risk group', choices=((1,1), (2,2), (3,3)), blank=False, null=True)
     nuc_acid_purity = models.ForeignKey(NucleicAcidPurity, verbose_name = 'nucleic acid purity', on_delete=models.PROTECT, blank=False, null=True)
     nuc_acid_risk = models.ForeignKey(NucleicAcidRisk, verbose_name = 'nucleic acid risk potential', on_delete=models.PROTECT, blank=False, null=True)

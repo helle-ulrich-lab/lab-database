@@ -131,12 +131,12 @@ class FormZBaseElementExtraLabelPage(admin.TabularInline):
 
 class FormZBaseElementPage(admin.ModelAdmin):
     
-    list_display = ('name', 'description', 'donor_organism', 'get_extra_labels')
+    list_display = ('name', 'description', 'get_donor_organism_species', 'get_extra_labels')
     list_display_links = ('name', )
     list_per_page = 25
     search_fields = ['name']
     ordering = ['name']
-    autocomplete_fields = ['zkbs_oncogene']
+    autocomplete_fields = ['zkbs_oncogene', 'donor_organism_species']
     inlines = [FormZBaseElementExtraLabelPage]
 
     # def has_module_permission(self, request):
@@ -151,6 +151,15 @@ class FormZBaseElementPage(admin.ModelAdmin):
     def get_extra_labels(self, instance):
         return ', '.join(instance.extra_label.all().values_list('label',flat=True))
     get_extra_labels.short_description = 'aliases'
+
+    def get_donor_organism_species(self, instance):
+        
+        species_names = []
+        for species in instance.donor_organism_species.all():
+            species_names.append(species.latin_name if species.latin_name else species.common_name)
+        return ', '.join(species_names)
+
+    get_donor_organism_species.short_description = 'donor organism'
 
 class ZkbsPlasmidPage(admin.ModelAdmin):
     list_display = ('name', 'source', 'purpose')
@@ -238,3 +247,19 @@ class FormZStorageLocationPage(admin.ModelAdmin):
                 kwargs["queryset"] = ContentType.objects.filter(id__in=[59,63,67,68])
 
         return super(FormZStorageLocationPage, self).formfield_for_foreignkey(db_field, request, **kwargs)
+
+class SpeciesPage(admin.ModelAdmin):
+    
+    list_display = ('id', 'latin_name', 'common_name')
+    list_display_links = ('id',)
+    list_per_page = 25
+    search_fields = ['latin_name', 'common_name']
+    ordering = ['latin_name', 'common_name']
+
+    def has_module_permission(self, request):
+        
+        # Show this model on the admin home page only for superusers
+        if request.user.is_superuser:
+            return True
+        else:
+            return False

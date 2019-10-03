@@ -368,6 +368,7 @@ from formz.models import ZkbsPlasmid
 from formz.models import ZkbsOncogene
 from formz.models import ZkbsCellLine
 from formz.models import FormZStorageLocation
+from formz.models import Species
 
 from formz.admin import NucleicAcidPurityPage
 from formz.admin import NucleicAcidRiskPage
@@ -379,6 +380,7 @@ from formz.admin import ZkbsPlasmidPage
 from formz.admin import ZkbsOncogenePage
 from formz.admin import ZkbsCellLinePage
 from formz.admin import FormZStorageLocationPage
+from formz.admin import SpeciesPage
 
 my_admin_site.register(NucleicAcidPurity, NucleicAcidPurityPage)
 my_admin_site.register(NucleicAcidRisk, NucleicAcidRiskPage)
@@ -390,6 +392,7 @@ my_admin_site.register(ZkbsPlasmid, ZkbsPlasmidPage)
 my_admin_site.register(ZkbsOncogene, ZkbsOncogenePage)
 my_admin_site.register(ZkbsCellLine, ZkbsCellLinePage)
 my_admin_site.register(FormZStorageLocation, FormZStorageLocationPage)
+my_admin_site.register(Species, SpeciesPage)
 
 #################################################
 #               RECORD APPROVAL                 #

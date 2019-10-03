@@ -144,11 +144,46 @@ class ZkbsCellLine (models.Model):
     def __str__(self):
         return str(self.name)
 
+class Species (models.Model):
+    
+    latin_name = models.CharField("latin name", help_text='Use FULL latin name, e.g. Homo sapiens', max_length=255, blank=True)
+    common_name = models.CharField("common name", max_length=255, blank=True)
+    show_in_cell_line_collection = models.BooleanField("show as organism in cell line collection?", default=False)
+
+    class Meta:
+        verbose_name = 'species'
+        verbose_name_plural = 'species'
+        ordering = ["latin_name", "common_name"]
+
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+        
+        # Remove any leading and trailing white spaces
+        if self.latin_name:
+            self.latin_name = self.latin_name.strip()
+        if self.common_name:
+            self.common_name = self.common_name.strip()
+        
+        super(Species, self).save(force_insert, force_update, using, update_fields)
+
+    def clean(self):
+
+        errors = []
+
+        if not self.latin_name and not self.common_name:
+            errors.append(ValidationError("You must enter either a latin name or a common name"))
+
+        if len(errors) > 0:
+            raise ValidationError(errors)
+
+    def __str__(self):
+        return self.latin_name if self.latin_name else self.common_name
+
 class FormZBaseElement (models.Model):
 
     name = models.CharField("name", max_length=255, help_text='Must be identical (CASE-SENSITIVE!) to a feature name in a plasmid map for auto-detection to work. '
                             'If you want to associate additional names to an element, add them as aliases below', unique=True, blank=False)
     donor_organism = models.CharField("donor organism", help_text = "As species, e.g. Homo sapiens; use none if no organism applies", max_length=255, blank=False)
+    donor_organism_species = models.ManyToManyField(Species, blank=False)
     donor_organism_risk = models.PositiveSmallIntegerField('Donor organism risk group', choices=((1,1), (2,2), (3,3)), blank=False, null=True)
     nuc_acid_purity = models.ForeignKey(NucleicAcidPurity, verbose_name = 'nucleic acid purity', on_delete=models.PROTECT, blank=False, null=True)
     nuc_acid_risk = models.ForeignKey(NucleicAcidRisk, verbose_name = 'nucleic acid risk potential', on_delete=models.PROTECT, blank=False, null=True)
@@ -184,7 +219,6 @@ class FormZBaseElement (models.Model):
 
         if len(errors) > 0:
             raise ValidationError(errors)
-    
 
 class FormZBaseElementExtraLabel (models.Model):
     label = models.CharField("alias", max_length=255, blank=True)

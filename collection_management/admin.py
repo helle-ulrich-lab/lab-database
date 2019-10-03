@@ -72,6 +72,7 @@ import time
 
 from formz.models import FormZBaseElement
 from formz.models import FormZProject
+from formz.models import Species
 
 #################################################
 #                CUSTOM CLASSES                 #
@@ -2383,7 +2384,7 @@ class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Cust
         if '_saveasnew' in request.POST:
             self.fieldsets = (
             (None, {
-                'fields': ('name', 'box_name', 'alternative_name', 'parental_line', 'organism', 'cell_type_tissue', 'culture_type', 'growth_condition',
+                'fields': ('name', 'box_name', 'alternative_name', 'parental_line', 'organism', 'organism_species', 'cell_type_tissue', 'culture_type', 'growth_condition',
                     'freezing_medium', 'received_from', 'integrated_plasmids', 'description_comment', 's2_work',)
             }),
             ('FormZ', {
@@ -2394,7 +2395,7 @@ class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Cust
         else:
             self.fieldsets = (
             (None, {
-                'fields': ('name', 'box_name', 'alternative_name', 'parental_line', 'organism', 'cell_type_tissue', 'culture_type', 'growth_condition',
+                'fields': ('name', 'box_name', 'alternative_name', 'parental_line', 'organism', 'organism_species', 'cell_type_tissue', 'culture_type', 'growth_condition',
                     'freezing_medium', 'received_from', 'integrated_plasmids', 'description_comment', 's2_work', 'created_date_time', 'created_approval_by_pi',
                 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',)
             }),
@@ -2466,6 +2467,19 @@ class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Cust
             return HttpResponseRedirect(reverse("admin:record_approval_recordtobeapproved_change", args=(obj.approval.latest('created_date_time').id,)))
         
         return super(MammalianLinePage,self).response_change(request,obj)
+    
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        
+        try:
+            request.resolver_match.args[0]
+        except:
+            
+            # Exclude certain users from the 'Created by' field in the order form
+
+            if db_field.name == 'organism_species':
+                kwargs["queryset"] = Species.objects.filter(show_in_cell_line_collection=True)
+
+        return super(MammalianLinePage, self).formfield_for_foreignkey(db_field, request, **kwargs)
 
 #################################################
 #                ANTIBODY PAGES                 #

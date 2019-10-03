@@ -13,6 +13,7 @@ from formz.models import FormZBaseElement
 from formz.models import FormZProject
 from formz.models import ZkbsCellLine
 from formz.models import GenTechMethod
+from formz.models import Species
 
 from record_approval.models import RecordToBeApproved
 from django_project.settings import LAB_ABBREVIATION_FOR_FILES
@@ -500,6 +501,7 @@ class MammalianLine (models.Model, SaveWithoutHistoricalRecord):
     parental_line_old = models.CharField("parental cell line", max_length=255, blank=False)
     parental_line = models.ForeignKey('self', on_delete=models.PROTECT, verbose_name = 'parental line', blank=True, null=True)
     organism = models.CharField("organism", help_text="Use full species name, e.g. Homo sapiens", max_length=20, blank=True)
+    organism_species = models.ForeignKey(Species, verbose_name = 'species name', on_delete=models.PROTECT, null=True, blank=True)
     cell_type_tissue = models.CharField("cell type/tissue", max_length=255, blank=True)
     culture_type = models.CharField("culture type", max_length=255, blank=True)
     growth_condition = models.CharField("growth conditions", max_length=255, blank=True)

@@ -260,7 +260,7 @@ class FormZStorageLocation (models.Model):
 
     collection_model = models.OneToOneField(ContentType, verbose_name='collection', help_text = 'Strain, plasmids, cell lines, etc.', on_delete=models.PROTECT, blank=False, null=True, unique=True)
     storage_location = models.CharField("storage location", help_text='Room where the collection is stored', max_length=255, blank=False)
-    species_name = models.CharField("species name", help_text="Full species name, e.g. Homo sapiens" , max_length=255, blank=True)
+    species_name = models.ForeignKey(Species, verbose_name = 'species name', on_delete=models.PROTECT, null=True, blank=True)
     species_risk_group = models.PositiveSmallIntegerField('species risk group', choices=((1,1), (2,2)), blank=False, null=True)
 
     class Meta:        

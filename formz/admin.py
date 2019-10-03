@@ -255,11 +255,3 @@ class SpeciesPage(admin.ModelAdmin):
     list_per_page = 25
     search_fields = ['latin_name', 'common_name']
     ordering = ['latin_name', 'common_name']
-
-    def has_module_permission(self, request):
-        
-        # Show this model on the admin home page only for superusers
-        if request.user.is_superuser:
-            return True
-        else:
-            return False

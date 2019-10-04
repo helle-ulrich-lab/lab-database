@@ -209,19 +209,6 @@ class FormZBaseElement (models.Model):
         self.name = self.name.strip()
         
         super(FormZBaseElement, self).save(force_insert, force_update, using, update_fields)
-
-    def clean(self):
-
-        errors = []
-
-        if self.name:
-            
-            # Check if description is present for donor_organism_risk > 1
-            if self.donor_organism_risk > 1 and not self.description:
-                errors.append(ValidationError("If the donor's risk group is > 1, a description must be provided"))
-
-        if len(errors) > 0:
-            raise ValidationError(errors)
     
     def get_donor_species_names(self):
 

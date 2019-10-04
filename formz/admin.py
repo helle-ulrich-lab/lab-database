@@ -38,6 +38,7 @@ class GenTechMethodPage(admin.ModelAdmin):
 from .models import FormZProject
 from .models import FormZUsers
 from .models import Species
+from .models import FormZBaseElement
 
 class FormZUsersInline(admin.TabularInline):
     # autocomplete_fields = ['user']
@@ -131,6 +132,28 @@ class FormZBaseElementExtraLabelPage(admin.TabularInline):
     extra = 0
     template = 'admin/tabular.html'
 
+class FormZBaseElementForm(forms.ModelForm):
+    
+    class Meta:
+        model = FormZBaseElement
+        fields = '__all__'
+
+    def clean(self):
+
+        """Check if description is present for donor_organism_risk > 1"""
+
+        donor_organism = self.cleaned_data.get('donor_organism', None)
+
+        max_risk_group = donor_organism.all().order_by('-risk_group').values_list('risk_group', flat=True).first()
+        max_risk_group = max_risk_group if max_risk_group else 0
+
+        description = self.cleaned_data.get('description', None)
+
+        if max_risk_group > 1 and not description:
+            raise forms.ValidationError("If the donor's risk group is > 1, a description must be provided")
+
+        return self.cleaned_data
+
 class FormZBaseElementPage(admin.ModelAdmin):
     
     list_display = ('name', 'description', 'get_donor_organism', 'get_extra_labels')
@@ -140,6 +163,7 @@ class FormZBaseElementPage(admin.ModelAdmin):
     ordering = ['name']
     autocomplete_fields = ['zkbs_oncogene', 'donor_organism']
     inlines = [FormZBaseElementExtraLabelPage]
+    form = FormZBaseElementForm
     
     def get_extra_labels(self, instance):
         return ', '.join(instance.extra_label.all().values_list('label',flat=True))

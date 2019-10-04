@@ -138,15 +138,6 @@ class FormZBaseElementPage(admin.ModelAdmin):
     ordering = ['name']
     autocomplete_fields = ['zkbs_oncogene', 'donor_organism']
     inlines = [FormZBaseElementExtraLabelPage]
-
-    # def has_module_permission(self, request):
-
-    #     # Show this model on the admin home page only for superusers and
-    #     # lab managers
-    #     if request.user.groups.filter(name='Lab manager').exists() or request.user.is_superuser:
-    #         return True
-    #     else:
-    #         return False
     
     def get_extra_labels(self, instance):
         return ', '.join(instance.extra_label.all().values_list('label',flat=True))
@@ -168,15 +159,6 @@ class ZkbsPlasmidPage(admin.ModelAdmin):
     search_fields = ['name']
     ordering = ['name']
 
-    # def has_module_permission(self, request):
-        
-    #     # Show this model on the admin home page only for superusers and
-    #     # lab managers
-    #     if request.user.groups.filter(name='Lab manager').exists() or request.user.is_superuser:
-    #         return True
-    #     else:
-    #         return False
-
 class ZkbsOncogenePage(admin.ModelAdmin):
     list_display = ('name', 'synonym', 'species', 'risk_potential')
     list_display_links = ('name', )
@@ -184,30 +166,12 @@ class ZkbsOncogenePage(admin.ModelAdmin):
     search_fields = ['name']
     ordering = ['name', 'synonym']
 
-    # def has_module_permission(self, request):
-        
-    #     # Show this model on the admin home page only for superusers and
-    #     # lab managers
-    #     if request.user.groups.filter(name='Lab manager').exists() or request.user.is_superuser:
-    #         return True
-    #     else:
-    #         return False
-
 class ZkbsCellLinePage(admin.ModelAdmin):
     list_display = ('name', 'synonym', 'organism', 'risk_potential', 'origin', 'virus', 'genetically_modified')
     list_display_links = ('name', )
     list_per_page = 25
     search_fields = ['name', 'synonym']
     ordering = ['name']
-
-    # def has_module_permission(self, request):
-        
-    #     # Show this model on the admin home page only for superusers and
-    #     # lab managers
-    #     if request.user.groups.filter(name='Lab manager').exists() or request.user.is_superuser:
-    #         return True
-    #     else:
-    #         return False
 
 class FormZHeaderPage(admin.ModelAdmin):
     

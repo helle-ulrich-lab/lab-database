@@ -221,6 +221,7 @@ class SpeciesForm(forms.ModelForm):
         fields = '__all__'
 
     def clean_latin_name(self):
+        
         if not self.instance.pk:
             qs = Species.objects.filter(name_for_search=self.cleaned_data["latin_name"]) 
             
@@ -235,8 +236,9 @@ class SpeciesForm(forms.ModelForm):
             return self.cleaned_data["latin_name"]
 
     def clean_common_name(self):
+        
         if not self.instance.pk:
-            qs = Species.objects.filter(name_for_search=self.cleaned_data["common_name"]) | Species.objects.filter(name_for_search=self.cleaned_data["latin_name"])
+            qs = Species.objects.filter(name_for_search=self.cleaned_data["common_name"])
             
             if 'latin_name' in self.cleaned_data.keys():
                 qs = qs | Species.objects.filter(name_for_search=self.cleaned_data["latin_name"])

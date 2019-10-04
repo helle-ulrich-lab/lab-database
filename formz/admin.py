@@ -7,6 +7,7 @@ from django.core.exceptions import PermissionDenied
 from django.contrib.contenttypes.models import ContentType
 from django.utils.safestring import mark_safe
 from django.contrib.auth.models import User
+from django import forms
 
 #################################################
 #             MODEL ADMIN CLASSES               #
@@ -36,6 +37,7 @@ class GenTechMethodPage(admin.ModelAdmin):
 
 from .models import FormZProject
 from .models import FormZUsers
+from .models import Species
 
 class FormZUsersInline(admin.TabularInline):
     # autocomplete_fields = ['user']
@@ -212,6 +214,32 @@ class FormZStorageLocationPage(admin.ModelAdmin):
 
         return super(FormZStorageLocationPage, self).formfield_for_foreignkey(db_field, request, **kwargs)
 
+class SpeciesForm(forms.ModelForm):
+    
+    class Meta:
+        model = Species
+        fields = '__all__'
+
+    def clean_latin_name(self):
+        if not self.instance.pk:
+            qs = Species.objects.filter(name_for_search=self.cleaned_data["latin_name"])
+            if qs:
+                raise forms.ValidationError('The name of an organism must be unique')
+            else:
+                return self.cleaned_data["latin_name"]
+        else:
+            return self.cleaned_data["latin_name"]
+
+    def clean_common_name(self):
+        if not self.instance.pk:
+            qs = Species.objects.filter(name_for_search=self.cleaned_data["common_name"])
+            if qs:
+                raise forms.ValidationError('The name of an organism must be unique')
+            else:
+                return self.cleaned_data["common_name"]
+        else:
+            return self.cleaned_data["common_name"]
+
 class SpeciesPage(admin.ModelAdmin):
     
     list_display = ('species_name', 'risk_group')
@@ -220,6 +248,7 @@ class SpeciesPage(admin.ModelAdmin):
     search_fields = ['name_for_search']
     ordering = ['name_for_search']
     fields = ['latin_name', 'common_name', 'risk_group', 'show_in_cell_line_collection']
+    form = SpeciesForm
 
     def species_name(self, instance):
         return instance.name_for_search

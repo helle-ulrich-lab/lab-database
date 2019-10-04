@@ -191,6 +191,8 @@ class FormZStorageLocationPage(admin.ModelAdmin):
     list_display = ('collection_model', 'storage_location', 'species_name')
     list_display_links = ('collection_model',)
     list_per_page = 25
+    autocomplete_fields = ['species_name']
+
 
     def has_module_permission(self, request):
         

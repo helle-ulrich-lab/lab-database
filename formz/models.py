@@ -149,7 +149,7 @@ class Species (models.Model):
     
     latin_name = models.CharField("latin name", help_text='Use FULL latin name, e.g. Homo sapiens', max_length=255, blank=True)
     common_name = models.CharField("common name", max_length=255, blank=True)
-    risk_group = models.PositiveSmallIntegerField('risk group', choices=((1,1), (2,2), (3,3)), blank=False, null=True)
+    risk_group = models.PositiveSmallIntegerField('risk group', choices=((1,1), (2,2), (3,3), (4,4)), blank=False, null=True)
     name_for_search = models.CharField(max_length=255, null=False, unique=True)
     show_in_cell_line_collection = models.BooleanField("show as organism in cell line collection?", default=False)
 

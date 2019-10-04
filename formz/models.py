@@ -150,7 +150,7 @@ class Species (models.Model):
     latin_name = models.CharField("latin name", help_text='Use FULL latin name, e.g. Homo sapiens', max_length=255, blank=True)
     common_name = models.CharField("common name", max_length=255, blank=True)
     risk_group = models.PositiveSmallIntegerField('risk group', choices=((1,1), (2,2), (3,3)), blank=False, null=True)
-    name_for_search = models.CharField(max_length=255)
+    name_for_search = models.CharField(max_length=255, null=True) # unique=True)
     show_in_cell_line_collection = models.BooleanField("show as organism in cell line collection?", default=False)
 
     class Meta:
@@ -188,7 +188,6 @@ class FormZBaseElement (models.Model):
     name = models.CharField("name", max_length=255, help_text='Must be identical (CASE-SENSITIVE!) to a feature name in a plasmid map for auto-detection to work. '
                             'If you want to associate additional names to an element, add them as aliases below', unique=True, blank=False)
     donor_organism = models.ManyToManyField(Species, verbose_name = 'donor organism', help_text='Choose none, for artificial elements', blank=False)
-    donor_organism_risk = models.PositiveSmallIntegerField('Donor organism risk group', choices=((1,1), (2,2), (3,3)), blank=False, null=True)
     nuc_acid_purity = models.ForeignKey(NucleicAcidPurity, verbose_name = 'nucleic acid purity', on_delete=models.PROTECT, blank=False, null=True)
     nuc_acid_risk = models.ForeignKey(NucleicAcidRisk, verbose_name = 'nucleic acid risk potential', on_delete=models.PROTECT, blank=False, null=True)
     zkbs_oncogene = models.ForeignKey(ZkbsOncogene, verbose_name = 'ZKBS database oncogene', on_delete=models.PROTECT, blank=True, null=True,

@@ -149,6 +149,7 @@ class Species (models.Model):
     
     latin_name = models.CharField("latin name", help_text='Use FULL latin name, e.g. Homo sapiens', max_length=255, blank=True)
     common_name = models.CharField("common name", max_length=255, blank=True)
+    risk_group = models.PositiveSmallIntegerField('risk group', choices=((1,1), (2,2), (3,3)), blank=False, null=True)
     name_for_search = models.CharField(max_length=255)
     show_in_cell_line_collection = models.BooleanField("show as organism in cell line collection?", default=False)
 
@@ -180,7 +181,7 @@ class Species (models.Model):
             raise ValidationError(errors)
 
     def __str__(self):
-        return self.name_for_search
+        return '{} - RG {}'.format(self.name_for_search, self.risk_group) if self.risk_group else self.name_for_search
 
 class FormZBaseElement (models.Model):
 
@@ -234,6 +235,15 @@ class FormZBaseElement (models.Model):
         except:
             pass
         return mark_safe(', '.join(species_names))
+
+    def get_donor_species_risk_groups(self):
+
+        species_risk_groups = []
+        for species in self.donor_organism.all():
+            if species.risk_group:
+                species_risk_groups.append(species.risk_group)
+
+        return ', '.join([str(i) for i in species_risk_groups])
 
 class FormZBaseElementExtraLabel (models.Model):
     label = models.CharField("alias", max_length=255, blank=True)

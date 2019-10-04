@@ -250,12 +250,12 @@ class FormZStorageLocationPage(admin.ModelAdmin):
 
 class SpeciesPage(admin.ModelAdmin):
     
-    list_display = ('id', 'species_name')
-    list_display_links = ('id',)
+    list_display = ('species_name', 'risk_group')
+    list_display_links = ('species_name',)
     list_per_page = 25
     search_fields = ['name_for_search']
     ordering = ['name_for_search']
-    fields = ['latin_name', 'common_name', 'show_in_cell_line_collection']
+    fields = ['latin_name', 'common_name', 'risk_group', 'show_in_cell_line_collection']
 
     def species_name(self, instance):
         return instance.name_for_search

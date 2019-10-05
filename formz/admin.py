@@ -150,7 +150,7 @@ class FormZBaseElementForm(forms.ModelForm):
         description = self.cleaned_data.get('description', None)
 
         if max_risk_group > 1 and not description:
-            raise forms.ValidationError("If the donor's risk group is > 1, a description must be provided")
+            self.add_error('description', "If the donor organism's risk group is > 1, a description must be provided")
 
         return self.cleaned_data
 

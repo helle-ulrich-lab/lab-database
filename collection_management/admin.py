@@ -1009,7 +1009,7 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
             
             # For plasmid map, detect common features and save as png using snapgene server
             try:
-                self.create_plasmid_map_preview(obj.map.path, obj.map_png.path, obj.map_gbk.path, obj.id, obj.name)
+                self.create_plasmid_map_preview(obj.map.path, obj.map_png.path, obj.map_gbk.path, obj.id, obj.name, 3)
             except:
                 messages.warning(request, 'Could not detect common features or save map preview')
     
@@ -1024,7 +1024,7 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
 
         if self.rename_and_preview or "_redetect_formz_elements" in request.POST:
             unknown_feat_name_list = []
-            r = self.get_plasmid_map_features(obj.map.path)
+            r = self.get_plasmid_map_features(obj.map.path, 3)
             if not self.new_obj:
                 obj.formz_elements.clear()
             for feat in r["features"]:
@@ -1367,60 +1367,73 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
         return super(HuPlasmidPage,self).obj_perms_manage_view(request, object_pk)
 
     #@background(schedule=1) # Run 1 s after it is called, as "background" process
-    def create_plasmid_map_preview(self, plasmid_map_path, png_plasmid_map_path, gbk_plasmid_map_path, obj_id, obj_name):
+    def create_plasmid_map_preview(self, plasmid_map_path, png_plasmid_map_path, gbk_plasmid_map_path, obj_id, obj_name, attempt_number):
         """ Given a path to a snapgene plasmid map, use snapegene server
         to detect common features and create map preview as png
         and gbk"""
 
-        try:
-            config = Config()
-            server_ports = config.get_server_ports()
-            for port in server_ports.values():
-                try:
-                    client = Client(port, zmq.Context())
-                except:
-                    continue
-                break
-            
-            common_features_path = os.path.join(BASE_DIR, "snapgene/standardCommonFeatures.ftrs")
-            
-            argument = {"request":"detectFeatures", "inputFile": plasmid_map_path, 
-            "outputFile": plasmid_map_path, "featureDatabase": common_features_path}
-            client.requestResponse(argument, 10000)                       
-            
-            argument = {"request":"generatePNGMap", "inputFile": plasmid_map_path,
-            "outputPng": png_plasmid_map_path, "title": "p{}{} - {}".format(LAB_ABBREVIATION_FOR_FILES, obj_id, obj_name),
-            "showEnzymes": True, "showFeatures": True, "showPrimers": True, "showORFs": False}
-            client.requestResponse(argument, 10000)
-            
-            argument = {"request":"exportDNAFile", "inputFile": plasmid_map_path,
-            "outputFile": gbk_plasmid_map_path, "exportFilter": "biosequence.gb"}
-            client.requestResponse(argument, 10000)
+        if attempt_number > 0:
+            try:
+                config = Config()
+                server_ports = config.get_server_ports()
+                for port in server_ports.values():
+                    try:
+                        client = Client(port, zmq.Context())
+                    except:
+                        continue
+                    break
+                
+                common_features_path = os.path.join(BASE_DIR, "snapgene/standardCommonFeatures.ftrs")
+                
+                argument = {"request":"detectFeatures", "inputFile": plasmid_map_path, 
+                "outputFile": plasmid_map_path, "featureDatabase": common_features_path}
+                client.requestResponse(argument, 10000)                       
+                
+                argument = {"request":"generatePNGMap", "inputFile": plasmid_map_path,
+                "outputPng": png_plasmid_map_path, "title": "p{}{} - {}".format(LAB_ABBREVIATION_FOR_FILES, obj_id, obj_name),
+                "showEnzymes": True, "showFeatures": True, "showPrimers": True, "showORFs": False}
+                client.requestResponse(argument, 10000)
+                
+                argument = {"request":"exportDNAFile", "inputFile": plasmid_map_path,
+                "outputFile": gbk_plasmid_map_path, "exportFilter": "biosequence.gb"}
+                client.requestResponse(argument, 10000)
 
-        except:
+                client.close()
+
+            except:
+                self.create_plasmid_map_preview(plasmid_map_path, png_plasmid_map_path, gbk_plasmid_map_path, obj_id, obj_name, attempt_number - 1)
+
+        else:
             mail_admins("Snapgene server error", 
                         "There was an error with creating the preview for {} with snapgene server".format(plasmid_map_path), 
                         fail_silently=True)
             raise Exception
 
-    def get_plasmid_map_features(self, plasmid_map_path):
+    def get_plasmid_map_features(self, plasmid_map_path, attempt_number):
         """ Given a path to a snapgene plasmid map (.dna), use snapegene server
         to return features, as json"""
 
-        try:
-            config = Config()
-            server_ports = config.get_server_ports()
-            for port in server_ports.values():
-                try:
-                    client = Client(port, zmq.Context())
-                except:
-                    continue
-                break
+        if attempt_number > 0:
+            try:
+                config = Config()
+                server_ports = config.get_server_ports()
+                for port in server_ports.values():
+                    try:
+                        client = Client(port, zmq.Context())
+                    except:
+                        continue
+                    break
+            
+                argument = {"request":"reportFeatures", "inputFile": plasmid_map_path}
+                features = client.requestResponse(argument, 10000)
+                client.close()
+
+                return features
+            
+            except:
+                self.get_plasmid_map_features(plasmid_map_path, attempt_number - 1)
         
-            argument = {"request":"reportFeatures", "inputFile": plasmid_map_path}
-            return client.requestResponse(argument, 10000)
-        
-        except:
+        else:
             mail_admins("Snapgene server error", 
                         "There was an error with getting plasmid features for {} with snapgene server".format(plasmid_map_path), 
                         fail_silently=True)

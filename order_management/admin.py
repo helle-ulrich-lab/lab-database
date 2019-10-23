@@ -872,7 +872,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
         '''Custom item description field for changelist_view'''
 
         part_description = instance.part_description.strip()
-        part_description = part_description[:50] + "..." if len(part_description) > 50 else part_description
+        part_description = part_description #[:50] + "..." if len(part_description) > 50 else part_description
         if instance.status != "cancelled":  
             return part_description
         else:

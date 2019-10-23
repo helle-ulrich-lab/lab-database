@@ -915,7 +915,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
         elif status == "arranged":
             return mark_safe('<span style="width:100%; height:100%; background-color:#ABEBC6;">{}</span>'.format(status.capitalize()))
         elif status == "delivered":
-            return mark_safe('<span style="width:100%; height:100%; background-color:#D5D8DC;">{}</span>'.format(status.capitalize()))
+            return mark_safe('<span style="width:100%; height:100%; background-color:#D5D8DC;">{}</span>'.format(instance.delivered_date.strftime('%d.%m.%Y') if instance.delivered_date else status.capitalize()))
         elif status == "cancelled":
             return mark_safe('<span style="width:100%; height:100%; background-color:#000000; color: white;">{}</span>'.format(status.capitalize()))
         elif status == "used up":

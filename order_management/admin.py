@@ -541,26 +541,30 @@ export_orders.short_description = "Export selected orders as xlsx"
 class SearchFieldOptLocation(StrField):
     """Create a list of unique locations for search"""
 
+    name = 'location'
     model = order_management_Location
-    name = 'name'
     suggest_options = True
 
     def get_options(self):
-        return super(SearchFieldOptLocation, self).\
-        get_options().all().order_by(self.name).\
-        values_list(self.name, flat=True)
+        return order_management_Location.objects.all().order_by('name').\
+        values_list('name', flat=True)
+
+    def get_lookup_name(self):
+        return 'location__name'
 
 class SearchFieldOptCostUnit(StrField):
     """Create a list of unique cost units for search"""
 
     model = order_management_CostUnit
-    name = 'name'
+    name = 'cost_unit'
     suggest_options = True
 
     def get_options(self):
-        return super(SearchFieldOptCostUnit, self).\
-        get_options().all().order_by(self.name).\
-        values_list(self.name, flat=True)
+        return order_management_CostUnit.objects.all().order_by('name').\
+        values_list('name', flat=True)
+
+    def get_lookup_name(self):
+        return 'cost_unit__name'
 
 class SearchFieldOptSupplier(StrField):
     """Create a list of unique cost units for search"""
@@ -607,15 +611,11 @@ class OrderQLSchema(DjangoQLSchema):
         ''' Define fields that can be searched'''
         
         if model == order_management_Order:
-            return ['id', SearchFieldOptSupplier() ,'supplier_part_no', 'internal_order_no', SearchFieldOptPartDescription(), 'cost_unit', 
-            'status', 'urgent', 'location', 'comment', 'delivered_date', 'cas_number', 
-            'ghs_pictogram', 'msds_form', 'created_date_time', 'last_changed_date_time', 'created_by',]
+            return ['id', SearchFieldOptSupplier() ,'supplier_part_no', 'internal_order_no', SearchFieldOptPartDescription(), SearchFieldOptCostUnit(), 
+            'status', 'urgent', SearchFieldOptLocation(), 'comment', 'delivered_date', 'cas_number', 
+            'ghs_pictogram', 'created_date_time', 'last_changed_date_time', 'created_by',]
         elif model == User:
             return [SearchFieldOptUsernameOrder(), SearchFieldOptLastnameOrder()]
-        elif model == order_management_CostUnit:
-            return [SearchFieldOptCostUnit()]
-        elif model == order_management_Location:
-            return [SearchFieldOptLocation()]
         return super(OrderQLSchema, self).get_fields(model)
 
 class MyMassUpdateOrderForm(MassUpdateForm):

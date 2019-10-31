@@ -539,7 +539,7 @@ class SaCerevisiaeStrainForm(forms.ModelForm):
 
 class SaCerevisiaeStrainEpisomalPlasmidInline(admin.TabularInline):
     
-    autocomplete_fields = ['huplasmid', 'formz_projects']
+    autocomplete_fields = ['plasmid', 'formz_projects']
     model = SaCerevisiaeStrainEpisomalPlasmid
     verbose_name_plural = "Episomal plasmids"
     verbose_name = 'Episomal Plasmid'
@@ -820,20 +820,20 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
 #               HU PLASMID PAGES                #
 #################################################
 
-from .models import HuPlasmid
+from .models import Plasmid
 
-class SearchFieldOptUsernameHuPlasmid(SearchFieldOptUsername):
+class SearchFieldOptUsernamePlasmid(SearchFieldOptUsername):
 
-    id_list = HuPlasmid.objects.all().values_list('created_by', flat=True).distinct()
+    id_list = Plasmid.objects.all().values_list('created_by', flat=True).distinct()
 
-class SearchFieldOptLastnameHuPlasmid(SearchFieldOptLastname):
+class SearchFieldOptLastnamePlasmid(SearchFieldOptLastname):
 
-    id_list = HuPlasmid.objects.all().values_list('created_by', flat=True).distinct()
+    id_list = Plasmid.objects.all().values_list('created_by', flat=True).distinct()
 
 class FieldFormZBaseElement(StrField):
     
     name = 'formz_elements_name'
-    model = HuPlasmid
+    model = Plasmid
     suggest_options = True
 
     def get_options(self):
@@ -842,28 +842,28 @@ class FieldFormZBaseElement(StrField):
     def get_lookup_name(self):
         return 'formz_elements__name'
 
-class HuPlasmidQLSchema(DjangoQLSchema):
+class PlasmidQLSchema(DjangoQLSchema):
     '''Customize search functionality'''
     
-    include = (HuPlasmid, User) # Include only the relevant models to be searched
+    include = (Plasmid, User) # Include only the relevant models to be searched
 
     def get_fields(self, model):
         '''Define fields that can be searched'''
         
-        if model == HuPlasmid:
+        if model == Plasmid:
             return ['id', 'name', 'other_name', 'parent_vector', 'selection', FieldUse(), 'construction_feature', 'received_from', 'note', 
                 'reference', 'created_by', FieldFormZBaseElement(), FieldFormZProject()]
         elif model == User:
-            return [SearchFieldOptUsernameHuPlasmid(), SearchFieldOptLastnameHuPlasmid()]
-        return super(HuPlasmidQLSchema, self).get_fields(model)
+            return [SearchFieldOptUsernamePlasmid(), SearchFieldOptLastnamePlasmid()]
+        return super(PlasmidQLSchema, self).get_fields(model)
 
-class HuPlasmidExportResource(resources.ModelResource):
-    """Defines a custom export resource class for HuPlasmid"""
+class PlasmidExportResource(resources.ModelResource):
+    """Defines a custom export resource class for Plasmid"""
     
     additional_parent_vector_info = Field(attribute='old_parent_vector', column_name='additional_parent_vector_info')
 
     class Meta:
-        model = HuPlasmid
+        model = Plasmid
         fields = ('id', 'name', 'other_name', 'parent_vector', 'additional_parent_vector_info', 'selection', 'us_e', 
                   'construction_feature', 'received_from', 'note', 'reference', 'map', 'created_date_time',
                   'created_by__username',)
@@ -871,30 +871,30 @@ class HuPlasmidExportResource(resources.ModelResource):
                   'construction_feature', 'received_from', 'note', 'reference', 'map', 'created_date_time',
                   'created_by__username',)
 
-def export_huplasmid(modeladmin, request, queryset):
-    """Export HuPlasmid as xlsx"""
+def export_plasmid(modeladmin, request, queryset):
+    """Export Plasmid as xlsx"""
 
-    export_data = HuPlasmidExportResource().export(queryset)
+    export_data = PlasmidExportResource().export(queryset)
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.xlsx'.format(HuPlasmid.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
+    response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.xlsx'.format(Plasmid.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
     response.write(export_data.xlsx)
     return response
-export_huplasmid.short_description = "Export selected plasmids as xlsx"
+export_plasmid.short_description = "Export selected plasmids as xlsx"
 
-class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin, Approval):
+class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin, Approval):
     
     list_display = ('id', 'name', 'selection', 'get_plasmidmap_short_name', 'created_by', 'approval')
     list_display_links = ('id', )
     list_per_page = 25
     formfield_overrides = {CharField: {'widget': TextInput(attrs={'size':'93'})},} # Make TextInput fields wider
-    djangoql_schema = HuPlasmidQLSchema
-    actions = [export_huplasmid]
+    djangoql_schema = PlasmidQLSchema
+    actions = [export_plasmid]
     search_fields = ['id', 'name']
     autocomplete_fields = ['parent_vector', 'formz_projects', 'formz_elements', 'vector_zkbs', 'formz_ecoli_strains', 'formz_gentech_methods']
     redirect_to_obj_page = False
 
-    change_form_template = "admin/collection_management/huplasmid/change_form.html"
-    add_form_template = "admin/collection_management/huplasmid/change_form.html"
+    change_form_template = "admin/collection_management/plasmid/change_form.html"
+    add_form_template = "admin/collection_management/plasmid/change_form.html"
 
     def save_model(self, request, obj, form, change):
         '''Override default save_model to limit a user's ability to save a record
@@ -927,10 +927,10 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
                     obj.last_changed_approval_by_pi = False
                     obj.approval_user = None
                     obj.save_without_historical_record()
-                    HuPlasmid.objects.filter(id=obj.pk).update(last_changed_date_time=obj.history.latest().last_changed_date_time)
+                    Plasmid.objects.filter(id=obj.pk).update(last_changed_date_time=obj.history.latest().last_changed_date_time)
                     return
 
-            old_obj = HuPlasmid.objects.get(pk=obj.pk)
+            old_obj = Plasmid.objects.get(pk=obj.pk)
             if request.user.is_superuser or request.user == old_obj.created_by or request.user.groups.filter(name='Lab manager').exists():
                 obj.last_changed_approval_by_pi = False
                 obj.approval_user = None
@@ -978,11 +978,11 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
         # Rename plasmid map
         if rename_and_preview:
 
-            map_dir_path = os.path.join(MEDIA_ROOT, 'collection_management/huplasmid/dna/')
+            map_dir_path = os.path.join(MEDIA_ROOT, 'collection_management/plasmid/dna/')
             old_file_name_abs_path = os.path.join(MEDIA_ROOT, obj.map.name)
             old_file_name, ext = os.path.splitext(os.path.basename(old_file_name_abs_path)) 
             new_file_name = os.path.join(
-                'collection_management/huplasmid/dna/', 
+                'collection_management/plasmid/dna/', 
                 "p{}{}_{}_{}{}".format(LAB_ABBREVIATION_FOR_FILES, obj.id, time.strftime("%Y%m%d"), time.strftime("%H%M%S"), ext.lower()))
             new_file_name_abs_path = os.path.join(MEDIA_ROOT, new_file_name)
             
@@ -994,8 +994,8 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
                 new_file_name_abs_path)
             
             obj.map.name = new_file_name
-            obj.map_png.name = new_file_name.replace("huplasmid/dna", "huplasmid/png").replace(".dna", ".png")
-            obj.map_gbk.name = new_file_name.replace("huplasmid/dna", "huplasmid/gbk").replace(".dna", ".gbk")
+            obj.map_png.name = new_file_name.replace("plasmid/dna", "plasmid/png").replace(".dna", ".png")
+            obj.map_gbk.name = new_file_name.replace("plasmid/dna", "plasmid/gbk").replace(".dna", ".gbk")
             obj.save()
 
             # For new records, delete first history record, which contains the unformatted map name, and change 
@@ -1015,9 +1015,9 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
     
     def save_related(self, request, form, formsets, change):
         
-        super(HuPlasmidPage, self).save_related(request, form, formsets, change)
+        super(PlasmidPage, self).save_related(request, form, formsets, change)
 
-        obj = HuPlasmid.objects.get(pk=form.instance.id)
+        obj = Plasmid.objects.get(pk=form.instance.id)
 
         if self.clear_formz_elements:
             obj.formz_elements.clear()
@@ -1229,7 +1229,7 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
         because their set by Django itself'''
         
         if obj:
-            if request.user.has_perm('collection_management.change_huplasmid', obj):
+            if request.user.has_perm('collection_management.change_plasmid', obj):
                 return ['map_png', 'map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',]
             if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by.labuser.is_principal_investigator):
                 return ['name', 'other_name', 'parent_vector', 'old_parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
@@ -1260,7 +1260,7 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
         }),
         )
         
-        return super(HuPlasmidPage,self).add_view(request)
+        return super(PlasmidPage,self).add_view(request)
     
     def change_view(self,request,object_id,extra_context=None):
         '''Override default change_view to show only desired fields'''
@@ -1268,7 +1268,7 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
         if object_id:
             extra_context = extra_context or {}
             extra_context['show_formz'] = True
-            obj = HuPlasmid.objects.get(pk=object_id)
+            obj = Plasmid.objects.get(pk=object_id)
             if obj:
                 if request.user == obj.created_by:
                     self.save_as = True
@@ -1308,7 +1308,7 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
                     }),
                 )
         else:
-            if request.user.has_perm('collection_management.change_huplasmid', obj):
+            if request.user.has_perm('collection_management.change_plasmid', obj):
                 self.fieldsets = fieldsets_with_keep
             if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by.labuser.is_principal_investigator):
                 self.fieldsets = fieldsets_wo_keep
@@ -1318,7 +1318,7 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
                 else:
                     self.fieldsets = fieldsets_wo_keep
         
-        return super(HuPlasmidPage,self).change_view(request,object_id,extra_context=extra_context)
+        return super(PlasmidPage,self).change_view(request,object_id,extra_context=extra_context)
 
     def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
         """Override default changeform_view to hide Save buttons when certain conditions (same as
@@ -1327,14 +1327,14 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
         extra_context = extra_context or {}
         extra_context['show_submit_line'] = True
         if object_id:
-            obj = HuPlasmid.objects.get(pk=object_id)
+            obj = Plasmid.objects.get(pk=object_id)
             if obj:
                 if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by.labuser.is_principal_investigator):
-                    if not request.user.has_perm('collection_management.change_huplasmid', obj):
+                    if not request.user.has_perm('collection_management.change_plasmid', obj):
                         extra_context['show_submit_line'] = False
                 extra_context['show_disapprove'] = True if request.user.groups.filter(name='Approval manager').exists() else False
                 extra_context['show_redetect_save'] = True
-        return super(HuPlasmidPage, self).changeform_view(request, object_id, extra_context=extra_context)
+        return super(PlasmidPage, self).changeform_view(request, object_id, extra_context=extra_context)
 
     def get_plasmidmap_short_name(self, instance):
         '''This function allows you to define a custom field for the list view to
@@ -1358,13 +1358,13 @@ class HuPlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGu
 
         Customized to allow only record owner to change permissions
         """
-        obj = HuPlasmid.objects.get(pk=object_pk)
+        obj = Plasmid.objects.get(pk=object_pk)
         
         if obj:
             if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
                 messages.error(request, 'Nice try, you are allowed to change the permissions of your own records only.')
                 return HttpResponseRedirect("..")
-        return super(HuPlasmidPage,self).obj_perms_manage_view(request, object_pk)
+        return super(PlasmidPage,self).obj_perms_manage_view(request, object_pk)
 
     #@background(schedule=1) # Run 1 s after it is called, as "background" process
     def create_plasmid_map_preview(self, plasmid_map_path, png_plasmid_map_path, gbk_plasmid_map_path, obj_id, obj_name, attempt_number):
@@ -1692,7 +1692,7 @@ class ScPombeStrainForm(forms.ModelForm):
 
 class ScPombeStrainEpisomalPlasmidInline(admin.TabularInline):
     
-    autocomplete_fields = ['huplasmid', 'formz_projects']
+    autocomplete_fields = ['plasmid', 'formz_projects']
     model = ScPombeStrainEpisomalPlasmid
     verbose_name_plural = "Episomal plasmids"
     verbose_name = 'Episomal Plasmid'
@@ -2242,7 +2242,7 @@ export_mammalianline.short_description = "Export selected cell lines as xlsx"
 
 class MammalianEpisomalPlasmidInline(admin.TabularInline):
     
-    autocomplete_fields = ['huplasmid', 'formz_projects']
+    autocomplete_fields = ['plasmid', 'formz_projects']
     model = MammalianLineEpisomalPlasmid
     verbose_name_plural = "Transiently transfected plasmids"
     verbose_name = 'Episomal Plasmid'

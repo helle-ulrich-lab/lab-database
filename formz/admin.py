@@ -110,7 +110,7 @@ class FormZProjectPage(admin.ModelAdmin):
                             <a href='{}+{projects}'>Strains - Sa. cerevisiae</a> | 
                             <a href='{}+{projects}'>Strains - Sc. pombe</a>""".format(
             '/collection_management/mammalianline/?q-l=on&q=formz_projects_title+in',
-            '/collection_management/huplasmid/?q-l=on&q=formz_projects_title+in', 
+            '/collection_management/plasmid/?q-l=on&q=formz_projects_title+in', 
             '/collection_management/sacerevisiaestrain/?q-l=on&q=formz_projects_title+in', 
             '/collection_management/scpombestrain/?q-l=on&q=formz_projects_title+in', 
             projects=projects

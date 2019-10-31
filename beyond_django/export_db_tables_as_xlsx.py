@@ -1,8 +1,8 @@
 from collection_management.models import SaCerevisiaeStrain
 from collection_management.admin import SaCerevisiaeStrainExportResource
 
-from collection_management.models import HuPlasmid
-from collection_management.admin import HuPlasmidExportResource
+from collection_management.models import Plasmid
+from collection_management.admin import PlasmidExportResource
 
 from collection_management.models import Oligo
 from collection_management.admin import OligoExportResource
@@ -54,7 +54,7 @@ def export_xlsx(model,export_resource):
     convert_xlsx_to_tsv(file_name)
 
 export_xlsx(SaCerevisiaeStrain, SaCerevisiaeStrainExportResource)
-export_xlsx(HuPlasmid, HuPlasmidExportResource)
+export_xlsx(Plasmid, PlasmidExportResource)
 export_xlsx(Oligo, OligoExportResource)
 export_xlsx(ScPombeStrain, ScPombeStrainExportResource)
 export_xlsx(EColiStrain, EColiStrainExportResource)

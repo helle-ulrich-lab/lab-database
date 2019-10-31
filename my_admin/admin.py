@@ -278,7 +278,7 @@ my_admin_site.disable_action('delete_selected')
 #################################################
 
 from collection_management.models import SaCerevisiaeStrain
-from collection_management.models import HuPlasmid
+from collection_management.models import Plasmid
 from collection_management.models import Oligo
 from collection_management.models import ScPombeStrain
 from collection_management.models import EColiStrain
@@ -287,7 +287,7 @@ from collection_management.models import MammalianLineDoc
 from collection_management.models import Antibody
 
 from collection_management.admin import SaCerevisiaeStrainPage
-from collection_management.admin import HuPlasmidPage
+from collection_management.admin import PlasmidPage
 from collection_management.admin import OligoPage
 from collection_management.admin import ScPombeStrainPage
 from collection_management.admin import EColiStrainPage
@@ -296,7 +296,7 @@ from collection_management.admin import MammalianLineDocPage
 from collection_management.admin import AntibodyPage
 
 my_admin_site.register(SaCerevisiaeStrain, SaCerevisiaeStrainPage)
-my_admin_site.register(HuPlasmid, HuPlasmidPage)
+my_admin_site.register(Plasmid, PlasmidPage)
 my_admin_site.register(Oligo, OligoPage)
 my_admin_site.register(ScPombeStrain, ScPombeStrainPage)
 my_admin_site.register(EColiStrain, EColiStrainPage)

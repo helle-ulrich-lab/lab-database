@@ -72,9 +72,9 @@ class SaCerevisiaeStrain (models.Model, SaveWithoutHistoricalRecord):
     construction = models.TextField("construction", blank=True)
     modification = models.CharField("modification", max_length=255, blank=True)
     
-    integrated_plasmids = models.ManyToManyField('HuPlasmid', related_name='cerevisiae_integrated_plasmids', blank=True)
-    cassette_plasmids = models.ManyToManyField('HuPlasmid', related_name='cerevisiae_cassette_plasmids', help_text='Tagging and knock out plasmids', blank=True)
-    episomal_plasmids = models.ManyToManyField('HuPlasmid', related_name='cerevisiae_episomal_plasmids', blank=True, through='SaCerevisiaeStrainEpisomalPlasmid')
+    integrated_plasmids = models.ManyToManyField('Plasmid', related_name='cerevisiae_integrated_plasmids', blank=True)
+    cassette_plasmids = models.ManyToManyField('Plasmid', related_name='cerevisiae_cassette_plasmids', help_text='Tagging and knock out plasmids', blank=True)
+    episomal_plasmids = models.ManyToManyField('Plasmid', related_name='cerevisiae_episomal_plasmids', blank=True, through='SaCerevisiaeStrainEpisomalPlasmid')
     plasmids = models.CharField("plasmids", max_length=255, help_text='Use only when the other plasmid fields do not apply', blank=True)
     
     selection = models.CharField("selection", max_length=255, blank=True)
@@ -131,7 +131,7 @@ class SaCerevisiaeStrain (models.Model, SaveWithoutHistoricalRecord):
     def get_all_transient_episomal_plasmids(self):
         """Returns all transiently transformed episomal plasmids"""
 
-        all_plasmids = self.sacerevisiaestrainepisomalplasmid_set.filter(present_in_stocked_strain=False).distinct().order_by('huplasmid__id')
+        all_plasmids = self.sacerevisiaestrainepisomalplasmid_set.filter(present_in_stocked_strain=False).distinct().order_by('plasmid__id')
         return all_plasmids
 
     def get_all_uncommon_formz_elements(self):
@@ -157,7 +157,7 @@ class SaCerevisiaeStrain (models.Model, SaveWithoutHistoricalRecord):
 class SaCerevisiaeStrainEpisomalPlasmid (models.Model):
     
     sacerevisiae_strain = models.ForeignKey(SaCerevisiaeStrain, on_delete=models.PROTECT)
-    huplasmid = models.ForeignKey('HuPlasmid', verbose_name = 'Plasmid', on_delete=models.PROTECT)
+    plasmid = models.ForeignKey('Plasmid', verbose_name = 'Plasmid', on_delete=models.PROTECT)
     present_in_stocked_strain = models.BooleanField("present in -80° C stock?", help_text="Check, if the culture you stocked for the -80° C "
                                                     "collection contains an episomal plasmid. Leave unchecked, if you simply want to record that you have "
                                                     "transiently transformed this strain with an episomal plasmid", default=False)
@@ -192,7 +192,7 @@ class SaCerevisiaeStrainEpisomalPlasmid (models.Model):
 #                    PLASMID                    #
 #################################################
 
-class HuPlasmid (models.Model, SaveWithoutHistoricalRecord):
+class Plasmid (models.Model, SaveWithoutHistoricalRecord):
     
     name = models.CharField("name", max_length=255, unique=True, blank=False)
     other_name = models.CharField("other name", max_length=255, blank=True)
@@ -204,9 +204,9 @@ class HuPlasmid (models.Model, SaveWithoutHistoricalRecord):
     received_from = models.CharField("received from", max_length=255, blank=True)
     note = models.CharField("note", max_length=300, blank=True)
     reference = models.CharField("reference", max_length=255, blank=True)
-    map = models.FileField("plasmid map", help_text = 'only .dna files, max. 2 MB', upload_to="collection_management/huplasmid/dna/", blank=True)
-    map_png = models.ImageField("plasmid image" , upload_to="collection_management/huplasmid/png/", blank=True)
-    map_gbk = models.FileField("plasmid map (.gbk)", upload_to="collection_management/huplasmid/gb/", blank=True)
+    map = models.FileField("plasmid map", help_text = 'only .dna files, max. 2 MB', upload_to="collection_management/plasmid/dna/", blank=True)
+    map_png = models.ImageField("plasmid image" , upload_to="collection_management/plasmid/png/", blank=True)
+    map_gbk = models.FileField("plasmid map (.gbk)", upload_to="collection_management/plasmid/gb/", blank=True)
 
     created_date_time = models.DateTimeField("created", auto_now_add=True)
     created_approval_by_pi = models.BooleanField("record creation approval", default=False)
@@ -271,7 +271,7 @@ class HuPlasmid (models.Model, SaveWithoutHistoricalRecord):
         if not self.destroyed_date:
             self.destroyed_date = datetime.now().date() + timedelta(days=random.randint(7,21))
         
-        super(HuPlasmid, self).save(force_insert, force_update, using, update_fields)
+        super(Plasmid, self).save(force_insert, force_update, using, update_fields)
 
     def get_all_instock_plasmids(self):
         """Returns all plasmids present in the stocked organism"""
@@ -349,9 +349,9 @@ class ScPombeStrain (models.Model, SaveWithoutHistoricalRecord):
     received_from = models.CharField("received from", max_length=255, blank=True)
     comment = models.CharField("comments", max_length=300, blank=True)
 
-    integrated_plasmids = models.ManyToManyField('HuPlasmid', related_name='pombe_integrated_plasmids', blank=True)
-    cassette_plasmids = models.ManyToManyField('HuPlasmid', related_name='pombe_cassette_plasmids', help_text='Tagging and knock out plasmids', blank=True)
-    episomal_plasmids = models.ManyToManyField('HuPlasmid', related_name='pombe_episomal_plasmids', blank=True, through='ScPombeStrainEpisomalPlasmid')
+    integrated_plasmids = models.ManyToManyField('Plasmid', related_name='pombe_integrated_plasmids', blank=True)
+    cassette_plasmids = models.ManyToManyField('Plasmid', related_name='pombe_cassette_plasmids', help_text='Tagging and knock out plasmids', blank=True)
+    episomal_plasmids = models.ManyToManyField('Plasmid', related_name='pombe_episomal_plasmids', blank=True, through='ScPombeStrainEpisomalPlasmid')
 
     created_date_time = models.DateTimeField("created", auto_now_add=True)
     created_approval_by_pi = models.BooleanField("record creation approval", default=False)
@@ -399,7 +399,7 @@ class ScPombeStrain (models.Model, SaveWithoutHistoricalRecord):
     def get_all_transient_episomal_plasmids(self):
         """Returns all transiently transformed episomal plasmids"""
 
-        all_plasmids = self.scpombestrainepisomalplasmid_set.filter(present_in_stocked_strain=False).distinct().order_by('huplasmid__id')
+        all_plasmids = self.scpombestrainepisomalplasmid_set.filter(present_in_stocked_strain=False).distinct().order_by('plasmid__id')
         return all_plasmids
 
     def get_all_uncommon_formz_elements(self):
@@ -425,7 +425,7 @@ class ScPombeStrain (models.Model, SaveWithoutHistoricalRecord):
 class ScPombeStrainEpisomalPlasmid (models.Model):
     
     scpombe_strain = models.ForeignKey(ScPombeStrain, on_delete=models.PROTECT)
-    huplasmid = models.ForeignKey('HuPlasmid', verbose_name = 'Plasmid', on_delete=models.PROTECT)
+    plasmid = models.ForeignKey('Plasmid', verbose_name = 'Plasmid', on_delete=models.PROTECT)
     present_in_stocked_strain = models.BooleanField("present in -80° C stock?", default = False)
     formz_projects = models.ManyToManyField(FormZProject, related_name='pombe_episomal_plasmid_projects', blank= True)
     created_date = models.DateField('created', blank= True, null=True)
@@ -509,8 +509,8 @@ class MammalianLine (models.Model, SaveWithoutHistoricalRecord):
     description_comment = models.TextField("description/comments", blank=True)
     s2_work = models.BooleanField("Used for S2 work?", default=False, help_text='Check, for example, for a cell line created by lentiviral trunsdunction')
 
-    integrated_plasmids = models.ManyToManyField('HuPlasmid', related_name='mammalian_integrated_plasmids', blank= True)
-    episomal_plasmids = models.ManyToManyField('HuPlasmid', related_name='mammalian_episomal_plasmids', blank=True, through='MammalianLineEpisomalPlasmid')
+    integrated_plasmids = models.ManyToManyField('Plasmid', related_name='mammalian_integrated_plasmids', blank= True)
+    episomal_plasmids = models.ManyToManyField('Plasmid', related_name='mammalian_episomal_plasmids', blank=True, through='MammalianLineEpisomalPlasmid')
     
     created_date_time = models.DateTimeField("created", auto_now_add=True)
     created_approval_by_pi = models.BooleanField("record creation approval", default=False)
@@ -557,7 +557,7 @@ class MammalianLine (models.Model, SaveWithoutHistoricalRecord):
     def get_all_transient_episomal_plasmids(self):
         """Returns all transiently transformed episomal plasmids"""
 
-        all_plasmids = self.mammalianlineepisomalplasmid_set.filter(s2_work_episomal_plasmid=False).distinct().order_by('huplasmid__id')
+        all_plasmids = self.mammalianlineepisomalplasmid_set.filter(s2_work_episomal_plasmid=False).distinct().order_by('plasmid__id')
         return all_plasmids
 
     def get_all_uncommon_formz_elements(self):
@@ -584,7 +584,7 @@ class MammalianLine (models.Model, SaveWithoutHistoricalRecord):
 class MammalianLineEpisomalPlasmid (models.Model):
     
     mammalian_line = models.ForeignKey(MammalianLine, on_delete=models.PROTECT)
-    huplasmid = models.ForeignKey('HuPlasmid', verbose_name = 'Plasmid', on_delete=models.PROTECT)
+    plasmid = models.ForeignKey('Plasmid', verbose_name = 'Plasmid', on_delete=models.PROTECT)
     formz_projects = models.ManyToManyField(FormZProject, related_name='mammalian_episomal_plasmid_projects', blank= True)
     s2_work_episomal_plasmid = models.BooleanField("Used for S2 work?", help_text="Check, for example, for lentiviral packaging plasmids", default=False)
     created_date = models.DateField('created', blank= False, null=True)

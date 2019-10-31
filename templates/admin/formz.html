@@ -161,7 +161,7 @@
             <h3>Plasmid/e die zur Erschaffung des Organismus genutzt wurden</h3>
             {% for plasmid in object.instock_plasmids %}
                 <li>
-                    <a style='color:#447e9b;' href="{% url 'admin:collection_management_huplasmid_change' plasmid.id %}">Plasmid #{{plasmid}}</a>
+                    <a style='color:#447e9b;' href="{% url 'admin:collection_management_plasmid_change' plasmid.id %}">Plasmid #{{plasmid}}</a>
                     {% if plasmid.map %}
                         (<a style='color:#447e9b;text-transform: none' href="{{plasmid.map_gbk.url}}">.gbk</a>,
                         <a  class="image-link" style='color:#447e9b; text-transform: none' href="{{plasmid.map_png.url}}">.png</a>)
@@ -278,13 +278,13 @@
                     <thead>
                         <tr>
                             <th  colspan="5" scope="col" style="background:#ccc;" class="column-plasmid">
-                                <a style='color:#447e9b;' href="{% url 'admin:collection_management_huplasmid_change' plasmid.huplasmid.id %}">Plasmid #{{plasmid.huplasmid}} </a>
+                                <a style='color:#447e9b;' href="{% url 'admin:collection_management_plasmid_change' plasmid.plasmid.id %}">Plasmid #{{plasmid.plasmid}} </a>
                                 <span style="text-transform: none">
-                                    {% if plasmid.huplasmid.map %}
-                                        (<a style='color:#447e9b;' href="{{plasmid.huplasmid.map_gbk.url}}">.gbk</a>,
-                                        <a  class="image-link" style='color:#447e9b;' href="{{plasmid.huplasmid.map_png.url}}">.png</a>);
+                                    {% if plasmid.plasmid.map %}
+                                        (<a style='color:#447e9b;' href="{{plasmid.plasmid.map_gbk.url}}">.gbk</a>,
+                                        <a  class="image-link" style='color:#447e9b;' href="{{plasmid.plasmid.map_png.url}}">.png</a>);
                                     {% endif %}
-                                    {% if not plasmid.huplasmid.map and plasmid.created_date %}
+                                    {% if not plasmid.plasmid.map and plasmid.created_date %}
                                     (Organismus {% if transfected %}transfiziert{% else %}transformiert{% endif %} am {{plasmid.created_date | date:"d.m.Y"}},
                                     {% else %}
                                     Organismus {% if transfected %}transfiziert{% else %}transformiert{% endif %} am {{plasmid.created_date | date:"d.m.Y"}},
@@ -313,16 +313,16 @@
                                     {% endif %}
                                 </span>
                                 
-                                {% if plasmid.huplasmid.vector_zkbs %}
-                                    {% if plasmid.huplasmid.vector_zkbs.name != 'none' %}
-                                        <span style='text-transform: none'>- ZKBS Plasmid </span><a style='color:#447e9b;text-transform: none' href="{% url 'admin:formz_zkbsplasmid_change' plasmid.huplasmid.vector_zkbs.id %}">{{plasmid.huplasmid.vector_zkbs.name}}</a>
+                                {% if plasmid.plasmid.vector_zkbs %}
+                                    {% if plasmid.plasmid.vector_zkbs.name != 'none' %}
+                                        <span style='text-transform: none'>- ZKBS Plasmid </span><a style='color:#447e9b;text-transform: none' href="{% url 'admin:formz_zkbsplasmid_change' plasmid.plasmid.vector_zkbs.id %}">{{plasmid.plasmid.vector_zkbs.name}}</a>
                                     {% endif %}
                                 {% endif %}
                             </th>
                         </tr>
                     </thead>
-                        {% if plasmid.huplasmid.formz_elements.all %}
-                            {% if plasmid.huplasmid.get_all_uncommon_formz_elements %}
+                        {% if plasmid.plasmid.formz_elements.all %}
+                            {% if plasmid.plasmid.get_all_uncommon_formz_elements %}
                                 <thead>
                                     <tr>
                                         <th scope="col" class="column-name" style="text-align:center">
@@ -353,7 +353,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                        {% for formz_elem in plasmid.huplasmid.get_all_uncommon_formz_elements %}
+                                        {% for formz_elem in plasmid.plasmid.get_all_uncommon_formz_elements %}
                                             <tr class="row">
                                                 <td class="field-name"><a href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}">{{formz_elem.name}}</a></td>
                                                 <td class="field-donor_organism" style="text-align:center; border-left: 1px solid #eee;">{% if formz_elem.get_donor_species_names %}{{formz_elem.get_donor_species_names}}{% else %}Artifiziell{% endif %}</td>
@@ -379,7 +379,7 @@
                         {% endif %}
                         </table>        
                         
-                        {% if plasmid.huplasmid.get_all_common_formz_elements %}
+                        {% if plasmid.plasmid.get_all_common_formz_elements %}
                             <table>
                                 <thead>
                                     <th  colspan="5" scope="col" class="column-common_features">
@@ -389,7 +389,7 @@
                                 <tbody>
                                     <tr>
                                         <td  colspan="5" scope="col" class="column-common_features">
-                                            {% for formz_elem in plasmid.huplasmid.get_all_common_formz_elements %}
+                                            {% for formz_elem in plasmid.plasmid.get_all_common_formz_elements %}
                                                 {% if not forloop.last %}
                                                     <a href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}">{{formz_elem.name}}</a>,
                                                 {% else %}
@@ -420,13 +420,13 @@
                         <thead>
                             <tr>
                                 <th  colspan="5" scope="col" style="background:#ccc;" class="column-plasmid">
-                                    <a style='color:#447e9b;' href="{% url 'admin:collection_management_huplasmid_change' plasmid.huplasmid.id %}">Plasmid #{{plasmid.huplasmid}} </a>
+                                    <a style='color:#447e9b;' href="{% url 'admin:collection_management_plasmid_change' plasmid.plasmid.id %}">Plasmid #{{plasmid.plasmid}} </a>
                                     <span style="text-transform: none">
-                                        {% if plasmid.huplasmid.map %}
-                                            (<a style='color:#447e9b;' href="{{plasmid.huplasmid.map_gbk.url}}">.gbk</a>,
-                                            <a  class="image-link" style='color:#447e9b;' href="{{plasmid.huplasmid.map_png.url}}">.png</a>);
+                                        {% if plasmid.plasmid.map %}
+                                            (<a style='color:#447e9b;' href="{{plasmid.plasmid.map_gbk.url}}">.gbk</a>,
+                                            <a  class="image-link" style='color:#447e9b;' href="{{plasmid.plasmid.map_png.url}}">.png</a>);
                                         {% endif %}
-                                        {% if not plasmid.huplasmid.map and plasmid.created_date %}
+                                        {% if not plasmid.plasmid.map and plasmid.created_date %}
                                         (Organismus {% if transfected %}transfiziert{% else %}transformiert{% endif %} am {{plasmid.created_date | date:"d.m.Y"}},
                                         {% else %}
                                         Organismus {% if transfected %}transfiziert{% else %}transformiert{% endif %} am {{plasmid.created_date | date:"d.m.Y"}},
@@ -454,16 +454,16 @@
                                             noch nicht entsorgt)
                                         {% endif %}
                                     </span>
-                                    {% if plasmid.huplasmid.vector_zkbs %}
-                                        {% if plasmid.huplasmid.vector_zkbs.name != 'none' %}
-                                            <span style='text-transform: none'>- ZKBS Plasmid </span><a style='color:#447e9b;text-transform: none' href="{% url 'admin:formz_zkbsplasmid_change' plasmid.huplasmid.vector_zkbs.id %}">{{plasmid.huplasmid.vector_zkbs.name}}</a>
+                                    {% if plasmid.plasmid.vector_zkbs %}
+                                        {% if plasmid.plasmid.vector_zkbs.name != 'none' %}
+                                            <span style='text-transform: none'>- ZKBS Plasmid </span><a style='color:#447e9b;text-transform: none' href="{% url 'admin:formz_zkbsplasmid_change' plasmid.plasmid.vector_zkbs.id %}">{{plasmid.plasmid.vector_zkbs.name}}</a>
                                         {% endif %}
                                     {% endif %}
                                 </th>
                             </tr>
                         </thead>
-                            {% if plasmid.huplasmid.formz_elements.all %}
-                                {% if plasmid.huplasmid.get_all_uncommon_formz_elements %}
+                            {% if plasmid.plasmid.formz_elements.all %}
+                                {% if plasmid.plasmid.get_all_uncommon_formz_elements %}
                                     <thead>
                                         <tr>
                                             <th scope="col" class="column-name" style="text-align:center">
@@ -494,7 +494,7 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                            {% for formz_elem in plasmid.huplasmid.get_all_uncommon_formz_elements %}
+                                            {% for formz_elem in plasmid.plasmid.get_all_uncommon_formz_elements %}
                                                 <tr class="row">
                                                     <td class="field-name"><a href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}">{{formz_elem.name}}</a></td>
                                                     <td class="field-donor_organism" style="text-align:center; border-left: 1px solid #eee;">{% if formz_elem.get_donor_species_names %}{{formz_elem.get_donor_species_names}}{% else %}Artifiziell{% endif %}</td>
@@ -520,7 +520,7 @@
                             {% endif %}
                             </table>        
                             
-                            {% if plasmid.huplasmid.get_all_common_formz_elements %}
+                            {% if plasmid.plasmid.get_all_common_formz_elements %}
                                 <table>
                                     <thead>
                                         <th  colspan="5" scope="col" class="column-common_features">
@@ -530,7 +530,7 @@
                                     <tbody>
                                         <tr>
                                             <td  colspan="5" scope="col" class="column-common_features">
-                                                {% for formz_elem in plasmid.huplasmid.get_all_common_formz_elements %}
+                                                {% for formz_elem in plasmid.plasmid.get_all_common_formz_elements %}
                                                     {% if not forloop.last %}
                                                         <a href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}">{{formz_elem.name}}</a>,
                                                     {% else %}

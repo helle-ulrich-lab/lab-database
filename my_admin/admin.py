@@ -4,7 +4,6 @@
 
 from django.contrib import admin
 from django.apps import apps
-from django.utils.translation import ugettext as _, ugettext_lazy
 from django.utils.text import capfirst
 from django.http import HttpResponseRedirect
 from django.contrib.auth.models import Group, User
@@ -40,6 +39,8 @@ import time
 
 from formz.models import FormZBaseElement
 from formz.models import FormZProject
+
+from django_project.settings import SITE_TITLE, SITE_HEADER
 
 #################################################
 #                CUSTOM CLASSES                 #
@@ -87,13 +88,13 @@ class MyAdminSite(admin.AdminSite):
     '''Create a custom admin site called MyAdminSite'''
     
     # Text to put at the end of each page's <title>.
-    site_title = ugettext_lazy('Ulrich Lab Intranet')
+    site_title = SITE_TITLE
 
     # Text to put in each page's <h1>.
-    site_header = ugettext_lazy('Ulrich Lab Intranet')
+    site_header = SITE_HEADER
 
     # Text to put at the top of the admin index page.
-    index_title = ugettext_lazy('Home')
+    index_title = 'Home'
 
     # URL for the "View site" link at the top of each admin page.
     site_url = '/'

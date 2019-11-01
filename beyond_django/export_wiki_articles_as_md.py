@@ -7,7 +7,7 @@ def save_wiki_article_as_md(article_id):
 
     obj = ArticleRevision.objects.filter(article_id=article_id).latest('id')
     file_name = ''.join(obj.title.title().split()) + '.md'
-    with open(join(BASE_DIR, 'ulrich_lab_intranet_db_backup/wiki_articles', file_name), 'w') as handle:
+    with open(join(BASE_DIR, 'db_backup/wiki_articles', file_name), 'w') as handle:
         handle.write(obj.content)
 
 article_ids = set(ArticleRevision.objects.all().values_list('article_id', flat=True))

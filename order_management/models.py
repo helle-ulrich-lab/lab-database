@@ -15,7 +15,7 @@ from simple_history.models import HistoricalRecords
 import os
 import time
 from record_approval.models import RecordToBeApproved
-from django_project.settings import LAB_ABBREVIATION_FOR_FILES
+from django_project.private_settings import LAB_ABBREVIATION_FOR_FILES
 
 #################################################
 #            ORDER COST UNIT MODEL              #

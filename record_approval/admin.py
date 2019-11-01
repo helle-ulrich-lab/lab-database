@@ -10,6 +10,8 @@ from django.urls import reverse
 from order_management.models import Order as order_management_Order
 from .models import RecordToBeApproved
 
+from django_project.private_settings import SITE_TITLE
+
 from django.utils import timezone
 
 def approve_records(modeladmin, request, queryset):
@@ -103,10 +105,10 @@ def notify_user_edits_required(modeladmin, request, queryset):
 
             {}
             Regards,
-            The Ulrich lab intranet
+            The {}
             """
             
-            message = inspect.cleandoc(message).format(user.first_name, request.user, records_str)
+            message = inspect.cleandoc(message).format(user.first_name, request.user, records_str, SITE_TITLE)
 
             send_mail('Some records that you have created/changed need your attention', 
                     message, 

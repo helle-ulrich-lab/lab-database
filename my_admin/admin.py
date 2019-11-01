@@ -40,7 +40,7 @@ import time
 from formz.models import FormZBaseElement
 from formz.models import FormZProject
 
-from django_project.settings import SITE_TITLE, SITE_HEADER
+from django_project.private_settings import SITE_TITLE
 
 #################################################
 #                CUSTOM CLASSES                 #
@@ -91,7 +91,7 @@ class MyAdminSite(admin.AdminSite):
     site_title = SITE_TITLE
 
     # Text to put in each page's <h1>.
-    site_header = SITE_HEADER
+    site_header = SITE_TITLE
 
     # Text to put at the top of the admin index page.
     index_title = 'Home'

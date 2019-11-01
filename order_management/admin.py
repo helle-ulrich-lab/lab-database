@@ -15,6 +15,9 @@ from django.core.exceptions import PermissionDenied
 from django.utils.translation import ugettext as _
 from django import forms
 
+from django_project.private_settings import SITE_TITLE
+from django_project.private_settings import DJANGO_PRIVATE_DATA
+
 #################################################
 #        ADDED FUNCTIONALITIES IMPORTS          #
 #################################################
@@ -485,14 +488,14 @@ def change_order_status_to_delivered(modeladmin, request, queryset):
                     your order #{} for {} has just been delivered.
 
                     Regards,
-                    The Ulrich lab intranet
+                    The {}
 
-                    """.format(order.created_by.first_name, order.pk, order.part_description)
+                    """.format(order.created_by.first_name, order.pk, order.part_description, SITE_TITLE)
                     
                     message = inspect.cleandoc(message)
                     send_mail('Delivery notification', 
                     message, 
-                    'system@imbc2.imb.uni-mainz.de',
+                    DJANGO_PRIVATE_DATA["server_email_address"],
                     [order.created_by.email],
                     fail_silently=True)
             order.save()
@@ -692,14 +695,14 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
                 {} {} has just placed an urgent order for {} {} - {}.
 
                 Regards,
-                The Ulrich lab intranet
+                The {}
 
-                """.format(request.user.first_name, request.user.last_name, obj.supplier, obj.supplier_part_no, obj.part_description)
+                """.format(request.user.first_name, request.user.last_name, obj.supplier, obj.supplier_part_no, obj.part_description, SITE_TITLE)
                 message = inspect.cleandoc(message)
                 try:
                     send_mail('New urgent order', 
                     message, 
-                    'system@imbc2.imb.uni-mainz.de',
+                    DJANGO_PRIVATE_DATA["server_email_address"],
                     ['ulrich-orders@imb-mainz.de'],
                     fail_silently=False,)
                     messages.success(request, 'The lab managers have been informed of your urgent order.')
@@ -742,15 +745,15 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
                                     your order #{} for {} has just been delivered.
 
                                     Regards,
-                                    The Ulrich lab intranet
+                                    The {}
 
-                                    """.format(obj.created_by.first_name, obj.pk, obj.part_description)
+                                    """.format(obj.created_by.first_name, obj.pk, obj.part_description, SITE_TITLE)
                                     
                                     message = inspect.cleandoc(message)
                                     try:
                                         send_mail('Delivery notification', 
                                         message, 
-                                        'system@imbc2.imb.uni-mainz.de',
+                                        DJANGO_PRIVATE_DATA["server_email_address"],
                                         [obj.created_by.email],
                                         fail_silently=False,)
                                         messages.success(request, 'Delivery notification was sent.')

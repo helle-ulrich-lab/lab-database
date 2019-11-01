@@ -203,9 +203,3 @@ en_gb_formats.DATETIME_FORMAT = "j N Y, H:i:s"
 en_gb_formats.DATE_FORMAT = "j N Y"
 
 LOGIN_URL="/login/"
-
-SITE_TITLE = 'Ulrich Lab Intranet'
-SITE_HEADER = 'Ulrich Lab Intranet'
-
-# Abbreviation to be appended to files, e.g. HU for Helle Ulrich
-LAB_ABBREVIATION_FOR_FILES = 'HU'

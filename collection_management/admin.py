@@ -817,7 +817,7 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
         return super(SaCerevisiaeStrainPage,self).response_change(request,obj)
 
 #################################################
-#                PLASMID PAGES                  #
+#                 PLASMID PAGES                 #
 #################################################
 
 from .models import Plasmid

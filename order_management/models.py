@@ -197,7 +197,7 @@ class OrderExtraDoc(models.Model):
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         
-        # Rename a file of any given name to  ordocHU_date-uploaded_time-uploaded.ext,
+        # Rename a file of any given name to  ordocXX_date-uploaded_time-uploaded.ext,
         # after the corresponding entry has been created
 
         rename_files = getattr(self, 'RENAME_FILES', None)

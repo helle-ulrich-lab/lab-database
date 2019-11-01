@@ -703,7 +703,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
                     send_mail('New urgent order', 
                     message, 
                     DJANGO_PRIVATE_DATA["server_email_address"],
-                    ['ulrich-orders@imb-mainz.de'],
+                    DJANGO_PRIVATE_DATA["ordering_email_addresses"],
                     fail_silently=False,)
                     messages.success(request, 'The lab managers have been informed of your urgent order.')
                 except:

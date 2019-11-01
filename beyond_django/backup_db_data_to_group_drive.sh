@@ -20,6 +20,7 @@ CURRENT_DATE_TIME=`date +'%Y%m%d_%H%M'`
 $ENV_DIR/bin/python $DJANGO_PROJECT_DIR/manage.py shell < $DJANGO_PROJECT_DIR/beyond_django/export_db_tables_as_xlsx.py
 
 # Save wiki articles as markdown files
+rm -r $BACKUP_DIR/wiki_articles/*
 $ENV_DIR/bin/python $DJANGO_PROJECT_DIR/manage.py shell < $DJANGO_PROJECT_DIR/beyond_django/export_wiki_articles_as_md.py
 
 # Sync uploads

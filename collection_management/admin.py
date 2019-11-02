@@ -201,6 +201,19 @@ class CustomUserManage(UserManage):
                             "This user does not exist")},)
     is_permanent = forms.BooleanField(required=False, label=_("Grant indefinitely?"))
 
+
+@background(schedule=86400) # Run 24 h after it is called, as "background" process
+def delete_obj_perm_after_24h(perm, user_id, obj_id, app_label, model_name):
+    """ Delete object permession after 24 h"""
+    
+    from django.apps import apps
+    from guardian.shortcuts import remove_perm
+    
+    user = User.objects.get(id=user_id)
+    obj = apps.get_model(app_label, model_name).objects.get(id=obj_id)
+
+    remove_perm(perm, user, obj)
+
 class CustomGuardedModelAdmin(GuardedModelAdmin):
 
     def get_urls(self):
@@ -268,7 +281,7 @@ class CustomGuardedModelAdmin(GuardedModelAdmin):
                 user_id = user_form.cleaned_data['user'].pk
                 messages.success(request, 'Permissions saved.')
                 if not request.POST.get('is_permanent', False): # If "Grant indefinitely" not selected remove permission after 24 h
-                    self.delete_obj_perm_after_24h(perm, user.id, obj.id, obj._meta.app_label, obj._meta.model_name)
+                    delete_obj_perm_after_24h(perm, user.id, obj.id, obj._meta.app_label, obj._meta.model_name)
                 return HttpResponseRedirect(".")
         else:
             user_form = self.get_obj_perms_user_select_form(request)()
@@ -310,18 +323,6 @@ class CustomGuardedModelAdmin(GuardedModelAdmin):
         messages.success(request, 'Permission removed.')
 
         return HttpResponseRedirect("../..")
-
-    @background(schedule=86400) # Run 1 s after it is called, as "background" process
-    def delete_obj_perm_after_24h(self, perm, user_id, obj_id, app_label, model_name):
-        """ Delete object permession after 24 h"""
-        
-        from django.apps import apps
-        from guardian.shortcuts import remove_perm
-        
-        user = User.objects.get(id=user_id)
-        obj = apps.get_model(app_label, model_name).objects.get(id=obj_id)
-
-        remove_perm(perm, user, obj)
 
 #################################################
 #          CUSTOM USER SEARCH OPTIONS           #

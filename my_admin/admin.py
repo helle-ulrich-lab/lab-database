@@ -11,6 +11,7 @@ from django.contrib.auth.admin import GroupAdmin, UserAdmin
 from django.contrib.contenttypes.models import ContentType
 from django.utils.encoding import force_text
 from django.shortcuts import render
+from django.contrib import messages
 
 #################################################
 #        ADDED FUNCTIONALITIES IMPORTS          #
@@ -293,8 +294,12 @@ class GeneralSettingPage(admin.ModelAdmin):
 
     def add_view(self,request,extra_content=None):
         
-        # Override default add_view to prevent addition of new records, one is enough!
-        raise PermissionDenied
+        if GeneralSetting.objects.all():
+            # Override default add_view to prevent addition of new records, one is enough!
+            messages.error(request, 'Nice try, you can only have one set of general settings')
+            return HttpResponseRedirect("..")
+        else:
+            super(GeneralSettingPage,self).add_view(request)
 
 my_admin_site.register(GeneralSetting, GeneralSettingPage)
 

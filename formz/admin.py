@@ -8,6 +8,10 @@ from django.contrib.contenttypes.models import ContentType
 from django.utils.safestring import mark_safe
 from django.contrib.auth.models import User
 from django import forms
+from django.http import HttpResponseRedirect
+from django.contrib import messages
+
+from .models import FormZHeader
 
 #################################################
 #             MODEL ADMIN CLASSES               #
@@ -207,8 +211,12 @@ class FormZHeaderPage(admin.ModelAdmin):
 
     def add_view(self,request,extra_content=None):
         
-        # Override default add_view to prevent addition of new records, one is enough!
-        raise PermissionDenied
+        if FormZHeader.objects.all():
+            # Override default add_view to prevent addition of new records, one is enough!
+            messages.error(request, 'Nice try, you can only have one header')
+            return HttpResponseRedirect("..")
+        else:
+            super(FormZHeaderPage,self).add_view(request)
 
 class FormZStorageLocationPage(admin.ModelAdmin):
     

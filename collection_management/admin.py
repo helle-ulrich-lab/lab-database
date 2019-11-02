@@ -201,7 +201,6 @@ class CustomUserManage(UserManage):
                             "This user does not exist")},)
     is_permanent = forms.BooleanField(required=False, label=_("Grant indefinitely?"))
 
-
 @background(schedule=86400) # Run 24 h after it is called, as "background" process
 def delete_obj_perm_after_24h(perm, user_id, obj_id, app_label, model_name):
     """ Delete object permession after 24 h"""

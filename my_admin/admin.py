@@ -118,7 +118,7 @@ class MyAdminSite(admin.AdminSite):
     def my_orders_redirect(self, request):
         """ Redirect user to their My Orders page """
 
-        return HttpResponseRedirect('/order_management/order/?q=created_by.username+%3D+"{}"'.format(request.user.username))
+        return HttpResponseRedirect('/order_management/order/?q-l=on&q=created_by.username+%3D+"{}"'.format(request.user.username))
 
     def uploads(self, request, *args, **kwargs):
         """Protected view for uploads/media files"""

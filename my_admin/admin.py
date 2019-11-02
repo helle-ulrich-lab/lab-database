@@ -192,28 +192,41 @@ class MyAdminSite(admin.AdminSite):
         from bs4 import BeautifulSoup
         from django.shortcuts import render
 
-        general_setting = GeneralSetting.objects.all().first()
+        try:
+            general_setting = GeneralSetting.objects.all().first()
 
-        # Log on to the Saveris website, browse to page that shows T and read response
-        html = DataLoggerWebsiteLogin(general_setting.saveris_username,
-                                      general_setting.saveris_password).\
-                                      opener.open('https://www.saveris.net/MeasuringPts').read()
+            # Log on to the Saveris website, browse to page that shows T and read response
+            html = DataLoggerWebsiteLogin(general_setting.saveris_username,
+                                        general_setting.saveris_password).\
+                                        opener.open('https://www.saveris.net/MeasuringPts').read()
 
-        soup = BeautifulSoup(html)
+            soup = BeautifulSoup(html)
+            
+            # Get all td elements, extract relevant info and style it a bit
+            td_elements = soup.find_all('td')
+            T = td_elements[4].text.strip().replace(",", ".").replace("Â", "").replace("°", "° ")
+            date_time = datetime.datetime.strptime(td_elements[5].text.strip(), '%d.%m.%Y %H:%M:%S')
+
+            context = {
+            'user': request.user,
+            'site_header': self.site_header,
+            'has_permission': self.has_permission(request), 
+            'site_url': self.site_url, 
+            'title':"-150° C Freezer", 
+            'date_time': date_time,
+            'temperature': T
+            }
         
-        # Get all td elements, extract relevant info and style it a bit
-        td_elements = soup.find_all('td')
-        T = td_elements[4].text.strip().replace(",", ".").replace("Â", "").replace("°", "° ")
-        date_time = datetime.datetime.strptime(td_elements[5].text.strip(), '%d.%m.%Y %H:%M:%S')
-
-        context = {
-        'user': request.user,
-        'site_header': self.site_header,
-        'has_permission': self.has_permission(request), 
-        'site_url': self.site_url, 
-        'title':"-150° C Freezer", 
-        'data':[date_time, T]
-        }
+        except:
+            context = {
+            'user': request.user,
+            'site_header': self.site_header,
+            'has_permission': self.has_permission(request), 
+            'site_url': self.site_url, 
+            'title':"-150° C Freezer", 
+            'date_time': '',
+            'temperature': ''
+            }
         
         return render(request, 'admin/freezer150.html', context)
 

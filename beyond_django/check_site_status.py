@@ -21,16 +21,20 @@ while True:
         
         mail_admins("The {} is down".format(SITE_TITLE), "The {} is down".format(SITE_TITLE), fail_silently=True)
         
-        general_setting = GeneralSetting.objects.all().first()
-        if general_setting.join_api_key:
-            try:
-                # Send push notification to Nicola via Join
-                join_url = "https://joinjoaomgcd.appspot.com/_ah/api/messaging/v1/sendPush?deviceNames={deviceNames}&text={text}&title={title}&apikey={apikey}".format(
-                    deviceNames = "Home%20Spectre%2CIMB%20Envy%2CPixel%202",
-                    text = "The {} is down".format(SITE_TITLE).replace(' ', '%20'),
-                    title = "The {} is down".format(SITE_TITLE).replace(' ', '%20'),
-                    apikey = general_setting.join_api_key)
-                notification = requests.get(join_url)
-            except:
-                pass
+        try:
+            general_setting = GeneralSetting.objects.all().first()
+
+            if general_setting.join_api_key:
+                try:
+                    # Send push notification to Nicola via Join
+                    join_url = "https://joinjoaomgcd.appspot.com/_ah/api/messaging/v1/sendPush?deviceNames={deviceNames}&text={text}&title={title}&apikey={apikey}".format(
+                        deviceNames = "Home%20Spectre%2CIMB%20Envy%2CPixel%202",
+                        text = "The {} is down".format(SITE_TITLE).replace(' ', '%20'),
+                        title = "The {} is down".format(SITE_TITLE).replace(' ', '%20'),
+                        apikey = general_setting.join_api_key)
+                    notification = requests.get(join_url)
+                except:
+                    pass
+        except:
+            pass
     time.sleep(900)

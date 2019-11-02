@@ -26,7 +26,13 @@
 {% block coltype %}flex{% endblock %}
 
 {% block content %}
+
     <div id="content-main">
-        On {{data.0}}, the temperature was {{data.1}}
+        {% if temperature %}
+            On {{date_time}}, the temperature was {{temperature}}.
+        {% else %}
+            There was an error trying to retrieve the temperature.
+        {% endif %}
     </div>
+
 {% endblock %}

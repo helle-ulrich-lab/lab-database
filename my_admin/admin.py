@@ -305,7 +305,7 @@ class GeneralSettingPage(admin.ModelAdmin):
         return SITE_TITLE
     site_title.short_description = 'Site title'
 
-    def add_view(self,request,extra_content=None):
+    def add_view(self,request,extra_context=None):
         
         if GeneralSetting.objects.all():
             # Override default add_view to prevent addition of new records, one is enough!

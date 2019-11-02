@@ -45,15 +45,19 @@
     {% endblock %}
         
     <div id='formz-header-info'>
-        <h2>Betreiber</h2>
-        <div><span style='font-weight: bold'>Bezeichnung:</span> {{formz_header.operator}}</div>
-        <div><span style='font-weight: bold'>Anschrift:</span> {{formz_header.address}}</div>
-        <div><span style='font-weight: bold'>Beauftragter für Biologische Sicherheit:</span> {{formz_header.name_biosafety_officer}}</div>
-        <div><span style='font-weight: bold'>S1 Genehmigung:</span> {{formz_header.s1_approval_file_num}}; erteilt am {{formz_header.s1_approval_date | date:"d.m.Y"}}</div>
-        {% if object.s2_work %}
-            <div><span style='font-weight: bold'>S2 Genehmigung:</span> {{formz_header.s2_approval_file_num}}; erteilt am {{formz_header.s2_approval_date | date:"d.m.Y"}}</div>
+        {% if formz_header %}
+            <h2>Betreiber</h2>
+            <div><span style='font-weight: bold'>Bezeichnung:</span> {{formz_header.operator}}</div>
+            <div><span style='font-weight: bold'>Anschrift:</span> {{formz_header.address}}</div>
+            <div><span style='font-weight: bold'>Beauftragter für Biologische Sicherheit:</span> {{formz_header.name_biosafety_officer}}</div>
+            <div><span style='font-weight: bold'>S1 Genehmigung:</span> {{formz_header.s1_approval_file_num}}; erteilt am {{formz_header.s1_approval_date | date:"d.m.Y"}}</div>
+            {% if object.s2_work %}
+                <div><span style='font-weight: bold'>S2 Genehmigung:</span> {{formz_header.s2_approval_file_num}}; erteilt am {{formz_header.s2_approval_date | date:"d.m.Y"}}</div>
+            {% endif %}
+        {% else %}
+            <h2>Kein Betreiber</h2>
         {% endif %}
-        
+
         </br>
 
         <h2>Details zum Organismus</h2>

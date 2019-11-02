@@ -209,7 +209,7 @@ class FormZHeaderPage(admin.ModelAdmin):
     list_display_links = ('operator',)
     list_per_page = 25
 
-    def add_view(self,request,extra_content=None):
+    def add_view(self,request,extra_context=None):
         
         if FormZHeader.objects.all():
             # Override default add_view to prevent addition of new records, one is enough!

@@ -216,7 +216,7 @@ class FormZHeaderPage(admin.ModelAdmin):
             messages.error(request, 'Nice try, you can only have one header')
             return HttpResponseRedirect("..")
         else:
-            super(FormZHeaderPage,self).add_view(request)
+            return super(FormZHeaderPage,self).add_view(request)
 
 class FormZStorageLocationPage(admin.ModelAdmin):
     

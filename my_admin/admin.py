@@ -312,7 +312,7 @@ class GeneralSettingPage(admin.ModelAdmin):
             messages.error(request, 'Nice try, you can only have one set of general settings')
             return HttpResponseRedirect("..")
         else:
-            super(GeneralSettingPage,self).add_view(request, form_url='', extra_context=None)
+            return super(GeneralSettingPage,self).add_view(request, form_url='', extra_context=None)
 
 my_admin_site.register(GeneralSetting, GeneralSettingPage)
 

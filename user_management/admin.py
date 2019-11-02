@@ -73,6 +73,18 @@ class LabUserAdmin(BaseUserAdmin):
             for inline in self.get_inline_instances(request, obj):
                 yield inline.get_formset(request, obj), inline
 
+    def get_queryset(self, request):
+        
+        # Show superusers only for superusers
+        # Also do not show AnonymousUser
+
+        qs = super(LabUserAdmin, self).get_queryset(request)
+        
+        if not request.user.is_superuser:
+            return qs.exclude(is_superuser=True).exclude(username='AnonymousUser')
+        else:
+            return qs
+
     def get_user_groups (self, instance):
         """ Pass a user's group membership to a custom column """
 

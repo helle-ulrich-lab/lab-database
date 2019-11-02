@@ -16,7 +16,8 @@ from django.utils.translation import ugettext as _
 from django import forms
 
 from django_project.private_settings import SITE_TITLE
-from django_project.private_settings import DJANGO_PRIVATE_DATA
+from django_project.private_settings import SERVER_EMAIL_ADDRESS
+from my_admin.models import GeneralSetting
 
 #################################################
 #        ADDED FUNCTIONALITIES IMPORTS          #
@@ -495,7 +496,7 @@ def change_order_status_to_delivered(modeladmin, request, queryset):
                     message = inspect.cleandoc(message)
                     send_mail('Delivery notification', 
                     message, 
-                    DJANGO_PRIVATE_DATA["server_email_address"],
+                    SERVER_EMAIL_ADDRESS,
                     [order.created_by.email],
                     fail_silently=True)
             order.save()
@@ -690,7 +691,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
 
             # Send email to Lab Managers if an order is set as urgent
             if obj.urgent:
-                message = """Dear lab managers,
+                message = """Dear lab manager(s),
 
                 {} {} has just placed an urgent order for {} {} - {}.
 
@@ -700,10 +701,11 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
                 """.format(request.user.first_name, request.user.last_name, obj.supplier, obj.supplier_part_no, obj.part_description, SITE_TITLE)
                 message = inspect.cleandoc(message)
                 try:
+                    general_setting = GeneralSetting.objects.all().first()
                     send_mail('New urgent order', 
                     message, 
-                    DJANGO_PRIVATE_DATA["server_email_address"],
-                    ['ulrich-orders@imb-mainz.de'],
+                    SERVER_EMAIL_ADDRESS,
+                    [general_setting.order_email_addresses],
                     fail_silently=False,)
                     messages.success(request, 'The lab managers have been informed of your urgent order.')
                 except:
@@ -753,7 +755,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
                                     try:
                                         send_mail('Delivery notification', 
                                         message, 
-                                        DJANGO_PRIVATE_DATA["server_email_address"],
+                                        SERVER_EMAIL_ADDRESS,
                                         [obj.created_by.email],
                                         fail_silently=False,)
                                         messages.success(request, 'Delivery notification was sent.')

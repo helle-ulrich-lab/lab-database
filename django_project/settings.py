@@ -11,21 +11,20 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 """
 
 import os
-from .private_settings import DJANGO_PRIVATE_DATA
+
+from .private_settings import SECRET_KEY
+from .private_settings import ALLOWED_HOSTS
+from .private_settings import DB_NAME 
+from .private_settings import DB_USER
+from .private_settings import DB_PASSWORD
+from .private_settings import DEBUG
+from .private_settings import SERVER_EMAIL_ADDRESS
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = DJANGO_PRIVATE_DATA['secret_key']
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = DJANGO_PRIVATE_DATA['debug']
-
-ALLOWED_HOSTS = DJANGO_PRIVATE_DATA['allowed_hosts']
 
 # Application definition
 
@@ -113,9 +112,9 @@ WSGI_APPLICATION = 'django_project.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql', 
-        'NAME': DJANGO_PRIVATE_DATA['db_name'], 
-        'USER': DJANGO_PRIVATE_DATA['db_user'], 
-        'PASSWORD': DJANGO_PRIVATE_DATA['db_password'],
+        'NAME': DB_NAME, 
+        'USER': DB_USER, 
+        'PASSWORD': DB_PASSWORD,
         'HOST': 'localhost', 
         'PORT': '3306',
         'OPTIONS': {'charset': 'utf8mb4'},
@@ -175,9 +174,13 @@ EMAIL_HOST_PASSWORD = None
 
 #Email settings for error messages
 
-SERVER_EMAIL = DJANGO_PRIVATE_DATA['server_email_address']
-ADMINS = DJANGO_PRIVATE_DATA['admin_email_address']
+SERVER_EMAIL = SERVER_EMAIL_ADDRESS
 
+import django
+django.setup()
+from my_admin.models import GeneralSetting
+general_setting = GeneralSetting.objects.all().first()
+ADMINS = [('Site admin', general_setting.site_admin_email_address)]
 
 # Wiki settings
 

@@ -27,9 +27,6 @@ import urllib.request, urllib.parse
 #                OTHER IMPORTS                  #
 #################################################
 
-from django_project.private_settings import SAVERIS_USERNAME
-from django_project.private_settings import SAVERIS_PASSWORD
-
 import datetime
 from snapgene.pyclasses.client import Client
 from snapgene.pyclasses.config import Config
@@ -41,6 +38,8 @@ from formz.models import FormZBaseElement
 from formz.models import FormZProject
 
 from django_project.private_settings import SITE_TITLE
+
+from .models import GeneralSetting
 
 #################################################
 #                CUSTOM CLASSES                 #
@@ -192,8 +191,12 @@ class MyAdminSite(admin.AdminSite):
         from bs4 import BeautifulSoup
         from django.shortcuts import render
 
+        general_setting = GeneralSetting.objects.all().first()
+
         # Log on to the Saveris website, browse to page that shows T and read response
-        html = DataLoggerWebsiteLogin(SAVERIS_USERNAME, SAVERIS_PASSWORD).opener.open('https://www.saveris.net/MeasuringPts').read()
+        html = DataLoggerWebsiteLogin(general_setting.saveris_username,
+                                      general_setting.saveris_password).\
+                                      opener.open('https://www.saveris.net/MeasuringPts').read()
 
         soup = BeautifulSoup(html)
         
@@ -273,6 +276,27 @@ my_admin_site = MyAdminSite()
 
 # Disable delete selected action
 my_admin_site.disable_action('delete_selected')
+
+#################################################
+#              GENERAL SETTINGS                 #
+#################################################
+
+class GeneralSettingPage(admin.ModelAdmin):
+    
+    list_display = ('site_title', )
+    list_display_links = ('site_title', )
+    list_per_page = 25
+
+    def site_title(self, instance):
+        return SITE_TITLE
+    site_title.short_description = 'Site title'
+
+    def add_view(self,request,extra_content=None):
+        
+        # Override default add_view to prevent addition of new records, one is enough!
+        raise PermissionDenied
+
+my_admin_site.register(GeneralSetting, GeneralSettingPage)
 
 #################################################
 #          COLLECTION MANAGEMENT PAGES          #

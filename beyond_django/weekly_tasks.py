@@ -3,8 +3,8 @@
 import inspect
 from django.core.mail import send_mail
 from django.contrib.auth.models import User
-from django_project.private_settings import DJANGO_PRIVATE_DATA
-from django_project.settings import SITE_TITLE
+from django_project.private_settings import ALLOWED_HOSTS
+from django_project.private_settings import SITE_TITLE
 from django.urls import reverse
 
 PI_USER = User.objects.get(labuser__is_principal_investigator=True)
@@ -17,7 +17,7 @@ Please visit https://{}{} to check for new or modified records that need to be a
 
 Best wishes,
 The {}
-""".format(PI_USER.first_name, DJANGO_PRIVATE_DATA['allowed_hosts'][0], RECORD_APPROVAL_URL, SITE_TITLE))
+""".format(PI_USER.first_name, ALLOWED_HOSTS[0], RECORD_APPROVAL_URL, SITE_TITLE))
 
 send_mail(
     "{} weekly notification".format(SITE_TITLE),

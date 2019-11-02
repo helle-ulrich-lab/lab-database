@@ -176,11 +176,15 @@ EMAIL_HOST_PASSWORD = None
 
 SERVER_EMAIL = SERVER_EMAIL_ADDRESS
 
-import django
-django.setup()
-from my_admin.models import GeneralSetting
-general_setting = GeneralSetting.objects.all().first()
-ADMINS = [('Site admin', general_setting.site_admin_email_address)]
+try:
+    import django
+    django.setup()
+    from my_admin.models import GeneralSetting
+    general_setting = GeneralSetting.objects.all().first()
+    SITE_ADMIN_EMAIL_ADDRESS = general_setting.site_admin_email_address
+except:
+    SITE_ADMIN_EMAIL_ADDRESS = 'n.zilio@imb.de'
+ADMINS = [('Site admin', SITE_ADMIN_EMAIL_ADDRESS)]
 
 # Wiki settings
 

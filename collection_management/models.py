@@ -7,6 +7,7 @@ from django.contrib.auth.models import User
 from django.forms import ValidationError
 from django.utils.encoding import force_text
 from django.contrib.contenttypes.fields import GenericRelation
+from django.utils.safestring import mark_safe
 
 from formz.models import ZkbsPlasmid
 from formz.models import FormZBaseElement
@@ -133,6 +134,10 @@ class SaCerevisiaeStrain (models.Model, SaveWithoutHistoricalRecord):
 
         all_plasmids = self.sacerevisiaestrainepisomalplasmid_set.filter(present_in_stocked_strain=False).distinct().order_by('plasmid__id')
         return all_plasmids
+
+    def get_all_plasmid_maps(self):
+        """Returns all plasmids"""
+        return (self.integrated_plasmids.all() | self.episomal_plasmids.all() | self.cassette_plasmids.all()).distinct().exclude(map='').order_by('id')
 
     def get_all_uncommon_formz_elements(self):
         """Returns all uncommon features in stocked organism"""
@@ -282,6 +287,14 @@ class Plasmid (models.Model, SaveWithoutHistoricalRecord):
         """Returns all transiently transformed episomal plasmids"""
 
         return None
+    
+    def get_all_plasmid_maps(self):
+        """Returns self is has map"""
+        
+        if self.map:
+            return [self]
+        else:
+            return None
 
     def get_all_uncommon_formz_elements(self):
         """Returns all uncommon features in stocked organism"""
@@ -294,6 +307,13 @@ class Plasmid (models.Model, SaveWithoutHistoricalRecord):
 
         elements = self.formz_elements.filter(common_feature=True).order_by('name')
         return elements
+
+    def convert_plasmid_map_to_base64(self):
+        import base64
+        """Returns html image element for map"""
+
+        png_data = base64.b64encode(open(self.map_png.path,'rb').read()).decode('ascii')
+        return str(png_data)
 
 #################################################
 #                     OLIGO                     #
@@ -401,6 +421,10 @@ class ScPombeStrain (models.Model, SaveWithoutHistoricalRecord):
 
         all_plasmids = self.scpombestrainepisomalplasmid_set.filter(present_in_stocked_strain=False).distinct().order_by('plasmid__id')
         return all_plasmids
+
+    def get_all_plasmid_maps(self):
+        """Returns all plasmids"""
+        return (self.integrated_plasmids.all() | self.episomal_plasmids.all() | self.cassette_plasmids.all()).distinct().exclude(map='').order_by('id')
 
     def get_all_uncommon_formz_elements(self):
         """Returns all uncommon features in stocked organism"""
@@ -559,6 +583,10 @@ class MammalianLine (models.Model, SaveWithoutHistoricalRecord):
 
         all_plasmids = self.mammalianlineepisomalplasmid_set.filter(s2_work_episomal_plasmid=False).distinct().order_by('plasmid__id')
         return all_plasmids
+
+    def get_all_plasmid_maps(self):
+        """Returns all plasmids"""
+        return (self.integrated_plasmids.all() | self.episomal_plasmids.all()).distinct().exclude(map='').order_by('id')
 
     def get_all_uncommon_formz_elements(self):
         """Returns all uncommon features in stocked organism"""

@@ -231,6 +231,15 @@ class FormZBaseElement (models.Model):
 
         return ', '.join([str(i) for i in species_risk_groups])
 
+    def get_donor_species_max_risk_group(self):
+
+        species_risk_groups = []
+        for species in self.donor_organism.all():
+            if species.risk_group:
+                species_risk_groups.append(species.risk_group)
+                
+        return max(species_risk_groups)
+
 class FormZBaseElementExtraLabel (models.Model):
     label = models.CharField("alias", max_length=255, blank=True)
     formz_base_element = models.ForeignKey(FormZBaseElement, on_delete=models.PROTECT, related_name='extra_label')

@@ -399,6 +399,87 @@ class FieldApplication(StrField):
         return 'a_pplication'
 
 #################################################
+#          DOWNLOAD FORMBLATT Z ACTION          #
+#################################################
+
+def export_formz_as_html(modeladmin, request, queryset):
+
+    """Export ForblattZ as html """
+
+    from django.template.loader import get_template
+    from bs4 import BeautifulSoup
+    import zipfile
+    from django.http import HttpResponse
+
+    def get_params(app_label, model_name, obj_id):
+        from formz.models import FormZStorageLocation
+        from formz.models import FormZHeader
+        from django.apps import apps
+        from django.contrib.contenttypes.models import ContentType
+
+        model = apps.get_model(app_label, model_name)
+        model_content_type = ContentType.objects.get(app_label=app_label, model=model_name)
+        opts = model._meta
+        obj = model.objects.get(id=int(obj_id))
+        
+        # Get storage location object or create a new 'empty' one
+        if FormZStorageLocation.objects.get(collection_model=model_content_type):
+            storage_location = FormZStorageLocation.objects.get(collection_model=model_content_type)
+        else:
+            storage_location = FormZStorageLocation(
+                collection_model = None,
+                storage_location = None,
+                species_name = None,
+                species_risk_group = None
+            )
+
+        if FormZHeader.objects.all().first():
+            formz_header = FormZHeader.objects.all().first()
+        else:
+            formz_header = None
+
+        obj.common_formz_elements = obj.get_all_common_formz_elements()
+        obj.uncommon_formz_elements =  obj.get_all_uncommon_formz_elements()
+        obj.instock_plasmids = obj.get_all_instock_plasmids()
+        obj.transient_episomal_plasmids = obj.get_all_transient_episomal_plasmids()
+
+        if model_name == 'mammalianline':
+            storage_location.species_name = obj.organism
+            obj.s2_plasmids = obj.mammalianlineepisomalplasmid_set.all().filter(s2_work_episomal_plasmid=True).distinct().order_by('id')
+            transfected = True
+        else:
+            obj.s2_plasmids = None
+            transfected = False
+
+        params = {'object': obj,
+                'storage_location': storage_location,
+                'formz_header': formz_header,
+                'transfected': transfected}
+
+        return params
+
+    response = HttpResponse(content_type='application/zip')
+    response['Content-Disposition'] = 'attachment; filename="formblattz_{}_{}.zip'.format(time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
+
+    template = get_template('admin/formz_for_export.html')
+    app_label = queryset[0]._meta.app_label
+    model_name = queryset[0].__class__.__name__
+
+    # Generates zip file
+
+    with zipfile.ZipFile(response, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        for obj in queryset:
+            params = get_params(app_label, model_name, obj.id)
+            html = template.render(params)
+            html = BeautifulSoup(html, features="lxml")
+            html = html.prettify("utf-8")
+            zip_file.writestr('{}_{}.html'.format(model_name, obj.id), html)
+    
+    return response
+
+export_formz_as_html.short_description = "Export Formblatt Z for selected items"
+
+#################################################
 #          SA. CEREVISIAE STRAIN PAGES          #
 #################################################
 
@@ -581,7 +662,7 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
     list_display_links = ('id', )
     list_per_page = 25
     djangoql_schema = SaCerevisiaeStrainQLSchema
-    actions = [export_sacerevisiaestrain]
+    actions = [export_sacerevisiaestrain, export_formz_as_html]
     form = SaCerevisiaeStrainForm
     formfield_overrides = {CharField: {'widget': TextInput(attrs={'size':'93'})},} # Make TextInput fields wider
     search_fields = ['id', 'name']
@@ -888,7 +969,7 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
     list_per_page = 25
     formfield_overrides = {CharField: {'widget': TextInput(attrs={'size':'93'})},} # Make TextInput fields wider
     djangoql_schema = PlasmidQLSchema
-    actions = [export_plasmid]
+    actions = [export_plasmid, export_formz_as_html]
     search_fields = ['id', 'name']
     autocomplete_fields = ['parent_vector', 'formz_projects', 'formz_elements', 'vector_zkbs', 'formz_ecoli_strains', 'formz_gentech_methods']
     redirect_to_obj_page = False
@@ -1734,7 +1815,7 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admi
     list_per_page = 25
     formfield_overrides = {CharField: {'widget': TextInput(attrs={'size':'93'})},}
     djangoql_schema = ScPombeStrainQLSchema
-    actions = [export_scpombestrain]
+    actions = [export_scpombestrain, export_formz_as_html]
     form = ScPombeStrainForm
     search_fields = ['id', 'name']
     autocomplete_fields = ['parent_1', 'parent_2', 'integrated_plasmids', 'cassette_plasmids', 
@@ -2285,7 +2366,7 @@ class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Cust
     formfield_overrides = {CharField: {'widget': TextInput(attrs={'size':'93'})},}
     djangoql_schema = MammalianLineQLSchema
     inlines = [MammalianEpisomalPlasmidInline, MammalianLineDocInline, AddMammalianLineDocInline]
-    actions = [export_mammalianline]
+    actions = [export_mammalianline, export_formz_as_html]
     search_fields = ['id', 'name']
     autocomplete_fields = ['parental_line', 'integrated_plasmids', 'formz_projects', 'zkbs_cell_line', 'formz_gentech_methods', 'formz_elements']
 

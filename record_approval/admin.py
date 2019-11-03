@@ -6,6 +6,7 @@ from django.core.mail import send_mail
 import inspect
 from django.utils.safestring import mark_safe
 from django.urls import reverse
+from django.utils.text import capfirst
 
 from order_management.models import Order as order_management_Order
 from .models import RecordToBeApproved
@@ -201,7 +202,7 @@ class RecordToBeApprovedPage(admin.ModelAdmin):
     def titled_content_type(self, instance):
         '''Custom link to a record's history field for changelist_view'''
 
-        return str(instance.content_type).title()
+        return capfirst(str(instance.content_type))
 
     titled_content_type.short_description = 'Record type'
     titled_content_type.admin_order_field = 'content_type'

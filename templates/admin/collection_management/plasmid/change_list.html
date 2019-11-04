@@ -101,8 +101,52 @@
   <script type="text/javascript" src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
   <script type="text/javascript" src="{% static 'admin/js/vendor/jquery.magnific-popup.min.js' %}"></script>
   <script type="text/javascript">
+    
     $(document).ready(function() {
     $('.image-link').magnificPopup({type:'image'});
+
+    // Add plasmid map attachment type selection box if export_formz_as_html is selected
+    $('#changelist-form').find('select').first().change(function(){
+
+      if($(this).val() =="export_formz_as_html")
+      {
+      var form = $('#changelist-form');
+      var select_attach_element = document.createElement('label');
+      select_attach_element.innerText = 'Plasmid map attachment: ';
+
+      var select_attach_box = document.createElement('select');
+      select_attach_box.name = 'map_attachment_type';
+
+      var option_none = document.createElement('option');
+      option_none.innerText = 'None';
+      option_none.value = 'none';
+
+      var option_png = document.createElement('option');
+      option_png.innerText = '.png';
+      option_png.value = 'png';
+
+      var option_gbk = document.createElement('option');
+      option_gbk.innerText = '.gbk';
+      option_gbk.value = 'gbk';
+
+      select_attach_box.appendChild(option_none);
+      select_attach_box.appendChild(option_png);
+      select_attach_box.appendChild(option_gbk);
+
+      select_attach_element.appendChild(select_attach_box);
+      $('#changelist-form').find('label')[0].append(select_attach_element);
+
+      }
+      else {
+        
+        if ($('#changelist-form').find('label').length > 1)
+        {
+        $('#changelist-form').find('label')[1].remove();
+      }
+      }
+
+    });
+
     });
   </script>
 {% endblock %}

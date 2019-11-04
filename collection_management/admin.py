@@ -470,11 +470,12 @@ def export_formz_as_html(modeladmin, request, queryset):
     with zipfile.ZipFile(response, "w", zipfile.ZIP_DEFLATED) as zip_file:
         for obj in queryset:
             params = get_params(app_label, model_name, obj.id)
+            params['map_attachment_type'] = request.POST.get('map_attachment_type', default='none')
             html = template.render(params)
             html = BeautifulSoup(html, features="lxml")
             html = html.prettify("utf-8")
             zip_file.writestr('{}_{}.html'.format(model_name, obj.id), html)
-    
+        
     return response
 
 export_formz_as_html.short_description = "Export Formblatt Z for selected items"

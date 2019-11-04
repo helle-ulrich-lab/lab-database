@@ -315,6 +315,12 @@ class Plasmid (models.Model, SaveWithoutHistoricalRecord):
         png_data = base64.b64encode(open(self.map_png.path,'rb').read()).decode('ascii')
         return str(png_data)
 
+    def utf8_encoded_gbk(self):
+
+        """Returns a decoded gbk plasmid map"""
+
+        return self.map_gbk.read().decode()
+
 #################################################
 #                     OLIGO                     #
 #################################################

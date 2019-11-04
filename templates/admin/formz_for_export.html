@@ -122,8 +122,9 @@
     <div><span style='font-weight: bold'>Lagerort:</span> {{storage_location.storage_location}}</div>
 
     {% if object.instock_plasmids %}
-        <div>
-            <h3>Plasmid/e die zur Erschaffung des Organismus genutzt wurden</h3>
+    <h3>Plasmid/e die zur Erschaffung des Organismus genutzt wurden</h3>
+         <ul>
+            
             {% for plasmid in object.instock_plasmids %}
                 <li>
                     Plasmid #{{plasmid}}
@@ -134,7 +135,7 @@
                     {% endif %}
                 </li>
             {% endfor %}
-        </div>
+            </ul>
     {% endif %}
 
     {% if object.uncommon_formz_elements or object.common_formz_elements %}
@@ -496,7 +497,7 @@
             {% for plasmid in object.get_all_plasmid_maps %}
                 {% if plasmid.map %}
                 <br>
-                    <img src='data:image/png;base64,{{plasmid.convert_plasmid_map_to_base64}}'>
+                    <img alt='Plasmid #{{plasmid}}' src='data:image/png;base64,{{plasmid.convert_plasmid_map_to_base64}}'>
                 {% endif %}
             {% endfor %}
         {% elif map_attachment_type == 'gbk' %}

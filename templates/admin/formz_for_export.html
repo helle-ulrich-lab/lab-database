@@ -6,127 +6,123 @@
 <title>Formblatt Z: {{object}}</title>
 </head>
 
-{% block content %}
-<div id="content" style='font-family:"arial"'>
+<body style='font-family:"arial"'>
 
-    <div id='main-title'>
-        <h1>Formblatt Z: {{object}}</h1>
-    </div>
+    <h1>Formblatt Z: {{object}}</h1>
         
-    <div id='formz-header-info'>
-        {% if formz_header %}
-            <h2>Betreiber</h2>
-            <div><span style='font-weight: bold'>Bezeichnung:</span> {{formz_header.operator}}</div>
-            <div><span style='font-weight: bold'>Anschrift:</span> {{formz_header.address}}</div>
-            <div><span style='font-weight: bold'>Beauftragter für Biologische Sicherheit:</span> {{formz_header.name_biosafety_officer}}</div>
-            <div><span style='font-weight: bold'>S1 Genehmigung:</span> {{formz_header.s1_approval_file_num}}; erteilt am {{formz_header.s1_approval_date | date:"d.m.Y"}}</div>
-            {% if object.s2_work %}
-                <div><span style='font-weight: bold'>S2 Genehmigung:</span> {{formz_header.s2_approval_file_num}}; erteilt am {{formz_header.s2_approval_date | date:"d.m.Y"}}</div>
-            {% endif %}
-        {% else %}
-            <h2>Kein Betreiber</h2>
+    {% if formz_header %}
+        <h2>Betreiber</h2>
+        <div><span style='font-weight: bold'>Bezeichnung:</span> {{formz_header.operator}}</div>
+        <div><span style='font-weight: bold'>Anschrift:</span> {{formz_header.address}}</div>
+        <div><span style='font-weight: bold'>Beauftragter für Biologische Sicherheit:</span> {{formz_header.name_biosafety_officer}}</div>
+        <div><span style='font-weight: bold'>S1 Genehmigung:</span> {{formz_header.s1_approval_file_num}}; erteilt am {{formz_header.s1_approval_date | date:"d.m.Y"}}</div>
+        {% if object.s2_work %}
+            <div><span style='font-weight: bold'>S2 Genehmigung:</span> {{formz_header.s2_approval_file_num}}; erteilt am {{formz_header.s2_approval_date | date:"d.m.Y"}}</div>
         {% endif %}
+    {% else %}
+        <h2>Kein Betreiber</h2>
+    {% endif %}
 
-        <h2>Details zum Organismus</h2>
-        <div><span style='font-weight: bold'>Bezeichnung:</span> {{object}}</div>
-        <div><span style='font-weight: bold'>Empfängerorganismus:</span> <span style='font-style: italic'>{{storage_location.species_name.name_for_search}}</span>
-        {% if object.formz_ecoli_strains %}
-            {% if object.formz_ecoli_strains.all|length == 1 %}
-                    {% for ecoli in object.formz_ecoli_strains.all %}
-                        (Stamm: {{ecoli.name}} - Hintergrund {{ecoli.background}}; Risikogrouppe: {{storage_location.species_risk_group}})
-                    {% endfor %}
-                {% else %}
-                    {% for ecoli in object.formz_ecoli_strains.all %}
-                        {% if forloop.first %}
-                            (Stamm: {{ecoli.name}} - Hintergrund {{ecoli.background}},
-                        {% elif forloop.last %}
-                            {{ecoli.name}} - Hintergrund {{ecoli.background}}; Risikogrouppe: {{storage_location.species_risk_group}})
-                        {% else %}
-                            {{ecoli.name}} - Hintergrund {{ecoli.background}},
-                        {% endif %}
-                    {% endfor %}
-            {% endif %}
-        {% else %}
-            (Risikogrouppe: {{storage_location.species_risk_group}})
-        {% endif %}</div>
-        <div><span style='font-weight: bold'>Risikogruppe:</span> {{object.formz_risk_group}}</div>
-
-        {% if object.chromosomal_genotype %}
-            <div><span style='font-weight: bold'>Genotyp:</span> {{object.chromosomal_genotype}}</div>
+    <h2>Details zum Organismus</h2>
+    <div><span style='font-weight: bold'>Bezeichnung:</span> {{object}}</div>
+    <div><span style='font-weight: bold'>Empfängerorganismus:</span> <span style='font-style: italic'>{{storage_location.species_name.name_for_search}}</span>
+    {% if object.formz_ecoli_strains %}
+        {% if object.formz_ecoli_strains.all|length == 1 %}
+                {% for ecoli in object.formz_ecoli_strains.all %}
+                    (Stamm: {{ecoli.name}} - Hintergrund {{ecoli.background}}; Risikogrouppe: {{storage_location.species_risk_group}})
+                {% endfor %}
+            {% else %}
+                {% for ecoli in object.formz_ecoli_strains.all %}
+                    {% if forloop.first %}
+                        (Stamm: {{ecoli.name}} - Hintergrund {{ecoli.background}},
+                    {% elif forloop.last %}
+                        {{ecoli.name}} - Hintergrund {{ecoli.background}}; Risikogrouppe: {{storage_location.species_risk_group}})
+                    {% else %}
+                        {{ecoli.name}} - Hintergrund {{ecoli.background}},
+                    {% endif %}
+                {% endfor %}
         {% endif %}
-        <div><span style='font-weight: bold'>Projekt/e:</span>
-            {% if object.formz_projects.all|length == 1 %}
-                {% for project in object.formz_projects.all %}
+    {% else %}
+        (Risikogrouppe: {{storage_location.species_risk_group}})
+    {% endif %}</div>
+    <div><span style='font-weight: bold'>Risikogruppe:</span> {{object.formz_risk_group}}</div>
+
+    {% if object.chromosomal_genotype %}
+        <div><span style='font-weight: bold'>Genotyp:</span> {{object.chromosomal_genotype}}</div>
+    {% endif %}
+    <div><span style='font-weight: bold'>Projekt/e:</span>
+        {% if object.formz_projects.all|length == 1 %}
+            {% for project in object.formz_projects.all %}
+                {{project.title}}
+                {% if project.parent_project%}
+                    (Hauptproject: {{project.parent_project.title}})
+                {% endif %}
+            {% endfor %}
+        {% else %}
+            {% for project in object.formz_projects.all %}
+                {% if forloop.last %}
                     {{project.title}}
                     {% if project.parent_project%}
                         (Hauptproject: {{project.parent_project.title}})
                     {% endif %}
-                {% endfor %}
-            {% else %}
-                {% for project in object.formz_projects.all %}
-                    {% if forloop.last %}
-                        {{project.title}}
-                        {% if project.parent_project%}
-                            (Hauptproject: {{project.parent_project.title}})
-                        {% endif %}
+                {% else %}
+                    {{project.title}}
+                    {% if project.parent_project%}
+                        (Hauptproject: {{project.parent_project.title}}),
                     {% else %}
-                        {{project.title}}
-                        {% if project.parent_project%}
-                            (Hauptproject: {{project.parent_project.title}}),
-                        {% else %}
-                        ,
-                        {% endif %}
+                    ,
                     {% endif %}
-                {% endfor %}
-            {% endif %}
-        </div>
-        {% if object.formz_gentech_methods.all %}
-        <div><span style='font-weight: bold'>Gentechnische Arbeitsmethod/en:</span>
-            {% if object.formz_gentech_methods.all|length == 1 %}
-                {% for method in object.formz_gentech_methods.all %}
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+    </div>
+    {% if object.formz_gentech_methods.all %}
+    <div><span style='font-weight: bold'>Gentechnische Arbeitsmethod/en:</span>
+        {% if object.formz_gentech_methods.all|length == 1 %}
+            {% for method in object.formz_gentech_methods.all %}
+                {{method.german_name}}
+            {% endfor %}
+        {% else %}
+            {% for method in object.formz_gentech_methods.all %}
+                {% if forloop.last %}
                     {{method.german_name}}
-                {% endfor %}
-            {% else %}
-                {% for method in object.formz_gentech_methods.all %}
-                    {% if forloop.last %}
-                        {{method.german_name}}
-                    {% else %}
-                        {{method.german_name}},
-                    {% endif %}
-                {% endfor %}
-            {% endif %}
+                {% else %}
+                    {{method.german_name}},
+                {% endif %}
+            {% endfor %}
         {% endif %}
-        </div>
-        {% if object.zkbs_cell_line and object.zkbs_cell_line.name != 'none' %}
-            <div><span style='font-weight: bold'>ZKBS Datenbank Zelllinien:</span> {{object.zkbs_cell_line}}</div>
+    {% endif %}
+    </div>
+    {% if object.zkbs_cell_line and object.zkbs_cell_line.name != 'none' %}
+        <div><span style='font-weight: bold'>ZKBS Datenbank Zelllinien:</span> {{object.zkbs_cell_line}}</div>
+    {% endif %}
+    <div><span style='font-weight: bold'>Erzeugt:</span> {{object.created_date_time | date:"d.m.Y"}}</div>
+    <div><span style='font-weight: bold'>Entsorgt:</span> 
+        {% if object.destroyed_date %}
+            {{object.destroyed_date | date:"d.m.Y"}}
+        {% else %}
+            Nein
         {% endif %}
-        <div><span style='font-weight: bold'>Erzeugt:</span> {{object.created_date_time | date:"d.m.Y"}}</div>
-        <div><span style='font-weight: bold'>Entsorgt:</span> 
-            {% if object.destroyed_date %}
-                {{object.destroyed_date | date:"d.m.Y"}}
+    </div>
+    <div><span style='font-weight: bold'>Bestätigt durch Projektleiter:</span> 
+        {% if object.last_changed_approval_by_pi is not None %}
+            {% if object.last_changed_approval_by_pi %}
+                {{object.approval_by_pi_date_time | date:"d.m.Y, H:i:s"}} ({{object.approval_user.first_name}} {{object.approval_user.last_name}})
             {% else %}
                 Nein
             {% endif %}
-        </div>
-        <div><span style='font-weight: bold'>Bestätigt durch Projektleiter:</span> 
-            {% if object.last_changed_approval_by_pi is not None %}
-                {% if object.last_changed_approval_by_pi %}
-                    {{object.approval_by_pi_date_time | date:"d.m.Y, H:i:s"}} ({{object.approval_user.first_name}} {{object.approval_user.last_name}})
-                {% else %}
-                    Nein
-                {% endif %}
+        {% else %}
+            {% if object.created_approval_by_pi %}
+                {{object.approval_by_pi_date_time | date:"d.m.Y, H:i:s"}} ({{object.approval_user.first_name}} {{object.approval_user.last_name}})
             {% else %}
-                {% if object.created_approval_by_pi %}
-                    {{object.approval_by_pi_date_time | date:"d.m.Y, H:i:s"}} ({{object.approval_user.first_name}} {{object.approval_user.last_name}})
-                {% else %}
-                    Nein
-                {% endif %}
+                Nein
             {% endif %}
-        </div>
-        <div><span style='font-weight: bold'>Lagerort:</span> {{storage_location.storage_location}}</div>
+        {% endif %}
+    </div>
+    <div><span style='font-weight: bold'>Lagerort:</span> {{storage_location.storage_location}}</div>
 
     {% if object.instock_plasmids %}
-        <div id='instock-plasmids'>
+        <div>
             <h3>Plasmid/e die zur Erschaffung des Organismus genutzt wurden</h3>
             {% for plasmid in object.instock_plasmids %}
                 <li>
@@ -142,36 +138,36 @@
     {% endif %}
 
     {% if object.uncommon_formz_elements or object.common_formz_elements %}
-        <div id='formz-instock-elements'>    
+        <div>    
             <h3>Bezeichnung und für die Sicherheitsbeurteilung bedeutsame Merkmale des GVO</h3>
                 <table style='border-bottom: 1px solid rgb(0, 0, 0);'>
                     <thead>
                         <tr>
-                            <th scope="col" id="column-name" style="text-align:center"></th>
-                            <th colspan="2" scope="col" id="column-donor_organism" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
+                            <th scope="col" style="text-align:center"></th>
+                            <th colspan="2" scope="col" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
                                 <div >Spenderorganismus</div>
                             </th>
-                            <th colspan="2" scope="col" id="column-nuc_acid_purity" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
+                            <th colspan="2" scope="col" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
                                 <div>Nukleinsäure</div>
                             </th>
                         </tr>
                         <tr>
-                            <th scope="col" id="column-name" style='border: 1px solid rgb(0, 0, 0); background:lightgrey;'>
+                            <th scope="col" style='border: 1px solid rgb(0, 0, 0); background:lightgrey;'>
                                 <div>Bezeichnung</div>
                             </th>
-                            <th scope="col" id="column-donor_organism" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
+                            <th scope="col" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
                                 <div >Bezeichnung</div>
                             </th>
-                            <th scope="col" id="column-donor_organism_risk" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;"> 
+                            <th scope="col" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;"> 
                                 <div>Risikogruppe</div>
                             </th>
-                            <th scope="col" id="column-nuc_acid_purity" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
+                            <th scope="col" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
                                 <div>Reinheitsgrad</div>
                             </th>
-                            <th scope="col" id="column-nuc_acid_risk" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
+                            <th scope="col" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
                                 <div>Gefährdungspotential</div>
                             </th>
-                            <th scope="col" id="column-description" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
+                            <th scope="col" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
                                 <div>Beschreibung</div>
                             </th>
                         </tr>
@@ -179,36 +175,36 @@
                     {% if object.uncommon_formz_elements %}
                         <tbody>
                             {% for formz_elem in object.uncommon_formz_elements %}
-                                <tr id="row">
-                                    <td id="field-name" style="border-left: 1px solid rgb(0, 0, 0);">{{formz_elem.name}}</td>
-                                    <td id="field-donor_organism" style="text-align:center; border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_names %}{{formz_elem.get_donor_species_names}}{% else %}Artifiziell{% endif %}</td>
-                                    <td id="field-donor_organism_risk" style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_risk_groups %}{{formz_elem.get_donor_species_risk_groups}}{% else %}Keine{% endif %}</td>
-                                    <td id="field-nuc_acid_purity" style="text-align:center; border-left: 1px solid rgb(0, 0, 0); ">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
-                                    <td id="field-nuc_acid_risk" style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{{formz_elem.nuc_acid_risk.german_name|capfirst}}</td>
-                                    <td id="field-description" style="border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_risk_groups > 1 %} {{formz_elem.description}} {% endif %}</td>
+                                <tr>
+                                    <td style="border-left: 1px solid rgb(0, 0, 0);">{{formz_elem.name}}</td>
+                                    <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_names %}{{formz_elem.get_donor_species_names}}{% else %}Artifiziell{% endif %}</td>
+                                    <td style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_risk_groups %}{{formz_elem.get_donor_species_risk_groups}}{% else %}Keine{% endif %}</td>
+                                    <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0); ">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
+                                    <td style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{{formz_elem.nuc_acid_risk.german_name|capfirst}}</td>
+                                    <td style="border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_risk_groups > 1 %} {{formz_elem.description}} {% endif %}</td>
                                 </tr>
                             {% endfor %}
                         </tbody>
                     {% else %}
                         <tbody>
-                        <tr id="row">
-                            <td colspan="6" id="field" style="text-align:center; border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">Keine unüblichen Merkmale</td>
+                        <tr>
+                            <td colspan="6" style="text-align:center; border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">Keine unüblichen Merkmale</td>
                         </tr>
                         </tbody>
                     {% endif %}
                 {% if object.common_formz_elements %}
                     <tbody>
-                        <tr id="row">
-                            <td colspan="6" id="field" style="border: 1px solid rgb(0, 0, 0); font-weight: bold; text-align:center;">Andere Merkmale, nicht relevant für die Sicherheitsbeurteilung</td>
+                        <tr>
+                            <td colspan="6" style="border: 1px solid rgb(0, 0, 0); font-weight: bold; text-align:center;">Andere Merkmale, nicht relevant für die Sicherheitsbeurteilung</td>
                         </tr>
                         {% for formz_elem in object.common_formz_elements %}
-                            <tr id="row">
-                                <td id="field-name" style="border-left: 1px solid rgb(0, 0, 0);">{{formz_elem.name}}</td>
-                                <td id="field-donor_organism" style="text-align:center; border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_names %}{{formz_elem.get_donor_species_names}}{% else %}Artifiziell{% endif %}</td>
-                                <td id="field-donor_organism_risk" style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_risk_groups %}{{formz_elem.get_donor_species_risk_groups}}{% else %}Keine{% endif %}</td>
-                                <td id="field-nuc_acid_purity" style="text-align:center; border-left: 1px solid rgb(0, 0, 0); ">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
-                                <td id="field-nuc_acid_risk" style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{{formz_elem.nuc_acid_risk.german_name|capfirst}}</td>
-                                <td id="field-description" style="border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_max_risk_group > 1 %} {{formz_elem.description}} {% endif %}</td>
+                            <tr>
+                                <td style="border-left: 1px solid rgb(0, 0, 0);">{{formz_elem.name}}</td>
+                                <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_names %}{{formz_elem.get_donor_species_names}}{% else %}Artifiziell{% endif %}</td>
+                                <td style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_risk_groups %}{{formz_elem.get_donor_species_risk_groups}}{% else %}Keine{% endif %}</td>
+                                <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0); ">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
+                                <td style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{{formz_elem.nuc_acid_risk.german_name|capfirst}}</td>
+                                <td style="border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_max_risk_group > 1 %} {{formz_elem.description}} {% endif %}</td>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -221,7 +217,7 @@
     {% endif %}
 
     {% if object.transient_episomal_plasmids %}
-        <div id='transient-plasmids'>
+        <div>
                         
             {% if object.s2_work %}
                 <h2> In den Organismus transduktierte Plasmide</h2>    
@@ -237,7 +233,7 @@
                 <table style='border-bottom: 1px solid rgb(0, 0, 0);'>
                     <thead>
                         <tr>
-                            <th colspan="6" scope="col" id="column-plasmid" style="text-align:left; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
+                            <th colspan="6" scope="col" style="text-align:left; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
                                 Plasmid #{{plasmid.plasmid}} 
                                 <span style="text-transform: none">
                                     {% if plasmid.created_date %}
@@ -280,76 +276,76 @@
                             {% if plasmid.plasmid.get_all_uncommon_formz_elements %}
                                 <thead>
                                     <tr>
-                                        <th scope="col" id="column-name" style="border-left: 1px solid rgb(0, 0, 0); background:lightgrey;"></th>
-                                        <th colspan="2" scope="col" id="column-donor_organism" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
+                                        <th scope="col" style="border-left: 1px solid rgb(0, 0, 0); background:lightgrey;"></th>
+                                        <th colspan="2" scope="col" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
                                             <div >Spenderorganismus</div>
                                         </th>
-                                        <th colspan="2" scope="col" id="column-nuc_acid_purity" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
+                                        <th colspan="2" scope="col" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
                                             <div>Nukleinsäure</div>
                                         </th>
-                                        <th scope="col" id="column-name" style="border-right: 1px solid rgb(0, 0, 0); background:lightgrey;"></th>
+                                        <th scope="col" style="border-right: 1px solid rgb(0, 0, 0); background:lightgrey;"></th>
                                     </tr>
                                     <tr>
-                                        <th scope="col" id="column-name" style='border: 1px solid rgb(0, 0, 0); background:lightgrey;'>
+                                        <th scope="col" style='border: 1px solid rgb(0, 0, 0); background:lightgrey;'>
                                             <div>Bezeichnung</div>
                                         </th>
-                                        <th scope="col" id="column-donor_organism" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
+                                        <th scope="col" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
                                             <div >Bezeichnung</div>
                                         </th>
-                                        <th scope="col" id="column-donor_organism_risk" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;"> 
+                                        <th scope="col" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;"> 
                                             <div>Risikogruppe</div>
                                         </th>
-                                        <th scope="col" id="column-nuc_acid_purity" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
+                                        <th scope="col" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
                                             <div>Reinheitsgrad</div>
                                         </th>
-                                        <th scope="col" id="column-nuc_acid_risk" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
+                                        <th scope="col" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
                                             <div>Gefährdungspotential</div>
                                         </th>
-                                        <th scope="col" id="column-description" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
+                                        <th scope="col" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
                                             <div>Beschreibung</div>
                                         </th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                         {% for formz_elem in plasmid.plasmid.get_all_uncommon_formz_elements %}
-                                            <tr id="row">
-                                                <td id="field-name" style="border-left: 1px solid rgb(0, 0, 0);">{{formz_elem.name}}</td>
-                                                <td id="field-donor_organism" style="text-align:center; border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_names %}{{formz_elem.get_donor_species_names}}{% else %}Artifiziell{% endif %}</td>
-                                                <td id="field-donor_organism_risk" style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_risk_groups %}{{formz_elem.get_donor_species_risk_groups}}{% else %}Keine{% endif %}</td>
-                                                <td id="field-nuc_acid_purity" style="text-align:center; border-left: 1px solid rgb(0, 0, 0); ">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
-                                                <td id="field-nuc_acid_risk" style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{{formz_elem.nuc_acid_risk.german_name|capfirst}}</td>
-                                                <td id="field-description" style="border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_max_risk_group > 1 %} {{formz_elem.description}} {% endif %}</td>
+                                            <tr>
+                                                <td style="border-left: 1px solid rgb(0, 0, 0);">{{formz_elem.name}}</td>
+                                                <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_names %}{{formz_elem.get_donor_species_names}}{% else %}Artifiziell{% endif %}</td>
+                                                <td style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_risk_groups %}{{formz_elem.get_donor_species_risk_groups}}{% else %}Keine{% endif %}</td>
+                                                <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0); ">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
+                                                <td style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{{formz_elem.nuc_acid_risk.german_name|capfirst}}</td>
+                                                <td style="border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_max_risk_group > 1 %} {{formz_elem.description}} {% endif %}</td>
                                             </tr>
                                         {% endfor %}
                                 </tbody>
                             {% else %}
                                 <tbody>
-                                    <tr id="row">
-                                        <td colspan="6" id="field" style="text-align:center; border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">Keine unüblichen Merkmale</td>
+                                    <tr>
+                                        <td colspan="6" style="text-align:center; border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">Keine unüblichen Merkmale</td>
                                     </tr>
                                 </tbody>
                             {% endif %}
                         {% else %}
                             <tbody>
-                                <tr id="row">
-                                    <td colspan="6" id="field" style="text-align:center; border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">Keine Merkmale</td>
+                                <tr>
+                                    <td colspan="6" style="text-align:center; border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">Keine Merkmale</td>
                                 </tr>
                             </tbody>
                         {% endif %}
                         
                         {% if plasmid.plasmid.get_all_common_formz_elements %}
                                 <tbody>
-                                    <tr id="row">
-                                        <td colspan="6" id="field" style="border: 1px solid rgb(0, 0, 0); font-weight: bold; text-align:center;">Andere Merkmale, nicht relevant für die Sicherheitsbeurteilung</td>
+                                    <tr>
+                                        <td colspan="6" style="border: 1px solid rgb(0, 0, 0); font-weight: bold; text-align:center;">Andere Merkmale, nicht relevant für die Sicherheitsbeurteilung</td>
                                     </tr>
                                     {% for formz_elem in plasmid.plasmid.get_all_common_formz_elements %}
-                                        <tr id="row">
-                                            <td id="field-name" style="border-left: 1px solid rgb(0, 0, 0);">{{formz_elem.name}}</td>
-                                            <td id="field-donor_organism" style="text-align:center; border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_names %}{{formz_elem.get_donor_species_names}}{% else %}Artifiziell{% endif %}</td>
-                                            <td id="field-donor_organism_risk" style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_risk_groups %}{{formz_elem.get_donor_species_risk_groups}}{% else %}Keine{% endif %}</td>
-                                            <td id="field-nuc_acid_purity" style="text-align:center; border-left: 1px solid rgb(0, 0, 0); ">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
-                                            <td id="field-nuc_acid_risk" style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{{formz_elem.nuc_acid_risk.german_name|capfirst}}</td>
-                                            <td id="field-description" style="border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_max_risk_group > 1 %} {{formz_elem.description}} {% endif %}</td>
+                                        <tr>
+                                            <td style="border-left: 1px solid rgb(0, 0, 0);">{{formz_elem.name}}</td>
+                                            <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_names %}{{formz_elem.get_donor_species_names}}{% else %}Artifiziell{% endif %}</td>
+                                            <td style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_risk_groups %}{{formz_elem.get_donor_species_risk_groups}}{% else %}Keine{% endif %}</td>
+                                            <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0); ">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
+                                            <td style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{{formz_elem.nuc_acid_risk.german_name|capfirst}}</td>
+                                            <td style="border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_max_risk_group > 1 %} {{formz_elem.description}} {% endif %}</td>
                                         </tr>
                                     {% endfor %}
                                 </tbody>
@@ -361,7 +357,7 @@
 
     {% if object.s2_plasmids %}
 
-        <div id='s2-plasmids'>      
+        <div>      
             
             <h4>Virusverpackung</h4>
             <div>Das oben genannten Plasmid/die oben genannten Plasmide wurden mit dem/den unten genannten Plasmid/Plasmiden zum verpacken viraler Partikel in HEK293T cells genutzt.</div>
@@ -372,7 +368,7 @@
                     <table style='border-bottom: 1px solid rgb(0, 0, 0);'>
                         <thead>
                             <tr>
-                                <th colspan="6" scope="col" id="column-plasmid" style="text-align:left; border: 1px solid rgb(0, 0, 0); background:grey;">
+                                <th colspan="6" scope="col" style="text-align:left; border: 1px solid rgb(0, 0, 0); background:grey;">
                                     Plasmid #{{plasmid.plasmid}} 
                                     <span style="text-transform: none">
                                         {% if plasmid.created_date %}
@@ -414,76 +410,76 @@
                         {% if plasmid.plasmid.get_all_uncommon_formz_elements %}
                             <thead>
                                 <tr>
-                                    <th scope="col" id="column-name" style="border-left: 1px solid rgb(0, 0, 0); background:lightgrey;"></th>
-                                    <th colspan="2" scope="col" id="column-donor_organism" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
+                                    <th scope="col" style="border-left: 1px solid rgb(0, 0, 0); background:lightgrey;"></th>
+                                    <th colspan="2" scope="col" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
                                         <div >Spenderorganismus</div>
                                     </th>
-                                    <th colspan="2" scope="col" id="column-nuc_acid_purity" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
+                                    <th colspan="2" scope="col" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
                                         <div>Nukleinsäure</div>
                                     </th>
-                                    <th scope="col" id="column-name" style="border-right: 1px solid rgb(0, 0, 0); background:lightgrey;"></th>
+                                    <th scope="col" style="border-right: 1px solid rgb(0, 0, 0); background:lightgrey;"></th>
                                 </tr>
                                 <tr>
-                                    <th scope="col" id="column-name" style='border: 1px solid rgb(0, 0, 0);'>
+                                    <th scope="col" style='border: 1px solid rgb(0, 0, 0);'>
                                         <div>Bezeichnung</div>
                                     </th>
-                                    <th scope="col" id="column-donor_organism" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
+                                    <th scope="col" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
                                         <div >Bezeichnung</div>
                                     </th>
-                                    <th scope="col" id="column-donor_organism_risk" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;"> 
+                                    <th scope="col" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;"> 
                                         <div>Risikogruppe</div>
                                     </th>
-                                    <th scope="col" id="column-nuc_acid_purity" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
+                                    <th scope="col" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
                                         <div>Reinheitsgrad</div>
                                     </th>
-                                    <th scope="col" id="column-nuc_acid_risk" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
+                                    <th scope="col" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
                                         <div>Gefährdungspotential</div>
                                     </th>
-                                    <th scope="col" id="column-description" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
+                                    <th scope="col" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
                                         <div>Beschreibung</div>
                                     </th>
                                 </tr>
                             </thead>
                             <tbody>
                                     {% for formz_elem in plasmid.plasmid.get_all_uncommon_formz_elements %}
-                                        <tr id="row">
-                                            <td id="field-name" style="border-left: 1px solid rgb(0, 0, 0);">{{formz_elem.name}}</td>
-                                            <td id="field-donor_organism" style="text-align:center; border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_names %}{{formz_elem.get_donor_species_names}}{% else %}Artifiziell{% endif %}</td>
-                                            <td id="field-donor_organism_risk" style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_risk_groups %}{{formz_elem.get_donor_species_risk_groups}}{% else %}Keine{% endif %}</td>
-                                            <td id="field-nuc_acid_purity" style="text-align:center; border-left: 1px solid rgb(0, 0, 0); ">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
-                                            <td id="field-nuc_acid_risk" style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{{formz_elem.nuc_acid_risk.german_name|capfirst}}</td>
-                                            <td id="field-description" style="border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_max_risk_group > 1 %} {{formz_elem.description}} {% endif %}</td>
+                                        <tr>
+                                            <td style="border-left: 1px solid rgb(0, 0, 0);">{{formz_elem.name}}</td>
+                                            <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_names %}{{formz_elem.get_donor_species_names}}{% else %}Artifiziell{% endif %}</td>
+                                            <td style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_risk_groups %}{{formz_elem.get_donor_species_risk_groups}}{% else %}Keine{% endif %}</td>
+                                            <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0); ">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
+                                            <td style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{{formz_elem.nuc_acid_risk.german_name|capfirst}}</td>
+                                            <td style="border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_max_risk_group > 1 %} {{formz_elem.description}} {% endif %}</td>
                                         </tr>
                                     {% endfor %}
                             </tbody>
                         {% else %}
                             <tbody>
-                                <tr id="row">
-                                    <td colspan="6" id="field" style="text-align:center; border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">Keine unüblichen Merkmale</td>
+                                <tr>
+                                    <td colspan="6" style="text-align:center; border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">Keine unüblichen Merkmale</td>
                                 </tr>
                             </tbody>
                         {% endif %}
                     {% else %}
                         <tbody>
-                            <tr id="row">
-                                <td colspan="6" id="field" style="text-align:center; border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">Keine Merkmale</td>
+                            <tr>
+                                <td colspan="6" style="text-align:center; border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">Keine Merkmale</td>
                             </tr>
                         </tbody>
                     {% endif %}
                     
                     {% if plasmid.plasmid.get_all_common_formz_elements %}
                             <tbody>
-                                <tr id="row">
-                                    <td colspan="6" id="field" style="border: 1px solid rgb(0, 0, 0); font-weight: bold; text-align:center;">Andere Merkmale, nicht relevant für die Sicherheitsbeurteilung</td>
+                                <tr>
+                                    <td colspan="6" style="border: 1px solid rgb(0, 0, 0); font-weight: bold; text-align:center;">Andere Merkmale, nicht relevant für die Sicherheitsbeurteilung</td>
                                 </tr>
                                 {% for formz_elem in plasmid.plasmid.get_all_common_formz_elements %}
-                                    <tr id="row">
-                                        <td id="field-name" style="border-left: 1px solid rgb(0, 0, 0);">{{formz_elem.name}}</td>
-                                        <td id="field-donor_organism" style="text-align:center; border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_names %}{{formz_elem.get_donor_species_names}}{% else %}Artifiziell{% endif %}</td>
-                                        <td id="field-donor_organism_risk" style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_risk_groups %}{{formz_elem.get_donor_species_risk_groups}}{% else %}Keine{% endif %}</td>
-                                        <td id="field-nuc_acid_purity" style="text-align:center; border-left: 1px solid rgb(0, 0, 0); ">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
-                                        <td id="field-nuc_acid_risk" style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{{formz_elem.nuc_acid_risk.german_name|capfirst}}</td>
-                                        <td id="field-description" style="border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_max_risk_group > 1 %} {{formz_elem.description}} {% endif %}</td>
+                                    <tr>
+                                        <td style="border-left: 1px solid rgb(0, 0, 0);">{{formz_elem.name}}</td>
+                                        <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_names %}{{formz_elem.get_donor_species_names}}{% else %}Artifiziell{% endif %}</td>
+                                        <td style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_risk_groups %}{{formz_elem.get_donor_species_risk_groups}}{% else %}Keine{% endif %}</td>
+                                        <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0); ">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
+                                        <td style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{{formz_elem.nuc_acid_risk.german_name|capfirst}}</td>
+                                        <td style="border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_max_risk_group > 1 %} {{formz_elem.description}} {% endif %}</td>
                                     </tr>
                                 {% endfor %}
                             </tbody>
@@ -515,7 +511,6 @@
         {% endif %}
     {% endif %}
 
-</div>
-{% endblock %}
+</body>
 
 </html>

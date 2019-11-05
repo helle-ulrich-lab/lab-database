@@ -15,7 +15,7 @@ new_status_code = 200 # Set the intial status to that of a working website
 
 while True:
     old_status_code = new_status_code
-    new_status_code = requests.get("https://{}".format(ALLOWED_HOSTS[0]), verify=False).status_code
+    new_status_code = requests.get("https://{}/login/?next=/".format(ALLOWED_HOSTS[0]), verify=False).status_code
     
     if new_status_code != 200 and old_status_code == 200:
         

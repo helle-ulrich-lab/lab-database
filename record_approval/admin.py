@@ -10,6 +10,7 @@ from django.utils.text import capfirst
 
 from order_management.models import Order as order_management_Order
 from .models import RecordToBeApproved
+from django.contrib.contenttypes.models import ContentType
 
 from django_project.private_settings import SITE_TITLE
 
@@ -139,6 +140,35 @@ def approve_all_new_orders(modeladmin, request, queryset):
 
 approve_all_new_orders.short_description = "Approve all new orders"
 
+class ContentTypeFilter(admin.SimpleListFilter):
+
+    title = 'record type'
+
+    # Parameter for the filter that will be used in the URL query.
+    parameter_name = 'record_type'
+
+    def lookups(self, request, model_admin):
+        """Show only models for which records to be approved exist"""
+        
+        list_of_models = []
+        for content_type_id in RecordToBeApproved.objects.all().values_list('content_type__id', 'content_type__model').distinct().order_by('content_type__model').values_list('content_type__id', flat=True):
+            content_type_obj = ContentType.objects.get(id=content_type_id)
+            list_of_models.append((str(content_type_id), capfirst(content_type_obj.model_class()._meta.verbose_name)))
+
+        return tuple(list_of_models)
+
+    def queryset(self, request, queryset):
+        """
+        Returns the filtered queryset based on the value
+        provided in the query string and retrievable via
+        `self.value()`.
+        """
+
+        if self.value():
+            return queryset.filter(content_type=int(self.value()))
+        else:
+            return queryset
+
 class RecordToBeApprovedPage(admin.ModelAdmin):
     
     list_display = ('id', 'titled_content_type', 'record_link', 'coloured_activity_type', 'activity_user', 'history_link', 'message', 'message_sent','edited', )
@@ -146,6 +176,7 @@ class RecordToBeApprovedPage(admin.ModelAdmin):
     list_per_page = 50
     ordering = ['content_type', '-activity_type', 'object_id']
     actions = [approve_records, notify_user_edits_required, approve_all_new_orders]
+    list_filter = (ContentTypeFilter, 'activity_type', )
     
     def get_readonly_fields(self, request, obj=None):
         

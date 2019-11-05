@@ -687,7 +687,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
             history_obj.save()
             
             # Add approval record
-            obj.approval.create(activity_type='created', activity_user=obj.history.latest().history_user)
+            obj.approval.create(activity_type='created', activity_user=obj.history.latest().created_by)
 
             # Send email to Lab Managers if an order is set as urgent
             if obj.urgent:

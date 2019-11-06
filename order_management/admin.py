@@ -447,7 +447,8 @@ class OrderChemicalExportResource(resources.ModelResource):
     
     class Meta:
         model = order_management_Order
-        fields = ('id','supplier', 'supplier_part_no', 'part_description', 'quantity', "location__name", "cas_number", "ghs_pictogram")
+        fields = ('id','supplier', 'supplier_part_no', 'part_description', 'quantity', "location__name", "cas_number", 
+        "ghs_pictogram", 'hazard_level_pregnancy')
 
 class OrderExportResource(resources.ModelResource):
     """Defines a custom export resource class for orders"""
@@ -456,7 +457,8 @@ class OrderExportResource(resources.ModelResource):
         model = order_management_Order
         fields = ('id', 'internal_order_no', 'supplier', 'supplier_part_no', 'part_description', 'quantity', 
             'price', 'cost_unit__name', 'status', 'location__name', 'comment', 'url', 'delivered_date', 'cas_number', 
-            'ghs_pictogram', 'created_date_time', 'order_manager_created_date_time', 'last_changed_date_time', 'created_by__username',)
+            'ghs_pictogram', 'hazard_level_pregnancy', 'created_date_time', 'order_manager_created_date_time', 
+            'last_changed_date_time', 'created_by__username',)
 
 #################################################
 #                   ACTIONS                     #

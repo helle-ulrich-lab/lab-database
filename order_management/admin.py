@@ -651,8 +651,7 @@ class MyMassUpdateOrderForm(MassUpdateForm):
     class Meta:
         model = order_management_Order
         fields = ['supplier','supplier_part_no', 'internal_order_no', 'part_description', 'quantity', 
-            'price', 'cost_unit', 'location', 'comment', 'url', 'cas_number', 'ghs_pictogram', 'msds_form']
-        app_verbose_name = 'Test'
+            'price', 'cost_unit', 'location', 'comment', 'url', 'cas_number', 'ghs_pictogram', 'msds_form', 'hazard_level_pregnancy']
     
     def clean__validate(self):
         return True

@@ -76,7 +76,7 @@ def update_autocomplete_js():
     part_no_json_line = ""
     
     # Loop through all elements (= rows) in the order list
-    for order in order_management_Order.objects.all().order_by('-id').values("supplier", "supplier_part_no", "part_description", "location", "msds_form", "price", "cas_number", "ghs_pictogram"):
+    for order in order_management_Order.objects.all().order_by('-id').values("supplier", "supplier_part_no", "part_description", "location", "msds_form", "price", "cas_number", "ghs_pictogram", "hazard_level_pregnancy"):
         
         # Create value:data pairs using part_description or supplier_part_no as values
         part_description_lower = order["part_description"].lower()

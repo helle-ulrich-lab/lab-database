@@ -18,6 +18,24 @@ from record_approval.models import RecordToBeApproved
 from django_project.private_settings import LAB_ABBREVIATION_FOR_FILES
 
 #################################################
+#                CUSTOM CLASSES                 #
+#################################################
+
+class SaveWithoutHistoricalRecord():
+
+    def save_without_historical_record(self, *args, **kwargs):
+        """Allows inheritance of a method to save an object without
+        saving a historical record as described in  
+        https://django-simple-history.readthedocs.io/en/2.7.2/querying_history.html?highlight=save_without_historical_record"""
+
+        self.skip_history_when_saving = True
+        try:
+            ret = self.save(*args, **kwargs)
+        finally:
+            del self.skip_history_when_saving
+        return ret
+
+#################################################
 #            ORDER COST UNIT MODEL              #
 #################################################
 
@@ -110,7 +128,11 @@ ORDER_STATUS_CHOICES = (('submitted', 'submitted'),
 ('cancelled', 'cancelled'),
 ('used up', 'used up'))
 
-class Order(models.Model):
+HAZARD_LEVEL_PREGNANCY_CHOICES = (('none', 'none'), 
+('yellow', 'yellow'), 
+('red', 'red'))
+
+class Order(models.Model, SaveWithoutHistoricalRecord):
     
     supplier = models.CharField("supplier", max_length=255, blank=False)
     supplier_part_no = models.CharField("supplier Part-No", max_length=255, blank=False)
@@ -131,6 +153,7 @@ class Order(models.Model):
     cas_number = models.CharField("CAS number", max_length=255, blank=True)
     ghs_pictogram = models.CharField("GHS pictogram", max_length=255, blank=True)
     msds_form = models.ForeignKey(MsdsForm, on_delete=models.PROTECT, blank=True, null=True)
+    hazard_level_pregnancy = models.CharField("Hazard level for pregnancy", max_length=255, choices=HAZARD_LEVEL_PREGNANCY_CHOICES, default='none', blank=True)
     
     created_date_time = models.DateTimeField("created", auto_now_add=True, null=True)
     last_changed_date_time = models.DateTimeField("last changed", auto_now=True, null=True)

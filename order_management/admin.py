@@ -85,7 +85,7 @@ def update_autocomplete_js():
         if (part_description_lower not in lstofprodname) and (part_description_lower != "none"):
             if (len(supplier_part_no)>0) and ("?" not in supplier_part_no) :
                 
-                part_description_json_line = part_description_json_line + '{{value:"{}",data:"{}#{}#{}#{}#{}#{}#{}"}},'.format(
+                part_description_json_line = part_description_json_line + '{{value:"{}",data:"{}#{}#{}#{}#{}#{}#{}#{}"}},'.format(
                     order["part_description"], 
                     supplier_part_no, 
                     order["supplier"], 
@@ -93,9 +93,10 @@ def update_autocomplete_js():
                     order["msds_form"] if order["msds_form"] else 0,
                     order["price"],
                     order["cas_number"], 
-                    order["ghs_pictogram"])
+                    order["ghs_pictogram"],
+                    order["hazard_level_pregnancy"])
                 
-                part_no_json_line = part_no_json_line + '{{value:"{}",data:"{}#{}#{}#{}#{}#{}#{}"}},'.format(
+                part_no_json_line = part_no_json_line + '{{value:"{}",data:"{}#{}#{}#{}#{}#{}#{}#{}"}},'.format(
                     supplier_part_no, 
                     order["part_description"], 
                     order["supplier"], 
@@ -103,7 +104,8 @@ def update_autocomplete_js():
                     order["msds_form"] if order["msds_form"] else 0,
                     order["price"],
                     order["cas_number"], 
-                    order["ghs_pictogram"])
+                    order["ghs_pictogram"],
+                    order["hazard_level_pregnancy"])
                 
                 lstofprodname.append(part_description_lower)
 
@@ -140,6 +142,11 @@ def update_autocomplete_js():
                 } else {\
                     $('#id_ghs_pictogram').val(null)\
                 }\
+                ;if (extra_data[7] != "") {\
+                    $('#id_hazard_level_pregnancy').val(extra_data[7])\
+                } else {\
+                    $('#id_hazard_level_pregnancy').val(null)\
+                }\
                 ;\
             }\
         });\
@@ -172,6 +179,11 @@ def update_autocomplete_js():
                 $('#id_ghs_pictogram').val(extra_data[6])\
             } else {\
                 $('#id_ghs_pictogram').val(null)\
+            }\
+            ;if (extra_data[7] != "") {\
+                $('#id_hazard_level_pregnancy').val(extra_data[7])\
+            } else {\
+                $('#id_hazard_level_pregnancy').val(null)\
             }\
             ;\
         }\
@@ -789,7 +801,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
             if not (request.user.groups.filter(name='Lab manager').exists() or request.user.groups.filter(name='Order manager').exists()):
                 return ['supplier','supplier_part_no', 'internal_order_no', 'part_description', 'quantity', 
             'price', 'cost_unit', 'status', 'urgent', 'delivery_alert', 'location', 'comment', 'url', 'delivered_date', 'cas_number', 
-            'ghs_pictogram', 'msds_form', 'order_manager_created_date_time', 'created_date_time', 'last_changed_date_time', 'created_by',]
+            'ghs_pictogram', 'msds_form', 'hazard_level_pregnancy', 'order_manager_created_date_time', 'created_date_time', 'last_changed_date_time', 'created_by',]
             else:
                 return ['urgent', 'delivery_alert', 'delivered_date', 'order_manager_created_date_time','created_date_time', 'last_changed_date_time',]
         else:
@@ -802,13 +814,13 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
         if request.user.groups.filter(name='Lab manager').exists() or request.user.groups.filter(name='Order manager').exists():            
             self.fields = ('supplier','supplier_part_no', 'part_description', 'quantity', 
             'price', 'cost_unit', 'status', 'urgent', 'delivery_alert', 'location', 'comment', 'url', 'cas_number', 
-            'ghs_pictogram', 'msds_form', 'created_by')
+            'ghs_pictogram', 'msds_form', 'hazard_level_pregnancy', 'created_by')
             self.raw_id_fields = []
             self.autocomplete_fields = []
             
         else:
             self.fields = ('supplier','supplier_part_no', 'part_description', 'quantity', 'price', 'cost_unit', 'urgent',
-            'delivery_alert', 'location', 'comment', 'url', 'cas_number', 'ghs_pictogram', 'msds_form')
+            'delivery_alert', 'location', 'comment', 'url', 'cas_number', 'ghs_pictogram', 'msds_form', 'hazard_level_pregnancy')
             self.raw_id_fields = ['msds_form']
             self.autocomplete_fields = []
         
@@ -823,7 +835,8 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
 
         self.fields = ('supplier','supplier_part_no', 'internal_order_no', 'part_description', 'quantity', 
             'price', 'cost_unit', 'status', 'urgent', 'delivery_alert', 'location', 'comment', 'url', 'cas_number', 
-            'ghs_pictogram', 'msds_form', 'created_date_time', 'order_manager_created_date_time', 'delivered_date', 'created_by',)
+            'ghs_pictogram', 'msds_form', 'hazard_level_pregnancy', 'created_date_time', 'order_manager_created_date_time', 
+            'delivered_date', 'created_by',)
         return super(OrderPage,self).change_view(request, object_id, extra_context=extra_context)
 
     def changeform_view(self, request, object_id=None, form_url='', extra_context=None):

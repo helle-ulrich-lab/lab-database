@@ -606,6 +606,13 @@ class SearchFieldOptPartDescription(StrField):
         return super(SearchFieldOptPartDescription, self).\
         get_options().all().distinct()
 
+class SearchFieldOptAzardousPregnancy(StrField):
+    """Create a list of unique cost units for search"""
+
+    model = order_management_Order
+    name = 'hazard_level_pregnancy'
+    suggest_options = True
+
 class SearchFieldOptUsernameOrder(SearchFieldOptUsername):
     """Create a list of unique users' usernames for search"""
 
@@ -631,7 +638,7 @@ class OrderQLSchema(DjangoQLSchema):
         if model == order_management_Order:
             return ['id', SearchFieldOptSupplier() ,'supplier_part_no', 'internal_order_no', SearchFieldOptPartDescription(), SearchFieldOptCostUnit(), 
             'status', 'urgent', SearchFieldOptLocation(), 'comment', 'delivered_date', 'cas_number', 
-            'ghs_pictogram', 'created_date_time', 'last_changed_date_time', 'created_by',]
+            'ghs_pictogram', SearchFieldOptAzardousPregnancy(), 'created_date_time', 'last_changed_date_time', 'created_by',]
         elif model == User:
             return [SearchFieldOptUsernameOrder(), SearchFieldOptLastnameOrder()]
         return super(OrderQLSchema, self).get_fields(model)

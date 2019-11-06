@@ -34,7 +34,7 @@
     <li><a href="{% add_preserved_filters history_url %}" class="permissionslink">{% trans "Object permissions" %}</a></li>
 
     {% if plasmid_id_list %}
-      <li><a href="/collection_management/huplasmid/?q-l=on&q=id+in+{{plasmid_id_list}}">{% trans "Plasmids" %}</a></li>
+      <li><a href="/collection_management/plasmid/?q-l=on&q=id+in+{{plasmid_id_list}}">{% trans "Plasmids" %}</a></li>
     {% endif %}
     
     <li>
@@ -119,7 +119,7 @@
 
         // If map field changes add ShowLoading to form onsubmit
         $("#id_map").change(function(){
-          $("#huplasmid_form").attr('onsubmit', 'ShowLoading()');
+          $("#plasmid_form").attr('onsubmit', 'ShowLoading()');
         });
       });
 

@@ -692,7 +692,10 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
                     return
 
             saved_obj = SaCerevisiaeStrain.objects.get(pk=obj.pk)
-            if request.user.is_superuser or request.user == saved_obj.created_by or request.user.groups.filter(name='Lab manager').exists() or saved_obj.created_by.groups.filter(name='Past member').exists() or saved_obj.created_by.labuser.is_principal_investigator:
+            if request.user.is_superuser or request.user == saved_obj.created_by or request.user.groups.filter(name='Lab manager').exists() or \
+                saved_obj.created_by.groups.filter(name='Past member').exists() or saved_obj.created_by.labuser.is_principal_investigator or \
+                request.user.has_perm('collection_management.change_sacerevisiaestrain', saved_obj):
+                
                 obj.last_changed_approval_by_pi = False
                 obj.approval_user = None
                 obj.save()
@@ -1013,7 +1016,7 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
                     return
 
             old_obj = Plasmid.objects.get(pk=obj.pk)
-            if request.user.is_superuser or request.user == old_obj.created_by or request.user.groups.filter(name='Lab manager').exists():
+            if request.user.is_superuser or request.user == old_obj.created_by or request.user.groups.filter(name='Lab manager').exists() or request.user.has_perm('collection_management.change_plasmid', old_obj):
                 obj.last_changed_approval_by_pi = False
                 obj.approval_user = None
                 if obj.map:

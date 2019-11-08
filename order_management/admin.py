@@ -782,6 +782,12 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
                                     except:
                                         messages.warning(request, 'Could not send delivery notification.')
             obj.save()
+            
+            # Delete order history for used-up or cancelled items
+            if obj.status in ["used up", 'cancelled'] and obj.history.exists():
+                obj_history = obj.history.all()
+                obj_history.delete()
+
             try:
                 if [obj.supplier, obj.supplier_part_no, obj.part_description, obj.location, obj.msds_form, obj.price, obj.cas_number, obj.ghs_pictogram] != [order.supplier, order.supplier_part_no, order.part_description, order.location, order.msds_form, order.price, order.cas_number, order.ghs_pictogram]:
                     update_autocomplete_js()

@@ -187,6 +187,9 @@ class FormZBaseElement (models.Model):
 
     name = models.CharField("name", max_length=255, help_text='Must be identical (CASE-SENSITIVE!) to a feature name in a plasmid map for auto-detection to work. '
                             'If you want to associate additional names to an element, add them as aliases below', unique=True, blank=False)
+    displayed_name = models.CharField("displayed name", max_length=255, help_text="If present, the name displayed in the rendered FormZ form, instead of 'Name' above. "
+                                      "This is useful for those elements whose names, due to uniqueness contrains, include species information, e.g. 'Hs PCNA', which would "
+                                      "be more appropriate to display simply as 'PCNA' in the rendered form", blank=True)
     donor_organism = models.ManyToManyField(Species, verbose_name = 'donor organism', help_text='Choose none, for artificial elements', blank=False)
     nuc_acid_purity = models.ForeignKey(NucleicAcidPurity, verbose_name = 'nucleic acid purity', on_delete=models.PROTECT, blank=False, null=True)
     nuc_acid_risk = models.ForeignKey(NucleicAcidRisk, verbose_name = 'nucleic acid risk potential', on_delete=models.PROTECT, blank=False, null=True)

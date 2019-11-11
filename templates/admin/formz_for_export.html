@@ -177,7 +177,7 @@
                         <tbody>
                             {% for formz_elem in object.uncommon_formz_elements %}
                                 <tr>
-                                    <td style="border-left: 1px solid rgb(0, 0, 0);">{{formz_elem.name}}</td>
+                                    <td style="border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.displayed_name %}{{formz_elem.displayed_name}}{% else %}{{formz_elem.name}}{% endif %}</td>
                                     <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_names %}{{formz_elem.get_donor_species_names}}{% else %}Artifiziell{% endif %}</td>
                                     <td style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_risk_groups %}{{formz_elem.get_donor_species_risk_groups}}{% else %}Keine{% endif %}</td>
                                     <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0); ">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
@@ -200,7 +200,7 @@
                         </tr>
                         {% for formz_elem in object.common_formz_elements %}
                             <tr>
-                                <td style="border-left: 1px solid rgb(0, 0, 0);">{{formz_elem.name}}</td>
+                                <td style="border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.displayed_name %}{{formz_elem.displayed_name}}{% else %}{{formz_elem.name}}{% endif %}</td>
                                 <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_names %}{{formz_elem.get_donor_species_names}}{% else %}Artifiziell{% endif %}</td>
                                 <td style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_risk_groups %}{{formz_elem.get_donor_species_risk_groups}}{% else %}Keine{% endif %}</td>
                                 <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0); ">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
@@ -310,7 +310,7 @@
                                 <tbody>
                                         {% for formz_elem in plasmid.plasmid.get_all_uncommon_formz_elements %}
                                             <tr>
-                                                <td style="border-left: 1px solid rgb(0, 0, 0);">{{formz_elem.name}}</td>
+                                                <td style="border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.displayed_name %}{{formz_elem.displayed_name}}{% else %}{{formz_elem.name}}{% endif %}</td>
                                                 <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_names %}{{formz_elem.get_donor_species_names}}{% else %}Artifiziell{% endif %}</td>
                                                 <td style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_risk_groups %}{{formz_elem.get_donor_species_risk_groups}}{% else %}Keine{% endif %}</td>
                                                 <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0); ">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
@@ -341,7 +341,7 @@
                                     </tr>
                                     {% for formz_elem in plasmid.plasmid.get_all_common_formz_elements %}
                                         <tr>
-                                            <td style="border-left: 1px solid rgb(0, 0, 0);">{{formz_elem.name}}</td>
+                                            <td style="border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.displayed_name %}{{formz_elem.displayed_name}}{% else %}{{formz_elem.name}}{% endif %}</td>
                                             <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_names %}{{formz_elem.get_donor_species_names}}{% else %}Artifiziell{% endif %}</td>
                                             <td style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_risk_groups %}{{formz_elem.get_donor_species_risk_groups}}{% else %}Keine{% endif %}</td>
                                             <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0); ">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
@@ -444,7 +444,7 @@
                             <tbody>
                                     {% for formz_elem in plasmid.plasmid.get_all_uncommon_formz_elements %}
                                         <tr>
-                                            <td style="border-left: 1px solid rgb(0, 0, 0);">{{formz_elem.name}}</td>
+                                            <td style="border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.displayed_name %}{{formz_elem.displayed_name}}{% else %}{{formz_elem.name}}{% endif %}</td>
                                             <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_names %}{{formz_elem.get_donor_species_names}}{% else %}Artifiziell{% endif %}</td>
                                             <td style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_risk_groups %}{{formz_elem.get_donor_species_risk_groups}}{% else %}Keine{% endif %}</td>
                                             <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0); ">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
@@ -475,7 +475,7 @@
                                 </tr>
                                 {% for formz_elem in plasmid.plasmid.get_all_common_formz_elements %}
                                     <tr>
-                                        <td style="border-left: 1px solid rgb(0, 0, 0);">{{formz_elem.name}}</td>
+                                        <td style="border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.displayed_name %}{{formz_elem.displayed_name}}{% else %}{{formz_elem.name}}{% endif %}</td>
                                         <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_names %}{{formz_elem.get_donor_species_names}}{% else %}Artifiziell{% endif %}</td>
                                         <td style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_risk_groups %}{{formz_elem.get_donor_species_risk_groups}}{% else %}Keine{% endif %}</td>
                                         <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0); ">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>

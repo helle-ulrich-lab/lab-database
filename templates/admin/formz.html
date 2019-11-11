@@ -215,7 +215,7 @@
                         <tbody>
                             {% for formz_elem in object.uncommon_formz_elements %}
                                 <tr class="row">
-                                    <td class="field-name"><a href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}">{{formz_elem.name}}</a></td>
+                                    <td class="field-name"><a href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}">{% if formz_elem.displayed_name %}{{formz_elem.displayed_name}}{% else %}{{formz_elem.name}}{% endif %}</a></td>
                                     <td class="field-donor_organism" style="text-align:center; border-left: 1px solid #eee;">{% if formz_elem.get_donor_species_names %}{{formz_elem.get_donor_species_names}}{% else %}Artifiziell{% endif %}</td>
                                     <td class="field-donor_organism_risk" style="text-align:center; border-right: 1px solid #eee;">{% if formz_elem.get_donor_species_risk_groups %}{{formz_elem.get_donor_species_risk_groups}}{% else %}Keine{% endif %}</td>
                                     <td class="field-nuc_acid_purity" style="text-align:center">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
@@ -358,7 +358,7 @@
                                 <tbody>
                                         {% for formz_elem in plasmid.plasmid.get_all_uncommon_formz_elements %}
                                             <tr class="row">
-                                                <td class="field-name"><a href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}">{{formz_elem.name}}</a></td>
+                                                <td class="field-name"><a href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}">{% if formz_elem.displayed_name %}{{formz_elem.displayed_name}}{% else %}{{formz_elem.name}}{% endif %}</a></td>
                                                 <td class="field-donor_organism" style="text-align:center; border-left: 1px solid #eee;">{% if formz_elem.get_donor_species_names %}{{formz_elem.get_donor_species_names}}{% else %}Artifiziell{% endif %}</td>
                                                 <td class="field-donor_organism_risk" style="text-align:center; border-right: 1px solid #eee;">{% if formz_elem.get_donor_species_risk_groups %}{{formz_elem.get_donor_species_risk_groups}}{% else %}Keine{% endif %}</td>
                                                 <td class="field-nuc_acid_purity" style="text-align:center">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
@@ -499,7 +499,7 @@
                                     <tbody>
                                             {% for formz_elem in plasmid.plasmid.get_all_uncommon_formz_elements %}
                                                 <tr class="row">
-                                                    <td class="field-name"><a href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}">{{formz_elem.name}}</a></td>
+                                                    <td class="field-name"><a href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}">{% if formz_elem.displayed_name %}{{formz_elem.displayed_name}}{% else %}{{formz_elem.name}}{% endif %}</a></td>
                                                     <td class="field-donor_organism" style="text-align:center; border-left: 1px solid #eee;">{% if formz_elem.get_donor_species_names %}{{formz_elem.get_donor_species_names}}{% else %}Artifiziell{% endif %}</td>
                                                     <td class="field-donor_organism_risk" style="text-align:center; border-right: 1px solid #eee;">{% if formz_elem.get_donor_species_risk_groups %}{{formz_elem.get_donor_species_risk_groups}}{% else %}Keine{% endif %}</td>
                                                     <td class="field-nuc_acid_purity" style="text-align:center">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>

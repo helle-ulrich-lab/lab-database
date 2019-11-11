@@ -1,7 +1,7 @@
 from os import path
 from django.apps import AppConfig
 
-VERBOSE_APP_NAME = "FORMBLATT Z"
+VERBOSE_APP_NAME = "Formblatt Z"
 
 
 def get_current_app_name(file):

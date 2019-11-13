@@ -185,11 +185,9 @@ class Species (models.Model):
 
 class FormZBaseElement (models.Model):
 
-    name = models.CharField("name", max_length=255, help_text='Must be identical (CASE-SENSITIVE!) to a feature name in a plasmid map for auto-detection to work. '
-                            'If you want to associate additional names to an element, add them as aliases below', unique=True, blank=False)
-    displayed_name = models.CharField("displayed name", max_length=255, help_text="If present, the name displayed in the rendered FormZ form, instead of 'Name' above. "
-                                      "This is useful for those elements whose names, due to uniqueness contrains, include species information, e.g. 'Hs PCNA', which would "
-                                      "be more appropriate to display simply as 'PCNA' in the rendered form", blank=True)
+    name = models.CharField("name", max_length=255, help_text='This is only the name displayed in the rendered FormZ form. '
+            'It is NOT used for auto-detection of features in a plasmid map, only aliases (below) are used for that. '
+            "Duplicates are allowed, therefore, instead of, for example, using 'Hs EXO1', use 'EXO1'", blank=False)
     donor_organism = models.ManyToManyField(Species, verbose_name = 'donor organism', help_text='Choose none, for artificial elements', blank=False)
     nuc_acid_purity = models.ForeignKey(NucleicAcidPurity, verbose_name = 'nucleic acid purity', on_delete=models.PROTECT, blank=False, null=True)
     nuc_acid_risk = models.ForeignKey(NucleicAcidRisk, verbose_name = 'nucleic acid risk potential', on_delete=models.PROTECT, blank=False, null=True)
@@ -204,7 +202,7 @@ class FormZBaseElement (models.Model):
         ordering = ["name",]
 
     def __str__(self):
-        return str(self.name)
+        return str(self.name) if self.common_feature else "{} - {}".format(self.name, self.donor_organism.first().name_for_search)
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         
@@ -244,8 +242,12 @@ class FormZBaseElement (models.Model):
         return max(species_risk_groups)
 
 class FormZBaseElementExtraLabel (models.Model):
-    label = models.CharField("alias", max_length=255, blank=True)
+    label = models.CharField("alias", max_length=255, blank=True, unique=True)
     formz_base_element = models.ForeignKey(FormZBaseElement, on_delete=models.PROTECT, related_name='extra_label')
+
+    # NB: You will need to run the following command 
+    # ALTER TABLE formz_formzbaseelementextralabel MODIFY COLUMN label varchar(255) COLLATE utf8mb4_bin;
+    # from within mysql to make the unique constraint on label case-sensitive 
 
     class Meta:
         verbose_name = 'base element alias'

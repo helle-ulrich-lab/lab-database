@@ -1113,7 +1113,7 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
             if not self.new_obj:
                 obj.formz_elements.clear()
             for feat in r["features"]:
-                base_elems = FormZBaseElement.objects.filter(name = feat['name'].strip()) | FormZBaseElement.objects.filter(extra_label__label = feat['name'].strip())
+                base_elems = FormZBaseElement.objects.filter(extra_label__label__exact = feat['name'].strip())
                 if base_elems.distinct():
                     for elem in base_elems:
                         obj.formz_elements.add(elem)

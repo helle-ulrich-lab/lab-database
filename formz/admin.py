@@ -43,6 +43,7 @@ from .models import FormZProject
 from .models import FormZUsers
 from .models import Species
 from .models import FormZBaseElement
+from .models import FormZBaseElementExtraLabel
 
 class FormZUsersInline(admin.TabularInline):
     # autocomplete_fields = ['user']
@@ -126,15 +127,21 @@ class FormZProjectPage(admin.ModelAdmin):
         return instance.parent_project
     main_project.short_description = 'Main project'
 
-from .models import FormZBaseElementExtraLabel
-
 class FormZBaseElementExtraLabelPage(admin.TabularInline):
     model = FormZBaseElementExtraLabel
-    verbose_name_plural = "aliases"
+    verbose_name_plural = "aliases - Must be identical (CASE-SENSITIVE!) to a feature name in a plasmid map for auto-detection to work"
     verbose_name = 'alias'
     ordering = ("label",)
     extra = 0
     template = 'admin/tabular.html'
+    min_num = 1
+
+    def get_formset(self, request, obj=None, **kwargs):
+
+        #  Check that the minimum number of aliases is indeed 1
+        formset = super().get_formset(request, obj=None, **kwargs)
+        formset.validate_min = True
+        return formset
 
 class FormZBaseElementForm(forms.ModelForm):
     
@@ -160,7 +167,7 @@ class FormZBaseElementForm(forms.ModelForm):
 
 class FormZBaseElementPage(admin.ModelAdmin):
     
-    list_display = ('name', 'description', 'get_donor_organism', 'get_extra_labels')
+    list_display = ('name', 'get_donor_organism', 'description', 'get_extra_labels')
     list_display_links = ('name', )
     list_per_page = 25
     search_fields = ['name']

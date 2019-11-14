@@ -127,7 +127,7 @@ def approve_all_new_orders(modeladmin, request, queryset):
 
     if request.user.labuser.is_principal_investigator:
         orders = order_management_Order.objects.filter(created_approval_by_pi=False)
-        if orders:
+        if orders.exists():
             orders.update(created_approval_by_pi=True)
             RecordToBeApproved.objects.filter(content_type__app_label='order_management').delete()
             messages.success(request, 'New orders have been approved')

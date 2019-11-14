@@ -423,7 +423,7 @@ def export_formz_as_html(modeladmin, request, queryset):
         obj = model.objects.get(id=int(obj_id))
         
         # Get storage location object or create a new 'empty' one
-        if FormZStorageLocation.objects.get(collection_model=model_content_type):
+        if FormZStorageLocation.objects.get(collection_model=model_content_type).exists():
             storage_location = FormZStorageLocation.objects.get(collection_model=model_content_type)
         else:
             storage_location = FormZStorageLocation(
@@ -612,7 +612,7 @@ class SaCerevisiaeStrainForm(forms.ModelForm):
         
         if not self.instance.pk:
             qs = SaCerevisiaeStrain.objects.filter(name=self.cleaned_data["name"])
-            if qs:
+            if qs.exists():
                 raise forms.ValidationError('Strain with this name already exists.')
             else:
                 return self.cleaned_data["name"]

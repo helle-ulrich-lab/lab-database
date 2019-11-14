@@ -307,7 +307,7 @@ class GeneralSettingPage(admin.ModelAdmin):
 
     def add_view(self, request, form_url='', extra_context=None):
         
-        if GeneralSetting.objects.all():
+        if GeneralSetting.objects.all().exists():
             # Override default add_view to prevent addition of new records, one is enough!
             messages.error(request, 'Nice try, you can only have one set of general settings')
             return HttpResponseRedirect("..")

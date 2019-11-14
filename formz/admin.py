@@ -218,7 +218,7 @@ class FormZHeaderPage(admin.ModelAdmin):
 
     def add_view(self,request,extra_context=None):
         
-        if FormZHeader.objects.all():
+        if FormZHeader.objects.all().exists():
             # Override default add_view to prevent addition of new records, one is enough!
             messages.error(request, 'Nice try, you can only have one header')
             return HttpResponseRedirect("..")

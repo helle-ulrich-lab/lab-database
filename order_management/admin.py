@@ -688,7 +688,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
                 # If a product name is not already present in the database,
                 # update the automplete js file
 
-                if not order_management_Order.objects.filter(part_description=obj.part_description):
+                if not order_management_Order.objects.filter(part_description=obj.part_description).exists():
                     update_autocomplete_js()
             except:
                 messages.warning(request, 'Could not update the order autocomplete function')
@@ -1040,7 +1040,7 @@ class MsdsFormForm(forms.ModelForm):
         # Check if the name of a MSDS form is unique before saving
         
         qs = order_management_MsdsForm.objects.filter(name__icontains=self.cleaned_data["name"].name)
-        if qs:
+        if qs.exists():
             raise forms.ValidationError('A form with this name already exists.')
         else:
             return self.cleaned_data["name"]

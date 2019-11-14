@@ -38,7 +38,7 @@ class LabUserAdmin(BaseUserAdmin):
         # If is_principal_investigator is True check whether a principal_investigator already exists
         # and if so set the field to False
         if obj.labuser.is_principal_investigator:
-            if User.objects.filter(labuser__is_principal_investigator=True):
+            if User.objects.filter(labuser__is_principal_investigator=True).exists():
                 obj.labuser.is_principal_investigator = False
                 obj.save()
 

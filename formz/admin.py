@@ -129,7 +129,7 @@ class FormZProjectPage(admin.ModelAdmin):
 
 class FormZBaseElementExtraLabelPage(admin.TabularInline):
     model = FormZBaseElementExtraLabel
-    verbose_name_plural = "aliases - Must be identical (CASE-SENSITIVE!) to a feature name in a plasmid map for auto-detection to work"
+    verbose_name_plural = mark_safe("aliases <span style='text-transform:none;'>- Must be identical (CASE-SENSITIVE!) to a feature name in a plasmid map for auto-detection to work</span>")
     verbose_name = 'alias'
     ordering = ("label",)
     extra = 0
@@ -232,7 +232,6 @@ class FormZStorageLocationPage(admin.ModelAdmin):
     list_per_page = 25
     autocomplete_fields = ['species_name']
 
-
     def has_module_permission(self, request):
         
         # Show this model on the admin home page only for superusers and
@@ -251,7 +250,9 @@ class FormZStorageLocationPage(admin.ModelAdmin):
             # Include only relevant models from collection_management app
 
             if db_field.name == 'collection_model':
-                kwargs["queryset"] = ContentType.objects.filter(id__in=[59,63,67,68])
+                kwargs["queryset"] = ContentType.objects.filter(model__contains='strain').exclude(model__contains='historical').exclude(model__contains='plasmid').exclude(model__contains='summary') | \
+                    ContentType.objects.filter(model='plasmid') | \
+                    ContentType.objects.filter(model='mammalianline')
 
         return super(FormZStorageLocationPage, self).formfield_for_foreignkey(db_field, request, **kwargs)
 

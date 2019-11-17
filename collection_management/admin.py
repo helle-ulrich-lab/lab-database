@@ -423,7 +423,7 @@ def export_formz_as_html(modeladmin, request, queryset):
         obj = model.objects.get(id=int(obj_id))
         
         # Get storage location object or create a new 'empty' one
-        if FormZStorageLocation.objects.get(collection_model=model_content_type).exists():
+        if FormZStorageLocation.objects.get(collection_model=model_content_type):
             storage_location = FormZStorageLocation.objects.get(collection_model=model_content_type)
         else:
             storage_location = FormZStorageLocation(
@@ -1953,14 +1953,6 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admi
 
         extra_context = extra_context or {}
         extra_context['show_formz'] = True
-        
-        if '_saveasnew' in request.POST:
-            self.fields = ()
-        else:
-            self.fields = ('box_number', 'parent_1', 'parent_2', 'parental_strain', 'mating_type', 'auxotrophic_marker', 'name',
-                'integrated_plasmids', 'cassette_plasmids', 'phenotype', 'received_from', 'comment', 'created_date_time', 'created_approval_by_pi',
-                'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',)
-
 
         if '_saveasnew' in request.POST:
             self.fieldsets = (
@@ -2072,8 +2064,9 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.
     list_per_page = 25
     formfield_overrides = {CharField: {'widget': TextInput(attrs={'size':'93'})},}
     djangoql_schema = EColiStrainQLSchema
-    actions = [export_ecolistrain]
+    actions = [export_ecolistrain, export_formz_as_html]
     search_fields = ['id', 'name']
+    autocomplete_fields = ['formz_projects', 'formz_elements']
     
     def save_model(self, request, obj, form, change):
         '''Override default save_model to limit a user's ability to save a record
@@ -2121,7 +2114,8 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.
         if obj:
             if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
                 return ['name', 'resistance', 'genotype', 'background', 'supplier', 'us_e', 'purpose', 'note',
-                'created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by', 'risk_group']
+                'created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by', 'formz_risk_group',
+                'formz_projects', 'formz_elements', 'destroyed_date']
             else:
                 return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
         else:
@@ -2130,16 +2124,35 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.
     def add_view(self,request,extra_context=None):
         '''Override default add_view to show only desired fields'''
 
-        self.fields = ('name', 'resistance', 'genotype', 'background', 'risk_group', 'supplier', 'us_e', 'purpose', 'note',)
+        self.fieldsets = (
+        (None, {
+            'fields': ('name', 'resistance', 'genotype', 'background', 'supplier', 'us_e', 'purpose', 'note',)
+        }),
+        ('FormZ', {
+            'fields': ('formz_projects', 'formz_risk_group', 'formz_elements', 'destroyed_date')
+        }),
+        )
+
         return super(EColiStrainPage,self).add_view(request)
 
     def change_view(self,request,object_id,extra_context=None):
         '''Override default change_view to show only desired fields'''
 
-        self.fields = ('name', 'resistance', 'genotype', 'background', 'risk_group', 'supplier', 'us_e', 'purpose', 'note',
-                'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
-                'last_changed_approval_by_pi', 'created_by',)
-        return super(EColiStrainPage,self).change_view(request,object_id)
+        extra_context = extra_context or {}
+        extra_context['show_formz'] = True
+
+        self.fieldsets = (
+            (None, {
+                'fields': ('name', 'resistance', 'genotype', 'background', 'supplier', 'us_e', 'purpose', 'note', 'created_date_time', 
+                'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',)
+            }),
+            ('FormZ', {
+                'classes': ('collapse',),
+                'fields': ('formz_projects', 'formz_risk_group', 'formz_elements', 'destroyed_date')
+            }),
+            )
+
+        return super(EColiStrainPage,self).change_view(request,object_id, extra_context=extra_context)
     
     def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
         """Override default changeform_view to hide Save buttons when certain conditions (same as
@@ -2171,6 +2184,26 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.
             return HttpResponseRedirect(reverse("admin:record_approval_recordtobeapproved_change", args=(obj.approval.latest('created_date_time').id,)))
         
         return super(EColiStrainPage,self).response_change(request,obj)
+
+    def save_related(self, request, form, formsets, change):
+        
+        super(EColiStrainPage, self).save_related(request, form, formsets, change)
+
+        # Keep a record of the IDs of linked M2M fields in the main strain record
+        # Not pretty, but it works
+
+        obj = EColiStrain.objects.get(pk=form.instance.id)
+
+        obj.history_formz_projects = str(tuple(obj.formz_projects.all().order_by('short_title_english').values_list('short_title_english', flat=True))).replace(',)', ')') if obj.formz_projects.all() else ""
+        obj.history_formz_elements = str(tuple(obj.formz_elements.all().order_by('name').values_list('name', flat=True))).replace(',)', ')') if obj.formz_elements.all() else ""
+        obj.save_without_historical_record()
+
+        history_obj = obj.history.latest()
+        history_obj.history_formz_projects = obj.history_formz_projects
+        history_obj.history_formz_elements = obj.history_formz_elements
+        history_obj.history_formz_ecoli_strains = obj.history_formz_ecoli_strains
+        history_obj.history_formz_gentech_methods = obj.history_formz_gentech_methods
+        history_obj.save()
 
 #################################################
 #           MAMMALIAN LINE DOC                  #

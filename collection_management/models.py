@@ -494,7 +494,7 @@ class EColiStrain (models.Model, SaveWithoutHistoricalRecord):
     resistance = models.CharField("resistance", max_length=255, blank=True)
     genotype = models.TextField("genotype", blank=True)
     background = models.CharField("background", max_length=255, choices=(("B","B"), ("C","C"), ("K12","K12"), ("W","W")), blank=True)
-    risk_group = models.PositiveSmallIntegerField('risk group', choices=((1,1), (2,2)), blank=True, null=True)
+    formz_risk_group = models.PositiveSmallIntegerField('risk group', choices=((1,1), (2,2)), blank=True, null=True)
     supplier = models.CharField("supplier", max_length=255)
     us_e = models.CharField("use", max_length=255, choices=(('Cloning', 'Cloning'),('Expression', 'Expression'),('Other', 'Other'),))
     purpose = models.TextField("purpose", blank=True)
@@ -511,10 +511,38 @@ class EColiStrain (models.Model, SaveWithoutHistoricalRecord):
     history = HistoricalRecords()
 
     formz_projects = models.ManyToManyField(FormZProject, verbose_name='formZ projects', related_name='coli_formz_project', blank=False, default=1)
-    
+    formz_elements = models.ManyToManyField(FormZBaseElement, verbose_name ='elements', related_name='coli_formz_element', blank=True)
+    destroyed_date = models.DateField("destroyed", blank=True, null=True)
+
+    history_formz_projects = models.TextField("formZ projects", blank=True)
+    history_formz_gentech_methods = models.TextField("genTech methods", blank=True)
+    history_formz_elements = models.TextField("formz elements", blank=True)
+
     class Meta:
         verbose_name = 'strain - E. coli'
         verbose_name_plural = 'strains - E. coli'
+
+    def get_all_instock_plasmids(self):
+        """Returns all plasmids present in the stocked organism"""
+
+        return None
+
+    def get_all_transient_episomal_plasmids(self):
+        """Returns all transiently transformed episomal plasmids"""
+
+        return None
+
+    def get_all_uncommon_formz_elements(self):
+        """Returns all uncommon features in stocked organism"""
+
+        elements = self.formz_elements.filter(common_feature=False).order_by('name')
+        return elements
+    
+    def get_all_common_formz_elements(self):
+        """Returns all common features in stocked organism"""
+
+        elements = self.formz_elements.filter(common_feature=True).order_by('name')
+        return elements
         
     def __str__(self):
        return "{} - {}".format(self.id, self.name)

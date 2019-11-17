@@ -187,7 +187,7 @@ class FormZBaseElement (models.Model):
 
     name = models.CharField("name", max_length=255, help_text='This is only the name displayed in the rendered FormZ form. '
             'It is NOT used for auto-detection of features in a plasmid map, only aliases (below) are used for that. '
-            "Duplicates are allowed, therefore, instead of, for example, using 'Hs EXO1', use 'EXO1'", blank=False)
+            "Duplicates are allowed, therefore, instead of using, for example, 'Hs EXO1', use 'EXO1'", blank=False)
     donor_organism = models.ManyToManyField(Species, verbose_name = 'donor organism', help_text='Choose none, for artificial elements', blank=False)
     nuc_acid_purity = models.ForeignKey(NucleicAcidPurity, verbose_name = 'nucleic acid purity', on_delete=models.PROTECT, blank=False, null=True)
     nuc_acid_risk = models.ForeignKey(NucleicAcidRisk, verbose_name = 'nucleic acid risk potential', on_delete=models.PROTECT, blank=False, null=True)

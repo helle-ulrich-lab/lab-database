@@ -61,7 +61,7 @@
         </br>
 
         <h2>Details zum Organismus</h2>
-        <div><span style='font-weight: bold'>Bezeichnung:</span> {{object}}</div>
+        <div><span style='font-weight: bold'>Bezeichnung:</span> {{object}} {% if object.supplier%}({{object.supplier}}){% endif %}</div>
         <div><span style='font-weight: bold'>Empfängerorganismus:</span> <span style='font-style: italic'>{{storage_location.species_name.name_for_search}}</span>
         {% if object.formz_ecoli_strains %}
             {% if object.formz_ecoli_strains.all|length == 1 %}

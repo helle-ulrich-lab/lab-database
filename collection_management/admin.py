@@ -1472,16 +1472,28 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
                 
                 argument = {"request":"detectFeatures", "inputFile": plasmid_map_path, 
                 "outputFile": plasmid_map_path, "featureDatabase": common_features_path}
-                client.requestResponse(argument, 10000)                       
+                r = client.requestResponse(argument, 10000)
+                r_code = r.get('code', 1)
+                if r_code > 0:
+                    client.close()
+                    raise Exception                       
                 
                 argument = {"request":"generatePNGMap", "inputFile": plasmid_map_path,
                 "outputPng": png_plasmid_map_path, "title": "p{}{} - {}".format(LAB_ABBREVIATION_FOR_FILES, obj_id, obj_name),
                 "showEnzymes": True, "showFeatures": True, "showPrimers": True, "showORFs": False}
-                client.requestResponse(argument, 10000)
+                r = client.requestResponse(argument, 10000)
+                r_code = r.get('code', 1)
+                if r_code > 0:
+                    client.close()
+                    raise Exception
                 
                 argument = {"request":"exportDNAFile", "inputFile": plasmid_map_path,
                 "outputFile": gbk_plasmid_map_path, "exportFilter": "biosequence.gb"}
-                client.requestResponse(argument, 10000)
+                r = client.requestResponse(argument, 10000)
+                r_code = r.get('code', 1)
+                if r_code > 0:
+                    client.close()
+                    raise Exception
 
                 client.close()
 
@@ -1510,10 +1522,15 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
                     break
             
                 argument = {"request":"reportFeatures", "inputFile": plasmid_map_path}
-                features = client.requestResponse(argument, 10000)
+                r = client.requestResponse(argument, 10000)
+                r_code = r.get('code', 1)
+                if r_code > 0:
+                    client.close()
+                    raise Exception
+                
                 client.close()
 
-                return features
+                return r
             
             except:
                 self.get_plasmid_map_features(plasmid_map_path, attempt_number - 1)

@@ -234,7 +234,7 @@ class FormZBaseElement (models.Model):
 
     def get_donor_species_max_risk_group(self):
 
-        species_risk_groups = []
+        species_risk_groups = [0]
         for species in self.donor_organism.all():
             if species.risk_group:
                 species_risk_groups.append(species.risk_group)

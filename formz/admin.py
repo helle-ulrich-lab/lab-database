@@ -163,6 +163,11 @@ class FormZBaseElementForm(forms.ModelForm):
         if max_risk_group > 1 and not description:
             self.add_error('description', "If the donor organism's risk group is > 1, a description must be provided")
 
+        nuclei_acid_purity = self.cleaned_data.get('nuc_acid_purity', None)
+
+        if nuclei_acid_purity.english_name == 'synthetic fragment' and not description:
+            self.add_error('description', "If an element is a synthetic fragment, a description must be provided")
+
         return self.cleaned_data
 
 class FormZBaseElementPage(admin.ModelAdmin):

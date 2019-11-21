@@ -171,7 +171,7 @@
                                     <td style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_risk_groups %}{{formz_elem.get_donor_species_risk_groups}}{% else %}Keine{% endif %}</td>
                                     <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0); ">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
                                     <td style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{{formz_elem.nuc_acid_risk.german_name|capfirst}}</td>
-                                    <td style="border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_risk_groups > 1 %} {{formz_elem.description}} {% endif %}</td>
+                                    <td style="border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_risk_groups > 1 or formz_elem.nuc_acid_purity.english_name == 'synthetic fragment' %} {{formz_elem.description}} {% endif %}</td>
                                 </tr>
                             {% endfor %}
                         </tbody>
@@ -292,7 +292,7 @@
                                                 <td style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_risk_groups %}{{formz_elem.get_donor_species_risk_groups}}{% else %}Keine{% endif %}</td>
                                                 <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0); ">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
                                                 <td style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{{formz_elem.nuc_acid_risk.german_name|capfirst}}</td>
-                                                <td style="border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_max_risk_group > 1 %} {{formz_elem.description}} {% endif %}</td>
+                                                <td style="border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_max_risk_group > 1 or formz_elem.nuc_acid_purity.english_name == 'synthetic fragment' %} {{formz_elem.description}} {% endif %}</td>
                                             </tr>
                                         {% endfor %}
                                 </tbody>
@@ -414,7 +414,7 @@
                                             <td style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_risk_groups %}{{formz_elem.get_donor_species_risk_groups}}{% else %}Keine{% endif %}</td>
                                             <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0); ">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
                                             <td style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{{formz_elem.nuc_acid_risk.german_name|capfirst}}</td>
-                                            <td style="border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_max_risk_group > 1 %} {{formz_elem.description}} {% endif %}</td>
+                                            <td style="border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_max_risk_group > 1 or formz_elem.nuc_acid_purity.english_name == 'synthetic fragment' %} {{formz_elem.description}} {% endif %}</td>
                                         </tr>
                                     {% endfor %}
                             </tbody>

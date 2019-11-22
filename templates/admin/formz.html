@@ -67,21 +67,21 @@
         {% if object.formz_ecoli_strains %}
             {% if object.formz_ecoli_strains.all|length == 1 %}
                     {% for ecoli in object.formz_ecoli_strains.all %}
-                        (Stamm: <a style='color:#447e9b;' href="{% url 'admin:collection_management_ecolistrain_change' ecoli.id %}">{{ecoli.name}}</a> - Hintergrund {{ecoli.background}}; Risikogrouppe: {{ecoli.formz_risk_group}})
+                        (Stamm: <a style='color:#447e9b;' href="{% url 'admin:collection_management_ecolistrain_change' ecoli.id %}">{{ecoli.name}}</a> - Hintergrund {{ecoli.background}}; Risikogruppe: {{ecoli.formz_risk_group}})
                     {% endfor %}
                 {% else %}
                     {% for ecoli in object.formz_ecoli_strains.all %}
                         {% if forloop.first %}
                             (Stamm: <a style='color:#447e9b;' href="{% url 'admin:collection_management_ecolistrain_change' ecoli.id %}">{{ecoli.name}}</a> - Hintergrund {{ecoli.background}},
                         {% elif forloop.last %}
-                            <a style='color:#447e9b;' href="{% url 'admin:collection_management_ecolistrain_change' ecoli.id %}">{{ecoli.name}}</a> - Hintergrund {{ecoli.background}}; Risikogrouppe: {{ecoli.formz_risk_group}})
+                            <a style='color:#447e9b;' href="{% url 'admin:collection_management_ecolistrain_change' ecoli.id %}">{{ecoli.name}}</a> - Hintergrund {{ecoli.background}}; Risikogruppe: {{ecoli.formz_risk_group}})
                         {% else %}
                             <a style='color:#447e9b;' href="{% url 'admin:collection_management_ecolistrain_change' ecoli.id %}">{{ecoli.name}}</a> - Hintergrund {{ecoli.background}},
                         {% endif %}
                     {% endfor %}
             {% endif %}
         {% else %}
-            (Risikogrouppe: {{storage_location.species_risk_group}})
+            (Risikogruppe: {{storage_location.species_risk_group}})
         {% endif %}</div>
         {% if object.genotype %}
         <div><span style='font-weight: bold'>Hintergrund:</span> {{object.background}}</div>
@@ -97,7 +97,7 @@
                 {% for project in object.formz_projects.all %}
                     <a style='color:#447e9b;' href="{% url 'admin:formz_formzproject_change' project.id %}">{{project.short_title}}</a>
                     {% if project.parent_project%}
-                        (Hauptproject: <a style='color:#447e9b;' href="{% url 'admin:formz_formzproject_change' project.parent_project.id %}">{{project.parent_project.short_title}}</a>)
+                        (Hauptprojekt: <a style='color:#447e9b;' href="{% url 'admin:formz_formzproject_change' project.parent_project.id %}">{{project.parent_project.short_title}}</a>)
                     {% endif %}
                 {% endfor %}
             {% else %}
@@ -105,12 +105,12 @@
                     {% if forloop.last %}
                         <a style='color:#447e9b;' href="{% url 'admin:formz_formzproject_change' project.id %}">{{project.short_title}}</a>
                         {% if project.parent_project%}
-                            (Hauptproject: <a style='color:#447e9b;' href="{% url 'admin:formz_formzproject_change' project.parent_project.id %}">{{project.parent_project.short_title}}</a>)
+                            (Hauptprojekt: <a style='color:#447e9b;' href="{% url 'admin:formz_formzproject_change' project.parent_project.id %}">{{project.parent_project.short_title}}</a>)
                         {% endif %}
                     {% else %}
                         <a style='color:#447e9b;' href="{% url 'admin:formz_formzproject_change' project.id %}">{{project.short_title}}</a>
                         {% if project.parent_project%}
-                            (Hauptproject: <a style='color:#447e9b;' href="{% url 'admin:formz_formzproject_change' project.parent_project.id %}">{{project.parent_project.short_title}}</a>),
+                            (Hauptprojekt: <a style='color:#447e9b;' href="{% url 'admin:formz_formzproject_change' project.parent_project.id %}">{{project.parent_project.short_title}}</a>),
                         {% else %}
                         ,
                         {% endif %}
@@ -166,7 +166,7 @@
 
     {% if object.instock_plasmids %}
         <div id='instock-plasmids'>
-            <h3>Plasmid/e die zur Erschaffung des Organismus genutzt wurden</h3>
+            <h3>Plasmid/e, die zur Erschaffung des Organismus genutzt wurden</h3>
             {% for plasmid in object.instock_plasmids %}
                 <li>
                     <a style='color:#447e9b;' href="{% url 'admin:collection_management_plasmid_change' plasmid.id %}">Plasmid #{{plasmid}}</a>
@@ -231,7 +231,7 @@
                     {% else %}
                         <tbody>
                         <tr class="row">
-                            <td colspan="5" class="field">Keine unüblichen Merkmale</td>
+                            <td colspan="5" class="field">Keine spezifischen Merkmale</td>
                         </tr>
                         </tbody>
                     {% endif %}
@@ -272,7 +272,7 @@
             </br>
             
             {% if object.s2_work %}
-                <h2> In den Organismus transduktierte Plasmide</h2>    
+                <h2>In den Organismus transduzierte Plasmide</h2>    
                 <div>Dieser Organismus wurde durch virale Transduktion des folgenden Plasmids/der folgenden Plasmide geschaffen.</div>
             {% else %}
                 <h2> In den Organismus transient {% if transfected %}transfizierte{% else %}transformierte{% endif %} Plasmide</h2>
@@ -419,7 +419,7 @@
             
             </br>
             <h4>Virusverpackung</h4>
-            <div>Das oben genannten Plasmid/die oben genannten Plasmide wurden mit dem/den unten genannten Plasmid/Plasmiden zum verpacken viraler Partikel in <a href="{% url 'admin:collection_management_cellline_change' 157 %}">HEK293T cells</a> genutzt.</div>
+            <div>Das oben genannten Plasmid/die oben genannten Plasmide wurden mit dem/den unten genannten Plasmid/Plasmiden zum Verpacken viraler Partikel in <a href="{% url 'admin:collection_management_cellline_change' 157 %}">HEK293T cells</a> genutzt.</div>
                 
             {% for plasmid in object.s2_plasmids %}
 

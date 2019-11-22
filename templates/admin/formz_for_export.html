@@ -30,21 +30,21 @@
     {% if object.formz_ecoli_strains %}
         {% if object.formz_ecoli_strains.all|length == 1 %}
                 {% for ecoli in object.formz_ecoli_strains.all %}
-                    (Stamm: {{ecoli.name}} - Hintergrund {{ecoli.background}}; Risikogrouppe: {{ecoli.formz_risk_group}})
+                    (Stamm: {{ecoli.name}} - Hintergrund {{ecoli.background}}; Risikogruppe: {{ecoli.formz_risk_group}})
                 {% endfor %}
             {% else %}
                 {% for ecoli in object.formz_ecoli_strains.all %}
                     {% if forloop.first %}
                         (Stamm: {{ecoli.name}} - Hintergrund {{ecoli.background}},
                     {% elif forloop.last %}
-                        {{ecoli.name}} - Hintergrund {{ecoli.background}}; Risikogrouppe: {{ecoli.formz_risk_group}})
+                        {{ecoli.name}} - Hintergrund {{ecoli.background}}; Risikogruppe: {{ecoli.formz_risk_group}})
                     {% else %}
                         {{ecoli.name}} - Hintergrund {{ecoli.background}},
                     {% endif %}
                 {% endfor %}
         {% endif %}
     {% else %}
-        (Risikogrouppe: {{storage_location.species_risk_group}})
+        (Risikogruppe: {{storage_location.species_risk_group}})
     {% endif %}</div>
     {% if object.genotype %}
     <div><span style='font-weight: bold'>Hintergrund:</span> {{object.background}}</div>
@@ -60,7 +60,7 @@
             {% for project in object.formz_projects.all %}
                 {{project.title}}
                 {% if project.parent_project%}
-                    (Hauptproject: {{project.parent_project.title}})
+                    (Hauptprojekt: {{project.parent_project.title}})
                 {% endif %}
             {% endfor %}
         {% else %}
@@ -68,12 +68,12 @@
                 {% if forloop.last %}
                     {{project.title}}
                     {% if project.parent_project%}
-                        (Hauptproject: {{project.parent_project.title}})
+                        (Hauptprojekt: {{project.parent_project.title}})
                     {% endif %}
                 {% else %}
                     {{project.title}}
                     {% if project.parent_project%}
-                        (Hauptproject: {{project.parent_project.title}}),
+                        (Hauptprojekt: {{project.parent_project.title}}),
                     {% else %}
                     ,
                     {% endif %}
@@ -127,7 +127,7 @@
     <div><span style='font-weight: bold'>Lagerort:</span> {{storage_location.storage_location}}</div>
 
     {% if object.instock_plasmids %}
-    <h3>Plasmid/e die zur Erschaffung des Organismus genutzt wurden</h3>
+    <h3>Plasmid/e, die zur Erschaffung des Organismus genutzt wurden</h3>
          <ul>
             
             {% for plasmid in object.instock_plasmids %}
@@ -178,7 +178,7 @@
                     {% else %}
                         <tbody>
                         <tr>
-                            <td colspan="6" style="text-align:center; border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">Keine unüblichen Merkmale</td>
+                            <td colspan="6" style="text-align:center; border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">Keine spezifischen Merkmale</td>
                         </tr>
                         </tbody>
                     {% endif %}
@@ -210,7 +210,7 @@
         <div>
                         
             {% if object.s2_work %}
-                <h2> In den Organismus transduktierte Plasmide</h2>    
+                <h2>In den Organismus transduzierte Plasmide</h2>    
                 <div>Dieser Organismus wurde durch virale Transduktion des folgenden Plasmids/der folgenden Plasmide geschaffen.</div>
             {% else %}
                 <h2> In den Organismus transient {% if transfected %}transfizierte{% else %}transformierte{% endif %} Plasmide</h2>
@@ -299,7 +299,7 @@
                             {% else %}
                                 <tbody>
                                     <tr>
-                                        <td colspan="6" style="text-align:center; border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">Keine unüblichen Merkmale</td>
+                                        <td colspan="6" style="text-align:center; border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">Keine spezifischen Merkmale</td>
                                     </tr>
                                 </tbody>
                             {% endif %}
@@ -338,7 +338,7 @@
         <div>      
             
             <h4>Virusverpackung</h4>
-            <div>Das oben genannten Plasmid/die oben genannten Plasmide wurden mit dem/den unten genannten Plasmid/Plasmiden zum verpacken viraler Partikel in HEK293T cells genutzt.</div>
+            <div>Das oben genannten Plasmid/die oben genannten Plasmide wurden mit dem/den unten genannten Plasmid/Plasmiden zum Verpacken viraler Partikel in HEK293T cells genutzt.</div>
                 
             {% for plasmid in object.s2_plasmids %}
 
@@ -421,7 +421,7 @@
                         {% else %}
                             <tbody>
                                 <tr>
-                                    <td colspan="6" style="text-align:center; border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">Keine unüblichen Merkmale</td>
+                                    <td colspan="6" style="text-align:center; border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">Keine spezifischen Merkmale</td>
                                 </tr>
                             </tbody>
                         {% endif %}

@@ -110,11 +110,11 @@ class FormZProjectPage(admin.ModelAdmin):
     def model_search_link(self, instance):
         projects = str(tuple([instance.short_title] + list(FormZProject.objects.filter(parent_project_id=instance.id).values_list('short_title', flat=True)))).replace("'", '"').replace(',)', ')')
 
-        return mark_safe("""<a href='{}+{projects}'>Mammalian cell lines</a> | 
+        return mark_safe("""<a href='{}+{projects}'>Cell lines</a> | 
                             <a href='{}+{projects}'>Plasmids</a> | 
                             <a href='{}+{projects}'>Strains - Sa. cerevisiae</a> | 
                             <a href='{}+{projects}'>Strains - Sc. pombe</a>""".format(
-            '/collection_management/mammalianline/?q-l=on&q=formz_projects_title+in',
+            '/collection_management/cellline/?q-l=on&q=formz_projects_title+in',
             '/collection_management/plasmid/?q-l=on&q=formz_projects_title+in', 
             '/collection_management/sacerevisiaestrain/?q-l=on&q=formz_projects_title+in', 
             '/collection_management/scpombestrain/?q-l=on&q=formz_projects_title+in', 
@@ -257,7 +257,7 @@ class FormZStorageLocationPage(admin.ModelAdmin):
             if db_field.name == 'collection_model':
                 kwargs["queryset"] = ContentType.objects.filter(model__contains='strain').exclude(model__contains='historical').exclude(model__contains='plasmid').exclude(model__contains='summary') | \
                     ContentType.objects.filter(model='plasmid') | \
-                    ContentType.objects.filter(model='mammalianline')
+                    ContentType.objects.filter(model='cellline')
 
         return super(FormZStorageLocationPage, self).formfield_for_foreignkey(db_field, request, **kwargs)
 

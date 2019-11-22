@@ -548,10 +548,10 @@ class EColiStrain (models.Model, SaveWithoutHistoricalRecord):
        return "{} - {}".format(self.id, self.name)
 
 ################################################
-#             MAMMALIAN CELL LINE              #
+#                   CELL LINE                  #
 ################################################
 
-class MammalianLine (models.Model, SaveWithoutHistoricalRecord):
+class CellLine (models.Model, SaveWithoutHistoricalRecord):
     
     name = models.CharField("name", max_length=255, unique=True, blank=False)
     box_name = models.CharField("box", max_length=255, blank=False)
@@ -567,8 +567,8 @@ class MammalianLine (models.Model, SaveWithoutHistoricalRecord):
     description_comment = models.TextField("description/comments", blank=True)
     s2_work = models.BooleanField("Used for S2 work?", default=False, help_text='Check, for example, for a cell line created by lentiviral trunsdunction')
 
-    integrated_plasmids = models.ManyToManyField('Plasmid', related_name='mammalian_integrated_plasmids', blank= True)
-    episomal_plasmids = models.ManyToManyField('Plasmid', related_name='mammalian_episomal_plasmids', blank=True, through='MammalianLineEpisomalPlasmid')
+    integrated_plasmids = models.ManyToManyField('Plasmid', related_name='cellline_integrated_plasmids', blank= True)
+    episomal_plasmids = models.ManyToManyField('Plasmid', related_name='cellline_episomal_plasmids', blank=True, through='CellLineEpisomalPlasmid')
     
     created_date_time = models.DateTimeField("created", auto_now_add=True)
     created_approval_by_pi = models.BooleanField("record creation approval", default=False)
@@ -576,17 +576,17 @@ class MammalianLine (models.Model, SaveWithoutHistoricalRecord):
     last_changed_approval_by_pi = models.NullBooleanField("record change approval", default=None)
     approval_by_pi_date_time = models.DateTimeField(null=True, default=None)
     approval = GenericRelation(RecordToBeApproved)
-    approval_user = models.ForeignKey(User, related_name='mammalian_approval_user', on_delete=models.PROTECT, null=True)
-    created_by = models.ForeignKey(User, related_name='mammalian_createdby_user', on_delete=models.PROTECT)
+    approval_user = models.ForeignKey(User, related_name='cellline_approval_user', on_delete=models.PROTECT, null=True)
+    created_by = models.ForeignKey(User, related_name='cellline_createdby_user', on_delete=models.PROTECT)
     history = HistoricalRecords()
     
-    formz_projects = models.ManyToManyField(FormZProject, verbose_name='projects', related_name='mammalian_zprojects', blank=False)
+    formz_projects = models.ManyToManyField(FormZProject, verbose_name='projects', related_name='cellline_zprojects', blank=False)
     formz_risk_group = models.PositiveSmallIntegerField('risk group', choices=((1,1), (2,2)), blank=False, null=True)
     zkbs_cell_line = models.ForeignKey(ZkbsCellLine, verbose_name = 'ZKBS database cell line', on_delete=models.PROTECT, null=True, blank=False,
                                        help_text='If not applicable, choose none. <a href="/formz/zkbscellline/" target="_blank">View all</a>')
-    formz_gentech_methods = models.ManyToManyField(GenTechMethod, verbose_name='genTech methods', related_name='mammalian_gentech_method', blank= True,
+    formz_gentech_methods = models.ManyToManyField(GenTechMethod, verbose_name='genTech methods', related_name='cellline_gentech_method', blank= True,
                                                     help_text='The methods used to create the cell line')
-    formz_elements = models.ManyToManyField(FormZBaseElement, verbose_name ='elements', related_name='mammalian_formz_element', 
+    formz_elements = models.ManyToManyField(FormZBaseElement, verbose_name ='elements', related_name='cellline_formz_element', 
                                             help_text='Use only when an element is not present in the chosen plasmid(s), if any', blank=True)
     
     destroyed_date = models.DateField("destroyed", blank=True, null=True)
@@ -600,8 +600,8 @@ class MammalianLine (models.Model, SaveWithoutHistoricalRecord):
     history_documents = models.TextField("documents", blank=True)
     
     class Meta:
-        verbose_name = 'mammalian cell line'
-        verbose_name_plural = 'mammalian cell lines'
+        verbose_name = 'cell line'
+        verbose_name_plural = 'cell lines'
     
     def __str__(self):
         return "{} - {}".format(self.id, self.name)
@@ -615,7 +615,7 @@ class MammalianLine (models.Model, SaveWithoutHistoricalRecord):
     def get_all_transient_episomal_plasmids(self):
         """Returns all transiently transformed episomal plasmids"""
 
-        all_plasmids = self.mammalianlineepisomalplasmid_set.filter(s2_work_episomal_plasmid=False).distinct().order_by('plasmid__id')
+        all_plasmids = self.celllineepisomalplasmid_set.filter(s2_work_episomal_plasmid=False).distinct().order_by('plasmid__id')
         return all_plasmids
 
     def get_all_plasmid_maps(self):
@@ -643,11 +643,11 @@ class MammalianLine (models.Model, SaveWithoutHistoricalRecord):
         return elements
     
 
-class MammalianLineEpisomalPlasmid (models.Model):
+class CellLineEpisomalPlasmid (models.Model):
     
-    mammalian_line = models.ForeignKey(MammalianLine, on_delete=models.PROTECT)
+    cell_line = models.ForeignKey(CellLine, on_delete=models.PROTECT)
     plasmid = models.ForeignKey('Plasmid', verbose_name = 'Plasmid', on_delete=models.PROTECT)
-    formz_projects = models.ManyToManyField(FormZProject, related_name='mammalian_episomal_plasmid_projects', blank= True)
+    formz_projects = models.ManyToManyField(FormZProject, related_name='cellline_episomal_plasmid_projects', blank= True)
     s2_work_episomal_plasmid = models.BooleanField("Used for S2 work?", help_text="Check, for example, for lentiviral packaging plasmids", default=False)
     created_date = models.DateField('created', blank= False, null=True)
     destroyed_date = models.DateField('destroyed', blank= True, null=True)
@@ -658,32 +658,32 @@ class MammalianLineEpisomalPlasmid (models.Model):
         if not self.destroyed_date and self.created_date and not self.s2_work_episomal_plasmid:
             self.destroyed_date = self.created_date + timedelta(days=random.randint(7,28))
         
-        super(MammalianLineEpisomalPlasmid, self).save(force_insert, force_update, using, update_fields)
+        super(CellLineEpisomalPlasmid, self).save(force_insert, force_update, using, update_fields)
 
 ################################################
-#            MAMMALIAN CELL LINE DOC           #
+#               CELL LINE DOC                  #
 ################################################
 
-MAMMALIAN_LINE_DOC_TYPE_CHOICES = (
+CELL_LINE_DOC_TYPE_CHOICES = (
     ("virus", "Virus test"),
     ("mycoplasma", "Mycoplasma test"), 
     ("fingerprint", "Fingerprinting"), 
     ("other", "Other"))
 
-class MammalianLineDoc(models.Model):
+class CellLineDoc(models.Model):
     
     name = models.FileField("file name", help_text = 'max. 2 MB', upload_to="temp/", blank=False, null=True)
-    typ_e = models.CharField("doc type", max_length=255, choices=MAMMALIAN_LINE_DOC_TYPE_CHOICES, blank=False)
+    typ_e = models.CharField("doc type", max_length=255, choices=CELL_LINE_DOC_TYPE_CHOICES, blank=False)
     date_of_test = models.DateField("date of test", blank=False, null=True)
     comment = models.CharField("comment", max_length=150, blank=True)
-    mammalian_line = models.ForeignKey(MammalianLine, on_delete=models.PROTECT)
+    cell_line = models.ForeignKey(CellLine, on_delete=models.PROTECT)
     
     created_date_time = models.DateTimeField("created", auto_now_add=True)
     last_changed_date_time = models.DateTimeField("last Changed", auto_now=True)
     
     RENAME_FILES = {
         'name': 
-        {'dest': 'collection_management/mammalianlinedoc/', 'keep_ext': True}
+        {'dest': 'collection_management/celllinedoc/', 'keep_ext': True}
         }
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
@@ -695,7 +695,7 @@ class MammalianLineDoc(models.Model):
         
         if rename_files:
             
-            super(MammalianLineDoc, self).save(force_insert, force_update, using, update_fields)
+            super(CellLineDoc, self).save(force_insert, force_update, using, update_fields)
             force_insert, force_update = False, True
             
             for field_name, options in rename_files.items():
@@ -713,7 +713,7 @@ class MammalianLineDoc(models.Model):
                     if callable(final_dest):
                         final_name = final_dest(self, file_name)
                     else:
-                        final_name = os.path.join(final_dest, "mcl" + LAB_ABBREVIATION_FOR_FILES + str(self.mammalian_line.id) + "_" + self.typ_e + "_" + time.strftime("%Y%m%d") + "_" + time.strftime("%H%M%S") + "_" + str(self.id))
+                        final_name = os.path.join(final_dest, "cl" + LAB_ABBREVIATION_FOR_FILES + str(self.cell_line.id) + "_" + self.typ_e + "_" + time.strftime("%Y%m%d") + "_" + time.strftime("%H%M%S") + "_" + str(self.id))
                         if keep_ext:
                             final_name += ext
                     
@@ -725,10 +725,10 @@ class MammalianLineDoc(models.Model):
                         field.storage.delete(file_name)
                         setattr(self, field_name, final_name)
         
-        super(MammalianLineDoc, self).save(force_insert, force_update, using, update_fields)
+        super(CellLineDoc, self).save(force_insert, force_update, using, update_fields)
 
     class Meta:
-        verbose_name = 'mammalian cell line document'
+        verbose_name = 'cell line document'
     
     def __str__(self):
          return str(self.id)

@@ -117,13 +117,13 @@
                     }
             }
 
-            var mammalian_episomal_plasmids = $("input[name$='s2_work_episomal_plasmid']").filter(':checked');
-            if (mammalian_episomal_plasmids.length > 0)
+            var cellline_episomal_plasmids = $("input[name$='s2_work_episomal_plasmid']").filter(':checked');
+            if (cellline_episomal_plasmids.length > 0)
             {
                 var i;
-                for (i = 0; i < mammalian_episomal_plasmids.length; i++) 
+                for (i = 0; i < cellline_episomal_plasmids.length; i++) 
                     {
-                      mammalian_episomal_plasmids[i].closest('tr').style = 'background-color:#d7e7ee;';
+                      cellline_episomal_plasmids[i].closest('tr').style = 'background-color:#d7e7ee;';
                       }
             }
         });

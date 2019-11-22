@@ -443,9 +443,9 @@ def export_formz_as_html(modeladmin, request, queryset):
         obj.instock_plasmids = obj.get_all_instock_plasmids()
         obj.transient_episomal_plasmids = obj.get_all_transient_episomal_plasmids()
 
-        if model_name == 'mammalianline':
+        if model_name == 'cellline':
             storage_location.species_name = obj.organism
-            obj.s2_plasmids = obj.mammalianlineepisomalplasmid_set.all().filter(s2_work_episomal_plasmid=True).distinct().order_by('id')
+            obj.s2_plasmids = obj.celllineepisomalplasmid_set.all().filter(s2_work_episomal_plasmid=True).distinct().order_by('id')
             transfected = True
         else:
             obj.s2_plasmids = None
@@ -2223,14 +2223,14 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.
         history_obj.save()
 
 #################################################
-#           MAMMALIAN LINE DOC                  #
+#               CELL LINE DOC                   #
 #################################################
 
-from .models import MammalianLineDoc 
-from .models import MammalianLine
-from .models import MammalianLineEpisomalPlasmid
+from .models import CellLineDoc 
+from .models import CellLine as CellLine
+from .models import CellLineEpisomalPlasmid
 
-class MammalianLineDocPage(admin.ModelAdmin):
+class CellLineDocPage(admin.ModelAdmin):
     
     list_display = ('id','name',)
     list_display_links = ('id','name', )
@@ -2245,31 +2245,31 @@ class MammalianLineDocPage(admin.ModelAdmin):
         '''Override default get_readonly_fields'''
 
         if obj:
-            return ['name', 'typ_e', 'date_of_test', 'mammalian_line', 'created_date_time',]
+            return ['name', 'typ_e', 'date_of_test', 'cell_line', 'created_date_time',]
     
     def add_view(self,request,extra_context=None):
         '''Override default add_view to show only desired fields'''
 
-        self.fields = (['name', 'typ_e', 'mammalian_line', 'comment', 'date_of_test'])
-        return super(MammalianLineDocPage,self).add_view(request)
+        self.fields = (['name', 'typ_e', 'cell_line', 'comment', 'date_of_test'])
+        return super(CellLineDocPage,self).add_view(request)
 
     def change_view(self,request,object_id,extra_context=None):
         '''Override default change_view to show only desired fields'''
 
-        self.fields = (['name', 'typ_e', 'date_of_test', 'mammalian_line', 'comment', 'created_date_time',])
-        return super(MammalianLineDocPage,self).change_view(request,object_id)
+        self.fields = (['name', 'typ_e', 'date_of_test', 'cell_line', 'comment', 'created_date_time',])
+        return super(CellLineDocPage,self).change_view(request,object_id)
 
     def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
         extra_context = extra_context or {}
         extra_context['show_submit_line'] = True
         if object_id:
             extra_context['show_submit_line'] = False
-        return super(MammalianLineDocPage, self).changeform_view(request, object_id, extra_context=extra_context)
+        return super(CellLineDocPage, self).changeform_view(request, object_id, extra_context=extra_context)
 
-class MammalianLineDocInline(admin.TabularInline):
-    """Inline to view existing mammalian line documents"""
+class CellLineDocInline(admin.TabularInline):
+    """Inline to view existing cell line documents"""
 
-    model = MammalianLineDoc
+    model = CellLineDoc
     verbose_name_plural = "Existing docs"
     extra = 0
     fields = ['typ_e', 'date_of_test', 'get_doc_short_name', 'comment']
@@ -2288,10 +2288,10 @@ class MammalianLineDocInline(admin.TabularInline):
             return ''
     get_doc_short_name.short_description = 'Document'
 
-class AddMammalianLineDocInline(admin.TabularInline):
-    """Inline to add new mammalian line documents"""
+class AddCellLineDocInline(admin.TabularInline):
+    """Inline to add new cell line documents"""
     
-    model = MammalianLineDoc
+    model = CellLineDoc
     verbose_name_plural = "New docs"
     extra = 0
     fields = ['typ_e', 'date_of_test', 'name','comment']
@@ -2300,10 +2300,10 @@ class AddMammalianLineDocInline(admin.TabularInline):
         return False
 
     def get_queryset(self, request):
-        return MammalianLineDoc.objects.none()
+        return CellLineDoc.objects.none()
 
 #################################################
-#          MAMMALIAN CELL LINE PAGES            #
+#                CELL LINE PAGES                #
 #################################################
 
 class FieldParentalLine(IntField):
@@ -2313,15 +2313,15 @@ class FieldParentalLine(IntField):
     def get_lookup_name(self):
         return 'parental_line__id'
 
-class SearchFieldOptUsernameMamma(SearchFieldOptUsername):
+class SearchFieldOptUsernameCellLine(SearchFieldOptUsername):
 
-    id_list = MammalianLine.objects.all().values_list('created_by', flat=True).distinct()
+    id_list = CellLine.objects.all().values_list('created_by', flat=True).distinct()
 
-class SearchFieldOptLastnameMamma(SearchFieldOptLastname):
+class SearchFieldOptLastnameCellLine(SearchFieldOptLastname):
 
-    id_list = MammalianLine.objects.all().values_list('created_by', flat=True).distinct()
+    id_list = CellLine.objects.all().values_list('created_by', flat=True).distinct()
 
-class FieldEpisomalPlasmidFormZProjectMamma(StrField):
+class FieldEpisomalPlasmidFormZProjectCellLine(StrField):
     
     name = 'episomal_plasmids_formz_projects_title'
     suggest_options = True
@@ -2330,26 +2330,26 @@ class FieldEpisomalPlasmidFormZProjectMamma(StrField):
         return FormZProject.objects.all().values_list('short_title', flat=True)
 
     def get_lookup_name(self):
-        return 'mammalianlineepisomalplasmid__formz_projects__short_title'
+        return 'celllineepisomalplasmid__formz_projects__short_title'
 
-class MammalianLineQLSchema(DjangoQLSchema):
+class CellLineQLSchema(DjangoQLSchema):
     '''Customize search functionality'''
     
-    include = (MammalianLine, User) # Include only the relevant models to be searched
+    include = (CellLine, User) # Include only the relevant models to be searched
 
     def get_fields(self, model):
         '''Define fields that can be searched'''
         
-        if model == MammalianLine:
+        if model == CellLine:
             return ['id', 'name', 'box_name', 'alternative_name', FieldParentalLine(), 'organism', 'cell_type_tissue', 'culture_type', 
             'growth_condition','freezing_medium', 'received_from', FieldIntegratedPlasmidM2M(), FieldEpisomalPlasmidM2M(),'description_comment', 
-            'created_by', FieldFormZProject(), FieldEpisomalPlasmidFormZProjectMamma()]
+            'created_by', FieldFormZProject(), FieldEpisomalPlasmidFormZProjectCellLine()]
         elif model == User:
-            return [SearchFieldOptUsernameMamma(), SearchFieldOptLastnameMamma()]
-        return super(MammalianLineQLSchema, self).get_fields(model)
+            return [SearchFieldOptUsernameCellLine(), SearchFieldOptLastnameCellLine()]
+        return super(CellLineQLSchema, self).get_fields(model)
 
-class MammalianLineExportResource(resources.ModelResource):
-    """Defines a custom export resource class for MammalianLine"""
+class CellLineExportResource(resources.ModelResource):
+    """Defines a custom export resource class for CellLine"""
     organism_name = Field()
     
     def dehydrate_organism_name(self, strain):
@@ -2357,7 +2357,7 @@ class MammalianLineExportResource(resources.ModelResource):
         return str(strain.organism)
     
     class Meta:
-        model = MammalianLine
+        model = CellLine
         fields = ('id', 'name', 'box_name', 'alternative_name', 'parental_line', 'organism_name', 'cell_type_tissue', 
                 'culture_type', 'growth_condition', 'freezing_medium', 'received_from', 'description_comment', 
                 'integrated_plasmids', 'created_date_time', 'created_by__username',)
@@ -2365,20 +2365,20 @@ class MammalianLineExportResource(resources.ModelResource):
                 'culture_type', 'growth_condition', 'freezing_medium', 'received_from', 'description_comment', 
                 'integrated_plasmids', 'created_date_time', 'created_by__username',)
 
-def export_mammalianline(modeladmin, request, queryset):
-    """Export MammalianLine as xlsx"""
+def export_cellline(modeladmin, request, queryset):
+    """Export CellLine as xlsx"""
 
-    export_data = MammalianLineExportResource().export(queryset)
+    export_data = CellLineExportResource().export(queryset)
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.xlsx'.format(MammalianLine.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
+    response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.xlsx'.format(CellLine.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
     response.write(export_data.xlsx)
     return response
-export_mammalianline.short_description = "Export selected cell lines as xlsx"
+export_cellline.short_description = "Export selected cell lines as xlsx"
 
-class MammalianEpisomalPlasmidInline(admin.TabularInline):
+class CellLineEpisomalPlasmidInline(admin.TabularInline):
     
     autocomplete_fields = ['plasmid', 'formz_projects']
-    model = MammalianLineEpisomalPlasmid
+    model = CellLineEpisomalPlasmid
     verbose_name_plural = "Transiently transfected plasmids"
     verbose_name = 'Episomal Plasmid'
     classes = ['collapse']
@@ -2406,21 +2406,21 @@ class MammalianEpisomalPlasmidInline(admin.TabularInline):
 
         if parent_object:
             parent_obj_episomal_plasmids = parent_object.episomal_plasmids.all()
-            if parent_obj_episomal_plasmids.filter(mammalianlineepisomalplasmid__s2_work_episomal_plasmid=True):
+            if parent_obj_episomal_plasmids.filter(celllineepisomalplasmid__s2_work_episomal_plasmid=True):
                 self.classes = []
         else:
             self.classes = []
-        return super(MammalianEpisomalPlasmidInline, self).get_queryset(request)
+        return super(CellLineEpisomalPlasmidInline, self).get_queryset(request)
 
-class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin, Approval):
+class CellLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin, Approval):
     
     list_display = ('id', 'name', 'box_name', 'created_by', 'approval')
     list_display_links = ('id', )
     list_per_page = 25
     formfield_overrides = {CharField: {'widget': TextInput(attrs={'size':'93'})},}
-    djangoql_schema = MammalianLineQLSchema
-    inlines = [MammalianEpisomalPlasmidInline, MammalianLineDocInline, AddMammalianLineDocInline]
-    actions = [export_mammalianline, export_formz_as_html]
+    djangoql_schema = CellLineQLSchema
+    inlines = [CellLineEpisomalPlasmidInline, CellLineDocInline, AddCellLineDocInline]
+    actions = [export_cellline, export_formz_as_html]
     search_fields = ['id', 'name']
     autocomplete_fields = ['parental_line', 'integrated_plasmids', 'formz_projects', 'zkbs_cell_line', 'formz_gentech_methods', 'formz_elements']
 
@@ -2442,7 +2442,7 @@ class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Cust
                     obj.last_changed_approval_by_pi = False
                     obj.approval_user = None
                     obj.save_without_historical_record()
-                    MammalianLine.objects.filter(id=obj.pk).update(last_changed_date_time=obj.history.latest().last_changed_date_time)
+                    CellLine.objects.filter(id=obj.pk).update(last_changed_date_time=obj.history.latest().last_changed_date_time)
                     return
 
             obj.last_changed_approval_by_pi = False
@@ -2466,7 +2466,7 @@ class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Cust
 
         if obj:
             if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
-                if request.user.has_perm('collection_management.change_mammalianline', obj):
+                if request.user.has_perm('collection_management.change_cellline', obj):
                     return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by']
                 else:
                     return ['name', 'box_name', 'alternative_name', 'parental_line', 'organism', 'cell_type_tissue', 'culture_type', 'growth_condition',
@@ -2480,12 +2480,12 @@ class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Cust
     
     def save_related(self, request, form, formsets, change):
         
-        super(MammalianLinePage, self).save_related(request, form, formsets, change)
+        super(CellLinePage, self).save_related(request, form, formsets, change)
 
         # Keep a record of the IDs of linked M2M fields in the main strain record
         # Not pretty, but it works
 
-        obj = MammalianLine.objects.get(pk=form.instance.id)
+        obj = CellLine.objects.get(pk=form.instance.id)
         
         integrated_plasmids = obj.integrated_plasmids.all().order_by('id')
         episomal_plasmids = obj.episomal_plasmids.all().order_by('id')
@@ -2496,7 +2496,7 @@ class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Cust
         obj.history_formz_projects = str(tuple(obj.formz_projects.all().order_by('short_title_english').values_list('short_title_english', flat=True))).replace(',)', ')') if obj.formz_projects.all() else ""
         obj.history_formz_gentech_methods = str(tuple(obj.formz_gentech_methods.all().order_by('english_name').values_list('english_name', flat=True))).replace(',)', ')') if obj.formz_gentech_methods.all() else ""
         obj.history_formz_elements = str(tuple(obj.formz_elements.all().order_by('name').values_list('name', flat=True))).replace(',)', ')') if obj.formz_elements.all() else ""
-        obj.history_documents = str(tuple(obj.mammalianlinedoc_set.all().order_by('id').values_list('id', flat=True))).replace(',)', ')') if obj.mammalianlinedoc_set.all() else ""
+        obj.history_documents = str(tuple(obj.celllinedoc_set.all().order_by('id').values_list('id', flat=True))).replace(',)', ')') if obj.celllinedoc_set.all() else ""
 
         obj.save_without_historical_record()
 
@@ -2522,13 +2522,13 @@ class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Cust
         }),
         )
 
-        return super(MammalianLinePage,self).add_view(request)
+        return super(CellLinePage,self).add_view(request)
 
     def change_view(self,request,object_id,extra_context=None):
         '''Override default change_view to show only desired fields'''
 
         if object_id:
-            obj = MammalianLine.objects.get(pk=object_id)
+            obj = CellLine.objects.get(pk=object_id)
             extra_context = extra_context or {}
             extra_context['show_formz'] = True
             if obj:
@@ -2561,7 +2561,7 @@ class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Cust
             }),
             )
             
-        return super(MammalianLinePage,self).change_view(request,object_id,extra_context=extra_context)
+        return super(CellLinePage,self).change_view(request,object_id,extra_context=extra_context)
 
     def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
         """Override default changeform_view to hide Save buttons when certain conditions (same as
@@ -2571,11 +2571,11 @@ class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Cust
         extra_context['show_submit_line'] = True
         extra_context['show_disapprove'] = True if request.user.groups.filter(name='Approval manager').exists() else False
 
-        return super(MammalianLinePage, self).changeform_view(request, object_id, extra_context=extra_context)
+        return super(CellLinePage, self).changeform_view(request, object_id, extra_context=extra_context)
 
     def get_formsets_with_inlines(self, request, obj=None):
-        """Remove AddMammalianLineDocInline from add/change form if user who
-        created a MammalianCellLine object is not the request user a lab manager
+        """Remove AddCellLineDocInline from add/change form if user who
+        created a CellLine object is not the request user a lab manager
         or a superuser"""
         
         if obj:
@@ -2598,13 +2598,13 @@ class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Cust
 
         Customized to allow only record owner to change permissions
         """
-        obj = MammalianLine.objects.get(pk=object_pk)
+        obj = CellLine.objects.get(pk=object_pk)
         
         if obj:
             if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
                 messages.error(request, 'Nice try, you are allowed to change the permissions of your own records only.')
                 return HttpResponseRedirect("..")
-        return super(MammalianLinePage,self).obj_perms_manage_view(request, object_pk)
+        return super(CellLinePage,self).obj_perms_manage_view(request, object_pk)
     
     def response_change(self, request, obj):
         opts = self.model._meta
@@ -2622,7 +2622,7 @@ class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Cust
             self.message_user(request, msg, messages.SUCCESS)
             return HttpResponseRedirect(reverse("admin:record_approval_recordtobeapproved_change", args=(obj.approval.latest('created_date_time').id,)))
         
-        return super(MammalianLinePage,self).response_change(request,obj)
+        return super(CellLinePage,self).response_change(request,obj)
     
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         
@@ -2635,7 +2635,7 @@ class MammalianLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Cust
             if db_field.name == 'organism':
                 kwargs["queryset"] = Species.objects.filter(show_in_cell_line_collection=True)
 
-        return super(MammalianLinePage, self).formfield_for_foreignkey(db_field, request, **kwargs)
+        return super(CellLinePage, self).formfield_for_foreignkey(db_field, request, **kwargs)
 
 #################################################
 #                ANTIBODY PAGES                 #

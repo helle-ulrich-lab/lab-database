@@ -154,14 +154,14 @@ class MyAdminSite(admin.AdminSite):
                     # Get object 
                     file_name, file_ext = os.path.splitext(url_path_split[-1]) 
                     file_prefix = file_name.split('_')[0]
-                    if model_name == 'mammalianlinedoc':
+                    if model_name == 'celllinedoc':
                         obj_id = int(file_name.split('_')[-1])
                     else:
                         obj_id = int(re.findall('\d+(?=_)', file_name)[0])
                     obj = apps.get_model(app_name, model_name).objects.get(id=obj_id)  
 
-                    if model_name == 'mammalianlinedoc':
-                        obj_name = "{} - {} Doc# {}".format(obj.mammalian_line.name, obj.typ_e.title(), obj.id)
+                    if model_name == 'celllinedoc':
+                        obj_name = "{} - {} Doc# {}".format(obj.cell_line.name, obj.typ_e.title(), obj.id)
                     else:
                         obj_name = obj.name
 
@@ -262,9 +262,9 @@ class MyAdminSite(admin.AdminSite):
         obj.instock_plasmids = obj.get_all_instock_plasmids()
         obj.transient_episomal_plasmids = obj.get_all_transient_episomal_plasmids()
 
-        if model_name == 'mammalianline':
+        if model_name == 'cellline':
             storage_location.species_name = obj.organism
-            obj.s2_plasmids = obj.mammalianlineepisomalplasmid_set.all().filter(s2_work_episomal_plasmid=True).distinct().order_by('id')
+            obj.s2_plasmids = obj.celllineepisomalplasmid_set.all().filter(s2_work_episomal_plasmid=True).distinct().order_by('id')
             transfected = True
         else:
             obj.s2_plasmids = None
@@ -325,8 +325,8 @@ from collection_management.models import Plasmid
 from collection_management.models import Oligo
 from collection_management.models import ScPombeStrain
 from collection_management.models import EColiStrain
-from collection_management.models import MammalianLine
-from collection_management.models import MammalianLineDoc
+from collection_management.models import CellLine
+from collection_management.models import CellLineDoc
 from collection_management.models import Antibody
 
 from collection_management.admin import SaCerevisiaeStrainPage
@@ -334,8 +334,8 @@ from collection_management.admin import PlasmidPage
 from collection_management.admin import OligoPage
 from collection_management.admin import ScPombeStrainPage
 from collection_management.admin import EColiStrainPage
-from collection_management.admin import MammalianLinePage
-from collection_management.admin import MammalianLineDocPage
+from collection_management.admin import CellLinePage
+from collection_management.admin import CellLineDocPage
 from collection_management.admin import AntibodyPage
 
 my_admin_site.register(SaCerevisiaeStrain, SaCerevisiaeStrainPage)
@@ -343,8 +343,8 @@ my_admin_site.register(Plasmid, PlasmidPage)
 my_admin_site.register(Oligo, OligoPage)
 my_admin_site.register(ScPombeStrain, ScPombeStrainPage)
 my_admin_site.register(EColiStrain, EColiStrainPage)
-my_admin_site.register(MammalianLineDoc, MammalianLineDocPage)
-my_admin_site.register(MammalianLine, MammalianLinePage)
+my_admin_site.register(CellLineDoc, CellLineDocPage)
+my_admin_site.register(CellLine, CellLinePage)
 my_admin_site.register(Antibody, AntibodyPage)
 
 #################################################

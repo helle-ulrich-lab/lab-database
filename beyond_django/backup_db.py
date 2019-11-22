@@ -18,8 +18,8 @@ from collection_management.admin import ScPombeStrainExportResource
 from collection_management.models import EColiStrain
 from collection_management.admin import EColiStrainExportResource
 
-from collection_management.models import MammalianLine
-from collection_management.admin import MammalianLineExportResource
+from collection_management.models import CellLine
+from collection_management.admin import CellLineExportResource
 
 from collection_management.models import Antibody
 from collection_management.admin import AntibodyExportResource
@@ -95,7 +95,7 @@ export_db_table_as_xlsx(Plasmid, PlasmidExportResource)
 export_db_table_as_xlsx(Oligo, OligoExportResource)
 export_db_table_as_xlsx(ScPombeStrain, ScPombeStrainExportResource)
 export_db_table_as_xlsx(EColiStrain, EColiStrainExportResource)
-export_db_table_as_xlsx(MammalianLine, MammalianLineExportResource)
+export_db_table_as_xlsx(CellLine, CellLineExportResource)
 export_db_table_as_xlsx(Antibody, AntibodyExportResource)
 export_db_table_as_xlsx(Order, OrderExportResource)
 

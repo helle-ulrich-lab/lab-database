@@ -2,7 +2,6 @@ from django.db import models
 
 class GeneralSetting (models.Model):
     
-    site_admin_email_address = models.EmailField("site admin's email address", blank=False)
     order_email_addresses = models.EmailField("order email address", help_text='Email address to send urgent order notifications', blank=False)
     saveris_username = models.CharField("saveris username", max_length=255, blank=False)
     saveris_password = models.CharField("saveris password", max_length=255, blank=False)

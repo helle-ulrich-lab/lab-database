@@ -19,7 +19,7 @@ from .private_settings import DB_USER
 from .private_settings import DB_PASSWORD
 from .private_settings import DEBUG
 from .private_settings import SERVER_EMAIL_ADDRESS
-from .private_settings import SITE_ADMIN_DEFAULT_EMAIL_ADDRESS
+from .private_settings import SITE_ADMIN_EMAIL_ADDRESS
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -176,15 +176,6 @@ EMAIL_HOST_PASSWORD = None
 #Email settings for error messages
 
 SERVER_EMAIL = SERVER_EMAIL_ADDRESS
-
-try:
-    import django
-    django.setup()
-    from my_admin.models import GeneralSetting
-    general_setting = GeneralSetting.objects.all().first()
-    SITE_ADMIN_EMAIL_ADDRESS = general_setting.site_admin_email_address
-except:
-    SITE_ADMIN_EMAIL_ADDRESS = SITE_ADMIN_DEFAULT_EMAIL_ADDRESS
 ADMINS = [('Site admin', SITE_ADMIN_EMAIL_ADDRESS)]
 
 # Wiki settings

@@ -195,11 +195,14 @@ class CustomUserManage(UserManage):
 
     from django import forms
 
-    user = forms.ChoiceField(choices=[('------', '------')] + [(u.username, u) for u in User.objects.all().order_by('last_name') if u.groups.filter(name='Regular lab member').exists()],
-                            label=_("Username"),
-                        error_messages={'does_not_exist': _(
-                            "This user does not exist")},)
-    is_permanent = forms.BooleanField(required=False, label=_("Grant indefinitely?"))
+    try: # Added this try block because if user_auth table not present in DB (e.g. very first migration) the following code runs and throws an exception
+        user = forms.ChoiceField(choices=[('------', '------')] + [(u.username, u) for u in User.objects.all().order_by('last_name') if u.groups.filter(name='Regular lab member').exists()],
+                                label=_("Username"),
+                            error_messages={'does_not_exist': _(
+                                "This user does not exist")},)
+        is_permanent = forms.BooleanField(required=False, label=_("Grant indefinitely?"))
+    except:
+        pass
 
 @background(schedule=86400) # Run 24 h after it is called, as "background" process
 def delete_obj_perm_after_24h(perm, user_id, obj_id, app_label, model_name):

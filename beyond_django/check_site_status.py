@@ -9,7 +9,7 @@ from my_admin.models import GeneralSetting
 
 warnings.filterwarnings("ignore") # Suppress all warnings, including the InsecureRequestWarning caused by verify=False below
 
-time.sleep(900) # Give some time to the server to ready itself before starting to check if it works
+# time.sleep(900) # Give some time to the server to ready itself before starting to check if it works
 
 new_status_code = 200 # Set the intial status to that of a working website
 

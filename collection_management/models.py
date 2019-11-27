@@ -232,7 +232,7 @@ class Plasmid (models.Model, SaveWithoutHistoricalRecord):
                                             help_text='<a href="/formz/formzbaseelement/" target="_blank">View all/Change</a>')
     formz_gentech_methods = models.ManyToManyField(GenTechMethod, verbose_name='genTech methods', related_name='plasmid_gentech_method', blank= True,
                                                     help_text='The methods used to create the plasmid')
-    formz_ecoli_strains = models.ManyToManyField('EColiStrain', verbose_name='e. coli strains', related_name='plasmid_ecoli_strains', default=14, blank= False)
+    formz_ecoli_strains = models.ManyToManyField('EColiStrain', verbose_name='e. coli strains', related_name='plasmid_ecoli_strains', blank= False)
 
     # Fields to keep a record of M2M field values in the main plasmid record: IDs for formz_projects
     # and names for formz_elements

@@ -37,13 +37,14 @@ class LabUserAdmin(BaseUserAdmin):
             
             # If somebody tries to save a user for which it cannot see some of its groups,
             # save these groups to critical_groups and add them back to the user in save_related
-            if not request.user.is_superuser or not request.user.labuser.is_principal_investigator:
+            if request.user.is_superuser or request.user.labuser.is_principal_investigator:
+                self.critical_groups = []
+            else:
                 old_user = User.objects.get(id=obj.pk)
                 critical_groups = old_user.groups.exclude(name__in=['Guest', 'Regular lab member', 'Order manager', 'Lab manager'])
                 self.critical_groups = list(critical_groups)
-                obj.save()
-            else:
-                obj.save()
+            
+            obj.save()
 
         # If is_principal_investigator is True check whether a principal_investigator already exists
         # and if so set the field to False
@@ -63,6 +64,21 @@ class LabUserAdmin(BaseUserAdmin):
             obj = User.objects.get(pk=form.instance.id)
             for g in self.critical_groups:
                 obj.groups.add(g)
+    
+    def get_readonly_fields(self, request, obj=None):
+        '''Override default get_readonly_fields to define user-specific read-only fields'''
+        
+        if obj:
+            if request.user.is_superuser or request.user.labuser.is_principal_investigator:
+                return []
+            else:
+                if obj.is_superuser or obj.labuser.is_principal_investigator:
+                    return ['groups', 'user_permissions', 'is_active', 'is_staff', 'username', 'password',
+                            'first_name', 'last_name', 'email', 'is_superuser', 'username']
+                else:
+                    return []
+        else:
+            return []
 
     def change_view(self,request,object_id,extra_context=None):
         '''Override default change_view to show only desired fields'''
@@ -105,7 +121,7 @@ class LabUserAdmin(BaseUserAdmin):
         if not request.user.is_superuser:
             return qs.exclude(is_superuser=True).exclude(username='AnonymousUser')
         else:
-            return qs
+            return qs.exclude(username='AnonymousUser')
 
     def get_user_groups (self, instance):
         """ Pass a user's group membership to a custom column """

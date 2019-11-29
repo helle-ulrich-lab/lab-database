@@ -48,12 +48,11 @@ from jsmin import jsmin
 #                OTHER IMPORTS                  #
 #################################################
 
-from .models import OrderExtraDoc as order_management_OrderExtraDoc
-from .models import Order as order_management_Order
-from .models import Location as order_management_Location
-from .models import CostUnit as order_management_CostUnit
-from .models import OrderExtraDoc as order_management_OrderExtraDoc
-from .models import MsdsForm as order_management_MsdsForm
+from .models import OrderExtraDoc
+from .models import Order
+from .models import Location
+from .models import CostUnit
+from .models import MsdsForm
 
 import datetime
 import time
@@ -76,7 +75,7 @@ def update_autocomplete_js():
     part_no_json_line = ""
     
     # Loop through all elements (= rows) in the order list
-    for order in order_management_Order.objects.all().order_by('-id').values("supplier", "supplier_part_no", "part_description", "location", "msds_form", "price", "cas_number", "ghs_pictogram", "hazard_level_pregnancy"):
+    for order in Order.objects.all().order_by('-id').values("supplier", "supplier_part_no", "part_description", "location", "msds_form", "price", "cas_number", "ghs_pictogram", "hazard_level_pregnancy"):
         
         # Create value:data pairs using part_description or supplier_part_no as values
         part_description_lower = order["part_description"].lower()
@@ -391,7 +390,7 @@ mass_update.short_description = _("Mass update selected orders")
 class OrderExtraDocInline(admin.TabularInline):
     """Inline to view existing extra order documents"""
 
-    model = order_management_OrderExtraDoc
+    model = OrderExtraDoc
     verbose_name_plural = "Existing extra docs"
     extra = 0
     fields = ['get_doc_short_name', 'description']
@@ -414,7 +413,7 @@ class OrderExtraDocInline(admin.TabularInline):
 class AddOrderExtraDocInline(admin.TabularInline):
     """Inline to add new extra order documents"""
 
-    model = order_management_OrderExtraDoc
+    model = OrderExtraDoc
     verbose_name_plural = "New extra docs"
     extra = 0
     fields = ['name','description']
@@ -446,7 +445,7 @@ class OrderChemicalExportResource(resources.ModelResource):
     """Defines a custom export resource class for chemicals"""
     
     class Meta:
-        model = order_management_Order
+        model = Order
         fields = ('id','supplier', 'supplier_part_no', 'part_description', 'quantity', "location__name", "cas_number", 
         "ghs_pictogram", 'hazard_level_pregnancy')
 
@@ -454,7 +453,7 @@ class OrderExportResource(resources.ModelResource):
     """Defines a custom export resource class for orders"""
     
     class Meta:
-        model = order_management_Order
+        model = Order
         fields = ('id', 'internal_order_no', 'supplier', 'supplier_part_no', 'part_description', 'quantity', 
             'price', 'cost_unit__name', 'status', 'location__name', 'comment', 'url', 'delivered_date', 'cas_number', 
             'ghs_pictogram', 'hazard_level_pregnancy', 'created_date_time', 'order_manager_created_date_time', 
@@ -534,7 +533,7 @@ def export_chemicals(modeladmin, request, queryset):
     """Export all chemicals as xlsx. A chemical is defines as an order
     which has a non-null ghs_pictogram field and is not used up"""
 
-    queryset = order_management_Order.objects.exclude(status="used up").annotate(text_len=Length('ghs_pictogram')).filter(text_len__gt=0).order_by('-id')
+    queryset = Order.objects.exclude(status="used up").annotate(text_len=Length('ghs_pictogram')).filter(text_len__gt=0).order_by('-id')
     export_data = OrderChemicalExportResource().export(queryset)
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = 'attachment; filename="Chemicals_{}_{}.xlsx'.format(time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
@@ -547,7 +546,7 @@ def export_orders(modeladmin, request, queryset):
 
     export_data = OrderExportResource().export(queryset)
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.xlsx'.format(order_management_Order.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
+    response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.xlsx'.format(Order.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
     response.write(export_data.xlsx)
     return response
 export_orders.short_description = "Export selected orders as xlsx"
@@ -560,11 +559,11 @@ class SearchFieldOptLocation(StrField):
     """Create a list of unique locations for search"""
 
     name = 'location'
-    model = order_management_Location
+    model = Location
     suggest_options = True
 
     def get_options(self):
-        return order_management_Location.objects.all().order_by('name').\
+        return Location.objects.all().order_by('name').\
         values_list('name', flat=True)
 
     def get_lookup_name(self):
@@ -573,12 +572,12 @@ class SearchFieldOptLocation(StrField):
 class SearchFieldOptCostUnit(StrField):
     """Create a list of unique cost units for search"""
 
-    model = order_management_CostUnit
+    model = CostUnit
     name = 'cost_unit'
     suggest_options = True
 
     def get_options(self):
-        return order_management_CostUnit.objects.all().order_by('name').\
+        return CostUnit.objects.all().order_by('name').\
         values_list('name', flat=True)
 
     def get_lookup_name(self):
@@ -587,7 +586,7 @@ class SearchFieldOptCostUnit(StrField):
 class SearchFieldOptSupplier(StrField):
     """Create a list of unique cost units for search"""
 
-    model = order_management_Order
+    model = Order
     name = 'supplier'
     suggest_options = True
 
@@ -598,7 +597,7 @@ class SearchFieldOptSupplier(StrField):
 class SearchFieldOptPartDescription(StrField):
     """Create a list of unique cost units for search"""
 
-    model = order_management_Order
+    model = Order
     name = 'part_description'
     suggest_options = True
 
@@ -609,33 +608,33 @@ class SearchFieldOptPartDescription(StrField):
 class SearchFieldOptAzardousPregnancy(StrField):
     """Create a list of unique cost units for search"""
 
-    model = order_management_Order
+    model = Order
     name = 'hazard_level_pregnancy'
     suggest_options = True
 
 class SearchFieldOptUsernameOrder(SearchFieldOptUsername):
     """Create a list of unique users' usernames for search"""
 
-    id_list = order_management_Order.objects.all().values_list('created_by', flat=True).distinct()
+    id_list = Order.objects.all().values_list('created_by', flat=True).distinct()
 
 class SearchFieldOptLastnameOrder(SearchFieldOptLastname):
     """Create a list of unique users' usernames for search"""
 
-    id_list = order_management_Order.objects.all().values_list('created_by', flat=True).distinct()
+    id_list = Order.objects.all().values_list('created_by', flat=True).distinct()
 
 class OrderQLSchema(DjangoQLSchema):
     '''Customize search functionality'''
     
-    include = (order_management_Order, User, order_management_CostUnit, order_management_Location) # Include only the relevant models to be searched
+    include = (Order, User, CostUnit, Location) # Include only the relevant models to be searched
 
     suggest_options = {
-        order_management_Order: ['status', 'supplier', 'urgent'],
+        Order: ['status', 'supplier', 'urgent'],
     }
 
     def get_fields(self, model):
         ''' Define fields that can be searched'''
         
-        if model == order_management_Order:
+        if model == Order:
             return ['id', SearchFieldOptSupplier() ,'supplier_part_no', 'internal_order_no', SearchFieldOptPartDescription(), SearchFieldOptCostUnit(), 
             'status', 'urgent', SearchFieldOptLocation(), 'comment', 'delivered_date', 'cas_number', 
             'ghs_pictogram', SearchFieldOptAzardousPregnancy(), 'created_date_time', 'last_changed_date_time', 'created_by',]
@@ -649,7 +648,7 @@ class MyMassUpdateOrderForm(MassUpdateForm):
     _validate = None
 
     class Meta:
-        model = order_management_Order
+        model = Order
         fields = ['supplier','supplier_part_no', 'internal_order_no', 'part_description', 'quantity', 
             'price', 'cost_unit', 'location', 'comment', 'url', 'cas_number', 'ghs_pictogram', 'msds_form', 'hazard_level_pregnancy']
     
@@ -688,7 +687,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
                 # If a product name is not already present in the database,
                 # update the automplete js file
 
-                if not order_management_Order.objects.filter(part_description=obj.part_description).exists():
+                if not Order.objects.filter(part_description=obj.part_description).exists():
                     update_autocomplete_js()
             except:
                 messages.warning(request, 'Could not update the order autocomplete function')
@@ -739,7 +738,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
                 raise PermissionDenied
             
             else:
-                order = order_management_Order.objects.get(pk=obj.pk)
+                order = Order.objects.get(pk=obj.pk)
                 
                 # If the status of an order changes to the following
                 if obj.status != order.status:
@@ -860,7 +859,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
         extra_context = extra_context or {}
         extra_context['show_submit_line'] = True
         if object_id:
-            obj = order_management_Order.objects.get(pk=object_id)
+            obj = Order.objects.get(pk=object_id)
             if obj:
                 if not (request.user.groups.filter(name='Lab manager').exists() or request.user.groups.filter(name='Order manager').exists()):
                     extra_context['show_submit_line'] = False
@@ -874,7 +873,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
         if 'action' in request.POST and request.POST['action'] == 'export_chemicals':
             if not request.POST.getlist(admin.ACTION_CHECKBOX_NAME):
                 post = request.POST.copy()
-                for u in order_management_Order.objects.all():
+                for u in Order.objects.all():
                     post.update({admin.ACTION_CHECKBOX_NAME: str(u.id)})
                 request._set_post(post)
         
@@ -1002,10 +1001,10 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
             # Sort cost_unit and locations fields by name
             
             if db_field.name == "cost_unit":
-                kwargs["queryset"] = order_management_CostUnit.objects.exclude(status=True).order_by('name')
+                kwargs["queryset"] = CostUnit.objects.exclude(status=True).order_by('name')
 
             if db_field.name == "location":
-                kwargs["queryset"] = order_management_Location.objects.exclude(status=True).order_by('name')
+                kwargs["queryset"] = Location.objects.exclude(status=True).order_by('name')
 
         return super(OrderPage, self).formfield_for_foreignkey(db_field, request, **kwargs)
 
@@ -1016,7 +1015,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
 class SearchFieldOptMsdsName(StrField):
     """Create a list of unique cost units for search"""
 
-    model = order_management_MsdsForm
+    model = MsdsForm
     name = 'name'
     suggest_options = True
 
@@ -1030,7 +1029,7 @@ class MsdsFormQLSchema(DjangoQLSchema):
     def get_fields(self, model):
         ''' Define fields that can be searched'''
         
-        if model == order_management_MsdsForm:
+        if model == MsdsForm:
             return ['id', SearchFieldOptMsdsName()]
         return super(MsdsFormQLSchema, self).get_fields(model)
 
@@ -1039,7 +1038,7 @@ class MsdsFormForm(forms.ModelForm):
         
         # Check if the name of a MSDS form is unique before saving
         
-        qs = order_management_MsdsForm.objects.filter(name__icontains=self.cleaned_data["name"].name)
+        qs = MsdsForm.objects.filter(name__icontains=self.cleaned_data["name"].name)
         if qs.exists():
             raise forms.ValidationError('A form with this name already exists.')
         else:

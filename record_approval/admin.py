@@ -8,7 +8,7 @@ from django.utils.safestring import mark_safe
 from django.urls import reverse
 from django.utils.text import capfirst
 
-from order_management.models import Order as order_management_Order
+from order_management.models import Order
 from .models import RecordToBeApproved
 from django.contrib.contenttypes.models import ContentType
 
@@ -126,7 +126,7 @@ def approve_all_new_orders(modeladmin, request, queryset):
     """Approve all new orders """
 
     if request.user.labuser.is_principal_investigator:
-        orders = order_management_Order.objects.filter(created_approval_by_pi=False)
+        orders = Order.objects.filter(created_approval_by_pi=False)
         if orders.exists():
             orders.update(created_approval_by_pi=True)
             RecordToBeApproved.objects.filter(content_type__app_label='order_management').delete()
@@ -195,7 +195,7 @@ class RecordToBeApprovedPage(admin.ModelAdmin):
         if 'action' in request.POST and request.POST['action'] == 'approve_all_new_orders':
             if not request.POST.getlist(admin.ACTION_CHECKBOX_NAME):
                 post = request.POST.copy()
-                for u in order_management_Order.objects.all():
+                for u in Order.objects.all():
                     post.update({admin.ACTION_CHECKBOX_NAME: str(u.id)})
                 request._set_post(post)
         return super(RecordToBeApprovedPage, self).changelist_view(request, extra_context=extra_context)

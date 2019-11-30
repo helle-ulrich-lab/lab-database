@@ -145,6 +145,56 @@
       idleTime = idleTime + 1;
       }
   
+      $(document).ready(function() {
+
+        var action_drop_down = $('#changelist-form').find('select').first();
+
+        // Add plasmid map attachment type selection box if formz_as_html action is selected
+        // Add file  selection box if export action is selected
+        action_drop_down.change(function(){
+
+        if($(this).val().startsWith("export_"))
+        {
+
+        if ($('#changelist-form').find('label').length > 1)
+          {
+          $('#changelist-form').find('label')[1].remove();
+        }
+
+        var form = $('#changelist-form');
+        var select_attach_element = document.createElement('label');
+        select_attach_element.innerText = 'Format: ';
+        select_attach_element.style.cssText = 'padding-left: 1em;';
+
+        var select_attach_box = document.createElement('select');
+        select_attach_box.name = 'format';
+
+        var option_tsv = document.createElement('option');
+        option_tsv.innerText = 'Tab-separated values';
+        option_tsv.value = 'tsv';
+
+        var option_xlsx = document.createElement('option');
+        option_xlsx.innerText = 'Excel';
+        option_xlsx.value = 'xlsx';
+
+        select_attach_box.appendChild(option_xlsx);
+        select_attach_box.appendChild(option_tsv);
+
+        select_attach_element.appendChild(select_attach_box);
+        $('#changelist-form').find('label')[0].append(select_attach_element);
+
+        }
+        else {
+          if ($('#changelist-form').find('label').length > 1)
+            {
+            $('#changelist-form').find('label')[1].remove();
+          }
+        }
+
+        });
+
+        });
+
   </script>
   
 {% endblock %}

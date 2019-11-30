@@ -49,7 +49,7 @@ def export_db_table_as_xlsx(model,export_resource):
         with open(file_name.replace("xlsx", "tsv"), 'w') as out_handle:
             wr = csv.writer(out_handle, delimiter="\t")
             for rownum in range(sheet.nrows):
-                row_values = [str(i).replace("\n", "").replace("\t", "") for i in sheet.row_values(rownum)]
+                row_values = [str(i).replace("\n", "").replace('\r', '').replace("\t", "") for i in sheet.row_values(rownum)]
                 wr.writerow(row_values)
     
     import os

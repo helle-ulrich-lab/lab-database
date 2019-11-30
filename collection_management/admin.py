@@ -75,6 +75,9 @@ from formz.models import FormZBaseElement
 from formz.models import FormZProject
 from formz.models import Species
 
+import xlrd
+import csv
+
 #################################################
 #                CUSTOM CLASSES                 #
 #################################################
@@ -406,7 +409,7 @@ class FieldApplication(StrField):
 #          DOWNLOAD FORMBLATT Z ACTION          #
 #################################################
 
-def export_formz_as_html(modeladmin, request, queryset):
+def formz_as_html(modeladmin, request, queryset):
 
     """Export ForblattZ as html """
 
@@ -482,7 +485,7 @@ def export_formz_as_html(modeladmin, request, queryset):
         
     return response
 
-export_formz_as_html.short_description = "Export Formblatt Z for selected items"
+formz_as_html.short_description = "Export Formblatt Z for selected items"
 
 #################################################
 #          SA. CEREVISIAE STRAIN PAGES          #
@@ -594,14 +597,27 @@ class SaCerevisiaeStrainExportResource(resources.ModelResource):
         'created_by__username',)
 
 def export_sacerevisiaestrain(modeladmin, request, queryset):
-    """Export SaCerevisiaeStrain as xlsx"""
+    """Export SaCerevisiaeStrain"""
 
     export_data = SaCerevisiaeStrainExportResource().export(queryset)
-    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.xlsx'.format(SaCerevisiaeStrain.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
-    response.write(export_data.xlsx)
+
+    file_format = request.POST.get('format', default='none')
+
+    if file_format == 'xlsx':
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.xlsx'.format(queryset.model.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
+        response.write(export_data.xlsx)
+    elif file_format == 'tsv':
+        response = HttpResponse(content_type='text/tab-separated-values')
+        response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.tsv'.format(queryset.model.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
+        xlsx_file = xlrd.open_workbook(file_contents=export_data.xlsx)
+        sheet = xlsx_file.sheet_by_index(0)
+        wr = csv.writer(response, delimiter="\t")
+        for rownum in range(sheet.nrows):
+            row_values = [str(i).replace("\n", "").replace('\r', '').replace("\t", "") for i in sheet.row_values(rownum)]
+            wr.writerow(row_values)
     return response
-export_sacerevisiaestrain.short_description = "Export selected strains as xlsx"
+export_sacerevisiaestrain.short_description = "Export selected strains"
 
 class SaCerevisiaeStrainForm(forms.ModelForm):
     
@@ -667,7 +683,7 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
     list_display_links = ('id', )
     list_per_page = 25
     djangoql_schema = SaCerevisiaeStrainQLSchema
-    actions = [export_sacerevisiaestrain, export_formz_as_html]
+    actions = [export_sacerevisiaestrain, formz_as_html]
     form = SaCerevisiaeStrainForm
     formfield_overrides = {CharField: {'widget': TextInput(attrs={'size':'93'})},} # Make TextInput fields wider
     search_fields = ['id', 'name']
@@ -995,14 +1011,27 @@ class PlasmidExportResource(resources.ModelResource):
                   'created_by__username',)
 
 def export_plasmid(modeladmin, request, queryset):
-    """Export Plasmid as xlsx"""
+    """Export Plasmid"""
 
     export_data = PlasmidExportResource().export(queryset)
-    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.xlsx'.format(Plasmid.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
-    response.write(export_data.xlsx)
+
+    file_format = request.POST.get('format', default='none')
+
+    if file_format == 'xlsx':
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.xlsx'.format(queryset.model.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
+        response.write(export_data.xlsx)
+    elif file_format == 'tsv':
+        response = HttpResponse(content_type='text/tab-separated-values')
+        response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.tsv'.format(queryset.model.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
+        xlsx_file = xlrd.open_workbook(file_contents=export_data.xlsx)
+        sheet = xlsx_file.sheet_by_index(0)
+        wr = csv.writer(response, delimiter="\t")
+        for rownum in range(sheet.nrows):
+            row_values = [str(i).replace("\n", "").replace('\r', '').replace("\t", "") for i in sheet.row_values(rownum)]
+            wr.writerow(row_values)
     return response
-export_plasmid.short_description = "Export selected plasmids as xlsx"
+export_plasmid.short_description = "Export selected plasmids"
 
 class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin, Approval):
     
@@ -1011,7 +1040,7 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
     list_per_page = 25
     formfield_overrides = {CharField: {'widget': TextInput(attrs={'size':'93'})},} # Make TextInput fields wider
     djangoql_schema = PlasmidQLSchema
-    actions = [export_plasmid, export_formz_as_html]
+    actions = [export_plasmid, formz_as_html]
     search_fields = ['id', 'name']
     autocomplete_fields = ['parent_vector', 'formz_projects', 'formz_elements', 'vector_zkbs', 'formz_ecoli_strains', 'formz_gentech_methods']
     redirect_to_obj_page = False
@@ -1646,14 +1675,27 @@ class OligoExportResource(resources.ModelResource):
         'created_date_time', 'created_by__username',)
 
 def export_oligo(modeladmin, request, queryset):
-    """Export Oligo as xlsx"""
+    """Export Oligo"""
 
     export_data = OligoExportResource().export(queryset)
-    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.xlsx'.format(Oligo.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
-    response.write(export_data.xlsx)
+
+    file_format = request.POST.get('format', default='none')
+
+    if file_format == 'xlsx':
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.xlsx'.format(queryset.model.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
+        response.write(export_data.xlsx)
+    elif file_format == 'tsv':
+        response = HttpResponse(content_type='text/tab-separated-values')
+        response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.tsv'.format(queryset.model.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
+        xlsx_file = xlrd.open_workbook(file_contents=export_data.xlsx)
+        sheet = xlsx_file.sheet_by_index(0)
+        wr = csv.writer(response, delimiter="\t")
+        for rownum in range(sheet.nrows):
+            row_values = [str(i).replace("\n", "").replace('\r', '').replace("\t", "") for i in sheet.row_values(rownum)]
+            wr.writerow(row_values)
     return response
-export_oligo.short_description = "Export selected oligos as xlsx"
+export_oligo.short_description = "Export selected oligos"
 
 class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelAdmin, Approval):
     list_display = ('id', 'name','get_oligo_short_sequence', 'restriction_site','created_by', 'approval')
@@ -1866,14 +1908,27 @@ class ScPombeStrainExportResource(resources.ModelResource):
         'received_from', 'comment', 'created_date_time', 'created_by__username')
 
 def export_scpombestrain(modeladmin, request, queryset):
-    """Export ScPombeStrain as xlsx"""
+    """Export ScPombeStrain"""
 
     export_data = ScPombeStrainExportResource().export(queryset)
-    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.xlsx'.format(ScPombeStrain.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
-    response.write(export_data.xlsx)
+
+    file_format = request.POST.get('format', default='none')
+
+    if file_format == 'xlsx':
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.xlsx'.format(queryset.model.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
+        response.write(export_data.xlsx)
+    elif file_format == 'tsv':
+        response = HttpResponse(content_type='text/tab-separated-values')
+        response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.tsv'.format(queryset.model.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
+        xlsx_file = xlrd.open_workbook(file_contents=export_data.xlsx)
+        sheet = xlsx_file.sheet_by_index(0)
+        wr = csv.writer(response, delimiter="\t")
+        for rownum in range(sheet.nrows):
+            row_values = [str(i).replace("\n", "").replace('\r', '').replace("\t", "") for i in sheet.row_values(rownum)]
+            wr.writerow(row_values)
     return response
-export_scpombestrain.short_description = "Export selected strains as xlsx"
+export_scpombestrain.short_description = "Export selected strains"
 
 class ScPombeStrainForm(forms.ModelForm):
     
@@ -1933,7 +1988,7 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admi
     list_per_page = 25
     formfield_overrides = {CharField: {'widget': TextInput(attrs={'size':'93'})},}
     djangoql_schema = ScPombeStrainQLSchema
-    actions = [export_scpombestrain, export_formz_as_html]
+    actions = [export_scpombestrain, formz_as_html]
     form = ScPombeStrainForm
     search_fields = ['id', 'name']
     autocomplete_fields = ['parent_1', 'parent_2', 'integrated_plasmids', 'cassette_plasmids', 
@@ -2194,14 +2249,27 @@ class EColiStrainExportResource(resources.ModelResource):
                 'created_date_time', 'created_by__username',)
 
 def export_ecolistrain(modeladmin, request, queryset):
-    """Export EColiStrain as xlsx"""
+    """Export EColiStrain"""
 
     export_data = EColiStrainExportResource().export(queryset)
-    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.xlsx'.format(EColiStrain.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
-    response.write(export_data.xlsx)
+
+    file_format = request.POST.get('format', default='none')
+
+    if file_format == 'xlsx':
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.xlsx'.format(queryset.model.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
+        response.write(export_data.xlsx)
+    elif file_format == 'tsv':
+        response = HttpResponse(content_type='text/tab-separated-values')
+        response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.tsv'.format(queryset.model.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
+        xlsx_file = xlrd.open_workbook(file_contents=export_data.xlsx)
+        sheet = xlsx_file.sheet_by_index(0)
+        wr = csv.writer(response, delimiter="\t")
+        for rownum in range(sheet.nrows):
+            row_values = [str(i).replace("\n", "").replace('\r', '').replace("\t", "") for i in sheet.row_values(rownum)]
+            wr.writerow(row_values)
     return response
-export_ecolistrain.short_description = "Export selected strains as xlsx"
+export_ecolistrain.short_description = "Export selected strains"
 
 class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelAdmin, Approval):
     list_display = ('id', 'name', 'resistance', 'us_e','purpose', 'approval')
@@ -2209,7 +2277,7 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.
     list_per_page = 25
     formfield_overrides = {CharField: {'widget': TextInput(attrs={'size':'93'})},}
     djangoql_schema = EColiStrainQLSchema
-    actions = [export_ecolistrain, export_formz_as_html]
+    actions = [export_ecolistrain, formz_as_html]
     search_fields = ['id', 'name']
     autocomplete_fields = ['formz_projects', 'formz_elements']
     
@@ -2525,14 +2593,27 @@ class CellLineExportResource(resources.ModelResource):
                 'integrated_plasmids', 'created_date_time', 'created_by__username',)
 
 def export_cellline(modeladmin, request, queryset):
-    """Export CellLine as xlsx"""
+    """Export CellLine"""
 
     export_data = CellLineExportResource().export(queryset)
-    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.xlsx'.format(CellLine.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
-    response.write(export_data.xlsx)
+
+    file_format = request.POST.get('format', default='none')
+
+    if file_format == 'xlsx':
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.xlsx'.format(queryset.model.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
+        response.write(export_data.xlsx)
+    elif file_format == 'tsv':
+        response = HttpResponse(content_type='text/tab-separated-values')
+        response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.tsv'.format(queryset.model.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
+        xlsx_file = xlrd.open_workbook(file_contents=export_data.xlsx)
+        sheet = xlsx_file.sheet_by_index(0)
+        wr = csv.writer(response, delimiter="\t")
+        for rownum in range(sheet.nrows):
+            row_values = [str(i).replace("\n", "").replace('\r', '').replace("\t", "") for i in sheet.row_values(rownum)]
+            wr.writerow(row_values)
     return response
-export_cellline.short_description = "Export selected cell lines as xlsx"
+export_cellline.short_description = "Export selected cell lines"
 
 class CellLineEpisomalPlasmidInline(admin.TabularInline):
     
@@ -2579,7 +2660,7 @@ class CellLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGua
     formfield_overrides = {CharField: {'widget': TextInput(attrs={'size':'93'})},}
     djangoql_schema = CellLineQLSchema
     inlines = [CellLineEpisomalPlasmidInline, CellLineDocInline, AddCellLineDocInline]
-    actions = [export_cellline, export_formz_as_html]
+    actions = [export_cellline, formz_as_html]
     search_fields = ['id', 'name']
     autocomplete_fields = ['parental_line', 'integrated_plasmids', 'formz_projects', 'zkbs_cell_line', 'formz_gentech_methods', 'formz_elements']
 
@@ -2851,14 +2932,27 @@ class AntibodyExportResource(resources.ModelResource):
                 'description_comment', 'info_sheet',)
 
 def export_antibody(modeladmin, request, queryset):
-    """Export Antibody as xlsx"""
+    """Export Antibody"""
 
     export_data = AntibodyExportResource().export(queryset)
-    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.xlsx'.format(Antibody.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
-    response.write(export_data.xlsx)
+
+    file_format = request.POST.get('format', default='none')
+
+    if file_format == 'xlsx':
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.xlsx'.format(queryset.model.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
+        response.write(export_data.xlsx)
+    elif file_format == 'tsv':
+        response = HttpResponse(content_type='text/tab-separated-values')
+        response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.tsv'.format(queryset.model.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
+        xlsx_file = xlrd.open_workbook(file_contents=export_data.xlsx)
+        sheet = xlsx_file.sheet_by_index(0)
+        wr = csv.writer(response, delimiter="\t")
+        for rownum in range(sheet.nrows):
+            row_values = [str(i).replace("\n", "").replace('\r', '').replace("\t", "") for i in sheet.row_values(rownum)]
+            wr.writerow(row_values)
     return response
-export_antibody.short_description = "Export selected antibodies as xlsx"
+export_antibody.short_description = "Export selected antibodies"
 
 class AntibodyPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelAdmin):
     

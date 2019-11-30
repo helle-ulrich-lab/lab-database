@@ -105,45 +105,86 @@
     $(document).ready(function() {
     $('.image-link').magnificPopup({type:'image'});
 
-    // Add plasmid map attachment type selection box if export_formz_as_html is selected
-    $('#changelist-form').find('select').first().change(function(){
+    var action_drop_down = $('#changelist-form').find('select').first();
 
-      if($(this).val() =="export_formz_as_html")
+    // Add plasmid map attachment type selection box if formz_as_html action is selected
+    // Add file  selection box if export action is selected
+    action_drop_down.change(function(){
+
+    if($(this).val() =="formz_as_html")
+    {
+
+    if ($('#changelist-form').find('label').length > 1)
       {
-      var form = $('#changelist-form');
-      var select_attach_element = document.createElement('label');
-      select_attach_element.innerText = 'Plasmid map attachment: ';
+      $('#changelist-form').find('label')[1].remove();
+    }
 
-      var select_attach_box = document.createElement('select');
-      select_attach_box.name = 'map_attachment_type';
+    var form = $('#changelist-form');
+    var select_attach_element = document.createElement('label');
+    select_attach_element.innerText = 'Plasmid map attachment: ';
+    select_attach_element.style.cssText = 'padding-left: 1em;';
 
-      var option_none = document.createElement('option');
-      option_none.innerText = 'None';
-      option_none.value = 'none';
+    var select_attach_box = document.createElement('select');
+    select_attach_box.name = 'map_attachment_type';
 
-      var option_png = document.createElement('option');
-      option_png.innerText = '.png';
-      option_png.value = 'png';
+    var option_none = document.createElement('option');
+    option_none.innerText = 'None';
+    option_none.value = 'none';
 
-      var option_gbk = document.createElement('option');
-      option_gbk.innerText = '.gbk';
-      option_gbk.value = 'gbk';
+    var option_png = document.createElement('option');
+    option_png.innerText = '.png';
+    option_png.value = 'png';
 
-      select_attach_box.appendChild(option_none);
-      select_attach_box.appendChild(option_png);
-      select_attach_box.appendChild(option_gbk);
+    var option_gbk = document.createElement('option');
+    option_gbk.innerText = '.gbk';
+    option_gbk.value = 'gbk';
 
-      select_attach_element.appendChild(select_attach_box);
-      $('#changelist-form').find('label')[0].append(select_attach_element);
+    select_attach_box.appendChild(option_none);
+    select_attach_box.appendChild(option_png);
+    select_attach_box.appendChild(option_gbk);
 
-      }
-      else {
-        
-        if ($('#changelist-form').find('label').length > 1)
+    select_attach_element.appendChild(select_attach_box);
+    $('#changelist-form').find('label')[0].append(select_attach_element);
+
+    }
+
+    else if($(this).val().startsWith("export_"))
+    {
+
+    if ($('#changelist-form').find('label').length > 1)
+      {
+      $('#changelist-form').find('label')[1].remove();
+    }
+
+    var form = $('#changelist-form');
+    var select_attach_element = document.createElement('label');
+    select_attach_element.innerText = 'Format: ';
+    select_attach_element.style.cssText = 'padding-left: 1em;';
+
+    var select_attach_box = document.createElement('select');
+    select_attach_box.name = 'format';
+
+    var option_tsv = document.createElement('option');
+    option_tsv.innerText = 'Tab-separated values';
+    option_tsv.value = 'tsv';
+
+    var option_xlsx = document.createElement('option');
+    option_xlsx.innerText = 'Excel';
+    option_xlsx.value = 'xlsx';
+
+    select_attach_box.appendChild(option_xlsx);
+    select_attach_box.appendChild(option_tsv);
+
+    select_attach_element.appendChild(select_attach_box);
+    $('#changelist-form').find('label')[0].append(select_attach_element);
+
+    }
+    else {
+      if ($('#changelist-form').find('label').length > 1)
         {
         $('#changelist-form').find('label')[1].remove();
       }
-      }
+    }
 
     });
 

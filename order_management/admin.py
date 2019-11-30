@@ -44,6 +44,9 @@ from adminactions.mass_update import MassUpdateForm, get_permission_codename,\
 # jsmin
 from jsmin import jsmin
 
+import xlrd
+import csv
+
 #################################################
 #                OTHER IMPORTS                  #
 #################################################
@@ -530,26 +533,52 @@ def change_order_status_to_used_up(modeladmin, request, queryset):
 change_order_status_to_used_up.short_description = "Change STATUS of selected to USED UP"
 
 def export_chemicals(modeladmin, request, queryset):
-    """Export all chemicals as xlsx. A chemical is defines as an order
+    """Export all chemicals. A chemical is defines as an order
     which has a non-null ghs_pictogram field and is not used up"""
 
     queryset = Order.objects.exclude(status="used up").annotate(text_len=Length('ghs_pictogram')).filter(text_len__gt=0).order_by('-id')
     export_data = OrderChemicalExportResource().export(queryset)
-    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename="Chemicals_{}_{}.xlsx'.format(time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
-    response.write(export_data.xlsx)
+
+    file_format = request.POST.get('format', default='none')
+
+    if file_format == 'xlsx':
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.xlsx'.format(queryset.model.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
+        response.write(export_data.xlsx)
+    elif file_format == 'tsv':
+        response = HttpResponse(content_type='text/tab-separated-values')
+        response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.tsv'.format(queryset.model.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
+        xlsx_file = xlrd.open_workbook(file_contents=export_data.xlsx)
+        sheet = xlsx_file.sheet_by_index(0)
+        wr = csv.writer(response, delimiter="\t")
+        for rownum in range(sheet.nrows):
+            row_values = [str(i).replace("\n", "").replace('\r', '').replace("\t", "") for i in sheet.row_values(rownum)]
+            wr.writerow(row_values)
     return response
-export_chemicals.short_description = "Export chemicals as xlsx"
+export_chemicals.short_description = "Export all chemicals"
 
 def export_orders(modeladmin, request, queryset):
-    """Export orders as xlsx"""
+    """Export orders"""
 
     export_data = OrderExportResource().export(queryset)
-    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.xlsx'.format(Order.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
-    response.write(export_data.xlsx)
+
+    file_format = request.POST.get('format', default='none')
+
+    if file_format == 'xlsx':
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.xlsx'.format(queryset.model.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
+        response.write(export_data.xlsx)
+    elif file_format == 'tsv':
+        response = HttpResponse(content_type='text/tab-separated-values')
+        response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.tsv'.format(queryset.model.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
+        xlsx_file = xlrd.open_workbook(file_contents=export_data.xlsx)
+        sheet = xlsx_file.sheet_by_index(0)
+        wr = csv.writer(response, delimiter="\t")
+        for rownum in range(sheet.nrows):
+            row_values = [str(i).replace("\n", "").replace('\r', '').replace("\t", "") for i in sheet.row_values(rownum)]
+            wr.writerow(row_values)
     return response
-export_orders.short_description = "Export selected orders as xlsx"
+export_orders.short_description = "Export selected orders"
 
 #################################################
 #                 ORDER PAGES                   #

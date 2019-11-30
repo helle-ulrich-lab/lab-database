@@ -2445,8 +2445,6 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.
         history_obj = obj.history.latest()
         history_obj.history_formz_projects = obj.history_formz_projects
         history_obj.history_formz_elements = obj.history_formz_elements
-        history_obj.history_formz_ecoli_strains = obj.history_formz_ecoli_strains
-        history_obj.history_formz_gentech_methods = obj.history_formz_gentech_methods
         history_obj.save()
 
 #################################################

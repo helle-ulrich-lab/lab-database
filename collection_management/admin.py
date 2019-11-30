@@ -1066,6 +1066,8 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
             
             obj.created_by = request.user
             obj.save()
+            new_obj = True
+            self.new_obj = True
             
             # Check if a map is present and if so trigger functions to create a plasmid
             # map preview and delete the resulting duplicate history record

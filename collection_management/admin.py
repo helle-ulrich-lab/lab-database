@@ -28,6 +28,7 @@ from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.utils.encoding import force_text
 from django.utils.text import capfirst
+from django.utils import timezone
 
 IS_POPUP_VAR = '_popup'
 TO_FIELD_VAR = '_to_field'
@@ -681,13 +682,27 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
         Guests cannot change any record'''
 
         if obj.pk == None:
+            
             obj.created_by = request.user
             obj.save()
-            obj.approval.create(activity_type='created', activity_user=obj.history.latest().history_user)
-        else:
 
+            # If the request's user is the principal investigator, approve the record
+            # right away. If not, create an approval record
+            if request.user.labuser.is_principal_investigator:
+                obj.created_approval_by_pi = True
+                obj.approval_user = request.user
+                obj.approval_by_pi_date_time = timezone.now()
+                obj.save_without_historical_record()                    
+                SaCerevisiaeStrain.objects.filter(id=obj.pk).update(last_changed_date_time=obj.history.latest().last_changed_date_time)
+            else:
+                obj.approval.create(activity_type='created', activity_user=request.user)
+
+        else:
+            
+            # Check if the disapprove button was clicked. If so, and no approval
+            # record for the object exists, create one
             if "_disapprove_record" in request.POST:
-                if not obj.approval.all():
+                if not obj.approval.all().exists():
                     obj.approval.create(activity_type='changed', activity_user=obj.created_by)
                     obj.last_changed_approval_by_pi = False
                     obj.save_without_historical_record()
@@ -695,21 +710,39 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
                     return
 
             saved_obj = SaCerevisiaeStrain.objects.get(pk=obj.pk)
+            
+            # Check if the request's user can change the object, if not raise PermissionDenied
             if request.user.is_superuser or request.user == saved_obj.created_by or request.user.groups.filter(name='Lab manager').exists() or \
                 saved_obj.created_by.groups.filter(name='Past member').exists() or saved_obj.created_by.labuser.is_principal_investigator or \
                 request.user.has_perm('collection_management.change_sacerevisiaestrain', saved_obj):
                 
-                obj.last_changed_approval_by_pi = False
-                obj.approval_user = None
-                obj.save()
-                if not obj.approval.all():
-                    obj.approval.create(activity_type='changed', activity_user=obj.history.latest().history_user)
+                # Approve right away if the request's user is the principal investigator. If not,
+                # create an approval record
+                if request.user.labuser.is_principal_investigator:
+                    obj.last_changed_approval_by_pi = True
+                    obj.approval_user = request.user
+                    obj.approval_by_pi_date_time = timezone.now()
+                    if obj.approval.all().exists():
+                        approval_records = obj.approval.all()
+                        approval_records.delete()
                 else:
-                    approval_obj = obj.approval.all().latest(field_name='message_date_time')
-                    if approval_obj.message_date_time:
-                        if obj.last_changed_date_time > approval_obj.message_date_time:
-                            approval_obj.edited = True
-                            approval_obj.save()
+                    obj.last_changed_approval_by_pi = False
+                    obj.approval_user = None
+
+                    # If an approval record for this object does not exist, create one
+                    if not obj.approval.all().exists():
+                        obj.approval.create(activity_type='changed', activity_user=request.user)
+                    else:
+                        # If an approval record for this object exists, check if a message was 
+                        # sent. If so, update the approval record's edited field
+                        approval_obj = obj.approval.all().latest(field_name='message_date_time')
+                        if approval_obj.message_date_time:
+                            if obj.last_changed_date_time > approval_obj.message_date_time:
+                                approval_obj.edited = True
+                                approval_obj.save()
+
+                obj.save()
+
             else:
                 raise PermissionDenied
     
@@ -785,7 +818,7 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
             return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
 
     def add_view(self,request,extra_context=None):
-        '''Override default add_view to show only desired fields'''
+        '''Override default add_view to show desired fields'''
 
         self.fieldsets = (
         (None, {
@@ -801,7 +834,7 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
         return super(SaCerevisiaeStrainPage,self).add_view(request)
 
     def change_view(self,request,object_id,extra_context=None):
-        '''Override default change_view to show only desired fields'''
+        '''Override default change_view to show desired fields'''
 
         if object_id:
             extra_context = extra_context or {}
@@ -895,6 +928,8 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
             'obj': format_html('<a href="{}">{}</a>', urlquote(request.path), obj),
         }
 
+        # If the disapprove button was clicked, redirect to the approval record change
+        # page
         if "_disapprove_record" in request.POST:
             msg = format_html(
                 _('The {name} "{obj}" was disapproved.'),
@@ -999,16 +1034,33 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
         self.clear_formz_elements = False
 
         if obj.pk == None:
+            
             obj.created_by = request.user
+            obj.save()
+            
+            # Check if a map is present and if so trigger functions to create a plasmid
+            # map preview and delete the resulting duplicate history record
             if obj.map:
                 rename_and_preview = True
                 self.rename_and_preview = True
                 new_obj = True
                 self.new_obj = True
-            obj.save()
-            obj.approval.create(activity_type='created', activity_user=obj.history.latest().history_user)
+
+            # If the request's user is the principal investigator, approve the record
+            # right away. If not, create an approval record
+            if request.user.labuser.is_principal_investigator:
+                obj.created_approval_by_pi = True
+                obj.approval_user = request.user
+                obj.approval_by_pi_date_time = timezone.now()
+                obj.save_without_historical_record()
+                Plasmid.objects.filter(id=obj.pk).update(last_changed_date_time=obj.history.latest().last_changed_date_time)
+            else:
+                obj.approval.create(activity_type='created', activity_user=request.user)
+
         else:
 
+            # Check if the disapprove button was clicked. If so, and no approval
+            # record for the object exists, create one
             if "_disapprove_record" in request.POST:
                 if not obj.approval.all():
                     obj.approval.create(activity_type='changed', activity_user=obj.created_by)
@@ -1018,50 +1070,60 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
                     Plasmid.objects.filter(id=obj.pk).update(last_changed_date_time=obj.history.latest().last_changed_date_time)
                     return
 
-            old_obj = Plasmid.objects.get(pk=obj.pk)
-            if request.user.is_superuser or request.user == old_obj.created_by or request.user.groups.filter(name='Lab manager').exists() or request.user.has_perm('collection_management.change_plasmid', old_obj):
-                obj.last_changed_approval_by_pi = False
-                obj.approval_user = None
+            saved_obj = Plasmid.objects.get(pk=obj.pk)
+
+            # Check if the request's user can change the object, if not raise PermissionDenied
+            if request.user.is_superuser or request.user == saved_obj.created_by or request.user.groups.filter(name='Lab manager').exists() or request.user.has_perm('collection_management.change_plasmid', saved_obj):
+                            
                 if obj.map:
-                    if obj.map != old_obj.map:
+                    if obj.map != saved_obj.map:
                         rename_and_preview = True
                         self.rename_and_preview = True
-                        obj.save_without_historical_record()
-                    else:
-                        obj.save()
                 else:
-                    if obj.map != old_obj.map:
+                    if obj.map != saved_obj.map:
                         obj.map_png = obj.map
                         obj.map_gbk = obj.map
                         self.clear_formz_elements = True
-                    obj.save()
+            
             else:
-                if obj.created_by.labuser.is_principal_investigator: # Allow saving object, if record belongs to Helle (user id = 6)
-                    obj.last_changed_approval_by_pi = False
-                    obj.approval_user = None
+                
+                if obj.created_by.labuser.is_principal_investigator: # Allow saving object, if record belongs to principal investigator
                     if obj.map:
-                        if obj.map != old_obj.map:
+                        if obj.map != saved_obj.map:
                             rename_and_preview = True
                             self.rename_and_preview = True
-                            obj.save_without_historical_record()
-                        else:
-                            obj.save()
                     else:
-                        if obj.map != old_obj.map:
+                        if obj.map != saved_obj.map:
                             obj.map_png = obj.map
                             obj.map_gbk = obj.map
                             self.clear_formz_elements = True
-                        obj.save()
                 else:
                     raise PermissionDenied
-            if not obj.approval.all():
-                obj.approval.create(activity_type='changed', activity_user=obj.history.latest().history_user)
+
+            # Approve right away if the request's user is the principal investigator. If not,
+            # create an approval record
+            if request.user.labuser.is_principal_investigator:
+                obj.last_changed_approval_by_pi = True
+                obj.approval_user = request.user
+                obj.approval_by_pi_date_time = timezone.now()
+                if obj.approval.all().exists():
+                    approval_records = obj.approval.all()
+                    approval_records.delete()
             else:
-                approval_obj = obj.approval.all().latest(field_name='message_date_time')
-                if approval_obj.message_date_time:
-                    if obj.last_changed_date_time > approval_obj.message_date_time:
-                        approval_obj.edited = True
-                        approval_obj.save()
+                obj.last_changed_approval_by_pi = False
+                obj.approval_user = None
+ 
+                # If an approval record for this object does not exist, create one
+                if not obj.approval.all().exists():
+                    obj.approval.create(activity_type='changed', activity_user=request.user)
+                else:
+                    # If an approval record for this object exists, check if a message was 
+                    # sent. If so, update the approval record's edited field
+                    approval_obj = obj.approval.all().latest(field_name='message_date_time')
+                    if approval_obj.message_date_time:
+                        if obj.last_changed_date_time > approval_obj.message_date_time:
+                            approval_obj.edited = True
+                            approval_obj.save()
         
         # Rename plasmid map
         if rename_and_preview:
@@ -1100,7 +1162,10 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
                 self.create_plasmid_map_preview(obj.map.path, obj.map_png.path, obj.map_gbk.path, obj.id, obj.name, 3)
             except:
                 messages.warning(request, 'Could not detect common features or save map preview')
-    
+        else:
+            
+            obj.save()
+
     def save_related(self, request, form, formsets, change):
         
         super(PlasmidPage, self).save_related(request, form, formsets, change)
@@ -1620,11 +1685,24 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
         Guests cannot change any record'''
         
         if obj.pk == None:
+            
             obj.created_by = request.user
             obj.save()
-            obj.approval.create(activity_type='created', activity_user=obj.history.latest().history_user)
+
+            # If the request's user is the principal investigator, approve the record
+            # right away. If not, create an approval record
+            if request.user.labuser.is_principal_investigator:
+                obj.created_approval_by_pi = True
+                obj.approval_by_pi_date_time = timezone.now()
+                obj.save_without_historical_record()
+                Oligo.objects.filter(id=obj.pk).update(last_changed_date_time=obj.history.latest().last_changed_date_time)
+            else:
+                obj.approval.create(activity_type='created', activity_user=request.user)
+            
         else:
 
+            # Check if the disapprove button was clicked. If so, and no approval
+            # record for the object exists, create one
             if "_disapprove_record" in request.POST:
                 if not obj.approval.all():
                     obj.approval.create(activity_type='changed', activity_user=obj.created_by)
@@ -1634,16 +1712,32 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
                     return
 
             if request.user.is_superuser or request.user == Oligo.objects.get(pk=obj.pk).created_by or request.user.groups.filter(name='Lab manager').exists():
-                obj.last_changed_approval_by_pi = False
-                obj.save()
-                if not obj.approval.all():
-                    obj.approval.create(activity_type='changed', activity_user=obj.history.latest().history_user)
+
+                # Approve right away if the request's user is the principal investigator. If not,
+                # create an approval record
+                if request.user.labuser.is_principal_investigator:
+                    obj.last_changed_approval_by_pi = True
+                    obj.approval_by_pi_date_time = timezone.now()
+                    if obj.approval.all().exists():
+                        approval_records = obj.approval.all()
+                        approval_records.delete()
                 else:
-                    approval_obj = obj.approval.all().latest(field_name='message_date_time')
-                    if approval_obj.message_date_time:
-                        if obj.last_changed_date_time > approval_obj.message_date_time:
-                            approval_obj.edited = True
-                            approval_obj.save()
+                    obj.last_changed_approval_by_pi = False
+
+                    # If an approval record for this object does not exist, create one
+                    if not obj.approval.all().exists():
+                        obj.approval.create(activity_type='changed', activity_user=request.user)
+                    else:
+                        # If an approval record for this object exists, check if a message was 
+                        # sent. If so, update the approval record's edited field
+                        approval_obj = obj.approval.all().latest(field_name='message_date_time')
+                        if approval_obj.message_date_time:
+                            if obj.last_changed_date_time > approval_obj.message_date_time:
+                                approval_obj.edited = True
+                                approval_obj.save()
+
+                obj.save()
+
             else:
                 raise PermissionDenied
     
@@ -1853,11 +1947,25 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admi
         Guests cannot change any record'''
         
         if obj.pk == None:
+            
             obj.created_by = request.user
             obj.save()
-            obj.approval.create(activity_type='created', activity_user=obj.history.latest().history_user)
+
+            # If the request's user is the principal investigator, approve the record
+            # right away. If not, create an approval record
+            if request.user.labuser.is_principal_investigator:
+                obj.created_approval_by_pi = True
+                obj.approval_user = request.user
+                obj.approval_by_pi_date_time = timezone.now()
+                obj.save_without_historical_record()
+                ScPombeStrain.objects.filter(id=obj.pk).update(last_changed_date_time=obj.history.latest().last_changed_date_time)
+            else:
+                obj.approval.create(activity_type='created', activity_user=request.user)
+        
         else:
 
+            # Check if the disapprove button was clicked. If so, and no approval
+            # record for the object exists, create one
             if "_disapprove_record" in request.POST:
                 if not obj.approval.all():
                     obj.approval.create(activity_type='changed', activity_user=obj.created_by)
@@ -1868,17 +1976,34 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admi
                     return
         
             if request.user.is_superuser or request.user == ScPombeStrain.objects.get(pk=obj.pk).created_by or request.user.groups.filter(name='Lab manager').exists():
-                obj.last_changed_approval_by_pi = False
-                obj.approval_user = None
-                obj.save()
-                if not obj.approval.all():
-                    obj.approval.create(activity_type='changed', activity_user=obj.history.latest().history_user)
+
+                # Approve right away if the request's user is the principal investigator. If not,
+                # create an approval record
+                if request.user.labuser.is_principal_investigator:
+                    obj.last_changed_approval_by_pi = True
+                    obj.approval_user = request.user
+                    obj.approval_by_pi_date_time = timezone.now()
+                    if obj.approval.all().exists():
+                        approval_records = obj.approval.all()
+                        approval_records.delete()
                 else:
-                    approval_obj = obj.approval.all().latest(field_name='message_date_time')
-                    if approval_obj.message_date_time:
-                        if obj.last_changed_date_time > approval_obj.message_date_time:
-                            approval_obj.edited = True
-                            approval_obj.save()
+                    obj.last_changed_approval_by_pi = False
+                    obj.approval_user = None
+
+                    # If an approval record for this object does not exist, create one
+                    if not obj.approval.all().exists():
+                        obj.approval.create(activity_type='changed', activity_user=request.user)
+                    else:
+                        # If an approval record for this object exists, check if a message was 
+                        # sent. If so, update the approval record's edited field
+                        approval_obj = obj.approval.all().latest(field_name='message_date_time')
+                        if approval_obj.message_date_time:
+                            if obj.last_changed_date_time > approval_obj.message_date_time:
+                                approval_obj.edited = True
+                                approval_obj.save()
+
+                obj.save()
+
             else:
                 raise PermissionDenied
     
@@ -2095,11 +2220,25 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.
         Guests cannot change any record'''
 
         if obj.pk == None:
+            
             obj.created_by = request.user
             obj.save()
-            obj.approval.create(activity_type='created', activity_user=obj.history.latest().history_user)
+
+            # If the request's user is the principal investigator, approve the record
+            # right away. If not, create an approval record
+            if request.user.labuser.is_principal_investigator:
+                obj.created_approval_by_pi = True
+                obj.approval_user = request.user
+                obj.approval_by_pi_date_time = timezone.now()
+                obj.save_without_historical_record()
+                EColiStrain.objects.filter(id=obj.pk).update(last_changed_date_time=obj.history.latest().last_changed_date_time)
+            else:
+                obj.approval.create(activity_type='created', activity_user=request.user)
+
         else:
             
+            # Check if the disapprove button was clicked. If so, and no approval
+            # record for the object exists, create one
             if "_disapprove_record" in request.POST:
                 if not obj.approval.all():
                     obj.approval.create(activity_type='changed', activity_user=obj.created_by)
@@ -2110,17 +2249,34 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.
                     return
 
             if request.user.is_superuser or request.user == EColiStrain.objects.get(pk=obj.pk).created_by or request.user.groups.filter(name='Lab manager').exists():
-                obj.last_changed_approval_by_pi = False
-                obj.approval_user = None
-                obj.save()
-                if not obj.approval.all():
-                    obj.approval.create(activity_type='changed', activity_user=obj.history.latest().history_user)
+                
+                # Approve right away if the request's user is the principal investigator. If not,
+                # create an approval record
+                if request.user.labuser.is_principal_investigator:
+                    obj.last_changed_approval_by_pi = True
+                    obj.approval_user = request.user
+                    obj.approval_by_pi_date_time = timezone.now()
+                    if obj.approval.all().exists():
+                        approval_records = obj.approval.all()
+                        approval_records.delete()
                 else:
-                    approval_obj = obj.approval.all().latest(field_name='message_date_time')
-                    if approval_obj.message_date_time:
-                        if obj.last_changed_date_time > approval_obj.message_date_time:
-                            approval_obj.edited = True
-                            approval_obj.save()
+                    obj.last_changed_approval_by_pi = False
+                    obj.approval_user = None
+
+                    # If an approval record for this object does not exist, create one
+                    if not obj.approval.all().exists():
+                        obj.approval.create(activity_type='changed', activity_user=request.user)
+                    else:
+                        # If an approval record for this object exists, check if a message was 
+                        # sent. If so, update the approval record's edited field
+                        approval_obj = obj.approval.all().latest(field_name='message_date_time')
+                        if approval_obj.message_date_time:
+                            if obj.last_changed_date_time > approval_obj.message_date_time:
+                                approval_obj.edited = True
+                                approval_obj.save()
+
+                obj.save()
+                
             else:
                 raise PermissionDenied
                 
@@ -2434,11 +2590,25 @@ class CellLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGua
         Guests cannot change any record'''
 
         if obj.pk == None:
+            
             obj.created_by = request.user
             obj.save()
-            obj.approval.create(activity_type='created', activity_user=obj.history.latest().history_user)
+
+            # If the request's user is the principal investigator, approve the record
+            # right away. If not, create an approval record
+            if request.user.labuser.is_principal_investigator:
+                obj.created_approval_by_pi = True
+                obj.approval_user = request.user
+                obj.approval_by_pi_date_time = timezone.now()
+                obj.save_without_historical_record()
+                CellLine.objects.filter(id=obj.pk).update(last_changed_date_time=obj.history.latest().last_changed_date_time)
+            else:
+                obj.approval.create(activity_type='created', activity_user=request.user)
+            
         else:
             
+            # Check if the disapprove button was clicked. If so, and no approval
+            # record for the object exists, create one
             if "_disapprove_record" in request.POST:
                 if not obj.approval.all():
                     obj.approval.create(activity_type='changed', activity_user=obj.created_by)
@@ -2448,17 +2618,32 @@ class CellLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGua
                     CellLine.objects.filter(id=obj.pk).update(last_changed_date_time=obj.history.latest().last_changed_date_time)
                     return
 
-            obj.last_changed_approval_by_pi = False
-            obj.approval_user = None
-            obj.save()
-            if not obj.approval.all():
-                obj.approval.create(activity_type='changed', activity_user=obj.history.latest().history_user)
+            # Approve right away if the request's user is the principal investigator. If not,
+            # create an approval record
+            if request.user.labuser.is_principal_investigator:
+                obj.last_changed_approval_by_pi = True
+                obj.approval_user = request.user
+                obj.approval_by_pi_date_time = timezone.now()
+                if obj.approval.all().exists():
+                    approval_records = obj.approval.all()
+                    approval_records.delete()
             else:
-                approval_obj = obj.approval.all().latest(field_name='message_date_time')
-                if approval_obj.message_date_time:
-                    if obj.last_changed_date_time > approval_obj.message_date_time:
-                        approval_obj.edited = True
-                        approval_obj.save()
+                obj.last_changed_approval_by_pi = False
+                obj.approval_user = None
+
+                # If an approval record for this object does not exist, create one
+                if not obj.approval.all().exists():
+                    obj.approval.create(activity_type='changed', activity_user=request.user)
+                else:
+                    # If an approval record for this object exists, check if a message was 
+                    # sent. If so, update the approval record's edited field
+                    approval_obj = obj.approval.all().latest(field_name='message_date_time')
+                    if approval_obj.message_date_time:
+                        if obj.last_changed_date_time > approval_obj.message_date_time:
+                            approval_obj.edited = True
+                            approval_obj.save()
+
+            obj.save()
     
     def get_readonly_fields(self, request, obj=None):
         '''Override default get_readonly_fields to define user-specific read-only fields
@@ -2703,8 +2888,8 @@ class AntibodyPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.Mod
                 new_obj = True
             obj.save()
         else:
-            old_obj = Antibody.objects.get(pk=obj.pk)
-            if obj.info_sheet and obj.info_sheet != old_obj.info_sheet:
+            saved_obj = Antibody.objects.get(pk=obj.pk)
+            if obj.info_sheet and obj.info_sheet != saved_obj.info_sheet:
                 rename_doc = True
                 obj.save_without_historical_record()
             else:

@@ -1074,8 +1074,6 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
             if obj.map:
                 rename_and_preview = True
                 self.rename_and_preview = True
-                new_obj = True
-                self.new_obj = True
 
             # If the request's user is the principal investigator, approve the record
             # right away. If not, create an approval record
@@ -1110,11 +1108,15 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
                     if obj.map != saved_obj.map:
                         rename_and_preview = True
                         self.rename_and_preview = True
+                        obj.save_without_historical_record()
+                    else:
+                        obj.save()
                 else:
                     if obj.map != saved_obj.map:
                         obj.map_png = obj.map
                         obj.map_gbk = obj.map
                         self.clear_formz_elements = True
+                    obj.save()
             
             else:
                 
@@ -1123,11 +1125,15 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
                         if obj.map != saved_obj.map:
                             rename_and_preview = True
                             self.rename_and_preview = True
+                            obj.save_without_historical_record()
+                        else:
+                            obj.save()
                     else:
                         if obj.map != saved_obj.map:
                             obj.map_png = obj.map
                             obj.map_gbk = obj.map
                             self.clear_formz_elements = True
+                        obj.save()
                 else:
                     raise PermissionDenied
 
@@ -1193,9 +1199,7 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
                 self.create_plasmid_map_preview(obj.map.path, obj.map_png.path, obj.map_gbk.path, obj.id, obj.name, 3)
             except:
                 messages.warning(request, 'Could not detect common features or save map preview')
-        else:
-            
-            obj.save()
+
 
     def save_related(self, request, form, formsets, change):
         
@@ -1234,7 +1238,18 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
         obj.history_formz_elements = str(tuple(obj.formz_elements.all().order_by('name').values_list('name', flat=True))).replace(',)', ')') if obj.formz_elements.all() else ""
         obj.history_formz_ecoli_strains = str(tuple(obj.formz_ecoli_strains.all().order_by('id').values_list('id', flat=True))).replace(',)', ')') if obj.formz_ecoli_strains.all() else ""
         obj.history_formz_gentech_methods = str(tuple(obj.formz_gentech_methods.all().order_by('english_name').values_list('english_name', flat=True))).replace(',)', ')') if obj.formz_gentech_methods.all() else ""
-        obj.save_without_historical_record()
+
+        # For new records without map preview, delete first history record, which contains the unformatted map name, and change 
+        # the newer history record's history_type from changed (~) to created (+). This gets rid of a duplicate
+        # history record created when automatically generating a map name
+        if self.new_obj and not self.rename_and_preview:
+            obj.save()
+            obj.history.last().delete()
+            history_obj = obj.history.first()
+            history_obj.history_type = "+"
+            history_obj.save()
+        else:
+            obj.save_without_historical_record()
 
         history_obj = obj.history.latest()
         history_obj.history_formz_projects = obj.history_formz_projects

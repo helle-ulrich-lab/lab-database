@@ -2252,7 +2252,8 @@ class EColiStrainQLSchema(DjangoQLSchema):
         '''Define fields that can be searched'''
         
         if model == EColiStrain:
-            return ['id', 'name', 'resistance', 'genotype', 'supplier', FieldUse(), 'purpose', 'note', 'created_by',]
+            return ['id', 'name', 'resistance', 'genotype', 'supplier', FieldUse(), 'purpose', 
+            'note', 'created_by', FieldFormZProject(), ]
         elif model == User:
             return [SearchFieldOptUsernameEColi(), SearchFieldOptLastnameEColi()]
         return super(EColiStrainQLSchema, self).get_fields(model)

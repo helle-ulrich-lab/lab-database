@@ -56,7 +56,7 @@ from order_management.models import HistoricalOrder
 from datetime import timedelta
 from django.utils import timezone
 
-def delete_dup_hist_rec(model, time_delta):
+def delete_dup_hist_rec_ids(model, time_delta):
     """Delete history items that differ just by last_changed_date_time"""
 
     def pairwise(iterable):
@@ -99,6 +99,6 @@ MODELS = {Plasmid: HistoricalPlasmid,
 NOW_MINUS_8DAYS = timezone.now() - timedelta(days=90)
 
 for model, history_model in MODELS.items():
-    ids_to_delete = delete_dup_hist_rec(model, NOW_MINUS_8DAYS)
+    ids_to_delete = delete_dup_hist_rec_ids(model, NOW_MINUS_8DAYS)
     if ids_to_delete:
         history_model.objects.filter(history_id__in=ids_to_delete).delete()

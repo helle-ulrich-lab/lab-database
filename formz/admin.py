@@ -10,8 +10,12 @@ from django.contrib.auth.models import User
 from django import forms
 from django.http import HttpResponseRedirect
 from django.contrib import messages
+from django.db.models import Q
+from django.utils.text import capfirst
 
 from .models import FormZHeader
+
+from formz.models import FormZStorageLocation
 
 #################################################
 #             MODEL ADMIN CLASSES               #
@@ -110,17 +114,20 @@ class FormZProjectPage(admin.ModelAdmin):
     def model_search_link(self, instance):
         projects = str(tuple([instance.short_title] + list(FormZProject.objects.filter(parent_project_id=instance.id).values_list('short_title', flat=True)))).replace("'", '"').replace(',)', ')')
 
-        return mark_safe("""<a href='{}+{projects}'>Cell lines</a> | 
-                            <a href='{}+{projects}'>Plasmids</a> | 
-                            <a href='{}+{projects}'>Strains - Sa. cerevisiae</a> | 
-                            <a href='{}+{projects}'>Strains - Sc. pombe</a>""".format(
-            '/collection_management/cellline/?q-l=on&q=formz_projects_title+in',
-            '/collection_management/plasmid/?q-l=on&q=formz_projects_title+in', 
-            '/collection_management/sacerevisiaestrain/?q-l=on&q=formz_projects_title+in', 
-            '/collection_management/scpombestrain/?q-l=on&q=formz_projects_title+in', 
-            projects=projects
-            )
-            )
+        html_str = ''
+
+        for loc in FormZStorageLocation.objects.all().order_by('collection_model__model'):
+            model = loc.collection_model.model_class()
+            if model.objects.filter(Q(formz_projects__id=instance.id) | Q(formz_projects__parent_project__id=instance.id)).exists():
+                html_str = html_str + "<a href='/{}/{}/?q-l=on&q=formz_projects_title+in+{}'>{}</a>".format(
+                    loc.collection_model.app_label,
+                    loc.collection_model.model,
+                    projects,
+                    capfirst(model._meta.verbose_name_plural))
+        
+        html_str = html_str.replace('><', '> | <')
+        
+        return mark_safe(html_str)
     model_search_link.short_description = ''
 
     def main_project(self, instance):

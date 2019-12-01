@@ -96,7 +96,7 @@ MODELS = {Plasmid: HistoricalPlasmid,
         Antibody: HistoricalAntibody,
         Order: HistoricalOrder}
 
-NOW_MINUS_8DAYS = timezone.now() - timedelta(days=90)
+NOW_MINUS_8DAYS = timezone.now() - timedelta(days=8)
 
 for model, history_model in MODELS.items():
     ids_to_delete = delete_dup_hist_rec_ids(model, NOW_MINUS_8DAYS)

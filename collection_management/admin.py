@@ -704,7 +704,7 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
 
             # If the request's user is the principal investigator, approve the record
             # right away. If not, create an approval record
-            if request.user.labuser.is_principal_investigator:
+            if request.user.labuser.is_principal_investigator and request.user.id in obj.formz_projects.all().values_list('project_leader__id', flat=True):
                 obj.created_approval_by_pi = True
                 obj.approval_user = request.user
                 obj.approval_by_pi_date_time = timezone.now()
@@ -734,7 +734,7 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
                 
                 # Approve right away if the request's user is the principal investigator. If not,
                 # create an approval record
-                if request.user.labuser.is_principal_investigator:
+                if request.user.labuser.is_principal_investigator and request.user.id in obj.formz_projects.all().values_list('project_leader__id', flat=True):
                     obj.last_changed_approval_by_pi = True
                     obj.approval_user = request.user
                     obj.approval_by_pi_date_time = timezone.now()
@@ -1077,7 +1077,7 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
 
             # If the request's user is the principal investigator, approve the record
             # right away. If not, create an approval record
-            if request.user.labuser.is_principal_investigator:
+            if request.user.labuser.is_principal_investigator and request.user.id in obj.formz_projects.all().values_list('project_leader__id', flat=True):
                 obj.created_approval_by_pi = True
                 obj.approval_user = request.user
                 obj.approval_by_pi_date_time = timezone.now()
@@ -1139,7 +1139,7 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
 
             # Approve right away if the request's user is the principal investigator. If not,
             # create an approval record
-            if request.user.labuser.is_principal_investigator:
+            if request.user.labuser.is_principal_investigator and request.user.id in obj.formz_projects.all().values_list('project_leader__id', flat=True):
                 obj.last_changed_approval_by_pi = True
                 obj.approval_user = request.user
                 obj.approval_by_pi_date_time = timezone.now()
@@ -2025,7 +2025,7 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admi
 
             # If the request's user is the principal investigator, approve the record
             # right away. If not, create an approval record
-            if request.user.labuser.is_principal_investigator:
+            if request.user.labuser.is_principal_investigator and request.user.id in obj.formz_projects.all().values_list('project_leader__id', flat=True):
                 obj.created_approval_by_pi = True
                 obj.approval_user = request.user
                 obj.approval_by_pi_date_time = timezone.now()
@@ -2051,7 +2051,7 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admi
 
                 # Approve right away if the request's user is the principal investigator. If not,
                 # create an approval record
-                if request.user.labuser.is_principal_investigator:
+                if request.user.labuser.is_principal_investigator and request.user.id in obj.formz_projects.all().values_list('project_leader__id', flat=True):
                     obj.last_changed_approval_by_pi = True
                     obj.approval_user = request.user
                     obj.approval_by_pi_date_time = timezone.now()
@@ -2311,7 +2311,7 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.
 
             # If the request's user is the principal investigator, approve the record
             # right away. If not, create an approval record
-            if request.user.labuser.is_principal_investigator:
+            if request.user.labuser.is_principal_investigator and request.user.id in obj.formz_projects.all().values_list('project_leader__id', flat=True):
                 obj.created_approval_by_pi = True
                 obj.approval_user = request.user
                 obj.approval_by_pi_date_time = timezone.now()
@@ -2337,7 +2337,7 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.
                 
                 # Approve right away if the request's user is the principal investigator. If not,
                 # create an approval record
-                if request.user.labuser.is_principal_investigator:
+                if request.user.labuser.is_principal_investigator and request.user.id in obj.formz_projects.all().values_list('project_leader__id', flat=True):
                     obj.last_changed_approval_by_pi = True
                     obj.approval_user = request.user
                     obj.approval_by_pi_date_time = timezone.now()
@@ -2692,7 +2692,7 @@ class CellLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGua
 
             # If the request's user is the principal investigator, approve the record
             # right away. If not, create an approval record
-            if request.user.labuser.is_principal_investigator:
+            if request.user.labuser.is_principal_investigator and request.user.id in obj.formz_projects.all().values_list('project_leader__id', flat=True):
                 obj.created_approval_by_pi = True
                 obj.approval_user = request.user
                 obj.approval_by_pi_date_time = timezone.now()
@@ -2716,7 +2716,7 @@ class CellLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGua
 
             # Approve right away if the request's user is the principal investigator. If not,
             # create an approval record
-            if request.user.labuser.is_principal_investigator:
+            if request.user.labuser.is_principal_investigator and request.user.id in obj.formz_projects.all().values_list('project_leader__id', flat=True):
                 obj.last_changed_approval_by_pi = True
                 obj.approval_user = request.user
                 obj.approval_by_pi_date_time = timezone.now()

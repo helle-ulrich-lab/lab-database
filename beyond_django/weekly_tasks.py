@@ -1,31 +1,56 @@
 import inspect
 from django.core.mail import send_mail
-from django.contrib.auth.models import User
 from django_project.private_settings import ALLOWED_HOSTS
 from django_project.private_settings import SITE_TITLE
 from django_project.private_settings import SERVER_EMAIL_ADDRESS
 from django.urls import reverse
 from record_approval.models import RecordToBeApproved
 
-if RecordToBeApproved.objects.all().exists(): # Check if there are records to be be approved at all
+def get_formz_project_leader_emails(qs):
 
-    PI_USER = User.objects.get(labuser__is_principal_investigator=True)
+    """Returns the user ids of the project leaders for a queryset of
+    relevant approval objects"""
 
+    from django.contrib.auth.models import User
+
+    qs = qs.exclude(content_type__model__in=['order', 'oligo'])
+
+    ids = []
+
+    for approval_obj in qs:
+        project_leader_ids = list(approval_obj.content_object.formz_projects.all().values_list('project_leader', flat=True))
+        ids.extend(project_leader_ids)
+
+    pi_user_id = User.objects.get(labuser__is_principal_investigator=True).id
+    
+    if pi_user_id not in ids:
+        ids.append(pi_user_id)
+    
+    project_leader_emails = User.objects.filter(id__in=ids).values_list('email', flat=True)
+
+    return list(project_leader_emails)
+
+RECORDS_TO_BE_APPROVED = RecordToBeApproved.objects.all()
+
+if RECORDS_TO_BE_APPROVED.exists(): # Check if there are records to be be approved at all
+
+    PROJECT_LEADER_EMAILS = get_formz_project_leader_emails(RECORDS_TO_BE_APPROVED)
     RECORD_APPROVAL_URL = reverse("admin:record_approval_recordtobeapproved_changelist")
+    EMAIL_MESSAGE_TXT = inspect.cleandoc("""Hello there,
 
-    EMAIL_MESSAGE_TXT = inspect.cleandoc("""Dear {},
+    There are records that need your approval.
 
-    Please visit https://{}{} to check for new or modified records that need to be approved.
+    You can visit https://{}{} to check for new or modified records that need to be approved.
 
     Best wishes,
     The {}
-    """.format(PI_USER.first_name, ALLOWED_HOSTS[0], RECORD_APPROVAL_URL, SITE_TITLE))
+    """.format(ALLOWED_HOSTS[0], RECORD_APPROVAL_URL, SITE_TITLE))
 
     send_mail(
         "{} weekly notification".format(SITE_TITLE),
         EMAIL_MESSAGE_TXT,
         SERVER_EMAIL_ADDRESS,
-        [PI_USER.email],
+        PROJECT_LEADER_EMAILS,
     )
 
 # Delete all completed tasks 

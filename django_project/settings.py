@@ -19,7 +19,7 @@ from .private_settings import DB_USER
 from .private_settings import DB_PASSWORD
 from .private_settings import DEBUG
 from .private_settings import SERVER_EMAIL_ADDRESS
-from .private_settings import SITE_ADMIN_EMAIL_ADDRESS
+from .private_settings import SITE_ADMIN_EMAIL_ADDRESSES
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -171,12 +171,12 @@ EMAIL_HOST = 'localhost'
 EMAIL_PORT = 25
 EMAIL_HOST_USER = None
 EMAIL_HOST_PASSWORD = None
-
+DEFAULT_FROM_EMAIL = SERVER_EMAIL_ADDRESS
 
 #Email settings for error messages
 
 SERVER_EMAIL = SERVER_EMAIL_ADDRESS
-ADMINS = [('Site admin', SITE_ADMIN_EMAIL_ADDRESS)]
+ADMINS = SITE_ADMIN_EMAIL_ADDRESSES
 
 # Wiki settings
 

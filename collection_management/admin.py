@@ -621,7 +621,7 @@ export_sacerevisiaestrain.short_description = "Export selected strains"
 
 class SaCerevisiaeStrainForm(forms.ModelForm):
     
-    change_reason = forms.CharField(required=False)
+    # change_reason = forms.CharField(required=False)
 
     class Meta:
         model = SaCerevisiaeStrain
@@ -705,11 +705,12 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
             # If the request's user is the principal investigator, approve the record
             # right away. If not, create an approval record
             if request.user.labuser.is_principal_investigator and request.user.id in obj.formz_projects.all().values_list('project_leader__id', flat=True):
+                original_last_changed_date_time = obj.last_changed_date_time
                 obj.created_approval_by_pi = True
                 obj.approval_user = request.user
                 obj.approval_by_pi_date_time = timezone.now()
                 obj.save_without_historical_record()                    
-                SaCerevisiaeStrain.objects.filter(id=obj.pk).update(last_changed_date_time=obj.history.latest().last_changed_date_time)
+                SaCerevisiaeStrain.objects.filter(id=obj.pk).update(last_changed_date_time=original_last_changed_date_time)
             else:
                 obj.approval.create(activity_type='created', activity_user=request.user)
 
@@ -719,18 +720,15 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
             # record for the object exists, create one
             if "_disapprove_record" in request.POST:
                 if not obj.approval.all().exists():
+                    original_last_changed_date_time = obj.last_changed_date_time
                     obj.approval.create(activity_type='changed', activity_user=obj.created_by)
                     obj.last_changed_approval_by_pi = False
                     obj.save_without_historical_record()
-                    SaCerevisiaeStrain.objects.filter(id=obj.pk).update(last_changed_date_time=obj.history.latest().last_changed_date_time)
-                    return
-
-            saved_obj = SaCerevisiaeStrain.objects.get(pk=obj.pk)
+                    SaCerevisiaeStrain.objects.filter(id=obj.pk).update(last_changed_date_time=original_last_changed_date_time)
+                return
             
             # Check if the request's user can change the object, if not raise PermissionDenied
-            if request.user.is_superuser or request.user == saved_obj.created_by or request.user.groups.filter(name='Lab manager').exists() or \
-                saved_obj.created_by.groups.filter(name='Past member').exists() or saved_obj.created_by.labuser.is_principal_investigator or \
-                request.user.has_perm('collection_management.change_sacerevisiaestrain', saved_obj):
+            if self.can_change:
                 
                 # Approve right away if the request's user is the principal investigator. If not,
                 # create an approval record
@@ -852,15 +850,55 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
     def change_view(self,request,object_id,extra_context=None):
         '''Override default change_view to show desired fields'''
 
+        self.can_change = False
+
+        extra_context = extra_context or {}
+
         if object_id:
-            extra_context = extra_context or {}
-            extra_context['show_formz'] = True
+
             obj = SaCerevisiaeStrain.objects.get(pk=object_id)
-            if obj:
-                if obj.history_all_plasmids_in_stocked_strain:
-                    extra_context['plasmid_id_list'] = obj.history_all_plasmids_in_stocked_strain
-                if request.user == obj.created_by:
-                    self.save_as = True
+            
+            if obj.history_all_plasmids_in_stocked_strain:
+                extra_context['plasmid_id_list'] = obj.history_all_plasmids_in_stocked_strain
+        
+            if request.user == obj.created_by or request.user.groups.filter(name='Lab manager').exists() or \
+                request.user.labuser.is_principal_investigator or obj.created_by.labuser.is_principal_investigator or \
+                obj.created_by.groups.filter(name='Past member') or request.user.is_superuser or \
+                request.user.has_perm('collection_management.change_sacerevisiaestrain', obj):
+                
+                self.can_change = True
+
+                if (obj.created_by.labuser.is_principal_investigator or obj.created_by.groups.filter(name='Past member')) and \
+                        not request.user.has_perm('collection_management.change_plasmid', obj):
+                    
+                    extra_context = {'show_close': True,
+                                    'show_save_and_add_another': False,
+                                    'show_save_and_continue': True,
+                                    'show_save_as_new': False,
+                                    'show_save': True,
+                                    'show_obj_permission': False,}
+
+                else:
+                    
+                    extra_context = {'show_close': True,
+                                    'show_save_and_add_another': True,
+                                    'show_save_and_continue': True,
+                                    'show_save_as_new': True,
+                                    'show_save': True,
+                                    'show_obj_permission': True,
+                                    }
+            
+            else:
+
+                extra_context = {'show_close': True,
+                    'show_save_and_add_another': False,
+                    'show_save_and_continue': False,
+                    'show_save_as_new': False,
+                    'show_save': False,
+                    'show_obj_permission': False}
+
+            extra_context['show_disapprove'] = True if request.user.groups.filter(name='Approval manager').exists() else False
+            extra_context['show_formz'] = True
 
         if '_saveasnew' in request.POST:
             
@@ -896,7 +934,7 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
                     'fields': ('name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parent_1', 'parent_2', 
                     'parental_strain', 'construction', 'modification', 'integrated_plasmids', 'cassette_plasmids', 'plasmids', 
                     'selection', 'phenotype', 'background', 'received_from','us_e', 'note', 'reference', 'created_date_time', 
-                    'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by', 'change_reason')
+                    'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by')
                 }),
                 ('FormZ', {
                     'classes': ('collapse',),
@@ -905,22 +943,7 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
                 )
 
         return super(SaCerevisiaeStrainPage,self).change_view(request,object_id,extra_context=extra_context)
-    
-    def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
-        """Override default changeform_view to hide Save buttons when certain conditions (same as
-        those in get_readonly_fields method) are met"""
-
-        extra_context = extra_context or {}
-        extra_context['show_submit_line'] = True
-        if object_id:
-            obj = SaCerevisiaeStrain.objects.get(pk=object_id)
-            if obj:
-                if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by.labuser.is_principal_investigator or obj.created_by.groups.filter(name='Past member')):
-                    if not request.user.has_perm('collection_management.change_sacerevisiaestrain', obj):
-                        extra_context['show_submit_line'] = False
-                extra_context['show_disapprove'] = True if request.user.groups.filter(name='Approval manager').exists() else False
-        return super(SaCerevisiaeStrainPage, self).changeform_view(request, object_id, extra_context=extra_context)
-
+   
     def obj_perms_manage_view(self, request, object_pk):
         """
         Main object Guardian permissions view. 
@@ -930,7 +953,8 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
         obj = SaCerevisiaeStrain.objects.get(pk=object_pk)
         
         if obj:
-            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or \
+                request.user == obj.created_by or request.user.labuser.is_principal_investigator):
                 messages.error(request, 'Nice try, you are allowed to change the permissions of your own records only.')
                 return HttpResponseRedirect("..")
         return super(SaCerevisiaeStrainPage,self).obj_perms_manage_view(request, object_pk)
@@ -1078,11 +1102,12 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
             # If the request's user is the principal investigator, approve the record
             # right away. If not, create an approval record
             if request.user.labuser.is_principal_investigator and request.user.id in obj.formz_projects.all().values_list('project_leader__id', flat=True):
+                original_last_changed_date_time = obj.last_changed_date_time
                 obj.created_approval_by_pi = True
                 obj.approval_user = request.user
                 obj.approval_by_pi_date_time = timezone.now()
                 obj.save_without_historical_record()
-                Plasmid.objects.filter(id=obj.pk).update(last_changed_date_time=obj.history.latest().last_changed_date_time)
+                Plasmid.objects.filter(id=obj.pk).update(last_changed_date_time=original_last_changed_date_time)
             else:
                 obj.approval.create(activity_type='created', activity_user=request.user)
 
@@ -1092,17 +1117,18 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
             # record for the object exists, create one
             if "_disapprove_record" in request.POST:
                 if not obj.approval.all():
+                    original_last_changed_date_time = obj.last_changed_date_time
                     obj.approval.create(activity_type='changed', activity_user=obj.created_by)
                     obj.last_changed_approval_by_pi = False
                     obj.approval_user = None
                     obj.save_without_historical_record()
-                    Plasmid.objects.filter(id=obj.pk).update(last_changed_date_time=obj.history.latest().last_changed_date_time)
-                    return
+                    Plasmid.objects.filter(id=obj.pk).update(last_changed_date_time=original_last_changed_date_time)
+                return
 
             saved_obj = Plasmid.objects.get(pk=obj.pk)
 
             # Check if the request's user can change the object, if not raise PermissionDenied
-            if request.user.is_superuser or request.user == saved_obj.created_by or request.user.groups.filter(name='Lab manager').exists() or request.user.has_perm('collection_management.change_plasmid', saved_obj):
+            if self.can_change:
                             
                 if obj.map:
                     if obj.map != saved_obj.map:
@@ -1430,13 +1456,13 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
         if obj:
             if request.user.has_perm('collection_management.change_plasmid', obj):
                 return ['map_png', 'map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',]
-            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by.labuser.is_principal_investigator):
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by.labuser.is_principal_investigator or obj.created_by.groups.filter(name='Past member').exists()):
                 return ['name', 'other_name', 'parent_vector', 'old_parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
                     'reference', 'map', 'map_png', 'map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
                     'last_changed_approval_by_pi', 'created_by', 'formz_projects', 'formz_risk_group', 'vector_zkbs', 
                     'destroyed_date', 'formz_elements', 'formz_gentech_methods', 'formz_ecoli_strains']
             else:
-                if obj.created_by.labuser.is_principal_investigator and not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists()): # Show map and note as editable fields, if record belongs to Helle (user id = 6)
+                if (obj.created_by.labuser.is_principal_investigator or obj.created_by.groups.filter(name='Past member').exists()) and not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists()): # Show map and note as editable fields, if record belongs to PI or old member
                     return ['name', 'other_name', 'parent_vector', 'old_parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 
                     'reference', 'map_png', 'map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
                     'last_changed_approval_by_pi', 'created_by', 'formz_projects', 'formz_risk_group', 'vector_zkbs', 
@@ -1446,7 +1472,7 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
         else:
             return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
     
-    def add_view(self,request,extra_context=None):
+    def add_view(self, request, extra_context=None):
         '''Override default add_view to show only desired fields'''
 
         self.fieldsets = (
@@ -1461,16 +1487,57 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
         
         return super(PlasmidPage,self).add_view(request)
     
-    def change_view(self,request,object_id,extra_context=None):
+    def change_view(self, request, object_id, extra_context=None):
         '''Override default change_view to show only desired fields'''
 
+        self.can_change = False
+
+        extra_context = extra_context or {}
+
         if object_id:
-            extra_context = extra_context or {}
-            extra_context['show_formz'] = True
+            
             obj = Plasmid.objects.get(pk=object_id)
-            if obj:
-                if request.user == obj.created_by:
-                    self.save_as = True
+            
+            if request.user == obj.created_by or request.user.groups.filter(name='Lab manager').exists() or \
+                request.user.labuser.is_principal_investigator or request.user.is_superuser or \
+                obj.created_by.labuser.is_principal_investigator or obj.created_by.groups.filter(name='Past member') or \
+                request.user.has_perm('collection_management.change_plasmid', obj):
+                    
+                    self.can_change = True
+                    
+                    if (obj.created_by.labuser.is_principal_investigator or obj.created_by.groups.filter(name='Past member')) and \
+                        not request.user.has_perm('collection_management.change_plasmid', obj):
+                        
+                        extra_context = {'show_close': True,
+                                        'show_save_and_add_another': False,
+                                        'show_save_and_continue': True,
+                                        'show_save_as_new': False,
+                                        'show_save': True,
+                                        'show_obj_permission': False,
+                                        'show_redetect_save': True}
+                    else:
+
+                        extra_context = {'show_close': True,
+                                    'show_save_and_add_another': True,
+                                    'show_save_and_continue': True,
+                                    'show_save_as_new': True,
+                                    'show_save': True,
+                                    'show_obj_permission': True,
+                                    'show_redetect_save': True
+                                    }
+
+            else:
+                
+                extra_context = {'show_close': True,
+                                 'show_save_and_add_another': False,
+                                 'show_save_and_continue': False,
+                                 'show_save_as_new': False,
+                                 'show_save': False,
+                                 'show_obj_permission': False,
+                                 'show_redetect_save': False}
+            
+            extra_context['show_disapprove'] = True if request.user.groups.filter(name='Approval manager').exists() else False
+            extra_context['show_formz'] = True
 
         fieldsets_with_keep = (
                 (None, {
@@ -1512,28 +1579,12 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
             if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by.labuser.is_principal_investigator):
                 self.fieldsets = fieldsets_wo_keep
             else:
-                if obj.created_by.labuser.is_principal_investigator and not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists()): # Show map and note as editable fields, if record belongs to Helle (user id = 6)
+                if obj.created_by.labuser.is_principal_investigator and not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists()):
                     self.fieldsets = fieldsets_with_keep
                 else:
                     self.fieldsets = fieldsets_wo_keep
         
-        return super(PlasmidPage,self).change_view(request,object_id,extra_context=extra_context)
-
-    def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
-        """Override default changeform_view to hide Save buttons when certain conditions (same as
-        those in get_readonly_fields method) are met"""
-
-        extra_context = extra_context or {}
-        extra_context['show_submit_line'] = True
-        if object_id:
-            obj = Plasmid.objects.get(pk=object_id)
-            if obj:
-                if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by.labuser.is_principal_investigator):
-                    if not request.user.has_perm('collection_management.change_plasmid', obj):
-                        extra_context['show_submit_line'] = False
-                extra_context['show_disapprove'] = True if request.user.groups.filter(name='Approval manager').exists() else False
-                extra_context['show_redetect_save'] = True
-        return super(PlasmidPage, self).changeform_view(request, object_id, extra_context=extra_context)
+        return super(PlasmidPage, self).change_view(request, object_id, extra_context=extra_context)
 
     def get_plasmidmap_short_name(self, instance):
         '''This function allows you to define a custom field for the list view to
@@ -1560,7 +1611,8 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
         obj = Plasmid.objects.get(pk=object_pk)
         
         if obj:
-            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or \
+                request.user == obj.created_by or request.user.labuser.is_principal_investigator):
                 messages.error(request, 'Nice try, you are allowed to change the permissions of your own records only.')
                 return HttpResponseRedirect("..")
         return super(PlasmidPage,self).obj_perms_manage_view(request, object_pk)
@@ -1723,7 +1775,6 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
     djangoql_schema = OligoQLSchema
     actions = [export_oligo]
     search_fields = ['id', 'name']
-    save_as = True
 
     def get_oligo_short_sequence(self, instance):
         '''This function allows you to define a custom field for the list view to
@@ -1751,10 +1802,11 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
             # If the request's user is the principal investigator, approve the record
             # right away. If not, create an approval record
             if request.user.labuser.is_principal_investigator:
+                original_last_changed_date_time = obj.last_changed_date_time
                 obj.created_approval_by_pi = True
                 obj.approval_by_pi_date_time = timezone.now()
                 obj.save_without_historical_record()
-                Oligo.objects.filter(id=obj.pk).update(last_changed_date_time=obj.history.latest().last_changed_date_time)
+                Oligo.objects.filter(id=obj.pk).update(last_changed_date_time=original_last_changed_date_time)
             else:
                 obj.approval.create(activity_type='created', activity_user=request.user)
             
@@ -1764,13 +1816,14 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
             # record for the object exists, create one
             if "_disapprove_record" in request.POST:
                 if not obj.approval.all():
+                    original_last_changed_date_time = obj.last_changed_date_time
                     obj.approval.create(activity_type='changed', activity_user=obj.created_by)
                     obj.last_changed_approval_by_pi = False
                     obj.save_without_historical_record()
-                    Oligo.objects.filter(id=obj.pk).update(last_changed_date_time=obj.history.latest().last_changed_date_time)
-                    return
+                    Oligo.objects.filter(id=obj.pk).update(last_changed_date_time=original_last_changed_date_time)
+                return
 
-            if request.user.is_superuser or request.user == Oligo.objects.get(pk=obj.pk).created_by or request.user.groups.filter(name='Lab manager').exists():
+            if self.can_change:
 
                 # Approve right away if the request's user is the principal investigator. If not,
                 # create an approval record
@@ -1808,11 +1861,11 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
         because their set by Django itself'''
         
         if obj:
-            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
+            if self.can_change:
+                return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi','created_by'] 
+            else:
                 return ['name','sequence', 'us_e', 'gene', 'restriction_site', 'description', 'comment', 'created_date_time',
                 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',]
-            else:
-                return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi','created_by']
         else:
             return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
     
@@ -1824,27 +1877,40 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
 
     def change_view(self,request,object_id,extra_context=None):
         '''Override default change_view to show only desired fields'''
+
+        self.can_change = False
+        extra_context = extra_context or {}
+
+        if object_id:
+            self.can_change = request.user == Oligo.objects.get(pk=object_id).created_by or \
+                    request.user.groups.filter(name='Lab manager').exists() or \
+                    request.user.is_superuser or request.user.labuser.is_principal_investigator
         
+            if self.can_change:
+
+                extra_context = {'show_close': True,
+                                 'show_save_and_add_another': True,
+                                 'show_save_and_continue': True,
+                                 'show_save_as_new': True,
+                                 'show_save': True,}
+
+            else:
+
+                extra_context = {'show_close': True,
+                                 'show_save_and_add_another': False,
+                                 'show_save_and_continue': False,
+                                 'show_save_as_new': False,
+                                 'show_save': False,}
+
+            extra_context['show_disapprove'] = True if request.user.groups.filter(name='Approval manager').exists() else False
+
         if '_saveasnew' in request.POST:
             self.fields = ('name','sequence', 'us_e', 'gene', 'restriction_site', 'description', 'comment' )
         else:
             self.fields = ('name','sequence', 'us_e', 'gene', 'restriction_site', 'description', 'comment',
                 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',)
-        return super(OligoPage,self).change_view(request,object_id)
 
-    def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
-        """Override default changeform_view to hide Save buttons when certain conditions (same as
-        those in get_readonly_fields method) are met"""
-
-        extra_context = extra_context or {}
-        extra_context['show_submit_line'] = True
-        if object_id:
-            obj = Oligo.objects.get(pk=object_id)
-            if obj:
-                if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
-                    extra_context['show_submit_line'] = False
-                extra_context['show_disapprove'] = True if request.user.groups.filter(name='Approval manager').exists() else False
-        return super(OligoPage, self).changeform_view(request, object_id, extra_context=extra_context)
+        return super(OligoPage,self).change_view(request,object_id, extra_context=extra_context)
 
     def response_change(self, request, obj):
         opts = self.model._meta
@@ -2026,11 +2092,12 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admi
             # If the request's user is the principal investigator, approve the record
             # right away. If not, create an approval record
             if request.user.labuser.is_principal_investigator and request.user.id in obj.formz_projects.all().values_list('project_leader__id', flat=True):
+                original_last_changed_date_time = obj.last_changed_date_time
                 obj.created_approval_by_pi = True
                 obj.approval_user = request.user
                 obj.approval_by_pi_date_time = timezone.now()
                 obj.save_without_historical_record()
-                ScPombeStrain.objects.filter(id=obj.pk).update(last_changed_date_time=obj.history.latest().last_changed_date_time)
+                ScPombeStrain.objects.filter(id=obj.pk).update(last_changed_date_time=original_last_changed_date_time)
             else:
                 obj.approval.create(activity_type='created', activity_user=request.user)
         
@@ -2040,14 +2107,15 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admi
             # record for the object exists, create one
             if "_disapprove_record" in request.POST:
                 if not obj.approval.all():
+                    original_last_changed_date_time = obj.last_changed_date_time
                     obj.approval.create(activity_type='changed', activity_user=obj.created_by)
                     obj.last_changed_approval_by_pi = False
                     obj.approval_user = None
                     obj.save_without_historical_record()
-                    ScPombeStrain.objects.filter(id=obj.pk).update(last_changed_date_time=obj.history.latest().last_changed_date_time)
-                    return
+                    ScPombeStrain.objects.filter(id=obj.pk).update(last_changed_date_time=original_last_changed_date_time)
+                return
         
-            if request.user.is_superuser or request.user == ScPombeStrain.objects.get(pk=obj.pk).created_by or request.user.groups.filter(name='Lab manager').exists():
+            if self.can_change:
 
                 # Approve right away if the request's user is the principal investigator. If not,
                 # create an approval record
@@ -2087,13 +2155,13 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admi
         because their set by Django itself'''
         
         if obj:
-            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
+            if self.can_change:
+                return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi','created_by',]
+            else:
                 return ['box_number', 'parent_1', 'parent_2', 'parental_strain', 'mating_type', 'auxotrophic_marker', 'name',
                         'integrated_plasmids', 'cassette_plasmids', 'phenotype', 'received_from', 'comment', 'created_date_time', 
                         'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',
                         'formz_projects', 'formz_risk_group', 'formz_gentech_methods', 'formz_elements', 'destroyed_date']
-            else:
-                return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi','created_by',]
         else:
             return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi','created_by',]
 
@@ -2158,18 +2226,43 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admi
     def change_view(self,request,object_id,extra_context=None):
         '''Override default change_view to show only desired fields'''
         
+        self.can_change = False
+
+        extra_context = extra_context or {}
+
         if object_id:
+            
             extra_context = extra_context or {}
             extra_context['show_formz'] = True
             obj = ScPombeStrain.objects.get(pk=object_id)
-            if obj:
-                if obj.history_all_plasmids_in_stocked_strain:
-                    extra_context['plasmid_id_list'] = obj.history_all_plasmids_in_stocked_strain
-                if request.user == obj.created_by:
-                    self.save_as = True
+            
+            if obj.history_all_plasmids_in_stocked_strain:
+                extra_context['plasmid_id_list'] = obj.history_all_plasmids_in_stocked_strain
+            
+            if request.user == obj.created_by or request.user.groups.filter(name='Lab manager').exists() or \
+                request.user.is_superuser or request.user.labuser.is_principal_investigator:
 
-        extra_context = extra_context or {}
-        extra_context['show_formz'] = True
+                extra_context = {'show_close': True,
+                                'show_save_and_add_another': True,
+                                'show_save_and_continue': True,
+                                'show_save_as_new': True,
+                                'show_save': True,
+                                'show_obj_permission': True
+                                }
+
+            else:
+
+                 extra_context = {'show_close': True,
+                                 'show_save_and_add_another': False,
+                                 'show_save_and_continue': False,
+                                 'show_save_as_new': False,
+                                 'show_save': False,
+                                 'show_obj_permission': False}
+            
+            extra_context['show_disapprove'] = True if request.user.groups.filter(name='Approval manager').exists() else False
+            extra_context['show_formz'] = True
+
+            extra_context['show_formz'] = True
 
         if '_saveasnew' in request.POST:
             self.fieldsets = (
@@ -2196,20 +2289,6 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admi
             )
 
         return super(ScPombeStrainPage,self).change_view(request,object_id, extra_context=extra_context)
-
-    def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
-        """Override default changeform_view to hide Save buttons when certain conditions (same as
-        those in get_readonly_fields method) are met"""
-
-        extra_context = extra_context or {}
-        extra_context['show_submit_line'] = True
-        if object_id:
-            obj = ScPombeStrain.objects.get(pk=object_id)
-            if obj:
-                if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
-                    extra_context['show_submit_line'] = False
-                extra_context['show_disapprove'] = True if request.user.groups.filter(name='Approval manager').exists() else False
-        return super(ScPombeStrainPage, self).changeform_view(request, object_id, extra_context=extra_context)
 
     def response_change(self, request, obj):
         opts = self.model._meta
@@ -2313,11 +2392,12 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.
             # If the request's user is the principal investigator, approve the record
             # right away. If not, create an approval record
             if request.user.labuser.is_principal_investigator and request.user.id in obj.formz_projects.all().values_list('project_leader__id', flat=True):
+                original_last_changed_date_time = obj.last_changed_date_time
                 obj.created_approval_by_pi = True
                 obj.approval_user = request.user
                 obj.approval_by_pi_date_time = timezone.now()
                 obj.save_without_historical_record()
-                EColiStrain.objects.filter(id=obj.pk).update(last_changed_date_time=obj.history.latest().last_changed_date_time)
+                EColiStrain.objects.filter(id=obj.pk).update(last_changed_date_time=original_last_changed_date_time)
             else:
                 obj.approval.create(activity_type='created', activity_user=request.user)
 
@@ -2327,14 +2407,15 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.
             # record for the object exists, create one
             if "_disapprove_record" in request.POST:
                 if not obj.approval.all():
+                    original_last_changed_date_time = obj.last_changed_date_time
                     obj.approval.create(activity_type='changed', activity_user=obj.created_by)
                     obj.last_changed_approval_by_pi = False
                     obj.approval_user = None
                     obj.save_without_historical_record()
-                    EColiStrain.objects.filter(id=obj.pk).update(last_changed_date_time=obj.history.latest().last_changed_date_time)
-                    return
+                    EColiStrain.objects.filter(id=obj.pk).update(last_changed_date_time=original_last_changed_date_time)
+                return
 
-            if request.user.is_superuser or request.user == EColiStrain.objects.get(pk=obj.pk).created_by or request.user.groups.filter(name='Lab manager').exists():
+            if self.can_change:
                 
                 # Approve right away if the request's user is the principal investigator. If not,
                 # create an approval record
@@ -2374,12 +2455,13 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.
         because their set by Django itself'''
 
         if obj:
-            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
+            if self.can_change:
+                return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
+            else:
+                
                 return ['name', 'resistance', 'genotype', 'background', 'supplier', 'us_e', 'purpose', 'note',
                 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by', 'formz_risk_group',
                 'formz_projects', 'formz_elements', 'destroyed_date']
-            else:
-                return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
         else:
             return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
     
@@ -2401,7 +2483,36 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.
         '''Override default change_view to show only desired fields'''
 
         extra_context = extra_context or {}
-        extra_context['show_formz'] = True
+        
+        self.can_change = False
+
+        if object_id:
+            
+            obj = EColiStrain.objects.get(pk=object_id)
+
+            if request.user == obj.created_by or request.user.groups.filter(name='Lab manager').exists() or \
+                request.user.labuser.is_principal_investigator or request.user.is_superuser:
+                
+                self.can_change = True
+                
+                extra_context = {'show_close': True,
+                                'show_save_and_add_another': True,
+                                'show_save_and_continue': True,
+                                'show_save_as_new': True,
+                                'show_save': True,
+                                'show_obj_permission': True}
+
+            else:
+
+                extra_context = {'show_close': True,
+                                 'show_save_and_add_another': False,
+                                 'show_save_and_continue': False,
+                                 'show_save_as_new': False,
+                                 'show_save': False,
+                                 'show_obj_permission': False}
+            
+            extra_context['show_disapprove'] = True if request.user.groups.filter(name='Approval manager').exists() else False
+            extra_context['show_formz'] = True
 
         self.fieldsets = (
             (None, {
@@ -2416,19 +2527,6 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.
 
         return super(EColiStrainPage,self).change_view(request,object_id, extra_context=extra_context)
     
-    def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
-        """Override default changeform_view to hide Save buttons when certain conditions (same as
-        those in get_readonly_fields method) are met"""
-
-        extra_context = extra_context or {}
-        extra_context['show_submit_line'] = True
-        if object_id:
-            obj = EColiStrain.objects.get(pk=object_id)
-            if obj:
-                if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
-                    extra_context['show_submit_line'] = False
-        return super(EColiStrainPage, self).changeform_view(request, object_id, extra_context=extra_context)
-
     def response_change(self, request, obj):
         opts = self.model._meta
         preserved_filters = self.get_preserved_filters(request)
@@ -2501,13 +2599,6 @@ class CellLineDocPage(admin.ModelAdmin):
 
         self.fields = (['name', 'typ_e', 'date_of_test', 'cell_line', 'comment', 'created_date_time',])
         return super(CellLineDocPage,self).change_view(request,object_id)
-
-    def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
-        extra_context = extra_context or {}
-        extra_context['show_submit_line'] = True
-        if object_id:
-            extra_context['show_submit_line'] = False
-        return super(CellLineDocPage, self).changeform_view(request, object_id, extra_context=extra_context)
 
 class CellLineDocInline(admin.TabularInline):
     """Inline to view existing cell line documents"""
@@ -2694,11 +2785,12 @@ class CellLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGua
             # If the request's user is the principal investigator, approve the record
             # right away. If not, create an approval record
             if request.user.labuser.is_principal_investigator and request.user.id in obj.formz_projects.all().values_list('project_leader__id', flat=True):
+                original_last_changed_date_time = obj.last_changed_date_time
                 obj.created_approval_by_pi = True
                 obj.approval_user = request.user
                 obj.approval_by_pi_date_time = timezone.now()
                 obj.save_without_historical_record()
-                CellLine.objects.filter(id=obj.pk).update(last_changed_date_time=obj.history.latest().last_changed_date_time)
+                CellLine.objects.filter(id=obj.pk).update(last_changed_date_time=original_last_changed_date_time)
             else:
                 obj.approval.create(activity_type='created', activity_user=request.user)
             
@@ -2708,12 +2800,13 @@ class CellLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGua
             # record for the object exists, create one
             if "_disapprove_record" in request.POST:
                 if not obj.approval.all():
+                    original_last_changed_date_time = obj.last_changed_date_time
                     obj.approval.create(activity_type='changed', activity_user=obj.created_by)
                     obj.last_changed_approval_by_pi = False
                     obj.approval_user = None
                     obj.save_without_historical_record()
-                    CellLine.objects.filter(id=obj.pk).update(last_changed_date_time=obj.history.latest().last_changed_date_time)
-                    return
+                    CellLine.objects.filter(id=obj.pk).update(last_changed_date_time=original_last_changed_date_time)
+                return
 
             # Approve right away if the request's user is the principal investigator. If not,
             # create an approval record
@@ -2750,16 +2843,13 @@ class CellLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGua
         because their set by Django itself'''
 
         if obj:
-            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
-                if request.user.has_perm('collection_management.change_cellline', obj):
+            if self.can_change:
                     return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by']
-                else:
-                    return ['name', 'box_name', 'alternative_name', 'parental_line', 'organism', 'cell_type_tissue', 'culture_type', 'growth_condition',
-                    'freezing_medium', 'received_from', 'integrated_plasmids', 'description_comment', 's2_work', 'created_date_time', 'created_approval_by_pi',
-                    'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by', 'formz_projects', 'formz_risk_group','zkbs_cell_line', 
-                    'formz_gentech_methods', 'formz_elements', 'destroyed_date',]
             else:
-                return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by']
+                return ['name', 'box_name', 'alternative_name', 'parental_line', 'organism', 'cell_type_tissue', 'culture_type', 'growth_condition',
+                'freezing_medium', 'received_from', 'integrated_plasmids', 'description_comment', 's2_work', 'created_date_time', 'created_approval_by_pi',
+                'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by', 'formz_projects', 'formz_risk_group','zkbs_cell_line', 
+                'formz_gentech_methods', 'formz_elements', 'destroyed_date',]
         else:
             return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
     
@@ -2812,15 +2902,41 @@ class CellLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGua
     def change_view(self,request,object_id,extra_context=None):
         '''Override default change_view to show only desired fields'''
 
+        self.can_change = False
+        
         if object_id:
+            
             obj = CellLine.objects.get(pk=object_id)
             extra_context = extra_context or {}
             extra_context['show_formz'] = True
-            if obj:
-                if obj.history_integrated_plasmids:
-                    extra_context['plasmid_id_list'] = obj.history_integrated_plasmids
-                if request.user == obj.created_by:
-                    self.save_as = True
+            
+            if obj.history_integrated_plasmids:
+                extra_context['plasmid_id_list'] = obj.history_integrated_plasmids
+        
+            if request.user == obj.created_by or request.user.groups.filter(name='Lab manager').exists() or \
+                request.user.labuser.is_principal_investigator or request.user.is_superuser or \
+                request.user.has_perm('collection_management.change_cellline', obj):
+                
+                self.can_change = True
+                
+                extra_context = {'show_close': True,
+                            'show_save_and_add_another': True,
+                            'show_save_and_continue': True,
+                            'show_save_as_new': True,
+                            'show_save': True,
+                            'show_obj_permission': True,
+                            }
+            else:
+                
+                extra_context = {'show_close': True,
+                                 'show_save_and_add_another': True,
+                                 'show_save_and_continue': True,
+                                 'show_save_as_new': False,
+                                 'show_save': True,
+                                 'show_obj_permission': False}
+
+            extra_context['show_disapprove'] = True if request.user.groups.filter(name='Approval manager').exists() else False
+            extra_context['show_formz'] = True
 
         if '_saveasnew' in request.POST:
             self.fieldsets = (
@@ -2847,16 +2963,6 @@ class CellLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGua
             )
             
         return super(CellLinePage,self).change_view(request,object_id,extra_context=extra_context)
-
-    def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
-        """Override default changeform_view to hide Save buttons when certain conditions (same as
-        those in get_readonly_fields method) are met"""
-
-        extra_context = extra_context or {}
-        extra_context['show_submit_line'] = True
-        extra_context['show_disapprove'] = True if request.user.groups.filter(name='Approval manager').exists() else False
-
-        return super(CellLinePage, self).changeform_view(request, object_id, extra_context=extra_context)
 
     def get_formsets_with_inlines(self, request, obj=None):
         """Remove AddCellLineDocInline from add/change form if user who
@@ -2886,7 +2992,8 @@ class CellLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGua
         obj = CellLine.objects.get(pk=object_pk)
         
         if obj:
-            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by):
+            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or \
+                request.user == obj.created_by or request.user.labuser.is_principal_investigator):
                 messages.error(request, 'Nice try, you are allowed to change the permissions of your own records only.')
                 return HttpResponseRedirect("..")
         return super(CellLinePage,self).obj_perms_manage_view(request, object_pk)
@@ -3059,15 +3166,6 @@ class AntibodyPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.Mod
         self.fields = ('name', 'species_isotype', 'clone', 'received_from', 'catalogue_number', 'l_ocation', 'a_pplication',
                 'description_comment', 'info_sheet','created_date_time','last_changed_date_time', )
         return super(AntibodyPage,self).change_view(request,object_id)
-
-    def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
-        """Override default changeform_view to hide Save buttons when certain conditions (same as
-        those in get_readonly_fields method) are met"""
-
-        extra_context = extra_context or {}
-        extra_context['show_submit_line'] = True
-
-        return super(AntibodyPage, self).changeform_view(request, object_id, extra_context=extra_context)
 
     def get_sheet_short_name(self, instance):
         '''Create custom column for information sheet

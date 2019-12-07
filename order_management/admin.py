@@ -842,12 +842,12 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
         # Specifies which fields should be shown as read-only and when
         
         if obj:
-            if not (request.user.groups.filter(name='Lab manager').exists() or request.user.groups.filter(name='Order manager').exists()):
+            if self.can_change:
+                return ['urgent', 'delivery_alert', 'delivered_date', 'order_manager_created_date_time','created_date_time', 'last_changed_date_time',]
+            else:
                 return ['supplier','supplier_part_no', 'internal_order_no', 'part_description', 'quantity', 
             'price', 'cost_unit', 'status', 'urgent', 'delivery_alert', 'location', 'comment', 'url', 'delivered_date', 'cas_number', 
             'ghs_pictogram', 'msds_form', 'hazard_level_pregnancy', 'order_manager_created_date_time', 'created_date_time', 'last_changed_date_time', 'created_by',]
-            else:
-                return ['urgent', 'delivery_alert', 'delivered_date', 'order_manager_created_date_time','created_date_time', 'last_changed_date_time',]
         else:
             return ['order_manager_created_date_time', 'created_date_time',  'last_changed_date_time',]
 
@@ -876,26 +876,37 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
         
         self.raw_id_fields = []
         self.autocomplete_fields = ['msds_form']
+        self.can_change = False
+
+        if object_id:
+            
+            extra_context = extra_context or {}
+
+            if request.user.groups.filter(name='Lab manager').exists() or request.user.groups.filter(name='Order manager').exists():
+
+                self.can_change = True
+
+                extra_context = {'show_close': True,
+                            'show_save_and_add_another': True,
+                            'show_save_and_continue': True,
+                            'show_save_as_new': False,
+                            'show_save': True
+                            }
+            
+            else:
+
+                extra_context = {'show_close': True,
+                            'show_save_and_add_another': False,
+                            'show_save_and_continue': False,
+                            'show_save_as_new': False,
+                            'show_save': False
+                            }
 
         self.fields = ('supplier','supplier_part_no', 'internal_order_no', 'part_description', 'quantity', 
             'price', 'cost_unit', 'status', 'urgent', 'delivery_alert', 'location', 'comment', 'url', 'cas_number', 
             'ghs_pictogram', 'msds_form', 'hazard_level_pregnancy', 'created_date_time', 'order_manager_created_date_time', 
             'delivered_date', 'created_by',)
         return super(OrderPage,self).change_view(request, object_id, extra_context=extra_context)
-
-    def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
-        
-        # Hide Save buttons when certain conditions (same as those in get_readonly_fields method) are met
-
-        extra_context = extra_context or {}
-        extra_context['show_submit_line'] = True
-        if object_id:
-            obj = Order.objects.get(pk=object_id)
-            if obj:
-                if not (request.user.groups.filter(name='Lab manager').exists() or request.user.groups.filter(name='Order manager').exists()):
-                    extra_context['show_submit_line'] = False
-        
-        return super(OrderPage, self).changeform_view(request, object_id, form_url, extra_context=extra_context)
     
     def changelist_view(self, request, extra_context=None):
         
@@ -1140,15 +1151,6 @@ class OrderExtraDocPage(DjangoQLSearchMixin, admin.ModelAdmin):
         # Specifies which fields should be shown in the change view
         self.fields = (['name', 'order', 'created_date_time',])
         return super(OrderExtraDocPage,self).change_view(request,object_id)
-
-    def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
- 
-        # Hide Save buttons when certain conditions (same as those in get_readonly_fields method) are met
-        extra_context = extra_context or {}
-        extra_context['show_submit_line'] = True
-        if object_id:
-            extra_context['show_submit_line'] = False
-        return super(OrderExtraDocPage, self).changeform_view(request, object_id, form_url, extra_context=extra_context)
 
 #################################################
 #           ORDER COST UNIT PAGES               #

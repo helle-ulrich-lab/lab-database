@@ -29,10 +29,12 @@
 {% if change %}{% if not is_popup %}
   <ul class="object-tools">
     {% block object-tools-items %}
-
-    {% url opts|admin_urlname:'permissions' original.pk|admin_urlquote as history_url %}
-    <li><a href="{% add_preserved_filters history_url %}" class="permissionslink">{% trans "Object permissions" %}</a></li>
-
+    
+    {% if show_obj_permission %}
+      {% url opts|admin_urlname:'permissions' original.pk|admin_urlquote as history_url %}
+      <li><a href="{% add_preserved_filters history_url %}" class="permissionslink">{% trans "Object permissions" %}</a></li>
+    {% endif %}
+    
     {% if plasmid_id_list %}
       <li><a href="/collection_management/plasmid/?q-l=on&q=id+in+{{plasmid_id_list}}">{% trans "Plasmids" %}</a></li>
     {% endif %}
@@ -81,7 +83,7 @@
 
 {% block after_related_objects %}{% endblock %}
 
-{% if show_submit_line or show_submit_line == None %}{% block submit_buttons_bottom %}{% submit_row %}{% endblock %}{% endif %}
+{% block submit_buttons_bottom %}{% submit_row %}{% endblock %}
 
 {% block admin_change_form_document_ready %}
     <script type="text/javascript"

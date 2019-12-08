@@ -209,7 +209,15 @@ class RecordToBeApprovedPage(admin.ModelAdmin):
         if request.user.labuser.is_principal_investigator or request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists():
             return qs
         elif request.user.groups.filter(name='Approval manager').exists():
-            return qs.filter(content_type__app_label='collection_management')
+            qs = qs.filter(content_type__app_label='collection_management').exclude(content_type__model='oligo')
+            approval_record_ids = []
+            for approval_record in qs:
+                obj = approval_record.content_object
+                if request.user.id in obj.formz_projects.all().values_list('project_leader__id', flat=True):
+                    approval_record_ids.append(approval_record.id)
+            return qs.filter(id__in=approval_record_ids)
+        else:
+            return qs
 
     def record_link(self, instance):
         '''Custom link to a record field for changelist_view'''

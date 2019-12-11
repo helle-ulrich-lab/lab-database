@@ -423,6 +423,7 @@ def formz_as_html(modeladmin, request, queryset):
         from formz.models import FormZHeader
         from django.apps import apps
         from django.contrib.contenttypes.models import ContentType
+        from formz.models import ZkbsCellLine
 
         model = apps.get_model(app_label, model_name)
         model_content_type = ContentType.objects.get(app_label=app_label, model=model_name)
@@ -454,6 +455,10 @@ def formz_as_html(modeladmin, request, queryset):
             storage_location.species_name = obj.organism
             obj.s2_plasmids = obj.celllineepisomalplasmid_set.all().filter(s2_work_episomal_plasmid=True).distinct().order_by('id')
             transfected = True
+            try:
+                virus_packaging_cell_line = ZkbsCellLine.objects.filter(name__iexact='293T (HEK 293T)').order_by('id')[0]
+            except:
+                virus_packaging_cell_line = ZkbsCellLine(name = '293T (HEK 293T)')
         else:
             obj.s2_plasmids = None
             transfected = False
@@ -461,7 +466,9 @@ def formz_as_html(modeladmin, request, queryset):
         params = {'object': obj,
                 'storage_location': storage_location,
                 'formz_header': formz_header,
-                'transfected': transfected}
+                'transfected': transfected,
+                'virus_packaging_cell_line': virus_packaging_cell_line,
+                }
 
         return params
 
@@ -476,7 +483,7 @@ def formz_as_html(modeladmin, request, queryset):
 
     with zipfile.ZipFile(response, "w", zipfile.ZIP_DEFLATED) as zip_file:
         for obj in queryset:
-            params = get_params(app_label, model_name, obj.id)
+            params = get_params(app_label, model_name.lower(), obj.id)
             params['map_attachment_type'] = request.POST.get('map_attachment_type', default='none')
             html = template.render(params)
             html = BeautifulSoup(html, features="lxml")

@@ -234,6 +234,7 @@ class MyAdminSite(admin.AdminSite):
 
         from formz.models import FormZStorageLocation
         from formz.models import FormZHeader
+        from formz.models import ZkbsCellLine        
         
         app_label, model_name, obj_id = kwargs['object_id'].split('/')
         model = apps.get_model(app_label, model_name)
@@ -265,6 +266,10 @@ class MyAdminSite(admin.AdminSite):
         if model_name == 'cellline':
             storage_location.species_name = obj.organism
             obj.s2_plasmids = obj.celllineepisomalplasmid_set.all().filter(s2_work_episomal_plasmid=True).distinct().order_by('id')
+            try:
+                virus_packaging_cell_line = ZkbsCellLine.objects.filter(name__iexact='293T (HEK 293T)').order_by('id')[0]
+            except:
+                virus_packaging_cell_line = ZkbsCellLine(name = '293T (HEK 293T)')
             transfected = True
         else:
             obj.s2_plasmids = None
@@ -281,7 +286,8 @@ class MyAdminSite(admin.AdminSite):
         'object': obj,
         'storage_location': storage_location,
         'formz_header': formz_header,
-        'transfected': transfected}
+        'transfected': transfected, 
+        'virus_packaging_cell_line': virus_packaging_cell_line,}
 
         return render(request, 'admin/formz.html', context)
 

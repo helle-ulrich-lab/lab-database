@@ -655,8 +655,11 @@ class CellLineEpisomalPlasmid (models.Model):
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         
         # If destroyed date not present and plasmid not in stocked strain, automatically set destroyed date
-        if not self.destroyed_date and self.created_date and not self.s2_work_episomal_plasmid:
-            self.destroyed_date = self.created_date + timedelta(days=random.randint(7,28))
+        if not self.destroyed_date and self.created_date:
+            if self.s2_work_episomal_plasmid:
+                self.destroyed_date = self.created_date + timedelta(days=random.randint(2,4))
+            else:
+                self.destroyed_date = self.created_date + timedelta(days=random.randint(7,28))
         
         super(CellLineEpisomalPlasmid, self).save(force_insert, force_update, using, update_fields)
 

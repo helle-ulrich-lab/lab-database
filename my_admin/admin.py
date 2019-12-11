@@ -274,6 +274,7 @@ class MyAdminSite(admin.AdminSite):
         else:
             obj.s2_plasmids = None
             transfected = False
+            virus_packaging_cell_line = None
 
         context = {
         'title': 'FormZ: {}'.format(obj),

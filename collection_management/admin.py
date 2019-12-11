@@ -462,6 +462,7 @@ def formz_as_html(modeladmin, request, queryset):
         else:
             obj.s2_plasmids = None
             transfected = False
+            virus_packaging_cell_line = None
 
         params = {'object': obj,
                 'storage_location': storage_location,

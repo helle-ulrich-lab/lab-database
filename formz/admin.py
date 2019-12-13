@@ -162,11 +162,7 @@ class FormZBaseElementForm(forms.ModelForm):
 
         donor_organism = self.cleaned_data.get('donor_organism', None)
 
-        if donor_organism:
-            max_risk_group = donor_organism.all().order_by('-risk_group').values_list('risk_group', flat=True).first()
-            max_risk_group = max_risk_group if max_risk_group else 0
-        else:
-            self.add_error('donor_organism', "This field is required.")
+        max_risk_group = donor_organism.all().order_by('-risk_group').values_list('risk_group', flat=True).first() if donor_organism else 0
 
         description = self.cleaned_data.get('description', None)
 

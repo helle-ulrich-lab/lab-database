@@ -72,13 +72,15 @@ def update_autocomplete_js():
     function of the order add page"""
 
     from django_project.settings import BASE_DIR
+    from django_project.settings import MEDIA_ROOT
 
     lstofprodname = []
     part_description_json_line = ""
     part_no_json_line = ""
     
     # Loop through all elements (= rows) in the order list
-    for order in Order.objects.all().order_by('-id').values("supplier", "supplier_part_no", "part_description", "location", "msds_form", "price", "cas_number", "ghs_pictogram", "hazard_level_pregnancy"):
+    all_orders = Order.objects.all().order_by('-id').values("supplier", "supplier_part_no", "part_description", "location", "msds_form", "price", "cas_number", "ghs_pictogram", "hazard_level_pregnancy")
+    for order in all_orders:
         
         # Create value:data pairs using part_description or supplier_part_no as values
         part_description_lower = order["part_description"].lower()
@@ -193,7 +195,7 @@ def update_autocomplete_js():
     });"""
     
     # Write to file
-    with open(BASE_DIR + "/static/admin/js/order_management/product-autocomplete.js","w") as out_handle_js:
+    with open(MEDIA_ROOT + "order_management/product-autocomplete.js","w") as out_handle_js:
         out_handle_js.write(jsmin(header_js + footer_js))
 
 #################################################

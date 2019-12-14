@@ -1241,21 +1241,29 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
 
         obj = Plasmid.objects.get(pk=form.instance.id)
 
+        # If a plasmid map is provided, automatically add those
+        # for which a corresponding FormZ base element is present
+        # in the database
+
         if self.clear_formz_elements:
             obj.formz_elements.clear()
 
         if self.rename_and_preview or "_redetect_formz_elements" in request.POST:
+            
             unknown_feat_name_list = []
             r = self.get_plasmid_map_features(obj.map.path, 3)
+            
             if not self.new_obj:
                 obj.formz_elements.clear()
-            for feat in r["features"]:
-                base_elems = FormZBaseElement.objects.filter(extra_label__label__exact = feat['name'].strip())
-                if base_elems.distinct():
-                    for elem in base_elems:
-                        obj.formz_elements.add(elem)
-                else:
-                    unknown_feat_name_list.append(feat['name'])
+            
+            feature_names = [feat['name'].strip() for feat in r['features']]
+            formz_base_elems = FormZBaseElement.objects.filter(extra_label__label__in = feature_names).distinct()
+            aliases = list(formz_base_elems.values_list('extra_label__label', flat=True))
+
+            obj.formz_elements.add(*list(formz_base_elems))
+
+            unknown_feat_name_list = [feat for feat in feature_names if feat not in aliases]
+
             if unknown_feat_name_list:
                 self.redirect_to_obj_page = True
                 unknown_feat_name_list = str(unknown_feat_name_list)[1:-1].replace("'", "")

@@ -1230,7 +1230,7 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
             
             # For plasmid map, detect common features and save as png using snapgene server
             try:
-                self.create_plasmid_map_preview(obj.map.path, obj.map_png.path, obj.map_gbk.path, obj.id, obj.name, 3)
+                self.create_plasmid_map_preview(obj.map.path, obj.map_png.path, obj.map_gbk.path, obj.id, obj.name)
             except:
                 messages.warning(request, 'Could not detect common features or save map preview')
 
@@ -1251,7 +1251,7 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
         if self.rename_and_preview or "_redetect_formz_elements" in request.POST:
             
             unknown_feat_name_list = []
-            r = self.get_plasmid_map_features(obj.map.path, 3)
+            r = self.get_plasmid_map_features(obj.map.path)
             
             if not self.new_obj:
                 obj.formz_elements.clear()
@@ -1634,7 +1634,7 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
         return super(PlasmidPage,self).obj_perms_manage_view(request, object_pk)
 
     #@background(schedule=1) # Run 1 s after it is called, as "background" process
-    def create_plasmid_map_preview(self, plasmid_map_path, png_plasmid_map_path, gbk_plasmid_map_path, obj_id, obj_name, attempt_number):
+    def create_plasmid_map_preview(self, plasmid_map_path, png_plasmid_map_path, gbk_plasmid_map_path, obj_id, obj_name, attempt_number=3, messages=[]):
         """ Given a path to a snapgene plasmid map, use snapegene server
         to detect common features and create map preview as png
         and gbk"""
@@ -1657,8 +1657,10 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
                 r = client.requestResponse(argument, 10000)
                 r_code = r.get('code', 1)
                 if r_code > 0:
+                    error_message = r.get('response', 'None')
+                    if error_message not in messages: messages.append(error_message)
                     client.close()
-                    raise Exception                       
+                    raise Exception
                 
                 argument = {"request":"generatePNGMap", "inputFile": plasmid_map_path,
                 "outputPng": png_plasmid_map_path, "title": "p{}{} - {}".format(LAB_ABBREVIATION_FOR_FILES, obj_id, obj_name),
@@ -1666,6 +1668,8 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
                 r = client.requestResponse(argument, 10000)
                 r_code = r.get('code', 1)
                 if r_code > 0:
+                    error_message = r.get('response', 'None')
+                    if error_message not in messages: messages.append(error_message)
                     client.close()
                     raise Exception
                 
@@ -1674,21 +1678,23 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
                 r = client.requestResponse(argument, 10000)
                 r_code = r.get('code', 1)
                 if r_code > 0:
+                    error_message = r.get('response', 'None')
+                    if error_message not in messages: messages.append(error_message)
                     client.close()
                     raise Exception
 
                 client.close()
 
             except:
-                self.create_plasmid_map_preview(plasmid_map_path, png_plasmid_map_path, gbk_plasmid_map_path, obj_id, obj_name, attempt_number - 1)
+                self.create_plasmid_map_preview(plasmid_map_path, png_plasmid_map_path, gbk_plasmid_map_path, obj_id, obj_name, attempt_number - 1, messages)
 
         else:
             mail_admins("Snapgene server error", 
-                        "There was an error with creating the preview for {} with snapgene server".format(plasmid_map_path), 
+                        "There was an error with creating the preview for {} with snapgene server.\n\nErrors: {}.".format(plasmid_map_path, str(messages)), 
                         fail_silently=True)
             raise Exception
 
-    def get_plasmid_map_features(self, plasmid_map_path, attempt_number):
+    def get_plasmid_map_features(self, plasmid_map_path, attempt_number=3, messages=[]):
         """ Given a path to a snapgene plasmid map (.dna), use snapegene server
         to return features, as json"""
 
@@ -1707,6 +1713,8 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
                 r = client.requestResponse(argument, 10000)
                 r_code = r.get('code', 1)
                 if r_code > 0:
+                    error_message = r.get('response', 'None')
+                    if error_message not in messages: messages.append(error_message)
                     client.close()
                     raise Exception
                 
@@ -1715,11 +1723,11 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
                 return r
             
             except:
-                self.get_plasmid_map_features(plasmid_map_path, attempt_number - 1)
+                self.get_plasmid_map_features(plasmid_map_path, attempt_number - 1, messages)
         
         else:
             mail_admins("Snapgene server error", 
-                        "There was an error with getting plasmid features for {} with snapgene server".format(plasmid_map_path), 
+                        "There was an error with getting plasmid features for {} with snapgene server.\n\nErrors: {}.".format(plasmid_map_path, str(messages)), 
                         fail_silently=True)
             raise Exception
 

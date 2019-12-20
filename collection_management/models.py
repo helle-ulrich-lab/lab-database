@@ -209,9 +209,9 @@ class Plasmid (models.Model, SaveWithoutHistoricalRecord):
     received_from = models.CharField("received from", max_length=255, blank=True)
     note = models.CharField("note", max_length=300, blank=True)
     reference = models.CharField("reference", max_length=255, blank=True)
-    map = models.FileField("plasmid map", help_text = 'only .dna files, max. 2 MB', upload_to="collection_management/plasmid/dna/", blank=True)
+    map = models.FileField("plasmid map (.dna)", help_text = 'only SnapGene .dna files, max. 2 MB', upload_to="collection_management/plasmid/dna/", blank=True)
     map_png = models.ImageField("plasmid image" , upload_to="collection_management/plasmid/png/", blank=True)
-    map_gbk = models.FileField("plasmid map (.gbk)", upload_to="collection_management/plasmid/gb/", blank=True)
+    map_gbk = models.FileField("plasmid map (.gbk)", upload_to="collection_management/plasmid/gbk/", help_text = 'only .gbk files, max. 2 MB', blank=True)
 
     created_date_time = models.DateTimeField("created", auto_now_add=True)
     created_approval_by_pi = models.BooleanField("record creation approval", default=False)
@@ -246,10 +246,11 @@ class Plasmid (models.Model, SaveWithoutHistoricalRecord):
         verbose_name_plural = 'plasmids'
 
     def clean(self):
-    
+        
         errors = []
         
         file_size_limit = 2 * 1024 * 1024
+        
         if self.map:
             
             # Check if file is bigger than 2 MB
@@ -263,6 +264,20 @@ class Plasmid (models.Model, SaveWithoutHistoricalRecord):
                 map_ext = None
             if map_ext == None or map_ext != 'dna':
                 errors.append(ValidationError('Invalid file format. Please select a valid SnapGene .dna file'))
+
+        if self.map_gbk:
+            
+            # Check if file is bigger than 2 MB
+            if self.map_gbk.size > file_size_limit:
+                errors.append(ValidationError('Plasmid map too large. Size cannot exceed 2 MB.'))
+        
+            # Check if file's extension is '.gbk'
+            try:
+                map_ext = self.map_gbk.name.split('.')[-1].lower()
+            except:
+                map_ext = None
+            if map_ext == None or map_ext != 'gbk':
+                errors.append(ValidationError('Invalid file format. Please select a valid GenBank .gbk file'))
 
         if len(errors) > 0:
             raise ValidationError(errors)

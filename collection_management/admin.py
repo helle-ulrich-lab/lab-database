@@ -1065,6 +1065,34 @@ def export_plasmid(modeladmin, request, queryset):
     return response
 export_plasmid.short_description = "Export selected plasmids"
 
+class PlasmidForm(forms.ModelForm):
+    
+    class Meta:
+        model = Plasmid
+        fields = '__all__'
+
+    def clean(self):
+
+        """Check if both the .dna and .gbk map is changed at the same time, which 
+        is not allowed"""
+
+        map_dna = self.cleaned_data.get('map', None)
+        map_gbk = self.cleaned_data.get('map_gbk', None)
+
+        if not self.instance.pk:
+            if map_dna and map_gbk:
+                self.add_error(None, "You cannot add both a .dna and a .gbk map at the same time. Please choose only one")
+
+        else:
+            saved_obj = Plasmid.objects.get(id=self.instance.pk)
+            saved_dna_map = saved_obj.map.name if saved_obj.map.name else None
+            saved_gbk_map = saved_obj.map_gbk.name if saved_obj.map_gbk.name else None
+
+            if  map_dna != saved_dna_map and map_gbk != saved_gbk_map:
+                self.add_error(None, "You cannot change both a .dna and a .gbk map at the same time. Please choose only one")
+
+        return self.cleaned_data
+
 class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin, Approval):
     
     list_display = ('id', 'name', 'selection', 'get_plasmidmap_short_name', 'created_by', 'approval')
@@ -1076,6 +1104,7 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
     search_fields = ['id', 'name']
     autocomplete_fields = ['parent_vector', 'formz_projects', 'formz_elements', 'vector_zkbs', 'formz_ecoli_strains', 'formz_gentech_methods']
     redirect_to_obj_page = False
+    form = PlasmidForm
 
     change_form_template = "admin/collection_management/plasmid/change_form.html"
     add_form_template = "admin/collection_management/plasmid/change_form.html"
@@ -1093,6 +1122,7 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
         new_obj = False
         self.new_obj = False
         self.clear_formz_elements = False
+        convert_map_to_dna = False
 
         if obj.pk == None:
             
@@ -1106,6 +1136,10 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
             if obj.map:
                 rename_and_preview = True
                 self.rename_and_preview = True
+            elif obj.map_gbk:
+                rename_and_preview = True
+                self.rename_and_preview = True
+                convert_map_to_dna = True
 
             # If the request's user is the principal investigator, approve the record
             # right away. If not, create an approval record
@@ -1137,37 +1171,51 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
 
             # Check if the request's user can change the object, if not raise PermissionDenied
             if self.can_change:
-                            
-                if obj.map:
-                    if obj.map != saved_obj.map:
+
+                if obj.map != saved_obj.map or obj.map_gbk != saved_obj.map_gbk:
+
+                    if (obj.map and obj.map_gbk) or (not saved_obj.map and not saved_obj.map_gbk): 
                         rename_and_preview = True
                         self.rename_and_preview = True
                         obj.save_without_historical_record()
+                        
+                        if obj.map_gbk != saved_obj.map_gbk:
+                            convert_map_to_dna = True
+
                     else:
-                        obj.save()
-                else:
-                    if obj.map != saved_obj.map:
-                        obj.map_png = obj.map
-                        obj.map_gbk = obj.map
+                        obj.map.name = ''
+                        obj.map_png.name = ''
+                        obj.map_gbk.name = ''
                         self.clear_formz_elements = True
+                        obj.save()
+                
+                else:
                     obj.save()
-            
+
             else:
                 
                 if obj.created_by.labuser.is_principal_investigator: # Allow saving object, if record belongs to principal investigator
-                    if obj.map:
-                        if obj.map != saved_obj.map:
+                    
+                    if obj.map != saved_obj.map or obj.map_gbk != saved_obj.map_gbk:
+
+                        if (obj.map and obj.map_gbk) or (not saved_obj.map and not saved_obj.map_gbk): 
                             rename_and_preview = True
                             self.rename_and_preview = True
                             obj.save_without_historical_record()
+                            
+                            if obj.map_gbk != saved_obj.map_gbk:
+                                convert_map_to_dna = True
+
                         else:
-                            obj.save()
-                    else:
-                        if obj.map != saved_obj.map:
-                            obj.map_png = obj.map
-                            obj.map_gbk = obj.map
+                            obj.map.name = ''
+                            obj.map_png.name = ''
+                            obj.map_gbk.name = ''
                             self.clear_formz_elements = True
+                            obj.save()
+                    
+                    else:
                         obj.save()
+
                 else:
                     raise PermissionDenied
 
@@ -1199,24 +1247,33 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
         # Rename plasmid map
         if rename_and_preview:
 
-            map_dir_path = os.path.join(MEDIA_ROOT, 'collection_management/plasmid/dna/')
-            old_file_name_abs_path = os.path.join(MEDIA_ROOT, obj.map.name)
-            old_file_name, ext = os.path.splitext(os.path.basename(old_file_name_abs_path)) 
-            new_file_name = os.path.join(
-                'collection_management/plasmid/dna/', 
-                "p{}{}_{}_{}{}".format(LAB_ABBREVIATION_FOR_FILES, obj.id, time.strftime("%Y%m%d"), time.strftime("%H%M%S"), ext.lower()))
-            new_file_name_abs_path = os.path.join(MEDIA_ROOT, new_file_name)
+            new_file_name = "p{}{}_{}_{}".format(LAB_ABBREVIATION_FOR_FILES, obj.id, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
             
-            if not os.path.exists(map_dir_path):
-                os.makedirs(map_dir_path) 
+            new_dna_file_name = os.path.join('collection_management/plasmid/dna/', new_file_name + '.dna')
+            new_gbk_file_name = os.path.join('collection_management/plasmid/gbk/', new_file_name + '.gbk')
+            new_png_file_name = os.path.join('collection_management/plasmid/png/', new_file_name + '.png')
             
-            os.rename(
-                old_file_name_abs_path, 
-                new_file_name_abs_path)
+            new_dna_file_path = os.path.join(MEDIA_ROOT, new_dna_file_name)
+            new_gbk_file_path = os.path.join(MEDIA_ROOT, new_gbk_file_name)
+
+            if convert_map_to_dna:
+                old_gbk_file_path = obj.map_gbk.path
+                os.rename(
+                    old_gbk_file_path, 
+                    new_gbk_file_path)
+                try:
+                    self.convert_plasmid_map_gbk_to_dna(new_gbk_file_path, new_dna_file_path)
+                except:
+                    messages.error(request, 'There was an error with converting your plasmid map to .gbk.')
+            else:
+                old_dna_file_path = obj.map.path
+                os.rename(
+                    old_dna_file_path, 
+                    new_dna_file_path)
             
-            obj.map.name = new_file_name
-            obj.map_png.name = new_file_name.replace("plasmid/dna", "plasmid/png").replace(".dna", ".png")
-            obj.map_gbk.name = new_file_name.replace("plasmid/dna", "plasmid/gbk").replace(".dna", ".gbk")
+            obj.map.name = new_dna_file_name
+            obj.map_png.name = new_png_file_name 
+            obj.map_gbk.name = new_gbk_file_name
             obj.save()
 
             # For new records, delete first history record, which contains the unformatted map name, and change 
@@ -1230,9 +1287,10 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
             
             # For plasmid map, detect common features and save as png using snapgene server
             try:
-                self.create_plasmid_map_preview(obj.map.path, obj.map_png.path, obj.map_gbk.path, obj.id, obj.name)
+                detect_common_features = request.POST.get("detect_common_features_map_dna", True) and request.POST.get("detect_common_features_map_gbk", True)
+                self.create_plasmid_map_preview(obj.map.path, obj.map_png.path, obj.map_gbk.path, obj.id, obj.name, detect_common_features)
             except:
-                messages.warning(request, 'Could not detect common features or save map preview')
+                messages.error(request, 'There was an error with detection of common features and/or saving of the map preview')
 
 
     def save_related(self, request, form, formsets, change):
@@ -1251,25 +1309,32 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
         if self.rename_and_preview or "_redetect_formz_elements" in request.POST:
             
             unknown_feat_name_list = []
-            r = self.get_plasmid_map_features(obj.map.path)
+            
+            try:
+                r = self.get_plasmid_map_features(obj.map.path)
+            except:
+                messages.error(request, 'There was an error getting your plasmid map features')
+                r = {}
             
             if not self.new_obj:
                 obj.formz_elements.clear()
             
-            feature_names = [feat['name'].strip() for feat in r['features']]
-            formz_base_elems = FormZBaseElement.objects.filter(extra_label__label__in = feature_names).distinct()
-            aliases = list(formz_base_elems.values_list('extra_label__label', flat=True))
+            feature_names = [feat['name'].strip() for feat in r.get('features', [])]
+            
+            if feature_names:
+            
+                formz_base_elems = FormZBaseElement.objects.filter(extra_label__label__in = feature_names).distinct()
+                aliases = list(formz_base_elems.values_list('extra_label__label', flat=True))
+                obj.formz_elements.add(*list(formz_base_elems))
 
-            obj.formz_elements.add(*list(formz_base_elems))
+                unknown_feat_name_list = [feat for feat in feature_names if feat not in aliases]
 
-            unknown_feat_name_list = [feat for feat in feature_names if feat not in aliases]
-
-            if unknown_feat_name_list:
-                self.redirect_to_obj_page = True
-                unknown_feat_name_list = str(unknown_feat_name_list)[1:-1].replace("'", "")
-                messages.warning(request, mark_safe("The following plasmid features were not added to <span style='background-color:rgba(0,0,0,0.1);'>FormZ Elements</span>,"
-                                      " because they cannot be found in the database: <span class='missing-formz-features' style='background-color:rgba(255,0,0,0.2)'>{}</span>. You may want to add them manually "
-                                      "yourself below.".format(unknown_feat_name_list)))
+                if unknown_feat_name_list:
+                    self.redirect_to_obj_page = True
+                    unknown_feat_name_list = str(unknown_feat_name_list)[1:-1].replace("'", "")
+                    messages.warning(request, mark_safe("The following plasmid features were not added to <span style='background-color:rgba(0,0,0,0.1);'>FormZ Elements</span>,"
+                                        " because they cannot be found in the database: <span class='missing-formz-features' style='background-color:rgba(255,0,0,0.2)'>{}</span>. You may want to add them manually "
+                                        "yourself below.".format(unknown_feat_name_list)))
             else:
                 self.redirect_to_obj_page = False
 
@@ -1471,20 +1536,20 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
         
         if obj:
             if request.user.has_perm('collection_management.change_plasmid', obj):
-                return ['map_png', 'map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',]
+                return ['map_png', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',]
             if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by.labuser.is_principal_investigator or obj.created_by.groups.filter(name='Past member').exists()):
                 return ['name', 'other_name', 'parent_vector', 'old_parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
-                    'reference', 'map', 'map_png', 'map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
+                    'reference', 'map', 'map_png', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
                     'last_changed_approval_by_pi', 'created_by', 'formz_projects', 'formz_risk_group', 'vector_zkbs', 
                     'destroyed_date', 'formz_elements', 'formz_gentech_methods', 'formz_ecoli_strains']
             else:
                 if (obj.created_by.labuser.is_principal_investigator or obj.created_by.groups.filter(name='Past member').exists()) and not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists()): # Show map and note as editable fields, if record belongs to PI or old member
                     return ['name', 'other_name', 'parent_vector', 'old_parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 
-                    'reference', 'map_png', 'map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
+                    'reference', 'map_png', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time',
                     'last_changed_approval_by_pi', 'created_by', 'formz_projects', 'formz_risk_group', 'vector_zkbs', 
                     'destroyed_date', 'formz_elements', 'formz_gentech_methods', 'formz_ecoli_strains']
                 else:
-                    return ['map_png', 'map_gbk', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi','created_by',]
+                    return ['map_png', 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi','created_by',]
         else:
             return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
     
@@ -1494,7 +1559,7 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
         self.fieldsets = (
         (None, {
             'fields': ('name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
-                'reference', 'map',)
+                'reference', 'map', 'map_gbk')
         }),
         ('FormZ', {
             'fields': ('formz_projects', 'formz_risk_group', 'vector_zkbs', 'formz_gentech_methods', 'formz_elements', 'formz_ecoli_strains', 'destroyed_date',)
@@ -1634,7 +1699,7 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
         return super(PlasmidPage,self).obj_perms_manage_view(request, object_pk)
 
     #@background(schedule=1) # Run 1 s after it is called, as "background" process
-    def create_plasmid_map_preview(self, plasmid_map_path, png_plasmid_map_path, gbk_plasmid_map_path, obj_id, obj_name, attempt_number=3, messages=[]):
+    def create_plasmid_map_preview(self, plasmid_map_path, png_plasmid_map_path, gbk_plasmid_map_path, obj_id, obj_name, detect_common_features, attempt_number=3, messages=[]):
         """ Given a path to a snapgene plasmid map, use snapegene server
         to detect common features and create map preview as png
         and gbk"""
@@ -1652,15 +1717,16 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
                 
                 common_features_path = os.path.join(BASE_DIR, "snapgene/standardCommonFeatures.ftrs")
                 
-                argument = {"request":"detectFeatures", "inputFile": plasmid_map_path, 
-                "outputFile": plasmid_map_path, "featureDatabase": common_features_path}
-                r = client.requestResponse(argument, 10000)
-                r_code = r.get('code', 1)
-                if r_code > 0:
-                    error_message = r.get('response', 'None')
-                    if error_message not in messages: messages.append(error_message)
-                    client.close()
-                    raise Exception
+                if detect_common_features:
+                    argument = {"request":"detectFeatures", "inputFile": plasmid_map_path, 
+                    "outputFile": plasmid_map_path, "featureDatabase": common_features_path}
+                    r = client.requestResponse(argument, 10000)
+                    r_code = r.get('code', 1)
+                    if r_code > 0:
+                        error_message = 'detectFeatures - error ' + r_code
+                        if error_message not in messages: messages.append(error_message)
+                        client.close()
+                        raise Exception
                 
                 argument = {"request":"generatePNGMap", "inputFile": plasmid_map_path,
                 "outputPng": png_plasmid_map_path, "title": "p{}{} - {}".format(LAB_ABBREVIATION_FOR_FILES, obj_id, obj_name),
@@ -1668,7 +1734,7 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
                 r = client.requestResponse(argument, 10000)
                 r_code = r.get('code', 1)
                 if r_code > 0:
-                    error_message = r.get('response', 'None')
+                    error_message = 'generatePNGMap - error ' + r_code
                     if error_message not in messages: messages.append(error_message)
                     client.close()
                     raise Exception
@@ -1678,7 +1744,7 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
                 r = client.requestResponse(argument, 10000)
                 r_code = r.get('code', 1)
                 if r_code > 0:
-                    error_message = r.get('response', 'None')
+                    error_message = 'exportDNAFile - error ' + r_code
                     if error_message not in messages: messages.append(error_message)
                     client.close()
                     raise Exception
@@ -1686,7 +1752,7 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
                 client.close()
 
             except:
-                self.create_plasmid_map_preview(plasmid_map_path, png_plasmid_map_path, gbk_plasmid_map_path, obj_id, obj_name, attempt_number - 1, messages)
+                self.create_plasmid_map_preview(plasmid_map_path, png_plasmid_map_path, gbk_plasmid_map_path, obj_id, obj_name, detect_common_features, attempt_number - 1, messages)
 
         else:
             mail_admins("Snapgene server error", 
@@ -1713,7 +1779,7 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
                 r = client.requestResponse(argument, 10000)
                 r_code = r.get('code', 1)
                 if r_code > 0:
-                    error_message = r.get('response', 'None')
+                    error_message = 'reportFeatures - error ' + r_code
                     if error_message not in messages: messages.append(error_message)
                     client.close()
                     raise Exception
@@ -1728,6 +1794,51 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
         else:
             mail_admins("Snapgene server error", 
                         "There was an error with getting plasmid features for {} with snapgene server.\n\nErrors: {}.".format(plasmid_map_path, str(messages)), 
+                        fail_silently=True)
+            raise Exception
+
+    def convert_plasmid_map_gbk_to_dna(self, gbk_map_path, dna_map_path, attempt_number=3, messages=[]):
+        """ Given a path to a snapgene plasmid map (.dna), use snapegene server
+        to return features, as json"""
+
+        if attempt_number > 0:
+            try:
+                config = Config()
+                server_ports = config.get_server_ports()
+                for port in server_ports.values():
+                    try:
+                        client = Client(port, zmq.Context())
+                    except:
+                        continue
+                    break
+                
+                argument = {"request":"importDNAFile", "inputFile": gbk_map_path, 'outputFile': dna_map_path}
+                r = client.requestResponse(argument, 10000)
+                r_code = r.get('code', 1)
+                if r_code > 0:
+                    error_message = 'importDNAFile - error ' + r_code
+                    if error_message not in messages: messages.append(error_message)
+                    client.close()
+                    raise Exception
+
+                argument = {"request":"exportDNAFile", "inputFile": dna_map_path,
+                "outputFile": gbk_map_path, "exportFilter": "biosequence.gb"}
+                r = client.requestResponse(argument, 10000)
+                r_code = r.get('code', 1)
+                if r_code > 0:
+                    error_message = 'exportDNAFile - error ' + r_code
+                    if error_message not in messages: messages.append(error_message)
+                    client.close()
+                    raise Exception
+                
+                client.close()
+            
+            except:
+                self.get_plasmid_map_features(plasmid_map_path, attempt_number - 1, messages)
+        
+        else:
+            mail_admins("Snapgene server error", 
+                        "There was an error converting a gbk map to dna for {} with snapgene server.\n\nErrors: {}.".format(gbk_map_path, str(messages)), 
                         fail_silently=True)
             raise Exception
 

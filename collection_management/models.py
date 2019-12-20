@@ -264,6 +264,17 @@ class Plasmid (models.Model, SaveWithoutHistoricalRecord):
                 map_ext = None
             if map_ext == None or map_ext != 'dna':
                 errors.append(ValidationError('Invalid file format. Please select a valid SnapGene .dna file'))
+            else:
+                
+                # Check if .dna file is a real SnapGene file
+
+                dna_map_handle = self.map.open('rb')
+                
+                first_byte = dna_map_handle.read(1)
+                dna_map_handle.read(4)
+                title = dna_map_handle.read(8).decode('ascii')
+                if first_byte != b'\t' and title != 'SnapGene':
+                    errors.append(ValidationError('Invalid file format. Please select a valid SnapGene .dna file'))
 
         if self.map_gbk:
             

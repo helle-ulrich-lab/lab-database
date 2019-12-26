@@ -211,7 +211,7 @@ class Plasmid (models.Model, SaveWithoutHistoricalRecord):
     reference = models.CharField("reference", max_length=255, blank=True)
     map = models.FileField("plasmid map (.dna)", help_text = 'only SnapGene .dna files, max. 2 MB', upload_to="collection_management/plasmid/dna/", blank=True)
     map_png = models.ImageField("plasmid image" , upload_to="collection_management/plasmid/png/", blank=True)
-    map_gbk = models.FileField("plasmid map (.gbk)", upload_to="collection_management/plasmid/gbk/", help_text = 'only .gbk files, max. 2 MB', blank=True)
+    map_gbk = models.FileField("plasmid map (.gbk)", upload_to="collection_management/plasmid/gbk/", help_text = 'only .gbk or .gb files, max. 2 MB', blank=True)
 
     created_date_time = models.DateTimeField("created", auto_now_add=True)
     created_approval_by_pi = models.BooleanField("record creation approval", default=False)
@@ -287,8 +287,8 @@ class Plasmid (models.Model, SaveWithoutHistoricalRecord):
                 map_ext = self.map_gbk.name.split('.')[-1].lower()
             except:
                 map_ext = None
-            if map_ext == None or map_ext != 'gbk':
-                errors.append(ValidationError('Invalid file format. Please select a valid GenBank .gbk file'))
+            if map_ext == None or map_ext not in ['gbk', 'gb']:
+                errors.append(ValidationError('Invalid file format. Please select a valid GenBank (.gbk or .gb) file'))
 
         if len(errors) > 0:
             raise ValidationError(errors)

@@ -1821,16 +1821,6 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
                     client.close()
                     raise Exception
 
-                argument = {"request":"exportDNAFile", "inputFile": dna_map_path,
-                "outputFile": gbk_map_path, "exportFilter": "biosequence.gb"}
-                r = client.requestResponse(argument, 10000)
-                r_code = r.get('code', 1)
-                if r_code > 0:
-                    error_message = 'exportDNAFile - error ' + r_code
-                    if error_message not in messages: messages.append(error_message)
-                    client.close()
-                    raise Exception
-                
                 client.close()
             
             except:

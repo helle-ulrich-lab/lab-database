@@ -157,13 +157,15 @@ class SimpleHistoryWithSummaryAdmin(SimpleHistoryAdmin):
                                     field_type = model._meta.get_field(change.field).get_internal_type()
                                     
                                     if field_type == 'FileField':
+                                        if change.field == 'map':
+                                            field_name = field_name.replace(' (.dna)', '')
                                         changes_list.append(
-                                            (field_name.capitalize(), 
-                                            os.path.basename(change.old) if change.old else 'None', 
-                                            os.path.basename(change.new) if change.new else 'None'))
+                                            (capfirst(field_name), 
+                                            os.path.basename(change.old).replace('.dna', '') if change.old else 'None', 
+                                            os.path.basename(change.new).replace('.dna', '') if change.new else 'None'))
                                     else:
                                         changes_list.append(
-                                            (field_name.capitalize(), 
+                                            (capfirst(field_name), 
                                             change.old if change.old else 'None', 
                                             change.new if change.new else 'None'))
                             

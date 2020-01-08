@@ -1169,6 +1169,9 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
 
             saved_obj = Plasmid.objects.get(pk=obj.pk)
 
+            obj.last_changed_approval_by_pi = False
+            obj.approval_user = None
+
             # Check if the request's user can change the object, if not raise PermissionDenied
             if self.can_change:
 
@@ -1228,9 +1231,6 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
                 if obj.approval.all().exists():
                     approval_records = obj.approval.all()
                     approval_records.delete()
-            else:
-                obj.last_changed_approval_by_pi = False
-                obj.approval_user = None
  
                 # If an approval record for this object does not exist, create one
                 if not obj.approval.all().exists():
@@ -1291,8 +1291,6 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
                 self.create_plasmid_map_preview(obj.map.path, obj.map_png.path, obj.map_gbk.path, obj.id, obj.name, detect_common_features)
             except:
                 messages.error(request, 'There was an error with detection of common features and/or saving of the map preview')
-        else:
-            obj.save()
 
 
     def save_related(self, request, form, formsets, change):

@@ -1291,6 +1291,8 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
                 self.create_plasmid_map_preview(obj.map.path, obj.map_png.path, obj.map_gbk.path, obj.id, obj.name, detect_common_features)
             except:
                 messages.error(request, 'There was an error with detection of common features and/or saving of the map preview')
+        else:
+            obj.save()
 
 
     def save_related(self, request, form, formsets, change):

@@ -1169,8 +1169,6 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
                     Plasmid.objects.filter(id=obj.pk).update(last_changed_date_time=original_last_changed_date_time)
                 return
 
-            saved_obj = Plasmid.objects.get(pk=obj.pk)
-
             # Approve right away if the request's user is the principal investigator. If not,
             # create an approval record
             if request.user.labuser.is_principal_investigator and request.user.id in obj.formz_projects.all().values_list('project_leader__id', flat=True):
@@ -1198,6 +1196,9 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
                             approval_obj.save()
 
             # Check if the request's user can change the object, if not raise PermissionDenied
+
+            saved_obj = Plasmid.objects.get(pk=obj.pk)
+
             if self.can_change:
 
                 if obj.map != saved_obj.map or obj.map_gbk != saved_obj.map_gbk:

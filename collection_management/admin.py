@@ -1171,8 +1171,31 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
 
             saved_obj = Plasmid.objects.get(pk=obj.pk)
 
-            obj.last_changed_approval_by_pi = False
-            obj.approval_user = None
+            # Approve right away if the request's user is the principal investigator. If not,
+            # create an approval record
+            if request.user.labuser.is_principal_investigator and request.user.id in obj.formz_projects.all().values_list('project_leader__id', flat=True):
+                obj.last_changed_approval_by_pi = True
+                obj.approval_user = request.user
+                obj.approval_by_pi_date_time = timezone.now()
+                if obj.approval.all().exists():
+                    approval_records = obj.approval.all()
+                    approval_records.delete()
+ 
+            else:
+                obj.last_changed_approval_by_pi = False
+                obj.approval_user = None
+
+                # If an approval record for this object does not exist, create one
+                if not obj.approval.all().exists():
+                    obj.approval.create(activity_type='changed', activity_user=request.user)
+                else:
+                    # If an approval record for this object exists, check if a message was 
+                    # sent. If so, update the approval record's edited field
+                    approval_obj = obj.approval.all().latest(field_name='message_date_time')
+                    if approval_obj.message_date_time:
+                        if obj.last_changed_date_time > approval_obj.message_date_time:
+                            approval_obj.edited = True
+                            approval_obj.save()
 
             # Check if the request's user can change the object, if not raise PermissionDenied
             if self.can_change:
@@ -1223,28 +1246,6 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
 
                 else:
                     raise PermissionDenied
-
-            # Approve right away if the request's user is the principal investigator. If not,
-            # create an approval record
-            if request.user.labuser.is_principal_investigator and request.user.id in obj.formz_projects.all().values_list('project_leader__id', flat=True):
-                obj.last_changed_approval_by_pi = True
-                obj.approval_user = request.user
-                obj.approval_by_pi_date_time = timezone.now()
-                if obj.approval.all().exists():
-                    approval_records = obj.approval.all()
-                    approval_records.delete()
- 
-                # If an approval record for this object does not exist, create one
-                if not obj.approval.all().exists():
-                    obj.approval.create(activity_type='changed', activity_user=request.user)
-                else:
-                    # If an approval record for this object exists, check if a message was 
-                    # sent. If so, update the approval record's edited field
-                    approval_obj = obj.approval.all().latest(field_name='message_date_time')
-                    if approval_obj.message_date_time:
-                        if obj.last_changed_date_time > approval_obj.message_date_time:
-                            approval_obj.edited = True
-                            approval_obj.save()
         
         # Rename plasmid map
         if rename_and_preview:

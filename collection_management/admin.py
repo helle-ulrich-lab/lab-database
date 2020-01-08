@@ -1713,7 +1713,8 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
                         client = Client(port, zmq.Context())
                     except:
                         continue
-                    break
+                    else:
+                        break
                 
                 common_features_path = os.path.join(BASE_DIR, "snapgene/standardCommonFeatures.ftrs")
                 
@@ -1773,7 +1774,8 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
                         client = Client(port, zmq.Context())
                     except:
                         continue
-                    break
+                    else:
+                        break
             
                 argument = {"request":"reportFeatures", "inputFile": plasmid_map_path}
                 r = client.requestResponse(argument, 10000)
@@ -1810,7 +1812,8 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
                         client = Client(port, zmq.Context())
                     except:
                         continue
-                    break
+                    else:
+                        break
                 
                 argument = {"request":"importDNAFile", "inputFile": gbk_map_path, 'outputFile': dna_map_path}
                 r = client.requestResponse(argument, 10000)
@@ -1824,7 +1827,7 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
                 client.close()
             
             except:
-                self.get_plasmid_map_features(plasmid_map_path, attempt_number - 1, messages)
+                self.convert_plasmid_map_gbk_to_dna(plasmid_map_path, attempt_number - 1, messages)
         
         else:
             mail_admins("Snapgene server error", 

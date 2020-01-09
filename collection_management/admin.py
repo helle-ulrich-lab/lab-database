@@ -1073,6 +1073,17 @@ class PlasmidForm(forms.ModelForm):
         model = Plasmid
         fields = '__all__'
 
+    def clean_name(self):
+        """Check if name is unique before saving"""
+        
+        if not self.instance.pk:
+            if Plasmid.objects.filter(name=self.cleaned_data["name"]).exists():
+                raise forms.ValidationError('Plasmid with this name already exists.')
+            else:
+                return self.cleaned_data["name"]
+        else:
+            return self.cleaned_data["name"]
+
     def clean(self):
 
         """Check if both the .dna and .gbk map is changed at the same time, which 

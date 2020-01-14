@@ -10,13 +10,13 @@ If you want to use this app as is, you will need to set up a SnapGene server (fr
 # Django settings
 
 SECRET_KEY = 'example'
-ALLOWED_HOSTS = ['example1','example2'] # The first item should be the publicly accessible domain 
+ALLOWED_HOSTS = ["example1",'example2'] # The first item should be the publicly accessible domain 
 DB_NAME = 'example'
 DB_USER = 'example'
 DB_PASSWORD = 'example'
-DEBUG = False
+DEBUG =     False
 SERVER_EMAIL_ADDRESS = 'example'
-SITE_ADMIN_DEFAULT_EMAIL_ADDRESS = 'example' # Fall-back email in case everything else breaks
+SITE_ADMIN_EMAIL_ADDRESSES = [('name', 'email')]
 
 # The title to show in the header and some email communication
 SITE_TITLE = 'example'

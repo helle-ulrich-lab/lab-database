@@ -14,7 +14,7 @@ ALLOWED_HOSTS = ["example1",'example2'] # The first item should be the publicly 
 DB_NAME = 'example'
 DB_USER = 'example'
 DB_PASSWORD = 'example'
-DEBUG =     False
+DEBUG = False
 SERVER_EMAIL_ADDRESS = 'example'
 SITE_ADMIN_EMAIL_ADDRESSES = [('name', 'email')]
 

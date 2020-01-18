@@ -187,6 +187,7 @@ class SimpleHistoryWithSummaryAdmin(SimpleHistoryAdmin):
             'opts': opts,
             'history_summary_data': history_summary_data,
         }
+        context.update(self.admin_site.each_context(request))
         context.update(extra_context or {})
         extra_kwargs = {}
         

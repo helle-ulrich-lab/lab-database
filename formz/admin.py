@@ -162,7 +162,7 @@ class FormZBaseElementForm(forms.ModelForm):
 
         donor_organism = self.cleaned_data.get('donor_organism', None)
 
-        max_risk_group = donor_organism.all().order_by('-risk_group').values_list('risk_group', flat=True).first() if donor_organism else 0
+        max_risk_group = donor_organism.all().order_by('-risk_group').values_list('risk_group', flat=True).first() if donor_organism and donor_organism.name_for_search.lower() != 'none' else 0
 
         description = self.cleaned_data.get('description', None)
 

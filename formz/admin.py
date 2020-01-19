@@ -160,9 +160,10 @@ class FormZBaseElementForm(forms.ModelForm):
 
         """Check if description is present for donor_organism_risk > 1"""
 
-        donor_organism = self.cleaned_data.get('donor_organism', None)
+        donor_organisms = self.cleaned_data.get('donor_organism', None)
+        donor_organisms_names = [o.lower() for o in donor_organisms.values_list('name_for_search', flat=True) if o]
 
-        max_risk_group = donor_organism.all().order_by('-risk_group').values_list('risk_group', flat=True).first() if donor_organism and donor_organism.name_for_search.lower() != 'none' else 0
+        max_risk_group = donor_organisms.order_by('-risk_group').values_list('risk_group', flat=True).first() if donor_organisms and not (len(donor_organisms_names)==1 and 'none' in donor_organisms_names) else 0
 
         description = self.cleaned_data.get('description', None)
 

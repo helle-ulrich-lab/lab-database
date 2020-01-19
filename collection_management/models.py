@@ -536,7 +536,7 @@ class EColiStrain (models.Model, SaveWithoutHistoricalRecord):
     created_by = models.ForeignKey(User, related_name='coli_createdby_user', on_delete=models.PROTECT)
     history = HistoricalRecords()
 
-    formz_projects = models.ManyToManyField(FormZProject, verbose_name='formZ projects', related_name='coli_formz_project', blank=False, default=1)
+    formz_projects = models.ManyToManyField(FormZProject, verbose_name='formZ projects', related_name='coli_formz_project', blank=False)
     formz_elements = models.ManyToManyField(FormZBaseElement, verbose_name ='elements', related_name='coli_formz_element', blank=True)
     destroyed_date = models.DateField("destroyed", blank=True, null=True)
 

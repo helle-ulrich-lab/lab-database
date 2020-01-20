@@ -2376,6 +2376,9 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admi
 
         if object_id:
             
+            self.can_change = request.user == ScPombeStrain.objects.get(pk=object_id).created_by or \
+                    request.user.groups.filter(name='Lab manager').exists() or \
+                    request.user.is_superuser or request.user.labuser.is_principal_investigator
             extra_context = extra_context or {}
             extra_context['show_formz'] = True
             obj = ScPombeStrain.objects.get(pk=object_id)

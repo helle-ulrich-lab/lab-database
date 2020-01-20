@@ -438,7 +438,7 @@ class ScPombeStrain (models.Model, SaveWithoutHistoricalRecord):
         verbose_name_plural = 'strains - Sc. pombe'
     
     def __str__(self):
-        return "{} - {}".format(self.id, self.name)
+        return "{} - {}".format(self.id, self.get_genotype())
 
     def get_all_instock_plasmids(self):
         """Returns all plasmids present in the stocked organism"""
@@ -477,6 +477,12 @@ class ScPombeStrain (models.Model, SaveWithoutHistoricalRecord):
             elements = elements | pl.formz_elements.all()
         elements = elements.distinct().filter(common_feature=True).order_by('name')
         return elements
+    
+    def get_genotype(self):
+
+        """Returns the full genotype of a pombe strain"""
+
+        return ' '.join([e for e in [self.auxotrophic_marker, self.name] if e])
 
 class ScPombeStrainEpisomalPlasmid (models.Model):
     

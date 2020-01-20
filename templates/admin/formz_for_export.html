@@ -54,6 +54,8 @@
         <div><span style='font-weight: bold'>Genotyp:</span> {{object.chromosomal_genotype}}</div>
     {% elif object.genotype %}
         <div><span style='font-weight: bold'>Genotyp:</span> {{object.genotype}}</div>
+    {% elif object.get_genotype %}
+        <div><span style='font-weight: bold'>Genotyp:</span> {{object.get_genotype}}</div>
     {% endif %}
     <div><span style='font-weight: bold'>Projekt/e:</span>
         {% if object.formz_projects.all|length == 1 %}

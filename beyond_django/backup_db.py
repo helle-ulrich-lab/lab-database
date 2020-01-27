@@ -76,55 +76,53 @@ def save_wiki_article_as_md(article_id):
         handle.write(obj.content)
 
 
-if __name__ == '__main__':
+ENV_DIR = dirname(BASE_DIR)
+BACKUP_DIR = join(BASE_DIR, 'db_backup')
 
-    ENV_DIR = dirname(BASE_DIR)
-    BACKUP_DIR = join(BASE_DIR, 'db_backup')
+# Create any required folder, if necessary
+pathlib.Path(join(BACKUP_DIR, 'db_dumps')).mkdir(parents=True, exist_ok=True)
+pathlib.Path(join(BACKUP_DIR, 'excel_tables')).mkdir(parents=True, exist_ok=True)
+pathlib.Path(join(BACKUP_DIR, 'wiki_articles')).mkdir(parents=True, exist_ok=True)
+pathlib.Path(join(BACKUP_DIR, 'uploads')).mkdir(parents=True, exist_ok=True)
 
-    # Create any required folder, if necessary
-    pathlib.Path(join(BACKUP_DIR, 'db_dumps')).mkdir(parents=True, exist_ok=True)
-    pathlib.Path(join(BACKUP_DIR, 'excel_tables')).mkdir(parents=True, exist_ok=True)
-    pathlib.Path(join(BACKUP_DIR, 'wiki_articles')).mkdir(parents=True, exist_ok=True)
-    pathlib.Path(join(BACKUP_DIR, 'uploads')).mkdir(parents=True, exist_ok=True)
+# Remove all and .gz files older than 7 days from backup folder 
+check_output("/usr/bin/find {BACKUP_DIR}/db_dumps/ -maxdepth 1 -type f -mtime +7 -iname '*.gz' -delete".format(BACKUP_DIR=BACKUP_DIR), shell=True)
 
-    # Remove all and .gz files older than 7 days from backup folder 
-    check_output("/usr/bin/find {BACKUP_DIR}/db_dumps/ -maxdepth 1 -type f -mtime +7 -iname '*.gz' -delete".format(BACKUP_DIR=BACKUP_DIR), shell=True)
+# Create datadump for django database and gzip it
+CURRENT_DATE_TIME = datetime.now().strftime("%Y%m%d_%H%M")
+check_output("/usr/bin/mysqldump -u {DB_USER} -p{DB_PASSWORD} {DB_NAME} | gzip > {BACKUP_DIR}/db_dumps/{CURRENT_DATE_TIME}.sql.gz".format(
+    DB_USER=DB_USER,
+    DB_PASSWORD=DB_PASSWORD,
+    DB_NAME=DB_NAME,
+    BACKUP_DIR=BACKUP_DIR,
+    CURRENT_DATE_TIME=CURRENT_DATE_TIME), shell=True)
 
-    # Create datadump for django database and gzip it
-    CURRENT_DATE_TIME = datetime.now().strftime("%Y%m%d_%H%M")
-    check_output("/usr/bin/mysqldump -u {DB_USER} -p{DB_PASSWORD} {DB_NAME} | gzip > {BACKUP_DIR}/db_dumps/{CURRENT_DATE_TIME}.sql.gz".format(
-        DB_USER=DB_USER,
-        DB_PASSWORD=DB_PASSWORD,
-        DB_NAME=DB_NAME,
-        BACKUP_DIR=BACKUP_DIR,
-        CURRENT_DATE_TIME=CURRENT_DATE_TIME), shell=True)
+# Save db tables as Excel files
 
-    # Save db tables as Excel files
+DB_TABLES = [(SaCerevisiaeStrain, SaCerevisiaeStrainExportResource),
+            (Plasmid, PlasmidExportResource),
+            (Oligo, OligoExportResource),
+            (ScPombeStrain, ScPombeStrainExportResource),
+            (EColiStrain, EColiStrainExportResource),
+            (CellLine, CellLineExportResource),
+            (Antibody, AntibodyExportResource),
+            (Order, OrderExportResource)]
 
-    DB_TABLES = [(SaCerevisiaeStrain, SaCerevisiaeStrainExportResource),
-                (Plasmid, PlasmidExportResource),
-                (Oligo, OligoExportResource),
-                (ScPombeStrain, ScPombeStrainExportResource),
-                (EColiStrain, EColiStrainExportResource),
-                (CellLine, CellLineExportResource),
-                (Antibody, AntibodyExportResource),
-                (Order, OrderExportResource)]
+for model, export_resource in DB_TABLES:
+    if model.objects.exists(): export_db_table_as_xlsx(model, export_resource)
 
-    for model, export_resource in DB_TABLES:
-        if model.objects.exists(): export_db_table_as_xlsx(model, export_resource)
+# Save wiki articles as markdown files
 
-    # Save wiki articles as markdown files
+for f in listdir(join(BACKUP_DIR, 'wiki_articles')):
+    file_path = join(BACKUP_DIR, 'wiki_articles/', f)
+    if isfile(file_path):
+        remove(file_path)
 
-    for f in listdir(join(BACKUP_DIR, 'wiki_articles')):
-        file_path = join(BACKUP_DIR, 'wiki_articles/', f)
-        if isfile(file_path):
-            remove(file_path)
+article_ids = set(ArticleRevision.objects.all().values_list('article_id', flat=True))
+for article_id in article_ids:
+    save_wiki_article_as_md(article_id)
 
-    article_ids = set(ArticleRevision.objects.all().values_list('article_id', flat=True))
-    for article_id in article_ids:
-        save_wiki_article_as_md(article_id)
-
-    # Sync uploads
-    check_output("/usr/bin/rsync -a {BASE_DIR}/uploads/ {BACKUP_DIR}/uploads".format(
-        BASE_DIR=BASE_DIR,
-        BACKUP_DIR=BACKUP_DIR), shell=True)
+# Sync uploads
+check_output("/usr/bin/rsync -a {BASE_DIR}/uploads/ {BACKUP_DIR}/uploads".format(
+    BASE_DIR=BASE_DIR,
+    BACKUP_DIR=BACKUP_DIR), shell=True)

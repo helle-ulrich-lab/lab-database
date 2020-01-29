@@ -747,12 +747,15 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
                     obj.last_changed_approval_by_pi = True
                     obj.approval_user = request.user
                     obj.approval_by_pi_date_time = timezone.now()
+                    obj.save()
+
                     if obj.approval.all().exists():
                         approval_records = obj.approval.all()
                         approval_records.delete()
                 else:
                     obj.last_changed_approval_by_pi = False
                     obj.approval_user = None
+                    obj.save()
 
                     # If an approval record for this object does not exist, create one
                     if not obj.approval.all().exists():
@@ -765,8 +768,6 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
                             if obj.last_changed_date_time > approval_obj.message_date_time:
                                 approval_obj.edited = True
                                 approval_obj.save()
-
-                obj.save()
 
             else:
                 raise PermissionDenied
@@ -1203,7 +1204,7 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
                     # sent. If so, update the approval record's edited field
                     approval_obj = obj.approval.all().latest(field_name='message_date_time')
                     if approval_obj.message_date_time:
-                        if obj.last_changed_date_time > approval_obj.message_date_time:
+                        if timezone.now() > approval_obj.message_date_time:
                             approval_obj.edited = True
                             approval_obj.save()
 
@@ -1974,11 +1975,14 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
                 if request.user.labuser.is_principal_investigator:
                     obj.last_changed_approval_by_pi = True
                     obj.approval_by_pi_date_time = timezone.now()
+                    obj.save()
+
                     if obj.approval.all().exists():
                         approval_records = obj.approval.all()
                         approval_records.delete()
                 else:
                     obj.last_changed_approval_by_pi = False
+                    obj.save()
 
                     # If an approval record for this object does not exist, create one
                     if not obj.approval.all().exists():
@@ -1991,8 +1995,6 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
                             if obj.last_changed_date_time > approval_obj.message_date_time:
                                 approval_obj.edited = True
                                 approval_obj.save()
-
-                obj.save()
 
             else:
                 raise PermissionDenied
@@ -2267,12 +2269,15 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admi
                     obj.last_changed_approval_by_pi = True
                     obj.approval_user = request.user
                     obj.approval_by_pi_date_time = timezone.now()
+                    obj.save()
+                    
                     if obj.approval.all().exists():
                         approval_records = obj.approval.all()
                         approval_records.delete()
                 else:
                     obj.last_changed_approval_by_pi = False
                     obj.approval_user = None
+                    obj.save()
 
                     # If an approval record for this object does not exist, create one
                     if not obj.approval.all().exists():
@@ -2285,8 +2290,6 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admi
                             if obj.last_changed_date_time > approval_obj.message_date_time:
                                 approval_obj.edited = True
                                 approval_obj.save()
-
-                obj.save()
 
             else:
                 raise PermissionDenied
@@ -2570,12 +2573,15 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.
                     obj.last_changed_approval_by_pi = True
                     obj.approval_user = request.user
                     obj.approval_by_pi_date_time = timezone.now()
+                    obj.save()
+
                     if obj.approval.all().exists():
                         approval_records = obj.approval.all()
                         approval_records.delete()
                 else:
                     obj.last_changed_approval_by_pi = False
                     obj.approval_user = None
+                    obj.save()
 
                     # If an approval record for this object does not exist, create one
                     if not obj.approval.all().exists():
@@ -2588,8 +2594,6 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.
                             if obj.last_changed_date_time > approval_obj.message_date_time:
                                 approval_obj.edited = True
                                 approval_obj.save()
-
-                obj.save()
                 
             else:
                 raise PermissionDenied
@@ -2961,12 +2965,15 @@ class CellLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGua
                 obj.last_changed_approval_by_pi = True
                 obj.approval_user = request.user
                 obj.approval_by_pi_date_time = timezone.now()
+                obj.save()
+
                 if obj.approval.all().exists():
                     approval_records = obj.approval.all()
                     approval_records.delete()
             else:
                 obj.last_changed_approval_by_pi = False
                 obj.approval_user = None
+                obj.save()
 
                 # If an approval record for this object does not exist, create one
                 if not obj.approval.all().exists():
@@ -2979,8 +2986,6 @@ class CellLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGua
                         if obj.last_changed_date_time > approval_obj.message_date_time:
                             approval_obj.edited = True
                             approval_obj.save()
-
-            obj.save()
     
     def get_readonly_fields(self, request, obj=None):
         '''Override default get_readonly_fields to define user-specific read-only fields

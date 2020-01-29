@@ -5,7 +5,7 @@ class GeneralSetting (models.Model):
     order_email_addresses = models.EmailField("order email address", help_text='Email address to send urgent order notifications', blank=False)
     saveris_username = models.CharField("saveris username", max_length=255, blank=False)
     saveris_password = models.CharField("saveris password", max_length=255, blank=False)
-    join_api_key = models.CharField("join api key", max_length=255, blank=False)
+    join_api_key = models.CharField("join api key", max_length=255, blank=True)
 
     class Meta:        
         verbose_name = 'general setting'

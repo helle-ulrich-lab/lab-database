@@ -41,7 +41,7 @@ class LabUserAdmin(BaseUserAdmin):
                 self.critical_groups = []
             else:
                 old_user = User.objects.get(id=obj.pk)
-                critical_groups = old_user.groups.exclude(name__in=['Guest', 'Regular lab member', 'Order manager', 'Lab manager'])
+                critical_groups = old_user.groups.exclude(name__in=['Guest', 'Regular lab member', 'Order manager', 'Lab manager', 'Past member'])
                 self.critical_groups = list(critical_groups)
             
             obj.save()
@@ -148,5 +148,5 @@ class LabUserAdmin(BaseUserAdmin):
             if request.user.is_superuser or request.user.labuser.is_principal_investigator:
                 kwargs["queryset"] =  Group.objects.all()
             else:
-                kwargs["queryset"] = Group.objects.filter(name__in=['Guest', 'Regular lab member', 'Order manager', 'Lab manager'])
+                kwargs["queryset"] = Group.objects.filter(name__in=['Guest', 'Regular lab member', 'Order manager', 'Lab manager', 'Past member'])
         return super(LabUserAdmin, self).formfield_for_manytomany(db_field, request, **kwargs)

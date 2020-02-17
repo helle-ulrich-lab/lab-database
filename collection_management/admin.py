@@ -865,6 +865,8 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
         self.can_change = False
 
         extra_context = extra_context or {}
+        extra_context['show_disapprove'] = False
+        extra_context['show_formz'] = False
 
         if object_id:
 
@@ -883,31 +885,30 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
                 if (obj.created_by.labuser.is_principal_investigator or obj.created_by.groups.filter(name='Past member')) and \
                         not request.user.has_perm('collection_management.change_plasmid', obj):
                     
-                    extra_context = {'show_close': True,
+                    extra_context.update({'show_close': True,
                                     'show_save_and_add_another': False,
                                     'show_save_and_continue': True,
                                     'show_save_as_new': False,
                                     'show_save': True,
-                                    'show_obj_permission': False,}
+                                    'show_obj_permission': False,})
 
                 else:
                     
-                    extra_context = {'show_close': True,
+                    extra_context.update({'show_close': True,
                                     'show_save_and_add_another': True,
                                     'show_save_and_continue': True,
                                     'show_save_as_new': True,
                                     'show_save': True,
-                                    'show_obj_permission': True,
-                                    }
+                                    'show_obj_permission': True,})
             
             else:
 
-                extra_context = {'show_close': True,
+                extra_context.update({'show_close': True,
                     'show_save_and_add_another': False,
                     'show_save_and_continue': False,
                     'show_save_as_new': False,
                     'show_save': False,
-                    'show_obj_permission': False}
+                    'show_obj_permission': False})
 
             extra_context['show_disapprove'] = True if request.user.groups.filter(name='Approval manager').exists() else False
             extra_context['show_formz'] = True
@@ -924,6 +925,14 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
                 'fields': ('formz_projects', 'formz_risk_group', 'formz_gentech_methods', 'formz_elements', 'destroyed_date')
             }),
             )
+
+            extra_context.update({'show_save_and_continue': False,
+                                 'show_save': False,
+                                 'show_save_and_add_another': False,
+                                 'show_disapprove': False,
+                                 'show_formz': False,
+                                 'show_obj_permission': False
+                                 })
 
         else:
 
@@ -1591,6 +1600,8 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
         self.can_change = False
 
         extra_context = extra_context or {}
+        extra_context['show_disapprove'] = False
+        extra_context['show_formz'] = False
 
         if object_id:
             
@@ -1606,33 +1617,32 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
                     if (obj.created_by.labuser.is_principal_investigator or obj.created_by.groups.filter(name='Past member')) and \
                         not request.user.has_perm('collection_management.change_plasmid', obj):
                         
-                        extra_context = {'show_close': True,
+                        extra_context.update({'show_close': True,
                                         'show_save_and_add_another': False,
                                         'show_save_and_continue': True,
                                         'show_save_as_new': False,
                                         'show_save': True,
                                         'show_obj_permission': False,
-                                        'show_redetect_save': True}
+                                        'show_redetect_save': True})
                     else:
 
-                        extra_context = {'show_close': True,
+                        extra_context.update({'show_close': True,
                                     'show_save_and_add_another': True,
                                     'show_save_and_continue': True,
                                     'show_save_as_new': True,
                                     'show_save': True,
                                     'show_obj_permission': True,
-                                    'show_redetect_save': True
-                                    }
+                                    'show_redetect_save': True})
 
             else:
                 
-                extra_context = {'show_close': True,
+                extra_context.update({'show_close': True,
                                  'show_save_and_add_another': False,
                                  'show_save_and_continue': False,
                                  'show_save_as_new': False,
                                  'show_save': False,
                                  'show_obj_permission': False,
-                                 'show_redetect_save': False}
+                                 'show_redetect_save': False})
             
             extra_context['show_disapprove'] = True if request.user.groups.filter(name='Approval manager').exists() else False
             extra_context['show_formz'] = True
@@ -1671,6 +1681,16 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
                     'fields': ('formz_projects', 'formz_risk_group', 'vector_zkbs', 'formz_gentech_methods', 'formz_elements', 'formz_ecoli_strains', 'destroyed_date',)
                     }),
                 )
+            
+            extra_context.update({'show_save_and_continue': False,
+                                 'show_save': False,
+                                 'show_save_and_add_another': False,
+                                 'show_disapprove': False,
+                                 'show_formz': False,
+                                 'show_redetect_save': False,
+                                 'show_obj_permission': False
+                                 })
+
         else:
             if request.user.has_perm('collection_management.change_plasmid', obj):
                 self.fieldsets = fieldsets_with_keep
@@ -2025,7 +2045,9 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
         '''Override default change_view to show only desired fields'''
 
         self.can_change = False
+        
         extra_context = extra_context or {}
+        extra_context['show_disapprove'] = False
 
         if object_id:
             self.can_change = request.user == Oligo.objects.get(pk=object_id).created_by or \
@@ -2034,24 +2056,31 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
         
             if self.can_change:
 
-                extra_context = {'show_close': True,
+                extra_context.update({'show_close': True,
                                  'show_save_and_add_another': True,
                                  'show_save_and_continue': True,
                                  'show_save_as_new': True,
-                                 'show_save': True,}
+                                 'show_save': True,})
 
             else:
 
-                extra_context = {'show_close': True,
+                extra_context.update({'show_close': True,
                                  'show_save_and_add_another': False,
                                  'show_save_and_continue': False,
                                  'show_save_as_new': False,
-                                 'show_save': False,}
+                                 'show_save': False,})
 
             extra_context['show_disapprove'] = True if request.user.groups.filter(name='Approval manager').exists() else False
 
         if '_saveasnew' in request.POST:
             self.fields = ('name','sequence', 'us_e', 'gene', 'restriction_site', 'description', 'comment' )
+            extra_context.update({'show_save_and_continue': False,
+                        'show_save': False,
+                        'show_save_and_add_another': False,
+                        'show_disapprove': False,
+                        'show_formz': False,
+                        'show_obj_permission': False
+                        })
         else:
             self.fields = ('name','sequence', 'us_e', 'gene', 'restriction_site', 'description', 'comment',
                 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',)
@@ -2376,6 +2405,8 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admi
         self.can_change = False
 
         extra_context = extra_context or {}
+        extra_context['show_disapprove'] = False
+        extra_context['show_formz'] = False
 
         if object_id:
             
@@ -2392,26 +2423,24 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admi
             if request.user == obj.created_by or request.user.groups.filter(name='Lab manager').exists() or \
                 request.user.is_superuser or request.user.labuser.is_principal_investigator:
 
-                extra_context = {'show_close': True,
+                extra_context.update({'show_close': True,
                                 'show_save_and_add_another': True,
                                 'show_save_and_continue': True,
                                 'show_save_as_new': True,
                                 'show_save': True,
                                 'show_obj_permission': True
-                                }
+                                })
 
             else:
 
-                 extra_context = {'show_close': True,
+                 extra_context.update({'show_close': True,
                                  'show_save_and_add_another': False,
                                  'show_save_and_continue': False,
                                  'show_save_as_new': False,
                                  'show_save': False,
-                                 'show_obj_permission': False}
+                                 'show_obj_permission': False})
             
             extra_context['show_disapprove'] = True if request.user.groups.filter(name='Approval manager').exists() else False
-            extra_context['show_formz'] = True
-
             extra_context['show_formz'] = True
 
         if '_saveasnew' in request.POST:
@@ -2425,6 +2454,14 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admi
                 'fields': ('formz_projects', 'formz_risk_group', 'formz_gentech_methods', 'formz_elements', 'destroyed_date')
             }),
             )
+
+            extra_context.update({'show_save_and_continue': False,
+                                 'show_save': False,
+                                 'show_save_and_add_another': False,
+                                 'show_disapprove': False,
+                                 'show_formz': False,
+                                 'show_obj_permission': False
+                                 })
         else:
             self.fieldsets = (
             (None, {
@@ -2634,6 +2671,8 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.
         '''Override default change_view to show only desired fields'''
 
         extra_context = extra_context or {}
+        extra_context['show_disapprove'] = False
+        extra_context['show_formz'] = False
         
         self.can_change = False
 
@@ -2646,21 +2685,21 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.
                 
                 self.can_change = True
                 
-                extra_context = {'show_close': True,
+                extra_context.update({'show_close': True,
                                 'show_save_and_add_another': True,
                                 'show_save_and_continue': True,
                                 'show_save_as_new': True,
                                 'show_save': True,
-                                'show_obj_permission': True}
+                                'show_obj_permission': True})
 
             else:
 
-                extra_context = {'show_close': True,
+                extra_context.update({'show_close': True,
                                  'show_save_and_add_another': False,
                                  'show_save_and_continue': False,
                                  'show_save_as_new': False,
                                  'show_save': False,
-                                 'show_obj_permission': False}
+                                 'show_obj_permission': False})
             
             extra_context['show_disapprove'] = True if request.user.groups.filter(name='Approval manager').exists() else False
             extra_context['show_formz'] = True
@@ -2675,6 +2714,15 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.
                 'fields': ('formz_projects', 'formz_risk_group', 'formz_elements', 'destroyed_date')
             }),
             )
+
+        if '_saveasnew' in request.POST:
+            extra_context.update({'show_save_and_continue': False,
+                                 'show_save': False,
+                                 'show_save_and_add_another': False,
+                                 'show_disapprove': False,
+                                 'show_formz': False,
+                                 'show_obj_permission': False
+                                 })
 
         return super(EColiStrainPage,self).change_view(request,object_id, extra_context=extra_context)
     
@@ -3055,12 +3103,14 @@ class CellLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGua
         '''Override default change_view to show only desired fields'''
 
         self.can_change = False
+
+        extra_context = extra_context or {}
+        extra_context['show_disapprove'] = False
+        extra_context['show_formz'] = False
         
         if object_id:
             
             obj = CellLine.objects.get(pk=object_id)
-            extra_context = extra_context or {}
-            extra_context['show_formz'] = True
             
             if obj.history_integrated_plasmids:
                 extra_context['plasmid_id_list'] = obj.history_integrated_plasmids
@@ -3071,21 +3121,20 @@ class CellLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGua
                 
                 self.can_change = True
                 
-                extra_context = {'show_close': True,
+                extra_context.update({'show_close': True,
                             'show_save_and_add_another': True,
                             'show_save_and_continue': True,
                             'show_save_as_new': True,
                             'show_save': True,
-                            'show_obj_permission': True,
-                            }
+                            'show_obj_permission': True,})
             else:
                 
-                extra_context = {'show_close': True,
+                extra_context.update({'show_close': True,
                                  'show_save_and_add_another': True,
                                  'show_save_and_continue': True,
                                  'show_save_as_new': False,
                                  'show_save': True,
-                                 'show_obj_permission': False}
+                                 'show_obj_permission': False})
 
             extra_context['show_disapprove'] = True if request.user.groups.filter(name='Approval manager').exists() else False
             extra_context['show_formz'] = True
@@ -3100,6 +3149,14 @@ class CellLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGua
                 'fields': ('formz_projects', 'formz_risk_group','zkbs_cell_line', 'formz_gentech_methods', 'formz_elements', 'destroyed_date',)
             }),
             )
+            extra_context.update({'show_save_and_continue': False,
+                                 'show_save': False,
+                                 'show_save_and_add_another': False,
+                                 'show_disapprove': False,
+                                 'show_formz': False,
+                                 'show_save_and_continue': False,
+                                 'show_obj_permission': False
+                                 })
 
         else:
             self.fieldsets = (

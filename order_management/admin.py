@@ -440,6 +440,9 @@ class AddOrderExtraDocInline(admin.TabularInline):
         else:
             return []
 
+    def get_queryset(self, request):
+        return OrderExtraDoc.objects.none()
+
 #################################################
 #         ORDER IMPORT/EXPORT RESOURCE          #
 #################################################

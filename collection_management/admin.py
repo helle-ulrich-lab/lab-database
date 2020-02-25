@@ -1337,15 +1337,13 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
             unknown_feat_name_list = []
             
             try:
-                r = self.get_plasmid_map_features(obj.map.path)
+                feature_names = self.get_plasmid_map_features(obj.map.path)
             except:
                 messages.error(request, 'There was an error getting your plasmid map features')
-                r = {}
+                feature_names = []
             
             if not self.new_obj:
                 obj.formz_elements.clear()
-            
-            feature_names = [feat['name'].strip() for feat in r.get('features', [])]
             
             if feature_names:
             
@@ -1824,8 +1822,10 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
                     raise Exception
                 
                 client.close()
-
-                return r
+                
+                plasmid_features = r.get('features', [])
+                feature_names = [feat['name'].strip() for feat in plasmid_features]
+                return feature_names
             
             except:
                 self.get_plasmid_map_features(plasmid_map_path, attempt_number - 1, messages)

@@ -111,7 +111,8 @@ class MyAdminSite(admin.AdminSite):
             url(r'^order_management/my_orders_redirect$', self.admin_view(self.my_orders_redirect)),
             url(r'uploads/(?P<url_path>.*)$', self.admin_view(self.uploads)),
             url(r'^150freezer/$', self.freezer150),
-            path('<path:object_id>/formz/', self.admin_view(self.formz))
+            path('<path:object_id>/formz/', self.admin_view(self.formz)),
+            url(r'^order_management/order_autocomplete/(?P<field>.*)=(?P<query>.*),(?P<timestamp>.*)$', self.admin_view(self.autocomplete_order)),
         ] + urls
         return urls
 
@@ -291,6 +292,75 @@ class MyAdminSite(admin.AdminSite):
         'virus_packaging_cell_line': virus_packaging_cell_line,}
 
         return render(request, 'admin/formz.html', context)
+
+    def autocomplete_order(self, request, *args, **kwargs):
+        from django.http import HttpResponse
+        from order_management.models import Order
+
+        field = kwargs['field']
+        query = kwargs['query']
+
+        orders = Order.objects.filter(**{'{}__icontains'.format(field): query}) \
+                                .exclude(supplier_part_no__icontains="?") \
+                                .exclude(supplier_part_no="") \
+                                .exclude(part_description__iexact="none") \
+                                .order_by('-id')[:10] \
+                                .values("supplier", "supplier_part_no", "part_description", "location", "msds_form", "price", "cas_number", "ghs_pictogram", "hazard_level_pregnancy")
+
+        lstofprodname = []
+        json_line = ""
+
+        if field == "part_description":
+        
+            # Loop through all elements (= rows) in the order list
+            for order in orders:
+                
+                # Create value:data pairs using part_description or supplier_part_no as values
+                part_description_lower = order["part_description"].lower()
+                supplier_part_no = order["supplier_part_no"].strip().replace('#'," ")
+                
+                if part_description_lower not in lstofprodname:
+                        
+                    json_line = json_line + '{{"value":"{}","data":"{}#{}#{}#{}#{}#{}#{}#{}"}},'.format(
+                        order["part_description"], 
+                        supplier_part_no, 
+                        order["supplier"], 
+                        order["location"],
+                        order["msds_form"] if order["msds_form"] else 0,
+                        order["price"],
+                        order["cas_number"], 
+                        order["ghs_pictogram"],
+                        order["hazard_level_pregnancy"])
+                    
+                    lstofprodname.append(part_description_lower)
+
+        elif field == "supplier_part_no":
+                        
+            # Loop through all elements (= rows) in the order list
+            for order in orders:
+                
+                # Create value:data pairs using part_description or supplier_part_no as values
+                part_description_lower = order["part_description"].lower()
+                supplier_part_no = order["supplier_part_no"].strip().replace('#'," ")
+                
+                if part_description_lower not in lstofprodname:
+                        
+                    json_line = json_line + '{{"value":"{}","data":"{}#{}#{}#{}#{}#{}#{}#{}"}},'.format(
+                        supplier_part_no, 
+                        order["part_description"], 
+                        order["supplier"], 
+                        order["location"],
+                        order["msds_form"] if order["msds_form"] else 0,
+                        order["price"],
+                        order["cas_number"], 
+                        order["ghs_pictogram"],
+                        order["hazard_level_pregnancy"])
+                    
+                    lstofprodname.append(part_description_lower)
+
+        json_out = """[{}]""".format(json_line[:-1])
+
+        return HttpResponse(json_out, content_type='application/json')
 
 # Instantiate custom admin site 
 my_admin_site = MyAdminSite()

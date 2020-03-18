@@ -62,143 +62,6 @@ import time
 import inspect
 
 #################################################
-#               CUSTOM FUNCTIONS                #
-#################################################
-
-@background(schedule=60) # Run update_autocomplete_js 1 min after it is called, as "background" process
-def update_autocomplete_js():
-    """Updates /static/admin/js/order_management/product-autocomplete.js with info of unique 
-    products from the order database. In turn, this supplies information to the autocomplete 
-    function of the order add page"""
-
-    from django_project.settings import BASE_DIR
-    from django_project.settings import MEDIA_ROOT
-
-    lstofprodname = []
-    part_description_json_line = ""
-    part_no_json_line = ""
-    
-    # Loop through all elements (= rows) in the order list
-    all_orders = Order.objects.all().order_by('-id').values("supplier", "supplier_part_no", "part_description", "location", "msds_form", "price", "cas_number", "ghs_pictogram", "hazard_level_pregnancy")
-    for order in all_orders:
-        
-        # Create value:data pairs using part_description or supplier_part_no as values
-        part_description_lower = order["part_description"].lower()
-        supplier_part_no = order["supplier_part_no"].strip().replace('#'," ")
-        
-        if (part_description_lower not in lstofprodname) and (part_description_lower != "none"):
-            if (len(supplier_part_no)>0) and ("?" not in supplier_part_no) :
-                
-                part_description_json_line = part_description_json_line + '{{value:"{}",data:"{}#{}#{}#{}#{}#{}#{}#{}"}},'.format(
-                    order["part_description"], 
-                    supplier_part_no, 
-                    order["supplier"], 
-                    order["location"],
-                    order["msds_form"] if order["msds_form"] else 0,
-                    order["price"],
-                    order["cas_number"], 
-                    order["ghs_pictogram"],
-                    order["hazard_level_pregnancy"])
-                
-                part_no_json_line = part_no_json_line + '{{value:"{}",data:"{}#{}#{}#{}#{}#{}#{}#{}"}},'.format(
-                    supplier_part_no, 
-                    order["part_description"], 
-                    order["supplier"], 
-                    order["location"],
-                    order["msds_form"] if order["msds_form"] else 0,
-                    order["price"],
-                    order["cas_number"], 
-                    order["ghs_pictogram"],
-                    order["hazard_level_pregnancy"])
-                
-                lstofprodname.append(part_description_lower)
-
-    header_js = """$(function(){{var product_names = [{}];\
-                var supplier_part_no = [{}];""".format(part_description_json_line, part_no_json_line)
-
-    footer_js = """$('#id_part_description').autocomplete({\
-            source: function(request, response) {\
-                var results = $.ui.autocomplete.filter(product_names, request.term);\
-                response(results.slice(0, 10));\
-            },\
-            select: function(e, ui) {\
-                var extra_data = ui.item.data.split('#');\
-                $('#id_supplier_part_no').val(extra_data[0]);\
-                $('#id_supplier').val(extra_data[1]);\
-                $('#id_location').val(extra_data[2]);\
-                if (extra_data[3] != "0") {\
-                    $('#id_msds_form').val(extra_data[3])\
-                } else {\
-                    $('#id_msds_form').val(null)\
-                }\
-                ;if (extra_data[4] != "") {\
-                    $('#id_price').val(extra_data[4])\
-                } else {\
-                    $('#id_price').val(null)\
-                }\
-                ;if (extra_data[5] != "") {\
-                    $('#id_cas_number').val(extra_data[5])\
-                } else {\
-                    $('#id_cas_number').val(null)\
-                }\
-                ;if (extra_data[6] != "") {\
-                    $('#id_ghs_pictogram').val(extra_data[6])\
-                } else {\
-                    $('#id_ghs_pictogram').val(null)\
-                }\
-                ;if (extra_data[7] != "") {\
-                    $('#id_hazard_level_pregnancy').val(extra_data[7])\
-                } else {\
-                    $('#id_hazard_level_pregnancy').val(null)\
-                }\
-                ;\
-            }\
-        });\
-        $('#id_supplier_part_no').autocomplete({\
-        source: function(request, response) {\
-            var results = $.ui.autocomplete.filter(supplier_part_no, request.term);\
-            response(results.slice(0, 10));\
-        },\
-        select: function(e, ui) {\
-            var extra_data = ui.item.data.split('#');\
-            $('#id_part_description').val(extra_data[0]);\
-            $('#id_supplier').val(extra_data[1]);\
-            $('#id_location').val(extra_data[2]);\
-            if (extra_data[3] != "0") {\
-                $('#id_msds_form').val(extra_data[3])\
-            } else {\
-                $('#id_msds_form').val(null)\
-            }\
-            ;if (extra_data[4] != "") {\
-                $('#id_price').val(extra_data[4])\
-            } else {\
-                $('#id_price').val(null)\
-            }\
-            ;if (extra_data[5] != "") {\
-                $('#id_cas_number').val(extra_data[5])\
-            } else {\
-                $('#id_cas_number').val(null)\
-            }\
-            ;if (extra_data[6] != "") {\
-                $('#id_ghs_pictogram').val(extra_data[6])\
-            } else {\
-                $('#id_ghs_pictogram').val(null)\
-            }\
-            ;if (extra_data[7] != "") {\
-                $('#id_hazard_level_pregnancy').val(extra_data[7])\
-            } else {\
-                $('#id_hazard_level_pregnancy').val(null)\
-            }\
-            ;\
-        }\
-    });\
-    });"""
-    
-    # Write to file
-    with open(MEDIA_ROOT + "order_management/product-autocomplete.js","w") as out_handle_js:
-        out_handle_js.write(jsmin(header_js + footer_js))
-
-#################################################
 #         CUSTOM MASS UPDATE FUNCTION           #
 #################################################
 
@@ -206,7 +69,6 @@ def mass_update(modeladmin, request, queryset):
     """
         mass update queryset
         From adminactions.mass_update. Modified to allow specifiying a custom form
-        and run update_autocomplete_js()
     """
 
     import json
@@ -381,8 +243,6 @@ def mass_update(modeladmin, request, queryset):
            'media': mark_safe(media),
            'selection': queryset}
     ctx.update(modeladmin.admin_site.each_context(request))
-
-    update_autocomplete_js()
 
     return render(request, tpl, context=ctx)
 
@@ -716,15 +576,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
                 obj.created_by
             except:
                 obj.created_by = request.user
-            try:
-                
-                # If a product name is not already present in the database,
-                # update the automplete js file
 
-                if not Order.objects.filter(part_description=obj.part_description).exists():
-                    update_autocomplete_js()
-            except:
-                messages.warning(request, 'Could not update the order autocomplete function')
             obj.save()
             
             # Automatically create internal_order_number and add it to record
@@ -822,12 +674,6 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
             if obj.status in ["used up", 'cancelled'] and obj.history.exists():
                 obj_history = obj.history.all()
                 obj_history.delete()
-
-            try:
-                if [obj.supplier, obj.supplier_part_no, obj.part_description, obj.location, obj.msds_form, obj.price, obj.cas_number, obj.ghs_pictogram] != [order.supplier, order.supplier_part_no, order.part_description, order.location, order.msds_form, order.price, order.cas_number, order.ghs_pictogram]:
-                    update_autocomplete_js()
-            except:
-                messages.warning(request, 'Could not update the order autocomplete function')
 
     def get_queryset(self, request):
         

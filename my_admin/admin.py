@@ -304,7 +304,7 @@ class MyAdminSite(admin.AdminSite):
                                 .exclude(supplier_part_no__icontains="?") \
                                 .exclude(supplier_part_no="") \
                                 .exclude(part_description__iexact="none") \
-                                .order_by('-id')[:10] \
+                                .order_by('-id')[:50] \
                                 .values("supplier", "supplier_part_no", "part_description", "location", "msds_form", "price", "cas_number", "ghs_pictogram", "hazard_level_pregnancy")
 
         lstofprodname = []
@@ -320,6 +320,8 @@ class MyAdminSite(admin.AdminSite):
                 supplier_part_no = order["supplier_part_no"].strip().replace('#'," ")
                 
                 if part_description_lower not in lstofprodname:
+
+                    if len(lstofprodname) > 10: break
                         
                     json_line = json_line + '{{"value":"{}","data":"{}#{}#{}#{}#{}#{}#{}#{}"}},'.format(
                         order["part_description"], 
@@ -344,6 +346,8 @@ class MyAdminSite(admin.AdminSite):
                 supplier_part_no = order["supplier_part_no"].strip().replace('#'," ")
                 
                 if part_description_lower not in lstofprodname:
+
+                    if len(lstofprodname) > 10: break
                         
                     json_line = json_line + '{{"value":"{}","data":"{}#{}#{}#{}#{}#{}#{}#{}"}},'.format(
                         supplier_part_no, 

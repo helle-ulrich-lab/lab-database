@@ -1093,7 +1093,7 @@ class PlasmidForm(forms.ModelForm):
             else:
                 return self.cleaned_data["name"]
         else:
-            if Plasmid.objects.filter(name=self.cleaned_data["name"]).exists():
+            if Plasmid.objects.filter(name=self.cleaned_data["name"]).exclude(id=self.instance.pk).exists():
                 raise forms.ValidationError('Plasmid with this name already exists.')
             else:
                 return self.cleaned_data["name"]

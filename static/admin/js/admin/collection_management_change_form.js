@@ -29,9 +29,11 @@ $(window).on('load', function() {
     }
 });
 
+// DO NOT USE, it prevents the value of a submit
+// line button to be passed to request
 // Disable submit line if form is submitted
-$(document).ready(function() {
-    $('[id$="_form"').submit(function(event) {
-        $("input:submit").attr('disabled', true);
-    });
-});
+// $(document).ready(function() {
+//     $('[id$="_form"').submit(function(event) {
+//         $("input:submit").attr('disabled', true);
+//     });
+// });

@@ -158,7 +158,7 @@ class MyAdminSite(admin.AdminSite):
                     if model_name == 'celllinedoc':
                         obj_id = int(file_name.split('_')[-1])
                     else:
-                        obj_id = int(re.findall('\d+(?=_)', file_name)[0])
+                        obj_id = int(re.findall('\d+(?=_)', file_name + '_')[0])
                     obj = apps.get_model(app_name, model_name).objects.get(id=obj_id)  
 
                     if model_name == 'celllinedoc':

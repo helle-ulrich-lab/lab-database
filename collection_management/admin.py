@@ -1316,7 +1316,9 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
             
             # For plasmid map, detect common features and save as png using snapgene server
             try:
-                detect_common_features = request.POST.get("detect_common_features_map_dna", True) and request.POST.get("detect_common_features_map_gbk", True)
+                detect_common_features_map_dna = request.POST.get("detect_common_features_map_dna", False)
+                detect_common_features_map_gbk = request.POST.get("detect_common_features_map_gbk", False)
+                detect_common_features = True if (detect_common_features_map_dna or detect_common_features_map_gbk) else False
                 self.create_plasmid_map_preview(obj.map.path, obj.map_png.path, obj.map_gbk.path, obj.id, obj.name, detect_common_features)
             except:
                 messages.error(request, 'There was an error with detection of common features and/or saving of the map preview')

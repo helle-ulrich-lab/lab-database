@@ -179,6 +179,8 @@ class MyAdminSite(admin.AdminSite):
             # Set content disposition based on file type
             if 'pdf' in mimetype.lower():
                 response["Content-Disposition"] = 'inline; {}'.format(file_expr)
+            elif 'png' in mimetype.lower():
+                response["Content-Disposition"] = "{}".format(file_expr)
             else:
                 response["Content-Disposition"] = 'attachment; {}'.format(file_expr)
             

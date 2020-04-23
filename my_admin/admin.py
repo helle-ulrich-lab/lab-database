@@ -173,13 +173,14 @@ class MyAdminSite(admin.AdminSite):
             except:
                 download_file_name = os.path.basename(url_path)
 
+            # Needed for file names that include special, non ascii, characters 
+            file_expr = "filename*=utf-8''{}".format(urllib.parse.quote(download_file_name))
+
             # Set content disposition based on file type
             if 'pdf' in mimetype.lower():
-                response["Content-Disposition"] = 'inline; filename="{}"'.format(download_file_name)
-            elif 'png' in mimetype.lower():
-                response["Content-Disposition"] = ""
+                response["Content-Disposition"] = 'inline; {}'.format(file_expr)
             else:
-                response["Content-Disposition"] = 'attachment; filename="{}"'.format(download_file_name)
+                response["Content-Disposition"] = 'attachment; {}'.format(file_expr)
             
             response['X-Accel-Redirect'] = "/secret/{url_path}".format(url_path=url_path)
             return response

@@ -358,7 +358,7 @@ class SearchFieldOptUsername(StrField):
         else:
             return super(SearchFieldOptUsername, self).\
             get_options().\
-            exclude(id__in=[1,20,36]).\
+            exclude(username__in=["AnonymousUser","guest","admin"]).\
             distinct().order_by(self.name).\
             values_list(self.name, flat=True)
 

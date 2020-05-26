@@ -173,8 +173,9 @@ class FormZBaseElementForm(forms.ModelForm):
 
         nuclei_acid_purity = self.cleaned_data.get('nuc_acid_purity', None)
 
-        if nuclei_acid_purity.english_name == 'synthetic fragment' and not description:
-            self.add_error('description', "If an element is a synthetic fragment, a description must be provided")
+        if nuclei_acid_purity:
+            if nuclei_acid_purity.english_name == 'synthetic fragment' and not description:
+                self.add_error('description', "If an element is a synthetic fragment, a description must be provided")
 
         return self.cleaned_data
 

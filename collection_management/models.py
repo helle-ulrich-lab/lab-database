@@ -797,7 +797,7 @@ class Antibody (models.Model, SaveWithoutHistoricalRecord):
     name = models.CharField("name", max_length = 255, blank=False)
     species_isotype = models.CharField("species/isotype", max_length = 255, blank=False)
     clone = models.CharField("clone", max_length = 255, blank=True)
-    received_from = models.CharField("receieved from", max_length = 255, blank=True)
+    received_from = models.CharField("received from", max_length = 255, blank=True)
     catalogue_number = models.CharField("catalogue number", max_length = 255, blank=True)
     l_ocation = models.CharField("location", max_length = 255, blank=True)
     a_pplication = models.CharField("application", max_length = 255, blank=True)

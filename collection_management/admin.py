@@ -358,7 +358,7 @@ class SearchFieldOptUsername(StrField):
         else:
             return super(SearchFieldOptUsername, self).\
             get_options().\
-            exclude(username__in=["AnonymousUser","guest","admin"]).\
+            exclude(username__iexact__in=["AnonymousUser","guest","admin"]).\
             distinct().order_by(self.name).\
             values_list(self.name, flat=True)
 
@@ -383,7 +383,7 @@ class SearchFieldOptLastname(StrField):
         else:
             return super(SearchFieldOptLastname, self).\
             get_options().\
-            exclude(id__in=[1,20,36]).\
+            exclude(last_name__iexact__in=["", "admin", "guest"]).\
             distinct().order_by(self.name).\
             values_list(self.name, flat=True)
 

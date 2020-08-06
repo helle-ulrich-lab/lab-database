@@ -161,7 +161,7 @@ class Order(models.Model, SaveWithoutHistoricalRecord):
     url = models.URLField("URL", max_length=400, blank=True)
     cas_number = models.CharField("CAS number", max_length=255, blank=True, validators=[validate_absence_airquotes])
     ghs_pictogram = models.CharField("GHS pictogram", max_length=255, blank=True, validators=[validate_absence_airquotes])
-    msds_form = models.ForeignKey(MsdsForm, on_delete=models.PROTECT, blank=True, null=True)
+    msds_form = models.ForeignKey(MsdsForm, on_delete=models.PROTECT, verbose_name='MSDS form', blank=True, null=True)
     hazard_level_pregnancy = models.CharField("Hazard level for pregnancy", max_length=255, choices=HAZARD_LEVEL_PREGNANCY_CHOICES, default='none', blank=True)
     
     created_date_time = models.DateTimeField("created", auto_now_add=True, null=True)

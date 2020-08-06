@@ -320,15 +320,14 @@ class MyAdminSite(admin.AdminSite):
                 
                 # Create value:data pairs using part_description or supplier_part_no as values
                 part_description_lower = order["part_description"].lower()
-                supplier_part_no = order["supplier_part_no"].strip().replace('#'," ")
                 
                 if part_description_lower not in lstofprodname:
 
                     if len(lstofprodname) > 10: break
                         
-                    json_line = json_line + '{{"value":"{}","data":"{}#{}#{}#{}#{}#{}#{}#{}"}},'.format(
+                    json_line = json_line + '{{"value":"{}","data":"{}§§{}§§{}§§{}§§{}§§{}§§{}§§{}"}},'.format(
                         order["part_description"], 
-                        supplier_part_no, 
+                        order["supplier_part_no"], 
                         order["supplier"], 
                         order["location"],
                         order["msds_form"] if order["msds_form"] else 0,
@@ -346,14 +345,13 @@ class MyAdminSite(admin.AdminSite):
                 
                 # Create value:data pairs using part_description or supplier_part_no as values
                 part_description_lower = order["part_description"].lower()
-                supplier_part_no = order["supplier_part_no"].strip().replace('#'," ")
                 
                 if part_description_lower not in lstofprodname:
 
                     if len(lstofprodname) > 10: break
                         
-                    json_line = json_line + '{{"value":"{}","data":"{}#{}#{}#{}#{}#{}#{}#{}"}},'.format(
-                        supplier_part_no, 
+                    json_line = json_line + '{{"value":"{}","data":"{}§§{}§§{}§§{}§§{}§§{}§§{}§§{}"}},'.format(
+                        order["supplier_part_no"], 
                         order["part_description"], 
                         order["supplier"], 
                         order["location"],

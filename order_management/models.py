@@ -6,6 +6,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils.encoding import force_text
 from django.contrib.contenttypes.fields import GenericRelation
+from django.forms import ValidationError
 
 #################################################
 #        ADDED FUNCTIONALITIES IMPORTS          #
@@ -34,6 +35,14 @@ class SaveWithoutHistoricalRecord():
         finally:
             del self.skip_history_when_saving
         return ret
+
+#################################################
+#                  VALIDATORS                   #
+#################################################
+
+def validate_absence_airquotes(value):
+    if "'" in value or '"' in value:
+        raise ValidationError('Single {} or double {} air-quotes are not allowed in this field'.format("'", '"'))
 
 #################################################
 #            ORDER COST UNIT MODEL              #
@@ -134,12 +143,12 @@ HAZARD_LEVEL_PREGNANCY_CHOICES = (('none', 'none'),
 
 class Order(models.Model, SaveWithoutHistoricalRecord):
     
-    supplier = models.CharField("supplier", max_length=255, blank=False)
-    supplier_part_no = models.CharField("supplier Part-No", max_length=255, blank=False)
+    supplier = models.CharField("supplier", max_length=255, blank=False, validators=[validate_absence_airquotes])
+    supplier_part_no = models.CharField("supplier Part-No", max_length=255, blank=False, validators=[validate_absence_airquotes], help_text='To see suggestions, type three characters or more')
     internal_order_no = models.CharField("internal order number", max_length=255, blank=True)
-    part_description = models.CharField("part description", max_length=255, blank=False)
-    quantity = models.CharField("quantity", max_length=255, blank=False)
-    price = models.CharField("price", max_length=255, blank=True)
+    part_description = models.CharField("part description", max_length=255, blank=False, validators=[validate_absence_airquotes], help_text='To see suggestions, type three characters or more')
+    quantity = models.CharField("quantity", max_length=255, blank=False, validators=[validate_absence_airquotes])
+    price = models.CharField("price", max_length=255, blank=True, validators=[validate_absence_airquotes])
     cost_unit = models.ForeignKey(CostUnit, on_delete=models.PROTECT, default=1, null=True, blank=False)
     status = models.CharField("status", max_length=255, choices=ORDER_STATUS_CHOICES, default="submitted", blank=False)
     urgent = models.BooleanField("is this an urgent order?", default=False)
@@ -150,8 +159,8 @@ class Order(models.Model, SaveWithoutHistoricalRecord):
     order_manager_created_date_time = models.DateTimeField("created in OrderManager", blank=True, null=True)
     delivered_date = models.DateField("delivered", blank=True, default=None, null=True)
     url = models.URLField("URL", max_length=400, blank=True)
-    cas_number = models.CharField("CAS number", max_length=255, blank=True)
-    ghs_pictogram = models.CharField("GHS pictogram", max_length=255, blank=True)
+    cas_number = models.CharField("CAS number", max_length=255, blank=True, validators=[validate_absence_airquotes])
+    ghs_pictogram = models.CharField("GHS pictogram", max_length=255, blank=True, validators=[validate_absence_airquotes])
     msds_form = models.ForeignKey(MsdsForm, on_delete=models.PROTECT, blank=True, null=True)
     hazard_level_pregnancy = models.CharField("Hazard level for pregnancy", max_length=255, choices=HAZARD_LEVEL_PREGNANCY_CHOICES, default='none', blank=True)
     
@@ -182,14 +191,14 @@ class Order(models.Model, SaveWithoutHistoricalRecord):
     
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         
-        # Remove airquote, new-line and hash characters from specific fields
-        self.supplier = self.supplier.strip().replace("'","").replace('"',"").replace('\n'," ").replace('#'," ")
-        self.supplier_part_no = self.supplier_part_no.strip().replace("'","").replace('"',"").replace('\n'," ").replace('#'," ")
-        self.part_description = self.part_description.strip().replace("'","").replace('"',"").replace('\n'," ").replace('#'," ")
-        self.quantity = self.quantity.strip().replace("'","").replace('"',"").replace('\n'," ").replace('#'," ")
-        self.price = self.price.strip().replace("'","").replace('"',"").replace('\n'," ").replace('#'," ")
-        self.cas_number = self.cas_number.strip().replace("'","").replace('"',"").replace('\n'," ").replace('#'," ")
-        self.ghs_pictogram = self.ghs_pictogram.strip().replace("'","").replace('"',"").replace('\n'," ").replace('#'," ")
+        # Remove trailing whitespace and internal new-line characters from specific fields
+        self.supplier = self.supplier.strip().replace('\n'," ")
+        self.supplier_part_no = self.supplier_part_no.strip().replace('\n'," ")
+        self.part_description = self.part_description.strip().replace('\n'," ")
+        self.quantity = self.quantity.strip().replace('\n'," ")
+        self.price = self.price.strip().replace('\n'," ")
+        self.cas_number = self.cas_number.strip().replace('\n'," ")
+        self.ghs_pictogram = self.ghs_pictogram.strip().replace('\n'," ")
         
         super(Order, self).save(force_insert, force_update, using, update_fields)
 

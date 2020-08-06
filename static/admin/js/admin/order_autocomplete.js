@@ -7,7 +7,7 @@ $('#id_part_description').autocomplete({
         })
     },
     select: function(e, ui) {
-        var extra_data = ui.item.data.split('#');
+        var extra_data = ui.item.data.split('§§');
         $('#id_supplier_part_no').val(extra_data[0]);
         $('#id_supplier').val(extra_data[1]);
         $('#id_location').val(extra_data[2]);
@@ -48,7 +48,7 @@ $('#id_supplier_part_no').autocomplete({
         })
     },
     select: function(e, ui) {
-        var extra_data = ui.item.data.split('#');
+        var extra_data = ui.item.data.split('§§');
         $('#id_part_description').val(extra_data[0]);
         $('#id_supplier').val(extra_data[1]);
         $('#id_location').val(extra_data[2]);

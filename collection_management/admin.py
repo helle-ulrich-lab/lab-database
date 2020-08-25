@@ -1157,6 +1157,10 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
             obj.save()
             new_obj = True
             self.new_obj = True
+
+            # If a plasmid is saved a new, clear all form Z elements
+            if "_saveasnew" in request.POST:
+                self.clear_formz_elements = True
             
             # Check if a map is present and if so trigger functions to create a plasmid
             # map preview and delete the resulting duplicate history record

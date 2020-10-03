@@ -113,6 +113,7 @@ class MyAdminSite(admin.AdminSite):
             url(r'^150freezer/$', self.freezer150),
             path('<path:object_id>/formz/', self.admin_view(self.formz)),
             url(r'^order_management/order_autocomplete/(?P<field>.*)=(?P<query>.*),(?P<timestamp>.*)$', self.admin_view(self.autocomplete_order)),
+            url(r'^formz/(?P<model_name>.*)/upload_zkbs_excel_file$', self.admin_view(self.upload_zkbs_excel_file)),
         ] + urls
         return urls
 
@@ -366,6 +367,68 @@ class MyAdminSite(admin.AdminSite):
         json_out = """[{}]""".format(json_line[:-1])
 
         return HttpResponse(json_out, content_type='application/json')
+    
+    def upload_zkbs_excel_file(self, request ,*args, **kwargs):
+
+        from django.http import Http404
+        from formz.update_zkbs_records import update_zkbs_celllines, update_zkbs_oncogenes, update_zkbs_plasmids
+        from django.core.exceptions import PermissionDenied
+        from django.forms import ValidationError
+
+        if not (request.user.is_superuser or request.user.groups.filter(name='FormZ manager').exists() or request.user.groups.filter(name='Lab manager').exists()):
+            raise PermissionDenied
+        
+        allowed_models = {"zkbscellline": "https://zag.bvl.bund.de/zelllinien/index.jsf?dswid=5287&dsrid=51",
+                          "zkbsoncogene": "https://zag.bvl.bund.de/onkogene/index.jsf?dswid=5287&dsrid=864",
+                          "zkbsplasmid": "https://zag.bvl.bund.de/vektoren/index.jsf?dswid=5287&dsrid=234"}
+
+        model_name = kwargs['model_name']
+
+        if model_name in [m_name for m_name, url in allowed_models.items()]:
+
+            app_label = 'formz'
+            model = apps.get_model(app_label, model_name)
+            opts = model._meta
+            verbose_model_name_plural = capfirst(force_text(opts.verbose_name_plural))
+
+            file_missing_error = False
+
+            if request.method == 'POST':
+
+                file_processing_errors = []
+
+                if "file" in request.FILES:
+
+                    if model_name == "zkbscellline": file_processing_errors = update_zkbs_celllines(request.FILES['file'].file)
+                    elif model_name == "zkbsoncogene": file_processing_errors = update_zkbs_oncogenes(request.FILES['file'].file)
+                    elif model_name == "zkbsplasmid": file_processing_errors = update_zkbs_plasmids(request.FILES['file'].file)
+
+                    if file_processing_errors:
+                        for e in file_processing_errors:
+                            messages.error(request, e)
+                    else:
+                        messages.success(request, "The {} have been updated successfully.".format(verbose_model_name_plural))
+
+                    return HttpResponseRedirect(".")
+
+                else:
+                    file_missing_error = True
+
+            context = {
+                'title': 'Update ' + verbose_model_name_plural,
+                'module_name': verbose_model_name_plural,
+                'site_header': self.site_header,
+                'has_permission': self.has_permission(request),
+                'app_label': app_label,
+                'opts': opts,
+                'site_url': self.site_url,
+                'zkbs_url': allowed_models[model_name],
+                'file_missing_error': file_missing_error}
+        
+            return render(request, 'admin/formz/update_zkbs_records.html', context)
+
+        else:
+            raise Http404()
 
 # Instantiate custom admin site 
 my_admin_site = MyAdminSite()

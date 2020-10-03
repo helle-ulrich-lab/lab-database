@@ -210,6 +210,20 @@ class ZkbsPlasmidPage(admin.ModelAdmin):
     search_fields = ['name']
     ordering = ['name']
 
+    def changelist_view(self, request, extra_context=None):
+        
+        # Check which user is request the page and if Lab Manager, FormZ Manager or superuser
+        # show update record button
+
+        extra_context = extra_context or {}
+
+        if request.user.is_superuser or request.user.groups.filter(name='FormZ manager').exists() or request.user.groups.filter(name='Lab manager').exists():
+            extra_context["has_update_from_excel_permission"] = True
+        else:
+            extra_context["has_update_from_excel_permission"] = False
+        
+        return super(ZkbsPlasmidPage, self).changelist_view(request, extra_context=extra_context)
+
 class ZkbsOncogenePage(admin.ModelAdmin):
     list_display = ('name', 'synonym', 'species', 'risk_potential')
     list_display_links = ('name', )
@@ -217,12 +231,40 @@ class ZkbsOncogenePage(admin.ModelAdmin):
     search_fields = ['name']
     ordering = ['name', 'synonym']
 
+    def changelist_view(self, request, extra_context=None):
+        
+        # Check which user is request the page and if Lab Manager, FormZ Manager or superuser
+        # show update record button
+
+        extra_context = extra_context or {}
+
+        if request.user.is_superuser or request.user.groups.filter(name='FormZ manager').exists() or request.user.groups.filter(name='Lab manager').exists():
+            extra_context["has_update_from_excel_permission"] = True
+        else:
+            extra_context["has_update_from_excel_permission"] = False
+        
+        return super(ZkbsOncogenePage, self).changelist_view(request, extra_context=extra_context)
+
 class ZkbsCellLinePage(admin.ModelAdmin):
     list_display = ('name', 'synonym', 'organism', 'risk_potential', 'origin', 'virus', 'genetically_modified')
     list_display_links = ('name', )
     list_per_page = 25
     search_fields = ['name', 'synonym']
     ordering = ['name']
+
+    def changelist_view(self, request, extra_context=None):
+        
+        # Check which user is request the page and if Lab Manager, FormZ Manager or superuser
+        # show update record button
+
+        extra_context = extra_context or {}
+
+        if request.user.is_superuser or request.user.groups.filter(name='FormZ manager').exists() or request.user.groups.filter(name='Lab manager').exists():
+            extra_context["has_update_from_excel_permission"] = True
+        else:
+            extra_context["has_update_from_excel_permission"] = False
+        
+        return super(ZkbsCellLinePage, self).changelist_view(request, extra_context=extra_context)
 
 class FormZHeaderPage(admin.ModelAdmin):
     

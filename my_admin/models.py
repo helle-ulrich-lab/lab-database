@@ -6,6 +6,7 @@ class GeneralSetting (models.Model):
     saveris_username = models.CharField("saveris username", max_length=255, blank=False)
     saveris_password = models.CharField("saveris password", max_length=255, blank=False)
     join_api_key = models.CharField("join api key", max_length=255, blank=True)
+    ms_teams_webhook = models.URLField("MS Teams webhook", max_length=500, blank=True)
 
     class Meta:        
         verbose_name = 'general setting'

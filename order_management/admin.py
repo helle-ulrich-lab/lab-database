@@ -19,6 +19,9 @@ from django_project.private_settings import SITE_TITLE
 from django_project.private_settings import SERVER_EMAIL_ADDRESS
 from my_admin.models import GeneralSetting
 
+from django_project.settings import TIME_ZONE
+from django_project.private_settings import ALLOWED_HOSTS
+
 #################################################
 #        ADDED FUNCTIONALITIES IMPORTS          #
 #################################################
@@ -46,6 +49,8 @@ from jsmin import jsmin
 
 import xlrd
 import csv
+import requests
+import pytz
 
 #################################################
 #                OTHER IMPORTS                  #
@@ -598,25 +603,82 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
 
             # Send email to Lab Managers if an order is set as urgent
             if obj.urgent:
-                message = """Dear lab manager(s),
 
-                {} {} has just placed an urgent order for {} {} - {}.
+                # If MS Teams webhook exists, send urgent order notification to it, if not send email
 
-                Regards,
-                The {}
+                general_setting = GeneralSetting.objects.all().first()
+                post_message_status_code = 0
 
-                """.format(request.user.first_name, request.user.last_name, obj.supplier, obj.supplier_part_no, obj.part_description, SITE_TITLE)
-                message = inspect.cleandoc(message)
-                try:
-                    general_setting = GeneralSetting.objects.all().first()
-                    send_mail('New urgent order', 
-                    message, 
-                    SERVER_EMAIL_ADDRESS,
-                    [general_setting.order_email_addresses],
-                    fail_silently=False,)
-                    messages.success(request, 'The lab managers have been informed of your urgent order.')
-                except:
-                    messages.warning(request, 'Your urgent order was added to the Order list. However, the lab managers have not been informed of it.')
+                if general_setting.ms_teams_webhook:
+
+                    try:
+                    
+                        message_card = {
+                                        "@context": "https://schema.org/extensions",
+                                        "@type": "MessageCard",
+                                        "text": "A new urgent order has been submited",
+                                        "potentialAction": [
+                                            {
+                                                "@type": "OpenUri",
+                                                "name": "View order",
+                                                "targets": [
+                                                    {
+                                                        "os": "default",
+                                                        "uri": "https://{}/order_management/order/{}/change/".format(ALLOWED_HOSTS[0], obj.id)
+                                                    }
+                                                ]
+                                            }
+                                        ],
+                                        "sections": [
+                                            {
+                                                "facts": [
+                                                    {
+                                                        "name": "Created By:",
+                                                        "value": "{} {}".format(request.user.first_name, request.user.last_name)
+                                                    },
+                                                    {
+                                                        "name": "Item:",
+                                                        "value": "{} {} - {}".format(obj.supplier, obj.supplier_part_no, obj.part_description)
+                                                    },
+                                                    {
+                                                        "name": "On/at:",
+                                                        "value": datetime.datetime.strftime(timezone.localtime(obj.created_date_time, pytz.timezone(TIME_ZONE)), '%d.%m.%Y %H:%m')
+                                                    }
+                                                ]
+                                            }
+                                        ],
+                                        "title": "New urgent order"
+                                    }
+
+                        post_message = requests.post(url=general_setting.ms_teams_webhook, json=message_card)
+                        post_message_status_code = post_message.status_code
+
+                    except:
+                        pass
+
+                if post_message_status_code != 200:
+                    message = """Dear lab manager(s),
+
+                    {} {} has just placed an urgent order for {} {} - {}.
+
+                    Regards,
+                    The {}
+
+                    """.format(request.user.first_name, request.user.last_name, obj.supplier, obj.supplier_part_no, obj.part_description, SITE_TITLE)
+                    message = inspect.cleandoc(message)
+                
+                    try:
+                        
+                        send_mail('New urgent order', 
+                                message, 
+                                    SERVER_EMAIL_ADDRESS,
+                                [   general_setting.order_email_addresses],
+                                    fail_silently=False,)
+                        messages.success(request, 'The lab managers have been informed of your urgent order.')
+
+                    except:
+                        messages.warning(request, 'Your urgent order was added to the Order list. However, the lab managers have not been informed of it.')
+            
         else:
             
             # Existing orders

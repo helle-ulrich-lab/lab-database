@@ -34,6 +34,8 @@
 <div>You can use the form below to update the {{opts.verbose_name_plural|capfirst}} in the database using the relevant
   Excel file from the <a target="_blank" href="{{zkbs_url}}">ZKBS</a>. An example of such file can be downloaded from
   <a target="_blank" href="{% static "admin/xlsx/" %}{{ opts.model_name }}_example.xlsx">here</a>.
+  <br><br>
+  <div style="font-weight: bold;">N.B.: After hitting the "Update" button below, it may take a few minutes update the database, please be patient!
 </div><br>
 <form method="post" enctype="multipart/form-data">
   {% csrf_token %}

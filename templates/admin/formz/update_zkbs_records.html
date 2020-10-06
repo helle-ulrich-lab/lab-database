@@ -37,11 +37,17 @@
   <br><br>
   <div style="font-weight: bold;">N.B.: After hitting the "Update" button below, it may take a few minutes to update the database, please be patient!
 </div><br>
-<form method="post" enctype="multipart/form-data">
+<form method="post" enctype="multipart/form-data" onsubmit="ShowLoading()">
   {% csrf_token %}
   <input type="file" name="file">
   <br><br>
   <input id="submit" type="submit" value="Update">
 </form>
+
+{% block admin_change_form_document_ready %}
+    <script type="text/javascript" src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
+    <script type="text/javascript" src="{% static 'admin/js/vendor/jqueryui/jquery-ui.js' %}"></script>
+    <script type="text/javascript" src="{% static 'admin/js/admin/ShowLoading.js' %}"></script>
+{% endblock %}
 
 {% endblock %}

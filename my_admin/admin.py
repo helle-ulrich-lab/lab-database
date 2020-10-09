@@ -295,7 +295,7 @@ class MyAdminSite(admin.AdminSite):
         'transfected': transfected, 
         'virus_packaging_cell_line': virus_packaging_cell_line,}
 
-        return render(request, 'admin/formz.html', context)
+        return render(request, 'admin/formz/formz.html', context)
 
     def autocomplete_order(self, request, *args, **kwargs):
         from django.http import HttpResponse

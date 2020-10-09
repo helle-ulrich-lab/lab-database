@@ -479,7 +479,7 @@ def formz_as_html(modeladmin, request, queryset):
     response = HttpResponse(content_type='application/zip')
     response['Content-Disposition'] = 'attachment; filename="formblattz_{}_{}.zip'.format(time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
 
-    template = get_template('admin/formz_for_export.html')
+    template = get_template('admin/formz/formz_for_export.html')
     app_label = queryset[0]._meta.app_label
     model_name = queryset[0].__class__.__name__
 

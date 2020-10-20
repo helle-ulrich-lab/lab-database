@@ -184,7 +184,7 @@ class FormZBaseElementPage(admin.ModelAdmin):
     list_display = ('name', 'get_donor_organism', 'description', 'get_extra_labels')
     list_display_links = ('name', )
     list_per_page = 25
-    search_fields = ['name']
+    search_fields = ['name', 'extra_label__label']
     ordering = ['name']
     autocomplete_fields = ['zkbs_oncogene', 'donor_organism']
     inlines = [FormZBaseElementExtraLabelPage]

@@ -102,7 +102,8 @@ class SaCerevisiaeStrain (models.Model, SaveWithoutHistoricalRecord):
                                                     help_text='The methods used to create the strain')
     formz_elements = models.ManyToManyField(FormZBaseElement, verbose_name ='elements', related_name='cerevisiae_formz_element', 
                                             help_text='Use only when an element is not present in the chosen plasmid(s), if any. '
-                                            '<a href="/formz/formzbaseelement/" target="_blank">View all/Change</a>', blank=True)
+                                                      'Searching against the aliases of an element is case-sensitive. '
+                                                      '<a href="/formz/formzbaseelement/" target="_blank">View all/Change</a>', blank=True)
     destroyed_date = models.DateField("destroyed", blank=True, null=True)
 
     # Fields to keep a record of M2M field values (only IDs!) in the main strain record
@@ -229,7 +230,8 @@ class Plasmid (models.Model, SaveWithoutHistoricalRecord):
     vector_zkbs = models.ForeignKey(ZkbsPlasmid, verbose_name = 'ZKBS database vector', on_delete=models.PROTECT, blank=False, null=True,
                                     help_text='The backbone of the plasmid, from the ZKBS database. If not applicable, choose none. <a href="/formz/zkbsplasmid/" target="_blank">View all</a>')
     formz_elements = models.ManyToManyField(FormZBaseElement, verbose_name ='elements', blank=True,
-                                            help_text='<a href="/formz/formzbaseelement/" target="_blank">View all/Change</a>')
+                                            help_text= 'Searching against the aliases of an element is case-sensitive. '
+                                            '<a href="/formz/formzbaseelement/" target="_blank">View all/Change</a>')
     formz_gentech_methods = models.ManyToManyField(GenTechMethod, verbose_name='genTech methods', related_name='plasmid_gentech_method', blank= True,
                                                     help_text='The methods used to create the plasmid')
     formz_ecoli_strains = models.ManyToManyField('EColiStrain', verbose_name='e. coli strains', related_name='plasmid_ecoli_strains', blank= False)
@@ -421,7 +423,8 @@ class ScPombeStrain (models.Model, SaveWithoutHistoricalRecord):
                                                     help_text='The methods used to create the strain')
     formz_elements = models.ManyToManyField(FormZBaseElement, verbose_name ='elements', related_name='pombe_formz_element', 
                                             help_text='Use only when an element is not present in the chosen plasmid(s), if any. '
-                                            '<a href="/formz/formzbaseelement/" target="_blank">View all/Change</a>', blank=True)
+                                                      'Searching against the aliases of an element is case-sensitive. '
+                                                      '<a href="/formz/formzbaseelement/" target="_blank">View all/Change</a>', blank=True)
     destroyed_date = models.DateField("destroyed", blank=True, null=True)
 
     # Fields to keep a record of M2M field values (only IDs!) in the main strain record
@@ -543,7 +546,9 @@ class EColiStrain (models.Model, SaveWithoutHistoricalRecord):
     history = HistoricalRecords()
 
     formz_projects = models.ManyToManyField(FormZProject, verbose_name='formZ projects', related_name='coli_formz_project', blank=False)
-    formz_elements = models.ManyToManyField(FormZBaseElement, verbose_name ='elements', related_name='coli_formz_element', blank=True)
+    formz_elements = models.ManyToManyField(FormZBaseElement, verbose_name ='elements', related_name='coli_formz_element', blank=True, 
+                                            help_text='Searching against the aliases of an element is case-sensitive. '
+                                            '<a href="/formz/formzbaseelement/" target="_blank">View all/Change</a>')
     destroyed_date = models.DateField("destroyed", blank=True, null=True)
 
     history_formz_projects = models.TextField("formZ projects", blank=True)
@@ -619,7 +624,9 @@ class CellLine (models.Model, SaveWithoutHistoricalRecord):
     formz_gentech_methods = models.ManyToManyField(GenTechMethod, verbose_name='genTech methods', related_name='cellline_gentech_method', blank= True,
                                                     help_text='The methods used to create the cell line')
     formz_elements = models.ManyToManyField(FormZBaseElement, verbose_name ='elements', related_name='cellline_formz_element', 
-                                            help_text='Use only when an element is not present in the chosen plasmid(s), if any', blank=True)
+                                            help_text='Use only when an element is not present in the chosen plasmid(s), if any. '
+                                                      'Searching against the aliases of an element is case-sensitive. '
+                                                      '<a href="/formz/formzbaseelement/" target="_blank">View all/Change</a>', blank=True)
     
     destroyed_date = models.DateField("destroyed", blank=True, null=True)
 

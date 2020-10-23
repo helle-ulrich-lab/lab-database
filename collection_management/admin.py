@@ -1873,7 +1873,7 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
                 client.close()
             
             except:
-                self.convert_plasmid_map_gbk_to_dna(plasmid_map_path, attempt_number - 1, messages)
+                self.convert_plasmid_map_gbk_to_dna(gbk_map_path, dna_map_path, attempt_number - 1, messages)
         
         else:
             mail_admins("Snapgene server error", 

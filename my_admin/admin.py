@@ -12,6 +12,16 @@ from django.contrib.contenttypes.models import ContentType
 from django.utils.encoding import force_text
 from django.shortcuts import render
 from django.contrib import messages
+from django.conf.urls import url
+from django.http import HttpResponse
+from django.http import Http404
+from django.core.files.storage import default_storage
+
+#################################################
+#          DJANGO PROJECT SETTINGS              #
+#################################################
+
+from django_project.private_settings import SITE_TITLE
 
 #################################################
 #        ADDED FUNCTIONALITIES IMPORTS          #
@@ -24,23 +34,32 @@ from import_export import resources
 import http.cookiejar
 import urllib.request, urllib.parse
 
+# SnapGene
+from snapgene.pyclasses.client import Client
+from snapgene.pyclasses.config import Config
+
+import datetime
+import zmq
+import os
+import time
+from bs4 import BeautifulSoup
+import re
+import mimetypes
+
 #################################################
 #                OTHER IMPORTS                  #
 #################################################
 
-import datetime
-from snapgene.pyclasses.client import Client
-from snapgene.pyclasses.config import Config
-import zmq
-import os
-import time
-
 from formz.models import FormZBaseElement
 from formz.models import FormZProject
-
-from django_project.private_settings import SITE_TITLE
-
 from .models import GeneralSetting
+
+#################################################
+#            CUSTOM ADMINS IMPORTS              #
+#################################################
+
+from order_management.admin import OrderAdmin
+from formz.admin import FormZAdmin
 
 #################################################
 #                CUSTOM CLASSES                 #
@@ -84,7 +103,7 @@ class DataLoggerWebsiteLogin(object):
 #               CUSTOM ADMIN SITE               #
 #################################################
 
-class MyAdminSite(admin.AdminSite):
+class MyAdminSite(OrderAdmin, FormZAdmin, admin.AdminSite):
     '''Create a custom admin site called MyAdminSite'''
     
     # Text to put at the end of each page's <title>.
@@ -100,36 +119,20 @@ class MyAdminSite(admin.AdminSite):
     site_url = '/'
 
     def get_urls(self):
-        
-        from django.conf.urls import url
-        from django.urls import path
-        
+                
         urls = super(MyAdminSite, self).get_urls()
         # Note that custom urls get pushed to the list (not appended)
         # This doesn't work with urls += ...
-        urls = [
-            url(r'^order_management/my_orders_redirect$', self.admin_view(self.my_orders_redirect)),
+        urls = super(MyAdminSite, self).get_formz_urls() + [
             url(r'uploads/(?P<url_path>.*)$', self.admin_view(self.uploads)),
-            url(r'^150freezer/$', self.freezer150),
-            path('<path:object_id>/formz/', self.admin_view(self.formz)),
-            url(r'^order_management/order_autocomplete/(?P<field>.*)=(?P<query>.*),(?P<timestamp>.*)$', self.admin_view(self.autocomplete_order)),
-            url(r'^formz/(?P<model_name>.*)/upload_zkbs_excel_file$', self.admin_view(self.upload_zkbs_excel_file)),
-        ] + urls
+            url(r'^150freezer/$', self.freezer150_view)] + \
+            urls + \
+            super(MyAdminSite, self).get_order_urls() 
+            
         return urls
-
-    def my_orders_redirect(self, request):
-        """ Redirect user to their My Orders page """
-
-        return HttpResponseRedirect('/order_management/order/?q-l=on&q=created_by.username+%3D+"{}"'.format(request.user.username))
 
     def uploads(self, request, *args, **kwargs):
         """Protected view for uploads/media files"""
-
-        from django.http import HttpResponse
-        from django.http import Http404
-        import re
-        from django.core.files.storage import default_storage
-        import mimetypes
         
         url_path = str(kwargs["url_path"])
         
@@ -191,11 +194,8 @@ class MyAdminSite(admin.AdminSite):
         else:
             raise Http404
 
-    def freezer150(self, request):
+    def freezer150_view(self, request):
         """ View to show the temperature of the -150° C freezer """
-
-        from bs4 import BeautifulSoup
-        from django.shortcuts import render
 
         try:
             general_setting = GeneralSetting.objects.all().first()
@@ -234,201 +234,6 @@ class MyAdminSite(admin.AdminSite):
             }
         
         return render(request, 'admin/freezer150.html', context)
-
-    def formz(self, request, *args, **kwargs):
-
-        from formz.models import FormZStorageLocation
-        from formz.models import FormZHeader
-        from formz.models import ZkbsCellLine        
-        
-        app_label, model_name, obj_id = kwargs['object_id'].split('/')
-        model = apps.get_model(app_label, model_name)
-        model_content_type = ContentType.objects.get(app_label=app_label, model=model_name)
-        opts = model._meta
-        obj = model.objects.get(id=int(obj_id))
-        
-        # Get storage location object or create a new 'empty' one
-        if FormZStorageLocation.objects.get(collection_model=model_content_type):
-            storage_location = FormZStorageLocation.objects.get(collection_model=model_content_type)
-        else:
-            storage_location = FormZStorageLocation(
-                collection_model = None,
-                storage_location = None,
-                species_name = None,
-                species_risk_group = None
-            )
-
-        if FormZHeader.objects.all().first():
-            formz_header = FormZHeader.objects.all().first()
-        else:
-            formz_header = None
-
-        obj.common_formz_elements = obj.get_all_common_formz_elements()
-        obj.uncommon_formz_elements =  obj.get_all_uncommon_formz_elements()
-        obj.instock_plasmids = obj.get_all_instock_plasmids()
-        obj.transient_episomal_plasmids = obj.get_all_transient_episomal_plasmids()
-
-        if model_name == 'cellline':
-            storage_location.species_name = obj.organism
-            obj.s2_plasmids = obj.celllineepisomalplasmid_set.all().filter(s2_work_episomal_plasmid=True).distinct().order_by('id')
-            try:
-                virus_packaging_cell_line = ZkbsCellLine.objects.filter(name__iexact='293T (HEK 293T)').order_by('id')[0]
-            except:
-                virus_packaging_cell_line = ZkbsCellLine(name = '293T (HEK 293T)')
-            transfected = True
-        else:
-            obj.s2_plasmids = None
-            transfected = False
-            virus_packaging_cell_line = None
-
-        context = {
-        'title': 'FormZ: {}'.format(obj),
-        'module_name': capfirst(force_text(opts.verbose_name_plural)),
-        'site_header': self.site_header,
-        'has_permission': self.has_permission(request),
-        'app_label': app_label,
-        'opts': opts,
-        'site_url': self.site_url, 
-        'object': obj,
-        'storage_location': storage_location,
-        'formz_header': formz_header,
-        'transfected': transfected, 
-        'virus_packaging_cell_line': virus_packaging_cell_line,}
-
-        return render(request, 'admin/formz/formz.html', context)
-
-    def autocomplete_order(self, request, *args, **kwargs):
-        from django.http import HttpResponse
-        from order_management.models import Order
-
-        field = kwargs['field']
-        query = kwargs['query']
-
-        orders = Order.objects.filter(**{'{}__icontains'.format(field): query}) \
-                                .exclude(supplier_part_no__icontains="?") \
-                                .exclude(supplier_part_no="") \
-                                .exclude(part_description__iexact="none") \
-                                .order_by('-id')[:50] \
-                                .values("supplier", "supplier_part_no", "part_description", "location", "msds_form", "price", "cas_number", "ghs_pictogram", "hazard_level_pregnancy")
-
-        lstofprodname = []
-        json_line = ""
-
-        if field == "part_description":
-        
-            # Loop through all elements (= rows) in the order list
-            for order in orders:
-                
-                # Create value:data pairs using part_description or supplier_part_no as values
-                part_description_lower = order["part_description"].lower()
-                
-                if part_description_lower not in lstofprodname:
-
-                    if len(lstofprodname) > 10: break
-                        
-                    json_line = json_line + '{{"value":"{}","data":"{}§§{}§§{}§§{}§§{}§§{}§§{}§§{}"}},'.format(
-                        order["part_description"], 
-                        order["supplier_part_no"], 
-                        order["supplier"], 
-                        order["location"],
-                        order["msds_form"] if order["msds_form"] else 0,
-                        order["price"],
-                        order["cas_number"], 
-                        order["ghs_pictogram"],
-                        order["hazard_level_pregnancy"])
-                    
-                    lstofprodname.append(part_description_lower)
-
-        elif field == "supplier_part_no":
-                        
-            # Loop through all elements (= rows) in the order list
-            for order in orders:
-                
-                # Create value:data pairs using part_description or supplier_part_no as values
-                part_description_lower = order["part_description"].lower()
-                
-                if part_description_lower not in lstofprodname:
-
-                    if len(lstofprodname) > 10: break
-                        
-                    json_line = json_line + '{{"value":"{}","data":"{}§§{}§§{}§§{}§§{}§§{}§§{}§§{}"}},'.format(
-                        order["supplier_part_no"], 
-                        order["part_description"], 
-                        order["supplier"], 
-                        order["location"],
-                        order["msds_form"] if order["msds_form"] else 0,
-                        order["price"],
-                        order["cas_number"], 
-                        order["ghs_pictogram"],
-                        order["hazard_level_pregnancy"])
-                    
-                    lstofprodname.append(part_description_lower)
-
-        json_out = """[{}]""".format(json_line[:-1])
-
-        return HttpResponse(json_out, content_type='application/json')
-    
-    def upload_zkbs_excel_file(self, request ,*args, **kwargs):
-
-        from django.http import Http404
-        from formz.update_zkbs_records import update_zkbs_celllines, update_zkbs_oncogenes, update_zkbs_plasmids
-        from django.core.exceptions import PermissionDenied
-        from django.forms import ValidationError
-
-        if not (request.user.is_superuser or request.user.groups.filter(name='FormZ manager').exists() or request.user.groups.filter(name='Lab manager').exists()):
-            raise PermissionDenied
-        
-        allowed_models = {"zkbscellline": "https://zag.bvl.bund.de/zelllinien/index.jsf?dswid=5287&dsrid=51",
-                          "zkbsoncogene": "https://zag.bvl.bund.de/onkogene/index.jsf?dswid=5287&dsrid=864",
-                          "zkbsplasmid": "https://zag.bvl.bund.de/vektoren/index.jsf?dswid=5287&dsrid=234"}
-
-        model_name = kwargs['model_name']
-
-        if model_name in [m_name for m_name, url in allowed_models.items()]:
-
-            app_label = 'formz'
-            model = apps.get_model(app_label, model_name)
-            opts = model._meta
-            verbose_model_name_plural = capfirst(force_text(opts.verbose_name_plural))
-
-            file_missing_error = False
-
-            if request.method == 'POST':
-
-                file_processing_errors = []
-
-                if "file" in request.FILES:
-
-                    if model_name == "zkbscellline": file_processing_errors = update_zkbs_celllines(request.FILES['file'].file)
-                    elif model_name == "zkbsoncogene": file_processing_errors = update_zkbs_oncogenes(request.FILES['file'].file)
-                    elif model_name == "zkbsplasmid": file_processing_errors = update_zkbs_plasmids(request.FILES['file'].file)
-
-                    if file_processing_errors:
-                        for e in file_processing_errors:
-                            messages.error(request, e)
-                    else:
-                        messages.success(request, "The {} have been updated successfully.".format(verbose_model_name_plural))
-
-                    return HttpResponseRedirect(".")
-
-                else:
-                    file_missing_error = True
-
-            context = {
-                'title': 'Update ' + verbose_model_name_plural,
-                'module_name': verbose_model_name_plural,
-                'site_header': self.site_header,
-                'has_permission': self.has_permission(request),
-                'app_label': app_label,
-                'opts': opts,
-                'site_url': self.site_url,
-                'zkbs_url': allowed_models[model_name],
-                'file_missing_error': file_missing_error}
-        
-            return render(request, 'admin/formz/update_zkbs_records.html', context)
-
-        else:
-            raise Http404()
 
 # Instantiate custom admin site 
 my_admin_site = MyAdminSite()

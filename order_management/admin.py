@@ -14,6 +14,11 @@ from django.db.models.functions import Length
 from django.core.exceptions import PermissionDenied
 from django.utils.translation import ugettext as _
 from django import forms
+from django.conf.urls import url
+
+#################################################
+#          DJANGO PROJECT SETTINGS              #
+#################################################
 
 from django_project.private_settings import SITE_TITLE
 from django_project.private_settings import SERVER_EMAIL_ADDRESS
@@ -44,13 +49,14 @@ from background_task import background
 from adminactions.mass_update import MassUpdateForm, get_permission_codename,\
     ActionInterrupted, adminaction_requested, adminaction_start, adminaction_end
 
-# jsmin
 from jsmin import jsmin
-
 import xlrd
 import csv
 import requests
 import pytz
+import datetime
+import time
+import inspect
 
 #################################################
 #                OTHER IMPORTS                  #
@@ -62,9 +68,99 @@ from .models import Location
 from .models import CostUnit
 from .models import MsdsForm
 
-import datetime
-import time
-import inspect
+#################################################
+#                ORDER ADMIN                    #
+#################################################
+
+class OrderAdmin(admin.AdminSite):
+    
+    def get_order_urls(self):
+
+        urls = [url(r'^order_management/my_orders_redirect$', self.admin_view(self.my_orders_redirect_view)),
+                url(r'^order_management/order_autocomplete/(?P<field>.*)=(?P<query>.*),(?P<timestamp>.*)$', self.admin_view(self.autocomplete_order_view))]
+
+        return urls
+    
+    def my_orders_redirect_view(self, request):
+        """ Redirect a user to its My Orders page """
+
+        from django.http import HttpResponseRedirect
+
+        return HttpResponseRedirect('/order_management/order/?q-l=on&q=created_by.username+%3D+"{}"'.format(request.user.username))
+
+    def autocomplete_order_view(self, request, *args, **kwargs):
+        """Given an order's product name or number, returns a json list of possible
+        hits to be used for autocompletion"""
+
+        # Get field and query from url
+        field = kwargs['field']
+        query = kwargs['query']
+
+        # Get possible hits
+        orders = Order.objects.filter(**{'{}__icontains'.format(field): query}) \
+                                .exclude(supplier_part_no__icontains="?") \
+                                .exclude(supplier_part_no="") \
+                                .exclude(part_description__iexact="none") \
+                                .order_by('-id')[:50] \
+                                .values("supplier", "supplier_part_no", "part_description", "location", "msds_form", "price", "cas_number", "ghs_pictogram", "hazard_level_pregnancy")
+
+        # Generate json
+        lstofprodname = []
+        json_line = ""
+
+        if field == "part_description":
+        
+            # Loop through all elements (= rows) in the order list
+            for order in orders:
+                
+                # Create value:data pairs using part_description or supplier_part_no as values
+                part_description_lower = order["part_description"].lower()
+                
+                if part_description_lower not in lstofprodname:
+
+                    if len(lstofprodname) > 10: break
+                        
+                    json_line = json_line + '{{"value":"{}","data":"{}§§{}§§{}§§{}§§{}§§{}§§{}§§{}"}},'.format(
+                        order["part_description"], 
+                        order["supplier_part_no"], 
+                        order["supplier"], 
+                        order["location"],
+                        order["msds_form"] if order["msds_form"] else 0,
+                        order["price"],
+                        order["cas_number"], 
+                        order["ghs_pictogram"],
+                        order["hazard_level_pregnancy"])
+                    
+                    lstofprodname.append(part_description_lower)
+
+        elif field == "supplier_part_no":
+                        
+            # Loop through all elements (= rows) in the order list
+            for order in orders:
+                
+                # Create value:data pairs using part_description or supplier_part_no as values
+                part_description_lower = order["part_description"].lower()
+                
+                if part_description_lower not in lstofprodname:
+
+                    if len(lstofprodname) > 10: break
+                        
+                    json_line = json_line + '{{"value":"{}","data":"{}§§{}§§{}§§{}§§{}§§{}§§{}§§{}"}},'.format(
+                        order["supplier_part_no"], 
+                        order["part_description"], 
+                        order["supplier"], 
+                        order["location"],
+                        order["msds_form"] if order["msds_form"] else 0,
+                        order["price"],
+                        order["cas_number"], 
+                        order["ghs_pictogram"],
+                        order["hazard_level_pregnancy"])
+                    
+                    lstofprodname.append(part_description_lower)
+
+        json_out = """[{}]""".format(json_line[:-1])
+
+        return HttpResponse(json_out, content_type='application/json')
 
 #################################################
 #         CUSTOM MASS UPDATE FUNCTION           #

@@ -12,10 +12,169 @@ from django.http import HttpResponseRedirect
 from django.contrib import messages
 from django.db.models import Q
 from django.utils.text import capfirst
+from django.conf.urls import url
+from django.urls import path
+from django.http import Http404
+from django.core.exceptions import PermissionDenied
+from django.forms import ValidationError
+from django.apps import apps
+from django.utils.encoding import force_text
+from django.shortcuts import render
+from django.contrib import messages
 
 from .models import FormZHeader
 
 from formz.models import FormZStorageLocation
+
+from formz.update_zkbs_records import update_zkbs_celllines, update_zkbs_oncogenes, update_zkbs_plasmids
+
+from formz.models import FormZStorageLocation
+from formz.models import FormZHeader
+from formz.models import ZkbsCellLine
+
+#################################################
+#                 FORMZ ADMIN                   #
+#################################################
+
+class FormZAdmin(admin.AdminSite):
+    
+    def get_formz_urls(self):
+
+        urls = [path('<path:object_id>/formz/', self.admin_view(self.formz_view)),
+                url(r'^formz/(?P<model_name>.*)/upload_zkbs_excel_file$', self.admin_view(self.upload_zkbs_excel_file_view)),]
+
+        return urls
+    
+    def formz_view(self, request, *args, **kwargs):
+        """View for Formblatt Z form"""
+        
+        app_label, model_name, obj_id = kwargs['object_id'].split('/')
+        model = apps.get_model(app_label, model_name)
+        model_content_type = ContentType.objects.get(app_label=app_label, model=model_name)
+        opts = model._meta
+        obj = model.objects.get(id=int(obj_id))
+        
+        # Get storage location object or create a new 'empty' one
+        if FormZStorageLocation.objects.get(collection_model=model_content_type):
+            storage_location = FormZStorageLocation.objects.get(collection_model=model_content_type)
+        else:
+            storage_location = FormZStorageLocation(
+                collection_model = None,
+                storage_location = None,
+                species_name = None,
+                species_risk_group = None
+            )
+
+        # Get FormZ header
+        if FormZHeader.objects.all().first():
+            formz_header = FormZHeader.objects.all().first()
+        else:
+            formz_header = None
+
+        # Get all sequence elements
+        obj.common_formz_elements = obj.get_all_common_formz_elements()
+        obj.uncommon_formz_elements =  obj.get_all_uncommon_formz_elements()
+        obj.instock_plasmids = obj.get_all_instock_plasmids()
+        obj.transient_episomal_plasmids = obj.get_all_transient_episomal_plasmids()
+
+        # If object is a cell line, get info that is specific for cell lines
+        # only, such as S2 plasmids and virus packaking line
+        if model_name == 'cellline':
+            storage_location.species_name = obj.organism
+            obj.s2_plasmids = obj.celllineepisomalplasmid_set.all().filter(s2_work_episomal_plasmid=True).distinct().order_by('id')
+            try:
+                virus_packaging_cell_line = ZkbsCellLine.objects.filter(name__iexact='293T (HEK 293T)').order_by('id')[0]
+            except:
+                virus_packaging_cell_line = ZkbsCellLine(name = '293T (HEK 293T)')
+            transfected = True
+        else:
+            obj.s2_plasmids = None
+            transfected = False
+            virus_packaging_cell_line = None
+
+        context = {
+        'title': 'FormZ: {}'.format(obj),
+        'module_name': capfirst(force_text(opts.verbose_name_plural)),
+        'site_header': self.site_header,
+        'has_permission': self.has_permission(request),
+        'app_label': app_label,
+        'opts': opts,
+        'site_url': self.site_url, 
+        'object': obj,
+        'storage_location': storage_location,
+        'formz_header': formz_header,
+        'transfected': transfected, 
+        'virus_packaging_cell_line': virus_packaging_cell_line,}
+
+        return render(request, 'admin/formz/formz.html', context)
+
+    def upload_zkbs_excel_file_view(self, request ,*args, **kwargs):
+        """View for form to upload Excel files from ZKBS and update
+        database"""
+
+        # Only allow superusers, FormZ or regular managers to access this view
+        if not (request.user.is_superuser or request.user.groups.filter(name='FormZ manager').exists() or request.user.groups.filter(name='Lab manager').exists()):
+            raise PermissionDenied
+        
+        # Set link to ZKBS pages for cell lines, oncogenes and plasmids
+        allowed_models = {"zkbscellline": "https://zag.bvl.bund.de/zelllinien/index.jsf?dswid=5287&dsrid=51",
+                          "zkbsoncogene": "https://zag.bvl.bund.de/onkogene/index.jsf?dswid=5287&dsrid=864",
+                          "zkbsplasmid": "https://zag.bvl.bund.de/vektoren/index.jsf?dswid=5287&dsrid=234"}
+
+        # Get model name
+        model_name = kwargs['model_name']
+
+        # Check that that the page is rendered only for the models specified above
+        if model_name in [m_name for m_name, url in allowed_models.items()]:
+
+            # Set some variables for the admin view
+            app_label = 'formz'
+            model = apps.get_model(app_label, model_name)
+            opts = model._meta
+            verbose_model_name_plural = capfirst(force_text(opts.verbose_name_plural))
+
+            file_missing_error = False
+
+            # If the form has been posted
+            if request.method == 'POST':
+
+                file_processing_errors = []
+                
+                # Check that a file is present
+                if "file" in request.FILES:
+
+                    # Based on model, call relative function
+                    if model_name == "zkbscellline": file_processing_errors = update_zkbs_celllines(request.FILES['file'].file)
+                    elif model_name == "zkbsoncogene": file_processing_errors = update_zkbs_oncogenes(request.FILES['file'].file)
+                    elif model_name == "zkbsplasmid": file_processing_errors = update_zkbs_plasmids(request.FILES['file'].file)
+
+                    # Collect errors, if any
+                    if file_processing_errors:
+                        for e in file_processing_errors:
+                            messages.error(request, e)
+                    else:
+                        messages.success(request, "The {} have been updated successfully.".format(verbose_model_name_plural))
+
+                    return HttpResponseRedirect(".")
+
+                else:
+                    file_missing_error = True
+
+            context = {
+                'title': 'Update ' + verbose_model_name_plural,
+                'module_name': verbose_model_name_plural,
+                'site_header': self.site_header,
+                'has_permission': self.has_permission(request),
+                'app_label': app_label,
+                'opts': opts,
+                'site_url': self.site_url,
+                'zkbs_url': allowed_models[model_name],
+                'file_missing_error': file_missing_error}
+        
+            return render(request, 'admin/formz/update_zkbs_records.html', context)
+
+        else:
+            raise Http404()
 
 #################################################
 #             MODEL ADMIN CLASSES               #

@@ -29,6 +29,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.utils.encoding import force_text
 from django.utils.text import capfirst
 from django.utils import timezone
+from django.db.models import Q
 
 IS_POPUP_VAR = '_popup'
 TO_FIELD_VAR = '_to_field'
@@ -77,6 +78,7 @@ from formz.models import Species
 
 import xlrd
 import csv
+from functools import reduce
 
 #################################################
 #                CUSTOM CLASSES                 #
@@ -350,15 +352,21 @@ class SearchFieldOptUsername(StrField):
         the list of options, distinct() returns only unique values
         sorted in alphabetical order"""
 
+        # from https://stackoverflow.com/questions/14907525/how-can-i-chain-djangos-in-and-iexact-queryset-field-lookups/14908214#14908214
+        excluded_users = ["AnonymousUser","guest","admin"]
+        q_list = map(lambda n: Q(username__iexact=n), excluded_users)
+        q_list = reduce(lambda a, b: a | b, q_list)
+
         if self.id_list:
             return super(SearchFieldOptUsername, self).get_options().\
             filter(id__in=self.id_list).\
+            exclude(q_list).\
             order_by(self.name).\
             values_list(self.name, flat=True)
         else:
             return super(SearchFieldOptUsername, self).\
             get_options().\
-            exclude(username__iexact__in=["AnonymousUser","guest","admin"]).\
+            exclude(q_list).\
             distinct().order_by(self.name).\
             values_list(self.name, flat=True)
 
@@ -374,16 +382,22 @@ class SearchFieldOptLastname(StrField):
         """exclude(id__in=[1,20,36]) removes admin, guest and anaonymous accounts from 
         the list of options, distinct() returns only unique values
         sorted in alphabetical order"""
+
+        # from https://stackoverflow.com/questions/14907525/how-can-i-chain-djangos-in-and-iexact-queryset-field-lookups/14908214#14908214
+        excluded_users = ["", "admin", "guest"]
+        q_list = map(lambda n: Q(last_name__iexact=n), excluded_users)
+        q_list = reduce(lambda a, b: a | b, q_list)
         
         if self.id_list:
             return super(SearchFieldOptLastname, self).get_options().\
             filter(id__in=self.id_list).\
+            exclude(q_list).\
             order_by(self.name).\
             values_list(self.name, flat=True)
-        else:
+        else:            
             return super(SearchFieldOptLastname, self).\
             get_options().\
-            exclude(last_name__iexact__in=["", "admin", "guest"]).\
+            exclude(q_list).\
             distinct().order_by(self.name).\
             values_list(self.name, flat=True)
 

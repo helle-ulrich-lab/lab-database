@@ -1038,7 +1038,7 @@ class FieldFormZBaseElement(StrField):
     def get_options(self, search):
         
         if len(search) < 3:
-            return None
+            return self.model.objects.none()
         else:
             return FormZBaseElement.objects.filter(name__icontains=search).values_list('name', flat=True)
 

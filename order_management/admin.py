@@ -588,7 +588,7 @@ class SearchFieldOptSupplier(StrField):
     def get_options(self, search):
 
         if len(search) < 3:
-            return None
+            return self.model.objects.none()
         else:
             return self.model.objects.filter(supplier__icontains=search).\
                         distinct()[:10].values_list(self.name, flat=True)
@@ -603,7 +603,7 @@ class SearchFieldOptPartDescription(StrField):
     def get_options(self, search):
 
         if len(search) < 3:
-            return None
+            return self.model.objects.none()
         else:
             return self.model.objects.filter(part_description__icontains=search).\
                 distinct()[:10].values_list(self.name, flat=True)

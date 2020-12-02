@@ -347,8 +347,8 @@ class SearchFieldOptUsername(StrField):
     suggest_options = True
     id_list = []
 
-    def get_options(self):
-        """exclude(id__in=[1,20,36]) removes admin, guest and anaonymous accounts from 
+    def get_options(self, search):
+        """Removes admin, guest and anonymous accounts from 
         the list of options, distinct() returns only unique values
         sorted in alphabetical order"""
 
@@ -358,14 +358,14 @@ class SearchFieldOptUsername(StrField):
         q_list = reduce(lambda a, b: a | b, q_list)
 
         if self.id_list:
-            return super(SearchFieldOptUsername, self).get_options().\
-            filter(id__in=self.id_list).\
+            return self.model.objects.\
+            filter(id__in=self.id_list, username__icontains=search).\
             exclude(q_list).\
-            order_by(self.name).\
+            distinct().order_by(self.name).\
             values_list(self.name, flat=True)
         else:
-            return super(SearchFieldOptUsername, self).\
-            get_options().\
+            return self.model.objects.\
+            filter(username__icontains=search).\
             exclude(q_list).\
             distinct().order_by(self.name).\
             values_list(self.name, flat=True)
@@ -378,8 +378,8 @@ class SearchFieldOptLastname(StrField):
     suggest_options = True
     id_list = []
 
-    def get_options(self):
-        """exclude(id__in=[1,20,36]) removes admin, guest and anaonymous accounts from 
+    def get_options(self, search):
+        """Removes admin, guest and anonymous accounts from 
         the list of options, distinct() returns only unique values
         sorted in alphabetical order"""
 
@@ -389,14 +389,14 @@ class SearchFieldOptLastname(StrField):
         q_list = reduce(lambda a, b: a | b, q_list)
         
         if self.id_list:
-            return super(SearchFieldOptLastname, self).get_options().\
-            filter(id__in=self.id_list).\
+            return self.model.objects. \
+            filter(id__in=self.id_list, last_name__icontains=search).\
             exclude(q_list).\
-            order_by(self.name).\
+            distinct().order_by(self.name).\
             values_list(self.name, flat=True)
         else:            
-            return super(SearchFieldOptLastname, self).\
-            get_options().\
+            return self.model.objects. \
+            filter(last_name__icontains=search).\
             exclude(q_list).\
             distinct().order_by(self.name).\
             values_list(self.name, flat=True)
@@ -567,7 +567,7 @@ class FieldFormZProject(StrField):
     name = 'formz_projects_title'
     suggest_options = True
 
-    def get_options(self):
+    def get_options(self, search):
         return FormZProject.objects.all().values_list('short_title', flat=True)
 
     def get_lookup_name(self):
@@ -578,7 +578,7 @@ class FieldEpisomalPlasmidFormZProjectSaCerStrain(StrField):
     name = 'episomal_plasmids_formz_projects_title'
     suggest_options = True
 
-    def get_options(self):
+    def get_options(self, search):
         return FormZProject.objects.all().values_list('short_title', flat=True)
 
     def get_lookup_name(self):
@@ -708,6 +708,7 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
     list_display_links = ('id', )
     list_per_page = 25
     djangoql_schema = SaCerevisiaeStrainQLSchema
+    djangoql_completion_enabled_by_default = False
     actions = [export_sacerevisiaestrain, formz_as_html]
     form = SaCerevisiaeStrainForm
     formfield_overrides = {CharField: {'widget': TextInput(attrs={'size':'93'})},} # Make TextInput fields wider
@@ -1034,8 +1035,12 @@ class FieldFormZBaseElement(StrField):
     model = Plasmid
     suggest_options = True
 
-    def get_options(self):
-        return FormZBaseElement.objects.all().values_list('name', flat=True)
+    def get_options(self, search):
+        
+        if len(search) < 3:
+            return None
+        else:
+            return FormZBaseElement.objects.filter(name__icontains=search).values_list('name', flat=True)
 
     def get_lookup_name(self):
         return 'formz_elements__name'
@@ -1141,6 +1146,7 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
     list_per_page = 25
     formfield_overrides = {CharField: {'widget': TextInput(attrs={'size':'93'})},} # Make TextInput fields wider
     djangoql_schema = PlasmidQLSchema
+    djangoql_completion_enabled_by_default = False
     actions = [export_plasmid, formz_as_html]
     search_fields = ['id', 'name']
     autocomplete_fields = ['parent_vector', 'formz_projects', 'formz_elements', 'vector_zkbs', 'formz_ecoli_strains', 'formz_gentech_methods']
@@ -1961,6 +1967,7 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
     formfield_overrides = {
     CharField: {'widget': TextInput(attrs={'size':'93'})},} # Make TextInput fields wider
     djangoql_schema = OligoQLSchema
+    djangoql_completion_enabled_by_default = False
     actions = [export_oligo]
     search_fields = ['id', 'name']
 
@@ -2148,7 +2155,7 @@ class FieldEpisomalPlasmidFormZProjectScPom(StrField):
     name = 'episomal_plasmids_formz_projects_title'
     suggest_options = True
 
-    def get_options(self):
+    def get_options(self, search):
         return FormZProject.objects.all().values_list('short_title', flat=True)
 
     def get_lookup_name(self):
@@ -2269,6 +2276,7 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admi
     list_per_page = 25
     formfield_overrides = {CharField: {'widget': TextInput(attrs={'size':'93'})},}
     djangoql_schema = ScPombeStrainQLSchema
+    djangoql_completion_enabled_by_default = False
     actions = [export_scpombestrain, formz_as_html]
     form = ScPombeStrainForm
     search_fields = ['id', 'name']
@@ -2584,6 +2592,7 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.
     list_per_page = 25
     formfield_overrides = {CharField: {'widget': TextInput(attrs={'size':'93'})},}
     djangoql_schema = EColiStrainQLSchema
+    djangoql_completion_enabled_by_default = False
     actions = [export_ecolistrain, formz_as_html]
     search_fields = ['id', 'name']
     autocomplete_fields = ['formz_projects', 'formz_elements']
@@ -2882,7 +2891,7 @@ class FieldEpisomalPlasmidFormZProjectCellLine(StrField):
     name = 'episomal_plasmids_formz_projects_title'
     suggest_options = True
 
-    def get_options(self):
+    def get_options(self, search):
         return FormZProject.objects.all().values_list('short_title', flat=True)
 
     def get_lookup_name(self):
@@ -2988,6 +2997,7 @@ class CellLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGua
     list_per_page = 25
     formfield_overrides = {CharField: {'widget': TextInput(attrs={'size':'93'})},}
     djangoql_schema = CellLineQLSchema
+    djangoql_completion_enabled_by_default = False
     inlines = [CellLineEpisomalPlasmidInline, CellLineDocInline, AddCellLineDocInline]
     actions = [export_cellline, formz_as_html]
     search_fields = ['id', 'name']
@@ -3316,6 +3326,7 @@ class AntibodyPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.Mod
     list_per_page = 25
     formfield_overrides = {CharField: {'widget': TextInput(attrs={'size':'93'})},}
     djangoql_schema = AntibodyQLSchema
+    djangoql_completion_enabled_by_default = False
     actions = [export_antibody]
     search_fields = ['id', 'name']
     

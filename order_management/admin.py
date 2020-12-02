@@ -557,8 +557,8 @@ class SearchFieldOptLocation(StrField):
     model = Location
     suggest_options = True
 
-    def get_options(self):
-        return Location.objects.all().order_by('name').\
+    def get_options(self, search):
+        return self.model.objects.filter(name__icontains=search).all().order_by('name').\
         values_list('name', flat=True)
 
     def get_lookup_name(self):
@@ -571,8 +571,8 @@ class SearchFieldOptCostUnit(StrField):
     name = 'cost_unit'
     suggest_options = True
 
-    def get_options(self):
-        return CostUnit.objects.all().order_by('name').\
+    def get_options(self, search):
+        return self.model.objects.filter(name__icontains=search).order_by('name').\
         values_list('name', flat=True)
 
     def get_lookup_name(self):
@@ -585,9 +585,13 @@ class SearchFieldOptSupplier(StrField):
     name = 'supplier'
     suggest_options = True
 
-    def get_options(self):
-        return super(SearchFieldOptSupplier, self).\
-        get_options().all().distinct()
+    def get_options(self, search):
+
+        if len(search) < 3:
+            return None
+        else:
+            return self.model.objects.filter(supplier__icontains=search).\
+                        distinct()[:10].values_list(self.name, flat=True)
 
 class SearchFieldOptPartDescription(StrField):
     """Create a list of unique cost units for search"""
@@ -596,9 +600,13 @@ class SearchFieldOptPartDescription(StrField):
     name = 'part_description'
     suggest_options = True
 
-    def get_options(self):
-        return super(SearchFieldOptPartDescription, self).\
-        get_options().all().distinct()
+    def get_options(self, search):
+
+        if len(search) < 3:
+            return None
+        else:
+            return self.model.objects.filter(part_description__icontains=search).\
+                distinct()[:10].values_list(self.name, flat=True)
 
 class SearchFieldOptAzardousPregnancy(StrField):
     """Create a list of unique cost units for search"""
@@ -660,6 +668,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
     list_per_page = 25
     inlines = [OrderExtraDocInline, AddOrderExtraDocInline]
     djangoql_schema = OrderQLSchema
+    djangoql_completion_enabled_by_default = False
     mass_update_form = MyMassUpdateOrderForm
     actions = [change_order_status_to_arranged, change_order_status_to_delivered, change_order_status_to_used_up, export_orders, export_chemicals, mass_update]
     search_fields = ['id', 'part_description', 'supplier_part_no']
@@ -1070,9 +1079,8 @@ class SearchFieldOptMsdsName(StrField):
     name = 'name'
     suggest_options = True
 
-    def get_options(self):
-        return super(SearchFieldOptMsdsName, self).\
-        get_options().all().distinct()
+    def get_options(self, search):
+        return self.model.objects.all().distinct()
 
 class MsdsFormQLSchema(DjangoQLSchema):
     '''Customize search functionality'''
@@ -1101,6 +1109,7 @@ class MsdsFormPage(DjangoQLSearchMixin, admin.ModelAdmin):
     list_per_page = 25
     ordering = ['name']
     djangoql_schema = MsdsFormQLSchema
+    djangoql_completion_enabled_by_default = False
     search_fields = ['id', 'name']
     form = MsdsFormForm
     

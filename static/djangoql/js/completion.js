@@ -2,20 +2,26 @@
   'use strict';
 
   /* global define, require */
+  if (!String.prototype.trim) {
+    // eslint-disable-next-line no-extend-native
+    String.prototype.trim = function () {
+      return this.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '');
+    };
+  }
 
   if (typeof define === 'function' && define.amd) {
     // AMD. Register as an anonymous module.
-    define('DjangoQL', ['Lexer'], factory);
+    define('DjangoQL', ['Lexer', 'LRUCache'], factory);
   } else if (typeof exports === 'object') {
     // Node. Does not work with strict CommonJS, but
     // only CommonJS-like environments that support module.exports,
     // like Node.
-    module.exports = factory(require('Lexer'));  // eslint-disable-line
+    module.exports = factory(require('Lexer'), require('LRUCache'));  // eslint-disable-line
   } else {
     // Browser globals (root is window)
-    root.DjangoQL = factory(root.Lexer);  // eslint-disable-line
+    root.DjangoQL = factory(root.Lexer, root.LRUCache);  // eslint-disable-line
   }
-}(this, function (Lexer) {
+}(this, function (Lexer, LRUCache) {
   'use strict';
 
   var reIntValue = '(-?0|-?[1-9][0-9]*)';
@@ -112,9 +118,12 @@
 
   // Main DjangoQL object
   var DjangoQL = function (options) {
+    var cacheSize = 100;
+
     this.options = options;
     this.currentModel = null;
     this.models = {};
+    this.suggestionsAPIUrl = null;
 
     this.token = token;
     this.lexer = lexer;
@@ -153,6 +162,19 @@
     if (options.valuesCaseSensitive) {
       this.valuesCaseSensitive = true;
     }
+    if (options.cacheSize) {
+      if (parseInt(options.cacheSize, 10) !== options.cacheSize
+          || options.cacheSize < 1) {
+        this.logError('cacheSize must be a positive integer');
+      } else {
+        cacheSize = options.cacheSize;
+      }
+    }
+    this.suggestionsCache = new LRUCache(cacheSize);
+    this.debouncedLoadFieldOptions = this.debounce(
+      this.loadFieldOptions.bind(this),
+      300);
+    this.loading = false;
 
     this.enableCompletion = this.enableCompletion.bind(this);
     this.disableCompletion = this.disableCompletion.bind(this);
@@ -161,8 +183,6 @@
     // so it's handy to have them already bound
     this.onCompletionMouseClick = this.onCompletionMouseClick.bind(this);
     this.onCompletionMouseDown = this.onCompletionMouseDown.bind(this);
-    this.onCompletionMouseOut = this.onCompletionMouseOut.bind(this);
-    this.onCompletionMouseOver = this.onCompletionMouseOver.bind(this);
     this.popupCompletion = this.popupCompletion.bind(this);
     this.debouncedRenderCompletion = this.debounce(
         this.renderCompletion.bind(this),
@@ -220,6 +240,9 @@
         this.completion.className = 'djangoql-completion';
         document.querySelector('body').appendChild(this.completion);
         this.completionUL = document.createElement('ul');
+        this.completionUL.onscroll = this.throttle(
+          this.onCompletionScroll.bind(this),
+          50);
         this.completion.appendChild(this.completionUL);
         if (typeof options.syntaxHelp === 'string') {
           syntaxHelp = document.createElement('p');
@@ -258,37 +281,54 @@
       this.hideCompletion();
     },
 
+    getJson: function (url, settings) {
+      this.loading = true;
+
+      var onLoadError = function () {
+        this.loading = false;
+        this.request = null;
+        this.logError('failed to fetch from ' + url);
+      }.bind(this);
+
+      if (this.request) {
+        this.request.abort();
+      }
+      this.request = new XMLHttpRequest();
+
+      this.request.open('GET', url, true);
+      this.request.onload = function () {
+        this.loading = false;
+        if (this.request.status === 200) {
+          if (typeof settings.success === 'function') {
+            settings.success(JSON.parse(this.request.responseText));
+          }
+        } else {
+          onLoadError();
+        }
+        this.request = null;
+      }.bind(this);
+      this.request.ontimeout = onLoadError;
+      this.request.onerror = onLoadError;
+      /* eslint-disable max-len */
+      // Workaround for IE9, see
+      // https://cypressnorth.com/programming/internet-explorer-aborting-ajax-requests-fixed/
+      /* eslint-enable max-len */
+      this.request.onprogress = function () {};
+      window.setTimeout(this.request.send.bind(this.request));
+    },
+
     loadIntrospections: function (introspections) {
-      var onLoadError;
-      var request;
+      var initIntrospections = function (data) {
+        this.currentModel = data.current_model;
+        this.models = data.models;
+        this.suggestionsAPIUrl = data.suggestions_api_url;
+      }.bind(this);
+
       if (typeof introspections === 'string') {
         // treat as URL
-        onLoadError = function () {
-          this.logError('failed to load introspections from ' + introspections);
-        }.bind(this);
-        request = new XMLHttpRequest();
-        request.open('GET', introspections, true);
-        request.onload = function () {
-          var data;
-          if (request.status === 200) {
-            data = JSON.parse(request.responseText);
-            this.currentModel = data.current_model;
-            this.models = data.models;
-          } else {
-            onLoadError();
-          }
-        }.bind(this);
-        request.ontimeout = onLoadError;
-        request.onerror = onLoadError;
-        /* eslint-disable max-len */
-        // Workaround for IE9, see
-        // https://cypressnorth.com/programming/internet-explorer-aborting-ajax-requests-fixed/
-        /* eslint-enable max-len */
-        request.onprogress = function () {};
-        window.setTimeout(request.send.bind(request));
+        this.getJson(introspections, { success: initIntrospections });
       } else if (this.isObject(introspections)) {
-        this.currentModel = introspections.current_model;
-        this.models = introspections.models;
+        initIntrospections(introspections);
       } else {
         this.logError(
             'introspections parameter is expected to be either URL or ' +
@@ -340,27 +380,113 @@
       };
     },
 
+    throttle: function (func, wait, options) {
+      // Borrowed from Underscore.js
+      var timeout;
+      var context;
+      var args;
+      var result;
+      var previous = 0;
+      var later;
+      var throttled;
+
+      if (!options) {
+        options = {};
+      }
+
+      later = function () {
+        previous = options.leading === false ? 0 : new Date().getTime();
+        timeout = null;
+        result = func.apply(context, args);
+        if (!timeout) {
+          context = null;
+          args = null;
+        }
+      };
+
+      throttled = function () {
+        var now = new Date().getTime();
+        var remaining;
+
+        if (!previous && options.leading === false) {
+          previous = now;
+        }
+        remaining = wait - (now - previous);
+        context = this;
+        args = arguments;
+        if (remaining <= 0 || remaining > wait) {
+          if (timeout) {
+            window.clearTimeout(timeout);
+            timeout = null;
+          }
+          previous = now;
+          result = func.apply(context, args);
+          if (!timeout) {
+            context = null;
+            args = null;
+          }
+        } else if (!timeout && options.trailing !== false) {
+          timeout = window.setTimeout(later, remaining);
+        }
+        return result;
+      };
+
+      throttled.cancel = function () {
+        window.clearTimeout(timeout);
+        previous = 0;
+        timeout = null;
+        context = null;
+        args = null;
+      };
+
+      return throttled;
+    },
+
+    setUrlParams: function (url, params) {
+      var parts = url.split('?');
+      var path = parts[0];
+      var queryString = parts.slice(1).join('?');
+      var pairs = queryString.split('&');
+      var pair;
+      var key;
+      var value;
+      var i;
+
+      for (key in params) {
+        if (params.hasOwnProperty(key)) {
+          key = encodeURI(key);
+          value = encodeURI(params[key]);
+          i = pairs.length;
+          while (i--) {
+            pair = pairs[i].split('=');
+            if (pair[0] === key) {
+              pair[1] = value;
+              pairs[i] = pair.join('=');
+              break;
+            }
+          }
+          if (i < 0) {
+            pairs.push(key + '=' + value);
+          }
+        }
+      }
+      queryString = pairs.join('&');
+      return queryString ? [path, queryString].join('?') : path;
+    },
+
     logError: function (message) {
       console.error('DjangoQL: ' + message);  // eslint-disable-line no-console
     },
 
     onCompletionMouseClick: function (e) {
-      this.selectCompletion(parseInt(e.target.getAttribute('data-index'), 10));
+      this.selectCompletion(
+        parseInt(e.currentTarget.getAttribute('data-index'), 10)
+      );
     },
 
     onCompletionMouseDown: function (e) {
       // This is needed to prevent 'blur' event on textarea
       e.preventDefault();
-    },
-
-    onCompletionMouseOut: function () {
-      this.selected = null;
-      this.debouncedRenderCompletion();
-    },
-
-    onCompletionMouseOver: function (e) {
-      this.selected = parseInt(e.target.getAttribute('data-index'), 10);
-      this.debouncedRenderCompletion();
     },
 
     onKeydown: function (e) {
@@ -411,7 +537,7 @@
             if (typeof this.options.onSubmit === 'function') {
               this.options.onSubmit(this.textarea.value);
             } else {
-              e.target.form.submit();
+              e.currentTarget.form.submit();
             }
           }
           e.preventDefault();
@@ -455,9 +581,27 @@
     },
 
     selectCompletion: function (index) {
+      var currentFullToken = this.getContext(
+        this.textarea.value,
+        this.textarea.selectionStart
+      ).currentFullToken;
+
+      var textValue = this.textarea.value;
       var startPos = this.textarea.selectionStart - this.prefix.length;
-      var textAfter = this.textarea.value.slice(startPos + this.prefix.length);
-      var textBefore = this.textarea.value.slice(0, startPos);
+      var tokenEndPos = null;
+
+      // cutting current token from the string
+      if (currentFullToken) {
+        tokenEndPos = currentFullToken.end;
+        textValue = (
+          textValue.slice(0, startPos) + textValue.slice(tokenEndPos)
+        );
+      }
+
+      var textBefore = textValue.slice(0, startPos);
+      var textAfter = textValue.slice(startPos);
+      // preventing double spaces after pasting the suggestion
+      textAfter = textAfter.trim();
 
       var snippetAfterParts = this.suggestions[index].snippetAfter.split('|');
       var textToPaste = this.suggestions[index].snippetBefore +
@@ -512,6 +656,7 @@
       var li;
       var liLen;
       var suggestionsLen;
+      var loadingElement;
 
       if (!this.completionEnabled) {
         this.hideCompletion();
@@ -521,13 +666,13 @@
       if (dontForceDisplay && this.completion.style.display === 'none') {
         return;
       }
-      if (!this.suggestions.length) {
+      if (!this.suggestions.length && !this.loading) {
         this.hideCompletion();
         return;
       }
 
       suggestionsLen = this.suggestions.length;
-      li = [].slice.call(this.completionUL.querySelectorAll('li'));
+      li = [].slice.call(this.completionUL.querySelectorAll('li[data-index]'));
       liLen = li.length;
 
       // Update or create necessary elements
@@ -537,11 +682,9 @@
         } else {
           currentLi = document.createElement('li');
           currentLi.setAttribute('data-index', i);
-          this.completionUL.appendChild(currentLi);
           currentLi.addEventListener('click', this.onCompletionMouseClick);
           currentLi.addEventListener('mousedown', this.onCompletionMouseDown);
-          currentLi.addEventListener('mouseout', this.onCompletionMouseOut);
-          currentLi.addEventListener('mouseover', this.onCompletionMouseOver);
+          this.completionUL.appendChild(currentLi);
         }
         currentLi.innerHTML = this.highlight(
             this.suggestions[i].text,
@@ -566,9 +709,20 @@
         liLen--;
         li[liLen].removeEventListener('click', this.onCompletionMouseClick);
         li[liLen].removeEventListener('mousedown', this.onCompletionMouseDown);
-        li[liLen].removeEventListener('mouseout', this.onCompletionMouseOut);
-        li[liLen].removeEventListener('mouseover', this.onCompletionMouseOver);
         this.completionUL.removeChild(li[liLen]);
+      }
+
+      loadingElement = this.completionUL.querySelector('li.djangoql-loading');
+
+      if (this.loading) {
+        if (!loadingElement) {
+          loadingElement = document.createElement('li');
+          loadingElement.className = 'djangoql-loading';
+          loadingElement.innerHTML = '&nbsp;';
+          this.completionUL.appendChild(loadingElement);
+        }
+      } else if (loadingElement) {
+        this.completionUL.removeChild(loadingElement);
       }
 
       inputRect = this.textarea.getBoundingClientRect();
@@ -618,9 +772,12 @@
       var lastToken = null;
       var nextToLastToken = null;
       var tokens = this.lexer.setInput(text.slice(0, cursorPos)).lexAll();
+      var allTokens = this.lexer.setInput(text).lexAll();
+      var currentFullToken = null;
       if (tokens.length && tokens[tokens.length - 1].end >= cursorPos) {
         // if cursor is positioned on the last token then remove it.
         // We are only interested in tokens preceding current.
+        currentFullToken = allTokens[tokens.length - 1];
         tokens.pop();
       }
       if (tokens.length) {
@@ -681,7 +838,8 @@
           scope = 'value';
           model = resolvedName.model;
           field = resolvedName.field;
-          if (prefix[0] === '"' && this.models[model][field].type === 'str') {
+          if (prefix[0] === '"' && (this.models[model][field].type === 'str'
+              || this.models[model][field].options)) {
             prefix = prefix.slice(1);
           }
         }
@@ -697,7 +855,166 @@
               .indexOf(lastToken.name) >= 0) {
         scope = 'logical';
       }
-      return { prefix: prefix, scope: scope, model: model, field: field };
+      return {
+        prefix: prefix,
+        scope: scope,
+        model: model,
+        field: field,
+        currentFullToken: currentFullToken
+      };
+    },
+
+    getCurrentFieldOptions: function () {
+      var input = this.textarea;
+      var context = this.getContext(input.value, input.selectionStart);
+      var model = this.models[context.model];
+      var field = context.field && model[context.field];
+      var fieldOptions = {
+        cacheKey: null,
+        context: context,
+        field: field,
+        model: model,
+        options: null
+      };
+
+      if (context.scope !== 'value' || !field || !field.options) {
+        return null;
+      }
+      if (Array.isArray(field.options)) {
+        fieldOptions.options = field.options;
+      } else if (field.options === true) {
+        // Means get via API
+        if (!this.suggestionsAPIUrl) {
+          return null;
+        }
+        fieldOptions.cacheKey = context.model + '.' + context.field
+          + '|' + context.prefix;
+      }
+      return fieldOptions;
+    },
+
+    loadFieldOptions: function (loadMore) {
+      var fieldOptions = this.getCurrentFieldOptions() || {};
+      var context = fieldOptions.context;
+      var cached;
+      var requestUrl;
+      var requestParams;
+
+      if (!fieldOptions.cacheKey) {
+        // The context has likely changed, user's cursor is in another position
+        return;
+      }
+      requestParams = {
+        field: context.model + '.' + context.field,
+        search: context.prefix
+      };
+
+      cached = this.suggestionsCache.get(fieldOptions.cacheKey) || {};
+      if (loadMore && cached.has_next) {
+        requestParams.page = cached.page ? cached.page + 1 : 1;
+      } else if (cached.page) {
+        // At least the first page is already loaded
+        return;
+      }
+
+      cached.loading = true;
+      this.suggestionsCache.set(fieldOptions.cacheKey, cached);
+
+      requestUrl = this.setUrlParams(this.suggestionsAPIUrl, requestParams);
+      this.getJson(requestUrl, {
+        success: function (data) {
+          var cached = this.suggestionsCache.get(fieldOptions.cacheKey) || {};
+          if (data.page - 1 !== (cached.page || 0)) {
+            // either pages were loaded out of order,
+            // or cache is no longer exists
+            return;
+          }
+          data.items = (cached.items || []).concat(data.items);
+          this.suggestionsCache.set(fieldOptions.cacheKey, data);
+          this.loading = false;
+          this.populateFieldOptions();
+          this.renderCompletion();
+        }.bind(this)
+      });
+      // Render 'loading' element
+      this.populateFieldOptions();
+      this.renderCompletion();
+    },
+
+    populateFieldOptions: function (loadMore) {
+      var fieldOptions = this.getCurrentFieldOptions();
+      if (fieldOptions === null) {
+        // 1) we are out of field options context
+        // 2) field has no options
+        return;
+      }
+      var options = fieldOptions.options;
+      var prefix = fieldOptions.context && fieldOptions.context.prefix;
+      var input = this.textarea;
+      var cached;
+      var snippetBefore;
+      var snippetAfter;
+      var textBefore;
+      var textAfter;
+
+      if (options) {
+        // filter them locally
+        if (this.valuesCaseSensitive) {
+          options = options.filter(function (item) {
+            // Case-sensitive
+            return item.indexOf(prefix) >= 0;
+          });
+        } else {
+          options = options.filter(function (item) {
+            // Case-insensitive
+            return item.toLowerCase().indexOf(prefix.toLowerCase()) >= 0;
+          });
+        }
+      } else {
+        this.suggestions = [];
+        if (!fieldOptions.cacheKey) {
+          return;
+        }
+        cached = this.suggestionsCache.get(fieldOptions.cacheKey) || {};
+        options = cached.items || [];
+        if (!cached.loading
+            && (!cached.page || (loadMore && cached.has_next))) {
+          this.debouncedLoadFieldOptions(loadMore);
+        }
+        if (!options.length) {
+          // Should we show 'no results' message?
+          return;
+        }
+      }
+
+      textBefore = input.value.slice(
+        0, input.selectionStart - this.prefix.length);
+      textAfter = input.value.slice(input.selectionStart);
+      if (textBefore && textBefore[textBefore.length - 1] === '"') {
+        snippetBefore = '';
+      } else {
+        snippetBefore = '"';
+      }
+      if (textAfter[0] !== '"') {
+        snippetAfter = '" ';
+      } else {
+        snippetAfter = '';
+      }
+
+      this.highlightCaseSensitive = this.valuesCaseSensitive;
+      this.suggestions = options.map(function (f) {
+        return suggestion(f, snippetBefore, snippetAfter);
+      });
+    },
+
+    onCompletionScroll: function () {
+      var rectHeight = this.completionUL.getBoundingClientRect().height;
+      var scrollBottom = this.completionUL.scrollTop + rectHeight;
+      if (scrollBottom > rectHeight
+          && scrollBottom > (this.completionUL.scrollHeight - rectHeight)) {
+        // TODO: add some checks of context?
+        this.populateFieldOptions(true);
+      }
     },
 
     generateSuggestions: function () {
@@ -706,11 +1023,8 @@
       var model;
       var field;
       var suggestions;
-      var snippetBefore;
       var snippetAfter;
       var searchFilter;
-      var textBefore;
-      var textAfter;
 
       if (!this.completionEnabled) {
         this.prefix = '';
@@ -741,10 +1055,6 @@
       model = this.models[context.model];
       field = context.field && model[context.field];
 
-      textBefore = input.value.slice(
-          0, input.selectionStart - this.prefix.length);
-      textAfter = input.value.slice(input.selectionStart);
-
       switch (context.scope) {
         case 'field':
           this.suggestions = Object.keys(model).map(function (f) {
@@ -760,7 +1070,8 @@
               suggestions.push('~');
               suggestions.push('!~');
               snippetAfter = ' "|"';
-            } else if (field.type === 'date' || field.type === 'datetime') {
+            } else if (field.type === 'date' || field.type === 'datetime'
+                       || field.options) {
               snippetAfter = ' "|"';
             }
             Array.prototype.push.apply(suggestions, ['>', '>=', '<', '<=']);
@@ -769,7 +1080,8 @@
             return suggestion(s, '', snippetAfter);
           });
           if (field && field.type !== 'bool') {
-            if (['str', 'date', 'datetime'].indexOf(field.type) >= 0) {
+            if (['str', 'date', 'datetime'].indexOf(field.type) >= 0
+                || field.options) {
               snippetAfter = ' ("|")';
             } else {
               snippetAfter = ' (|)';
@@ -788,28 +1100,9 @@
           if (!field) {
             // related field
             this.suggestions = [suggestion('None', '', ' ')];
-          } else if (field.type === 'str') {
-            if (textBefore && textBefore[textBefore.length - 1] === '"') {
-              snippetBefore = '';
-            } else {
-              snippetBefore = '"';
-            }
-            if (textAfter[0] !== '"') {
-              snippetAfter = '" ';
-            } else {
-              snippetAfter = '';
-            }
-            if (!this.valuesCaseSensitive) {
-              searchFilter = function (item) {
-                // Case-insensitive
-                return item.text.toLowerCase()
-                        .indexOf(this.prefix.toLowerCase()) >= 0;
-              }.bind(this);
-            }
-            this.highlightCaseSensitive = this.valuesCaseSensitive;
-            this.suggestions = field.options.map(function (f) {
-              return suggestion(f, snippetBefore, snippetAfter);
-            });
+          } else if (field.options) {
+            this.prefix = context.prefix;
+            this.populateFieldOptions();
           } else if (field.type === 'bool') {
             this.suggestions = [
               suggestion('True', '', ' '),

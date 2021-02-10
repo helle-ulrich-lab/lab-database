@@ -77,7 +77,7 @@ class OrderAdmin(admin.AdminSite):
     def get_order_urls(self):
 
         urls = [url(r'^order_management/my_orders_redirect$', self.admin_view(self.my_orders_redirect_view)),
-                url(r'^order_management/order_autocomplete/(?P<field>.*)=(?P<query>.*),(?P<timestamp>.*)$', self.admin_view(self.autocomplete_order_view))]
+                url(r'^order_management/order_autocomplete/(?P<field>.*)=(?P<query>.*),(?P<timestamp>.*)', self.admin_view(self.autocomplete_order_view))]
 
         return urls
     

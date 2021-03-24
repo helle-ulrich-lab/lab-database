@@ -778,7 +778,7 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
                     else:
                         # If an approval record for this object exists, check if a message was 
                         # sent. If so, update the approval record's edited field
-                        approval_obj = obj.approval.all().latest(field_name='message_date_time')
+                        approval_obj = obj.approval.all().latest('message_date_time')
                         if approval_obj.message_date_time:
                             if obj.last_changed_date_time > approval_obj.message_date_time:
                                 approval_obj.edited = True
@@ -1238,7 +1238,7 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
                 else:
                     # If an approval record for this object exists, check if a message was 
                     # sent. If so, update the approval record's edited field
-                    approval_obj = obj.approval.all().latest(field_name='message_date_time')
+                    approval_obj = obj.approval.all().latest('message_date_time')
                     if approval_obj.message_date_time:
                         if timezone.now() > approval_obj.message_date_time:
                             approval_obj.edited = True
@@ -2040,7 +2040,7 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
                     else:
                         # If an approval record for this object exists, check if a message was 
                         # sent. If so, update the approval record's edited field
-                        approval_obj = obj.approval.all().latest(field_name='message_date_time')
+                        approval_obj = obj.approval.all().latest('message_date_time')
                         if approval_obj.message_date_time:
                             if obj.last_changed_date_time > approval_obj.message_date_time:
                                 approval_obj.edited = True
@@ -2345,7 +2345,7 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admi
                     else:
                         # If an approval record for this object exists, check if a message was 
                         # sent. If so, update the approval record's edited field
-                        approval_obj = obj.approval.all().latest(field_name='message_date_time')
+                        approval_obj = obj.approval.all().latest('message_date_time')
                         if approval_obj.message_date_time:
                             if obj.last_changed_date_time > approval_obj.message_date_time:
                                 approval_obj.edited = True
@@ -2658,7 +2658,7 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.
                     else:
                         # If an approval record for this object exists, check if a message was 
                         # sent. If so, update the approval record's edited field
-                        approval_obj = obj.approval.all().latest(field_name='message_date_time')
+                        approval_obj = obj.approval.all().latest('message_date_time')
                         if approval_obj.message_date_time:
                             if obj.last_changed_date_time > approval_obj.message_date_time:
                                 approval_obj.edited = True
@@ -2840,7 +2840,7 @@ class CellLineDocInline(admin.TabularInline):
     fields = ['typ_e', 'date_of_test', 'get_doc_short_name', 'comment']
     readonly_fields = ['get_doc_short_name', 'typ_e', 'date_of_test']
 
-    def has_add_permission(self, request):
+    def has_add_permission(self, request, obj):
         return False
     
     def get_doc_short_name(self, instance):
@@ -3062,7 +3062,7 @@ class CellLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGua
                 else:
                     # If an approval record for this object exists, check if a message was 
                     # sent. If so, update the approval record's edited field
-                    approval_obj = obj.approval.all().latest(field_name='message_date_time')
+                    approval_obj = obj.approval.all().latest('message_date_time')
                     if approval_obj.message_date_time:
                         if obj.last_changed_date_time > approval_obj.message_date_time:
                             approval_obj.edited = True

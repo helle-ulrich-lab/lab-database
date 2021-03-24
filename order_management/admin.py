@@ -362,7 +362,7 @@ class OrderExtraDocInline(admin.TabularInline):
     fields = ['get_doc_short_name', 'description']
     readonly_fields = ['get_doc_short_name', 'description']
 
-    def has_add_permission(self, request):
+    def has_add_permission(self, request, obj):
         
         # Prevent users from adding new objects with this inline
         return False

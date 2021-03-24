@@ -42,7 +42,6 @@ INSTALLED_APPS = [
     'simple_history',
     'import_export',
     'collection_management',
-    'colorful',
     'user_management',
     'order_management',
     'guardian',

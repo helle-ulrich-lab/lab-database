@@ -341,7 +341,7 @@ my_admin_site.register(User, LabUserAdmin)
 #################################################
 
 from background_task.models import Task
-from background_task.models_completed import CompletedTask
+from background_task.models import CompletedTask
 
 from background_task.admin import TaskAdmin
 from background_task.admin import CompletedTaskAdmin

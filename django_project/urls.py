@@ -75,7 +75,7 @@ def wiki_check_login_guest(f):
                 return f(request, **kwargs)
         else:
             from django.shortcuts import resolve_url
-            from django.utils.six.moves.urllib.parse import urlparse
+            from urllib.parse import urlparse
             from django.contrib.auth.views import redirect_to_login
             from django.contrib.auth import REDIRECT_FIELD_NAME
             path = request.build_absolute_uri()

@@ -55,7 +55,7 @@ if RECORDS_TO_BE_APPROVED.exists(): # Check if there are records to be be approv
 
 # Delete all completed tasks 
 
-from background_task.models_completed import CompletedTask
+from background_task.models import CompletedTask
 CompletedTask.objects.all().delete()
 
 # Delete history items that differ just by last_changed_date_time 

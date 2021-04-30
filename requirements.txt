@@ -52,7 +52,7 @@ sqlparse==0.3.0
 tablib==0.14.0
 typed-ast==1.4.0
 unicodecsv==0.14.1
-urllib3==1.25.7
+urllib3==1.25.8
 uWSGI==2.0.18
 webencodings==0.5.1
 wiki==0.7

@@ -184,12 +184,31 @@ def mass_update(modeladmin, request, queryset):
                                     modelform_factory, )
     from django.http import HttpResponseRedirect
     from django.shortcuts import render
-    from django.utils.encoding import smart_text
+    from django.utils.encoding import smart_str
 
     def not_required(field, **kwargs):
-        """ force all fields as not required"""
+        """force all fields as not required and return modeladmin field"""
         kwargs['required'] = False
-        return field.formfield(**kwargs)
+        kwargs['request'] = request
+        return modeladmin.formfield_for_dbfield(field, **kwargs)
+
+    def _get_sample():
+        for f in mass_update_hints:
+            if isinstance(f, ForeignKey):
+                # Filter by queryset so we only get results without our
+                # current resultset
+                filters = {"%s__in" % f.remote_field.name: queryset}
+                # Order by random to get a nice sample
+                query = f.related_model.objects.filter(**filters).distinct().order_by('?')
+                # Limit the amount of results so we don't accidently query
+                # many thousands of items and kill the database.
+                grouped[f.name] = [(a.pk, str(a)) for a in query[:10]]
+            elif hasattr(f, 'flatchoices') and f.flatchoices:
+                grouped[f.name] = dict(getattr(f, 'flatchoices')).keys()
+            elif hasattr(f, 'choices') and f.choices:
+                grouped[f.name] = dict(getattr(f, 'choices')).keys()
+            elif isinstance(f, df.BooleanField):
+                grouped[f.name] = [("True", True), ("False", False)]
 
     def _doit():
         errors = {}
@@ -235,11 +254,21 @@ def mass_update(modeladmin, request, queryset):
         messages.error(request, str(e))
         return
 
-    # Allows to specify a custom mass update Form in ModelAdmin
-    mass_update_form = getattr(modeladmin, 'mass_update_form', MassUpdateForm)
+    # Allows to specified a custom mass update Form in the ModelAdmin
 
+    mass_update_form = getattr(modeladmin, 'mass_update_form', MassUpdateForm)
+    mass_update_fields = getattr(modeladmin, 'mass_update_fields', None)
+    mass_update_exclude = getattr(modeladmin, 'mass_update_exclude', ['pk']) or []
+    if 'pk' not in mass_update_exclude:
+        mass_update_exclude.append('pk')
+    mass_update_hints = getattr(modeladmin, 'mass_update_hints',
+                                [f.name for f in modeladmin.model._meta.fields])
+
+    if mass_update_fields and mass_update_exclude:
+        raise Exception("Cannot set both 'mass_update_exclude' and 'mass_update_fields'")
     MForm = modelform_factory(modeladmin.model, form=mass_update_form,
-                              exclude=('pk',),
+                              exclude=mass_update_exclude,
+                              fields=mass_update_fields,
                               formfield_callback=not_required)
     grouped = defaultdict(lambda: [])
     selected_fields = []
@@ -262,8 +291,8 @@ def mass_update(modeladmin, request, queryset):
                 return HttpResponseRedirect(request.get_full_path())
 
             # need_transaction = form.cleaned_data.get('_unique_transaction', False)
-            validate = True
-            clean = False
+            validate = form.cleaned_data.get('_validate', False)
+            clean = form.cleaned_data.get('_clean', False)
 
             if validate:
                 with atomic():
@@ -273,10 +302,10 @@ def mass_update(modeladmin, request, queryset):
                 values = {}
                 for field_name, value in list(form.cleaned_data.items()):
                     if isinstance(form.fields[field_name], ModelMultipleChoiceField):
-                        messages.error(request, "Unable to mass update ManyToManyField without 'validate'")
+                        messages.error(request, "Unable no mass update ManyToManyField without 'validate'")
                         return HttpResponseRedirect(request.get_full_path())
                     elif callable(value):
-                        messages.error(request, "Unable to mass update using operators without 'validate'")
+                        messages.error(request, "Unable no mass update using operators without 'validate'")
                         return HttpResponseRedirect(request.get_full_path())
                     elif field_name not in ['_selected_action', '_validate', 'select_across', 'action',
                                             '_unique_transaction', '_clean']:
@@ -297,9 +326,12 @@ def mass_update(modeladmin, request, queryset):
 
         form = MForm(initial=initial, instance=prefill_instance)
 
+    if mass_update_hints:
+        _get_sample()
+    already_grouped = set(grouped)
     for el in queryset.all()[:10]:
         for f in modeladmin.model._meta.fields:
-            if f.name not in form._no_sample_for:
+            if f.name in mass_update_hints and f.name not in already_grouped:
                 if isinstance(f, ForeignKey):
                     filters = {"%s__isnull" % f.remote_field.name: False}
                     grouped[f.name] = [(a.pk, str(a)) for a in
@@ -326,7 +358,7 @@ def mass_update(modeladmin, request, queryset):
            'action_short_description': mass_update.short_description,
            'title': u"%s (%s)" % (
                mass_update.short_description.capitalize(),
-               smart_text(modeladmin.opts.verbose_name_plural),
+               smart_str(modeladmin.opts.verbose_name_plural),
            ),
            'grouped': grouped,
            'fieldvalues': json.dumps(grouped, default=dthandler),

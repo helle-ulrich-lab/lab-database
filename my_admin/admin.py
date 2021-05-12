@@ -306,6 +306,8 @@ from order_management.models import Location
 from order_management.models import Order
 from order_management.models import OrderExtraDoc
 from order_management.models import MsdsForm
+from order_management.models import GhsSymbol
+from order_management.models import SignalWord
 
 from order_management.admin import SearchFieldOptLocation, SearchFieldOptCostUnit, SearchFieldOptSupplier, SearchFieldOptPartDescription, OrderQLSchema
 from order_management.admin import OrderExtraDocInline
@@ -315,12 +317,16 @@ from order_management.admin import LocationPage
 from order_management.admin import OrderPage
 from order_management.admin import MsdsFormPage
 from order_management.admin import OrderExtraDocPage
+from order_management.admin import GhsSymbolPage
+from order_management.admin import SignalWordPage
 
 my_admin_site.register(Order, OrderPage)
 my_admin_site.register(CostUnit, CostUnitPage)
 my_admin_site.register(Location, LocationPage)
 my_admin_site.register(MsdsForm, MsdsFormPage)
 my_admin_site.register(OrderExtraDoc, OrderExtraDocPage)
+my_admin_site.register(GhsSymbol, GhsSymbolPage)
+my_admin_site.register(SignalWord, SignalWordPage)
 
 #################################################
 #            CUSTOM USER/GROUP PAGES            #

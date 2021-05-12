@@ -153,7 +153,7 @@ class SimpleHistoryWithSummaryAdmin(SimpleHistoryAdmin):
                             for change in delta.changes:
                                 
                                 # Do not show created/changed date/time or approval by PI fields, and png/gbk map fields
-                                if not change.field.endswith(("time", "_pi", "map_png", "map_gbk", '_user')):
+                                if not change.field.endswith(("time", "_pi", "map_png", "map_gbk", '_user', '_autocomplete')):
                                     
                                     field_name = model._meta.get_field(change.field).verbose_name
                                     field_type = model._meta.get_field(change.field).get_internal_type()
@@ -616,10 +616,7 @@ class SaCerevisiaeStrainExportResource(resources.ModelResource):
         'construction', 'modification', 'integrated_plasmids', 'cassette_plasmids', 'episomal_plasmids_in_stock', 'other_plasmids', 
         'selection', 'phenotype', 'background', 'received_from','us_e', 'note', 'reference', 'created_date_time', 
         'created_by__username',)
-        export_order = fields = ('id', 'name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parent_1', 'parent_2','additional_parental_strain_info',
-        'construction', 'modification', 'integrated_plasmids', 'cassette_plasmids', 'episomal_plasmids_in_stock', 'other_plasmids', 
-        'selection', 'phenotype', 'background', 'received_from','us_e', 'note', 'reference', 'created_date_time', 
-        'created_by__username',)
+        export_order = fields
 
 def export_sacerevisiaestrain(modeladmin, request, queryset):
     """Export SaCerevisiaeStrain"""

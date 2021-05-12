@@ -27,12 +27,17 @@ $('#id_part_description').autocomplete({
             $('#id_cas_number').val(null)
         };
         if (extra_data[6] != "") {
-            $('#id_ghs_pictogram').val(extra_data[6])
+            $('#id_ghs_symbols').val(extra_data[6])
         } else {
-            $('#id_ghs_pictogram').val(null)
+            $('#id_ghs_symbols').val(null)
         };
         if (extra_data[7] != "") {
-            $('#id_hazard_level_pregnancy').val(extra_data[7])
+            $('#id_signal_words').val(extra_data[7])
+        } else {
+            $('#id_signal_words').val(null)
+        };
+        if (extra_data[8] != "") {
+            $('#id_hazard_level_pregnancy').val(extra_data[8])
         } else {
             $('#id_hazard_level_pregnancy').val(null)
         };
@@ -68,15 +73,19 @@ $('#id_supplier_part_no').autocomplete({
             $('#id_cas_number').val(null)
         }
         ;if (extra_data[6] != "") {
-            $('#id_ghs_pictogram').val(extra_data[6])
+            $('#id_ghs_symbols').val(extra_data[6])
         } else {
-            $('#id_ghs_pictogram').val(null)
-        }
-        ;if (extra_data[7] != "") {
-            $('#id_hazard_level_pregnancy').val(extra_data[7])
+            $('#id_ghs_symbols').val(null)
+        };
+        if (extra_data[7] != "") {
+            $('#id_signal_words').val(extra_data[7])
+        } else {
+            $('#id_signal_words').val(null)
+        };
+        if (extra_data[8] != "") {
+            $('#id_hazard_level_pregnancy').val(extra_data[8])
         } else {
             $('#id_hazard_level_pregnancy').val(null)
-        }
-        ;
+        };
     }
 });

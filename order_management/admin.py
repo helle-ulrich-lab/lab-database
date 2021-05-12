@@ -15,6 +15,7 @@ from django.core.exceptions import PermissionDenied
 from django.utils.translation import ugettext as _
 from django import forms
 from django.conf.urls import url
+from django.contrib.admin.widgets import AdminFileWidget
 
 #################################################
 #          DJANGO PROJECT SETTINGS              #
@@ -41,6 +42,7 @@ from collection_management.admin import SimpleHistoryWithSummaryAdmin
 
 # Import/Export functionalities from django-import-export
 from import_export.admin import ExportActionModelAdmin
+from import_export.fields import Field
 
 # Background tasks
 from background_task import background
@@ -57,6 +59,7 @@ import pytz
 import datetime
 import time
 import inspect
+from ast import literal_eval
 
 #################################################
 #                OTHER IMPORTS                  #
@@ -67,6 +70,8 @@ from .models import Order
 from .models import Location
 from .models import CostUnit
 from .models import MsdsForm
+from .models import GhsSymbol
+from .models import SignalWord
 
 #################################################
 #                ORDER ADMIN                    #
@@ -102,7 +107,7 @@ class OrderAdmin(admin.AdminSite):
                                 .exclude(supplier_part_no="") \
                                 .exclude(part_description__iexact="none") \
                                 .order_by('-id')[:50] \
-                                .values("supplier", "supplier_part_no", "part_description", "location", "msds_form", "price", "cas_number", "ghs_pictogram", "hazard_level_pregnancy")
+                                .values("supplier", "supplier_part_no", "part_description", "location", "msds_form", "price", "cas_number", "hazard_level_pregnancy", "ghs_symbols_autocomplete", "signal_words_autocomplete")
 
         # Generate json
         lstofprodname = []
@@ -120,7 +125,7 @@ class OrderAdmin(admin.AdminSite):
 
                     if len(lstofprodname) > 10: break
                         
-                    json_line = json_line + '{{"value":"{}","data":"{}§§{}§§{}§§{}§§{}§§{}§§{}§§{}"}},'.format(
+                    json_line = json_line + '{{"value":"{}","data":"{}§§{}§§{}§§{}§§{}§§{}§§{}§§{}§§{}"}},'.format(
                         order["part_description"], 
                         order["supplier_part_no"], 
                         order["supplier"], 
@@ -128,7 +133,8 @@ class OrderAdmin(admin.AdminSite):
                         order["msds_form"] if order["msds_form"] else 0,
                         order["price"],
                         order["cas_number"], 
-                        order["ghs_pictogram"],
+                        order["ghs_symbols_autocomplete"],
+                        order["signal_words_autocomplete"],
                         order["hazard_level_pregnancy"])
                     
                     lstofprodname.append(part_description_lower)
@@ -145,7 +151,7 @@ class OrderAdmin(admin.AdminSite):
 
                     if len(lstofprodname) > 10: break
                         
-                    json_line = json_line + '{{"value":"{}","data":"{}§§{}§§{}§§{}§§{}§§{}§§{}§§{}"}},'.format(
+                    json_line = json_line + '{{"value":"{}","data":"{}§§{}§§{}§§{}§§{}§§{}§§{}§§{}§§{}"}},'.format(
                         order["supplier_part_no"], 
                         order["part_description"], 
                         order["supplier"], 
@@ -153,7 +159,8 @@ class OrderAdmin(admin.AdminSite):
                         order["msds_form"] if order["msds_form"] else 0,
                         order["price"],
                         order["cas_number"], 
-                        order["ghs_pictogram"],
+                        order["ghs_symbols_autocomplete"],
+                        order["signal_words_autocomplete"],
                         order["hazard_level_pregnancy"])
                     
                     lstofprodname.append(part_description_lower)
@@ -442,23 +449,37 @@ class AddOrderExtraDocInline(admin.TabularInline):
 
 from import_export import resources
 
-class OrderChemicalExportResource(resources.ModelResource):
+class BaseOrderResource(resources.ModelResource):
+    """Defines custom fields"""
+
+    ghs_symbols_field = Field(column_name='ghs_symbols')
+    signal_words_field = Field(column_name='signal_words')
+
+    def dehydrate_ghs_symbols_field(self, order):
+        return str(tuple(order.ghs_symbols.all().values_list('code', flat=True))).replace("'", "").replace('"', "").replace(',)', ')')[1:-1]
+
+    def dehydrate_signal_words_field(self, order):
+        return str(tuple(order.signal_words.all().values_list('signal_word', flat=True))).replace("'", "").replace('"', "").replace(',)', ')')[1:-1]
+
+class OrderChemicalExportResource(BaseOrderResource):
     """Defines a custom export resource class for chemicals"""
     
     class Meta:
         model = Order
-        fields = ('id','supplier', 'supplier_part_no', 'part_description', 'quantity', "location__name", "cas_number", 
-        "ghs_pictogram", 'hazard_level_pregnancy')
+        fields = ('id','supplier', 'supplier_part_no', 'part_description', 'quantity', 
+        "location__name", "cas_number", 'ghs_symbols_field', 'signal_words_field', 
+         'hazard_level_pregnancy')
 
-class OrderExportResource(resources.ModelResource):
+class OrderExportResource(BaseOrderResource):
     """Defines a custom export resource class for orders"""
-    
+
     class Meta:
         model = Order
         fields = ('id', 'internal_order_no', 'supplier', 'supplier_part_no', 'part_description', 'quantity', 
             'price', 'cost_unit__name', 'status', 'location__name', 'comment', 'url', 'delivered_date', 'cas_number', 
-            'ghs_pictogram', 'hazard_level_pregnancy', 'created_date_time', 'order_manager_created_date_time', 
-            'last_changed_date_time', 'created_by__username',)
+            'ghs_symbols_field', 'signal_words_field', 'hazard_level_pregnancy', 'created_date_time', 
+            'order_manager_created_date_time', 'last_changed_date_time', 'created_by__username',)
+        export_order = fields
 
 #################################################
 #                   ACTIONS                     #
@@ -532,9 +553,9 @@ change_order_status_to_used_up.short_description = "Change STATUS of selected to
 
 def export_chemicals(modeladmin, request, queryset):
     """Export all chemicals. A chemical is defines as an order
-    which has a non-null ghs_pictogram field and is not used up"""
+    which has a non-null ghs_pictogram_old field and is not used up"""
 
-    queryset = Order.objects.exclude(status="used up").annotate(text_len=Length('ghs_pictogram')).filter(text_len__gt=0).order_by('-id')
+    queryset = Order.objects.exclude(status="used up").filter(ghs_symbols__code__isnull=False).order_by('-id')
     export_data = OrderChemicalExportResource().export(queryset)
 
     file_format = request.POST.get('format', default='none')
@@ -657,6 +678,48 @@ class SearchFieldOptLastnameOrder(SearchFieldOptLastname):
 
     id_list = Order.objects.all().values_list('created_by', flat=True).distinct()
 
+class SearchFieldOptGhsSymbol(StrField):
+    """Create a list of unique cost units for search"""
+
+    model = GhsSymbol
+    name = 'ghs_symbols'
+    suggest_options = True
+
+    def get_options(self, search):
+        return self.model.objects.filter(code__icontains=search).order_by('code').\
+        values_list('code', flat=True)
+
+    def get_lookup_name(self):
+        return 'ghs_symbols__code'
+
+class SearchFieldOptSignalWord(StrField):
+    """Create a list of unique cost units for search"""
+
+    model = SignalWord
+    name = 'signal_words'
+    suggest_options = True
+
+    def get_options(self, search):
+        return self.model.objects.filter(signal_word__icontains=search).order_by('signal_word').\
+        values_list('signal_word', flat=True)
+
+    def get_lookup_name(self):
+        return 'signal_words__signal_word'
+
+class SearchFieldOptMsdsForm(StrField):
+    """Create a list of unique cost units for search"""
+
+    model = MsdsForm
+    name = 'msds_form'
+    suggest_options = True
+
+    def get_options(self, search):
+        return [ n[26:] for n in self.model.objects.filter(name__icontains=search).order_by('name').\
+        values_list('name', flat=True)[:10]]
+
+    def get_lookup_name(self):
+        return 'msds_form__name'
+
 class OrderQLSchema(DjangoQLSchema):
     '''Customize search functionality'''
     
@@ -670,9 +733,12 @@ class OrderQLSchema(DjangoQLSchema):
         ''' Define fields that can be searched'''
         
         if model == Order:
-            return ['id', SearchFieldOptSupplier() ,'supplier_part_no', 'internal_order_no', SearchFieldOptPartDescription(), SearchFieldOptCostUnit(), 
-            'status', 'urgent', SearchFieldOptLocation(), 'comment', 'delivered_date', 'cas_number', 
-            'ghs_pictogram', SearchFieldOptAzardousPregnancy(), 'created_date_time', 'last_changed_date_time', 'created_by',]
+            return ['id', SearchFieldOptSupplier() ,'supplier_part_no', 'internal_order_no', 
+            SearchFieldOptPartDescription(), SearchFieldOptCostUnit(), 'status', 'urgent', 
+            SearchFieldOptLocation(), 'comment', 'delivered_date', 'cas_number', 
+            SearchFieldOptGhsSymbol(), SearchFieldOptSignalWord(), SearchFieldOptMsdsForm(), 
+            SearchFieldOptAzardousPregnancy(), 'created_date_time', 'last_changed_date_time', 
+            'created_by',]
         elif model == User:
             return [SearchFieldOptUsernameOrder(), SearchFieldOptLastnameOrder()]
         return super(OrderQLSchema, self).get_fields(model)
@@ -685,13 +751,44 @@ class MyMassUpdateOrderForm(MassUpdateForm):
     class Meta:
         model = Order
         fields = ['supplier','supplier_part_no', 'internal_order_no', 'part_description', 'quantity', 
-            'price', 'cost_unit', 'location', 'comment', 'url', 'cas_number', 'ghs_pictogram', 'msds_form', 'hazard_level_pregnancy']
+            'price', 'cost_unit', 'location', 'comment', 'url', 'cas_number', "ghs_symbols", 'signal_words', 
+            'msds_form', 'hazard_level_pregnancy']
     
     def clean__validate(self):
         return True
     
     def clean__clean(self):
         return False
+
+from .models import GhsSymbol
+
+class GhsImageWidget(AdminFileWidget):
+    """
+    A custom widget that displays GHS pictograms in a change_view
+    """
+    def render(self, name, value, attrs=None, renderer=None):
+
+        output = []
+        try:
+            ghs_ids = literal_eval(value)
+        except:
+            ghs_ids = []
+        if ghs_ids:
+            for ghs_pict in GhsSymbol.objects.filter(id__in=ghs_ids):
+                output.append('<img style="max-height:100px; padding-right:10px;" src="{}" />'.format(ghs_pict.pictogram.url))
+            
+        return mark_safe(u''.join(output))
+
+class OrderForm(forms.ModelForm):
+
+    """Specify a custom order form that contains a custom field to show GHS pictograms
+    using GhsImageWidget"""
+
+    ghs_pict_img = forms.FileField(label="", widget=GhsImageWidget)
+
+    class Meta:
+        model = Order
+        exclude = fields = "__all__"
 
 class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelAdmin):
     
@@ -704,7 +801,21 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
     mass_update_form = MyMassUpdateOrderForm
     actions = [change_order_status_to_arranged, change_order_status_to_delivered, change_order_status_to_used_up, export_orders, export_chemicals, mass_update]
     search_fields = ['id', 'part_description', 'supplier_part_no']
-    
+    form = OrderForm
+    raw_id_fields = ["ghs_symbols", 'msds_form', 'signal_words']
+
+    def get_form(self, request, obj=None, **kwargs):
+        
+        form = super(OrderPage, self).get_form(request, obj, **kwargs)
+
+        # Set the value of the custom ghs_pict_img field when an order exists otherwise
+        # remove field
+        if obj:
+            form.base_fields['ghs_pict_img'].initial = str(list(obj.ghs_symbols.filter(pictogram__isnull=False).values_list('id', flat=True)) if obj.ghs_symbols.all().exists() else [])
+        else:
+            form.base_fields.pop('ghs_pict_img')
+        return form
+
     def save_model(self, request, obj, form, change):
         
         if obj.pk == None:
@@ -874,6 +985,31 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
                 obj_history = obj.history.all()
                 obj_history.delete()
 
+    def save_related(self, request, form, formsets, change):
+        
+        super(OrderPage, self).save_related(request, form, formsets, change)
+
+        obj = Order.objects.get(pk=form.instance.id)
+
+        # Keep a record of the IDs of linked M2M fields in the main order record
+        # Not pretty, but it works
+
+        obj.history_ghs_symbols = str(tuple(obj.ghs_symbols.all().order_by('code').values_list('code', flat=True))).replace(',)', ')') if obj.ghs_symbols.all() else ""
+        obj.history_signal_words = str(tuple(obj.signal_words.all().order_by('signal_word').values_list('signal_word', flat=True))).replace(',)', ')') if obj.signal_words.all() else ""
+        obj.ghs_symbols_autocomplete = str(tuple(obj.ghs_symbols.all().order_by('id').values_list('id', flat=True))).replace(',)', ')').replace(" ", "")[1:-1] if obj.ghs_symbols.all() else ""
+        obj.signal_words_autocomplete = str(tuple(obj.signal_words.all().order_by('id').values_list('id', flat=True))).replace(',)', ')').replace(" ", "")[1:-1] if obj.signal_words.all() else ""
+
+        obj.save()
+
+        # Keep a record of the IDs of linked M2M fields in the latest history order record
+        history_obj = obj.history.latest()
+        history_obj.history_ghs_symbols = obj.history_ghs_symbols
+        history_obj.history_signal_words = obj.history_signal_words
+        history_obj.ghs_symbols_autocomplete = obj.ghs_symbols_autocomplete
+        history_obj.signal_words_autocomplete = obj.signal_words_autocomplete
+
+        history_obj.save()
+
     def get_queryset(self, request):
         
         # Allows sorting of custom changelist_view fields by adding admin_order_field
@@ -893,11 +1029,14 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
         
         if obj:
             if self.can_change:
-                return ['urgent', 'delivery_alert', 'delivered_date', 'order_manager_created_date_time','created_date_time', 'last_changed_date_time',]
+                return ['urgent', 'delivery_alert', 'delivered_date', 'order_manager_created_date_time',
+                'created_date_time', 'last_changed_date_time',]
             else:
                 return ['supplier','supplier_part_no', 'internal_order_no', 'part_description', 'quantity', 
-            'price', 'cost_unit', 'status', 'urgent', 'delivery_alert', 'location', 'comment', 'url', 'delivered_date', 'cas_number', 
-            'ghs_pictogram', 'msds_form', 'hazard_level_pregnancy', 'order_manager_created_date_time', 'created_date_time', 'last_changed_date_time', 'created_by',]
+            'price', 'cost_unit', 'status', 'urgent', 'delivery_alert', 'location', 'comment', 'url', 
+            'delivered_date', 'cas_number', 'ghs_pict_img', "ghs_symbols", 'signal_words', 'msds_form', 
+            'hazard_level_pregnancy', 'order_manager_created_date_time', 'created_date_time', 
+            'last_changed_date_time', 'created_by',]
         else:
             return ['order_manager_created_date_time', 'created_date_time',  'last_changed_date_time',]
 
@@ -906,29 +1045,45 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
         # Specifies which fields should be shown in the add view
 
         if request.user.groups.filter(name='Lab manager').exists() or request.user.groups.filter(name='Order manager').exists():            
-            self.fields = ('supplier','supplier_part_no', 'part_description', 'quantity', 
-            'price', 'cost_unit', 'status', 'urgent', 'delivery_alert', 'location', 'comment', 'url', 'cas_number', 
-            'ghs_pictogram', 'msds_form', 'hazard_level_pregnancy', 'created_by')
-            self.raw_id_fields = []
-            self.autocomplete_fields = []
-            
+
+            self.fieldsets = (
+                (None, {
+                'fields': ('supplier','supplier_part_no', 'part_description', 'quantity', 
+            'price', 'cost_unit', 'status', 'urgent', 'delivery_alert', 'location', 'comment', 
+            'url', 'created_by')
+                    }),
+                    ('SAFETY INFORMATION', {
+                        'classes': ('collapse',),
+                        'fields': ('cas_number', "ghs_symbols", 'signal_words', 'msds_form', 
+                        'hazard_level_pregnancy',)
+                        }),
+                    )
+
         else:
-            self.fields = ('supplier','supplier_part_no', 'part_description', 'quantity', 'price', 'cost_unit', 'urgent',
-            'delivery_alert', 'location', 'comment', 'url', 'cas_number', 'ghs_pictogram', 'msds_form', 'hazard_level_pregnancy')
-            self.raw_id_fields = ['msds_form']
-            self.autocomplete_fields = []
-        
+
+            self.fieldsets = (
+                (None, {
+                'fields': ('supplier','supplier_part_no', 'part_description', 'quantity', 'price', 
+                'cost_unit', 'urgent', 'delivery_alert', 'location', 'comment', 'url',)
+                    }),
+                    ('SAFETY INFORMATION', {
+                        'classes': ('collapse',),
+                        'fields': ('cas_number', "ghs_symbols", 'signal_words', 'msds_form', 
+                        'hazard_level_pregnancy',)
+                        }),
+                    )
+                    
         return super(OrderPage,self).add_view(request, extra_context=extra_context)
 
     def change_view(self, request, object_id, extra_context=None):
         
         # Specifies which fields should be shown in the change view
         
-        self.raw_id_fields = []
-        self.autocomplete_fields = ['msds_form']
         self.can_change = False
 
         if object_id:
+            self.autocomplete_fields = ["ghs_symbols", 'msds_form', 'signal_words']
+            self.raw_id_fields = []
             
             extra_context = extra_context or {}
 
@@ -942,7 +1097,37 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
                             'show_save_as_new': False,
                             'show_save': True
                             }
-            
+
+                if Order.objects.get(id=object_id).ghs_symbols.filter(pictogram__isnull=False).exists():
+
+                    self.fieldsets = (
+                        (None, {
+                        'fields': ('supplier','supplier_part_no', 'internal_order_no', 'part_description', 
+                        'quantity', 'price', 'cost_unit', 'status', 'urgent', 'delivery_alert', 'location', 
+                        'comment', 'url', 'created_date_time', 'order_manager_created_date_time', 
+                        'delivered_date', 'created_by',)
+                            }),
+                            ('SAFETY INFORMATION', {
+                                'fields': ('cas_number', 'ghs_symbols', 'ghs_pict_img', 
+                                'signal_words', 'msds_form', 'hazard_level_pregnancy',)
+                                }),
+                            )
+                    
+                else:
+                    
+                    self.fieldsets = (
+                        (None, {
+                        'fields': ('supplier','supplier_part_no', 'internal_order_no', 'part_description',
+                        'quantity', 'price', 'cost_unit', 'status', 'urgent', 'delivery_alert', 'location', 
+                        'comment', 'url', 'created_date_time', 'order_manager_created_date_time', 
+                        'delivered_date', 'created_by',)
+                            }),
+                            ('SAFETY INFORMATION', {
+                                'fields': ('cas_number', 'ghs_symbols', 'signal_words', 
+                                'msds_form', 'hazard_level_pregnancy',)
+                                }),
+                            )
+
             else:
 
                 extra_context = {'show_close': True,
@@ -951,11 +1136,10 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
                             'show_save_as_new': False,
                             'show_save': False
                             }
+        
+        else:
+            self.autocomplete_fields = []
 
-        self.fields = ('supplier','supplier_part_no', 'internal_order_no', 'part_description', 'quantity', 
-            'price', 'cost_unit', 'status', 'urgent', 'delivery_alert', 'location', 'comment', 'url', 'cas_number', 
-            'ghs_pictogram', 'msds_form', 'hazard_level_pregnancy', 'created_date_time', 'order_manager_created_date_time', 
-            'delivered_date', 'created_by',)
         return super(OrderPage,self).change_view(request, object_id, extra_context=extra_context)
     
     def changelist_view(self, request, extra_context=None):
@@ -1223,3 +1407,32 @@ class LocationPage(admin.ModelAdmin):
     list_display_links = ('name', )
     list_per_page = 25
     ordering = ['name']
+
+#################################################
+#              GHS SYMBOL PAGES                 #
+#################################################
+
+class GhsSymbolPage(admin.ModelAdmin):
+    
+    list_display = ('code', 'pictogram_img', 'description')
+    list_display_links = ('code', )
+    list_per_page = 25
+    ordering = ['code']
+    search_fields = ['code']
+
+    def pictogram_img(self, instance):
+        '''Custom field which shows the a GHS symbol'''
+        return(mark_safe('<img style="max-height:60px;" src="{}" />'.format(instance.pictogram.url,)))
+    pictogram_img.short_description = "Pictogram"
+
+#################################################
+#              SIGNAL WORD PAGES                #
+#################################################
+
+class SignalWordPage(admin.ModelAdmin):
+    
+    list_display = ('signal_word', )
+    list_display_links = ('signal_word', )
+    list_per_page = 25
+    ordering = ['signal_word']
+    search_fields = ['signal_word']

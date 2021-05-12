@@ -160,7 +160,13 @@ class Order(models.Model, SaveWithoutHistoricalRecord):
     delivered_date = models.DateField("delivered", blank=True, default=None, null=True)
     url = models.URLField("URL", max_length=400, blank=True)
     cas_number = models.CharField("CAS number", max_length=255, blank=True, validators=[validate_absence_airquotes])
-    ghs_pictogram = models.CharField("GHS pictogram", max_length=255, blank=True, validators=[validate_absence_airquotes])
+    ghs_pictogram_old = models.CharField("GHS pictogram", max_length=255, blank=True, validators=[validate_absence_airquotes])
+    ghs_symbols = models.ManyToManyField('GhsSymbol', verbose_name ='GHS symbols', related_name='order_ghs_symbols', blank=True)
+    signal_words = models.ManyToManyField('SignalWord', verbose_name ='signal words', related_name='order_signal_words', blank=True)
+    history_ghs_symbols = models.TextField("GHS symbols", blank=True)
+    history_signal_words = models.TextField("signal words", blank=True)
+    ghs_symbols_autocomplete = models.TextField(default='')
+    signal_words_autocomplete = models.TextField(default='')
     msds_form = models.ForeignKey(MsdsForm, on_delete=models.PROTECT, verbose_name='MSDS form', blank=True, null=True)
     hazard_level_pregnancy = models.CharField("Hazard level for pregnancy", max_length=255, choices=HAZARD_LEVEL_PREGNANCY_CHOICES, default='none', blank=True)
     
@@ -198,7 +204,7 @@ class Order(models.Model, SaveWithoutHistoricalRecord):
         self.quantity = self.quantity.strip().replace('\n'," ")
         self.price = self.price.strip().replace('\n'," ")
         self.cas_number = self.cas_number.strip().replace('\n'," ")
-        self.ghs_pictogram = self.ghs_pictogram.strip().replace('\n'," ")
+        self.ghs_pictogram_old = self.ghs_pictogram_old.strip().replace('\n'," ")
         
         super(Order, self).save(force_insert, force_update, using, update_fields)
 
@@ -287,3 +293,102 @@ class OrderExtraDoc(models.Model):
 
         if len(errors) > 0:
             raise ValidationError(errors)
+
+class GhsSymbol(models.Model):
+    code = models.CharField("code", max_length=10, unique=True, blank=False)
+    pictogram = models.ImageField("pictogram", upload_to="temp/", help_text="only .png images, max. 2 MB", blank=False)
+    description = models.CharField("description", max_length=255, blank=False)
+
+    class Meta:
+        verbose_name = 'GHS symbol'
+    
+    def __str__(self):
+         return "{} - {}".format(self.code, self.description)
+
+    RENAME_FILES = {
+        'pictogram': 
+        {'dest': 'order_management/ghssymbol', 
+        'keep_ext': True}
+        }
+
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+        
+        # Rename a file of any given name to  ghs_{id}_{code}.png,
+        # after the corresponding entry has been created
+
+        self.code = self.code.strip().upper()
+        self.description = self.description.strip()
+
+        rename_files = getattr(self, 'RENAME_FILES', None)
+        
+        if rename_files:
+            
+            super(GhsSymbol, self).save(force_insert, force_update, using, update_fields)
+            force_insert, force_update = False, True
+            
+            for field_name, options in rename_files.items():
+                field = getattr(self, field_name)
+                
+                if field:
+                    
+                    # Create new file name
+                    file_name = force_text(field)
+                    name, ext = os.path.splitext(file_name)
+                    ext = ext.lower()
+                    keep_ext = options.get('keep_ext', True)
+                    final_dest = options['dest']
+                    
+                    if callable(final_dest):
+                        final_name = final_dest(self, file_name)
+                    else:
+                        final_name = os.path.join(final_dest, "ghs_" + str(self.id) + "_" + str(self.code))
+                        if keep_ext:
+                            final_name += ext
+                    
+                    # Essentially, rename file
+                    if file_name != final_name:
+                        field.storage.delete(final_name)
+                        field.storage.save(final_name, field)
+                        field.close()
+                        field.storage.delete(file_name)
+                        setattr(self, field_name, final_name)
+        
+        super(GhsSymbol, self).save(force_insert, force_update, using, update_fields)
+
+    def clean(self):
+
+        errors = []
+        file_size_limit = 2 * 1024 * 1024
+        
+        if self.pictogram:
+            
+            # Check if file is bigger than 2 MB
+            if self.pictogram.size > file_size_limit:
+                errors.append(ValidationError('File too large. Size cannot exceed 2 MB.'))
+            
+            # Check if file has extension
+            try:
+                img_ext = self.pictogram.name.split('.')[-1].lower()
+            except:
+                img_ext = None
+            if img_ext == None or img_ext != 'png':
+                errors.append(ValidationError('Invalid file format. Please select a valid .png file'))
+            
+        if len(errors) > 0:
+            raise ValidationError(errors)
+
+class SignalWord(models.Model):
+
+    signal_word = models.CharField("signal word", max_length=255, unique=True, blank=False)
+
+    class Meta:
+        verbose_name = 'signal word'
+    
+    def __str__(self):
+         return self.signal_word
+
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+
+        self.signal_word = self.signal_word.strip()
+        
+        super(SignalWord, self).save(force_insert, force_update, using, update_fields)

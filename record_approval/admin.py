@@ -193,10 +193,10 @@ class RecordToBeApprovedPage(admin.ModelAdmin):
         # Set queryset of action approve_all_new_orders
 
         if 'action' in request.POST and request.POST['action'] == 'approve_all_new_orders':
-            if not request.POST.getlist(admin.ACTION_CHECKBOX_NAME):
+            if not request.POST.getlist(admin.helpers.ACTION_CHECKBOX_NAME):
                 post = request.POST.copy()
                 for u in Order.objects.all():
-                    post.update({admin.ACTION_CHECKBOX_NAME: str(u.id)})
+                    post.update({admin.helpers.ACTION_CHECKBOX_NAME: str(u.id)})
                 request._set_post(post)
         return super(RecordToBeApprovedPage, self).changelist_view(request, extra_context=extra_context)
 

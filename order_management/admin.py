@@ -469,6 +469,7 @@ class OrderChemicalExportResource(BaseOrderResource):
         fields = ('id','supplier', 'supplier_part_no', 'part_description', 'quantity', 
         "location__name", "cas_number", 'ghs_symbols_field', 'signal_words_field', 
          'hazard_level_pregnancy')
+        export_order = fields
 
 class OrderExportResource(BaseOrderResource):
     """Defines a custom export resource class for orders"""
@@ -1147,10 +1148,10 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
         # Set queryset of action export_chemicals to all orders
 
         if 'action' in request.POST and request.POST['action'] == 'export_chemicals':
-            if not request.POST.getlist(admin.ACTION_CHECKBOX_NAME):
+            if not request.POST.getlist(admin.helpers.ACTION_CHECKBOX_NAME):
                 post = request.POST.copy()
                 for u in Order.objects.all():
-                    post.update({admin.ACTION_CHECKBOX_NAME: str(u.id)})
+                    post.update({admin.helpers.ACTION_CHECKBOX_NAME: str(u.id)})
                 request._set_post(post)
         
         return super(OrderPage, self).changelist_view(request, extra_context=extra_context)

@@ -3413,7 +3413,7 @@ class AntibodyPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.Mod
         such that the text shown for a link is always View'''
 
         if instance.info_sheet:
-            return mark_safe('<a href="{}">View</a>'.format(str(instance.info_sheet.url)))
+            return mark_safe('<a class="magnificent" href="{}">View</a>'.format(str(instance.info_sheet.url)))
         else:
             return ''
     get_sheet_short_name.short_description = 'Info Sheet'

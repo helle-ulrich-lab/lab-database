@@ -10,6 +10,12 @@
   {% if cl.formset or action_form %}
   <script src="{% url 'admin:jsi18n' %}"></script>
   {% endif %}
+  <link rel="stylesheet" type="text/css" href="{% static "admin/css/vendor/magnific-popup.css" %}">
+  <style>
+    .mfp-iframe-scaler iframe {
+      background: url("{% static "/admin/img/spinner.svg" %}") no-repeat scroll center center #ffffff !important;
+    }
+  </style>
   {{ media.css }}
   {% if not actions_on_top and not actions_on_bottom %}
     <style>
@@ -126,6 +132,25 @@
 
     });
 
+    });
+
+    $('.magnificent').magnificPopup({
+      type: 'iframe',
+      iframe: {
+        markup: '<div class="mfp-iframe-scaler">' +
+          '<div class="mfp-close"></div>' +
+          '<iframe class="mfp-iframe" frameborder="0" style="background: #FFFFFF;" allowfullscreen></iframe>' +
+          '</div>'
+      },
+      gallery: {
+        enabled: true, // set to true to enable gallery
+        preload: [0, 2], // read about this option in next Lazy-loading section
+        navigateByImgClick: true,
+        arrowMarkup: '<button title="%title%" type="button" class="mfp-arrow mfp-arrow-%dir%"></button>', // markup of an arrow button
+        tPrev: 'Previous (Left arrow key)', // title for left button
+        tNext: 'Next (Right arrow key)', // title for right button
+        tCounter: '<span class="mfp-counter">%curr% of %total%</span>' // markup of counter
+      }
     });
   </script>
 {% endblock %}

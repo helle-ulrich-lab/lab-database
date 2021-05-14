@@ -169,14 +169,40 @@ class ContentTypeFilter(admin.SimpleListFilter):
         else:
             return queryset
 
+class ActivityTypeFilter(admin.SimpleListFilter):
+
+    title = 'activity type'
+
+    # Parameter for the filter that will be used in the URL query.
+    parameter_name = 'activity_type'
+
+    def lookups(self, request, model_admin):
+        """Show only models for which records to be approved exist"""
+        
+        choices = RecordToBeApproved._meta.get_field('activity_type').choices
+
+        return tuple((c1, capfirst(c2)) for c1, c2 in choices)
+
+    def queryset(self, request, queryset):
+        """
+        Returns the filtered queryset based on the value
+        provided in the query string and retrievable via
+        `self.value()`.
+        """
+
+        if self.value():
+            return queryset.filter(activity_type=self.value())
+        else:
+            return queryset
+
 class RecordToBeApprovedPage(admin.ModelAdmin):
     
-    list_display = ('id', 'titled_content_type', 'record_link', 'coloured_activity_type', 'activity_user', 'history_link', 'message', 'message_sent','edited', )
+    list_display = ('id', 'titled_content_type', 'record_link', 'coloured_activity_type', 'activity_user', 'history_link', 'message_sent','edited', )
     list_display_links = ('id', )
     list_per_page = 50
     ordering = ['content_type', '-activity_type', 'object_id']
     actions = [approve_records, notify_user_edits_required, approve_all_new_orders]
-    list_filter = (ContentTypeFilter, 'activity_type', )
+    list_filter = (ContentTypeFilter, ActivityTypeFilter, )
     
     def get_readonly_fields(self, request, obj=None):
         
@@ -241,7 +267,7 @@ class RecordToBeApprovedPage(admin.ModelAdmin):
     def titled_content_type(self, instance):
         '''Custom link to a record's history field for changelist_view'''
 
-        return capfirst(str(instance.content_type))
+        return capfirst(instance.content_type.model_class()._meta.verbose_name)
 
     titled_content_type.short_description = 'Record type'
     titled_content_type.admin_order_field = 'content_type'
@@ -250,9 +276,9 @@ class RecordToBeApprovedPage(admin.ModelAdmin):
         '''changew_view column to show created activity_type in red'''
         
         if instance.activity_type == 'created':
-            return mark_safe('<span style="color:red;">created</span>')
+            return mark_safe('<span style="color:red;">Created</span>')
         elif instance.activity_type == 'changed':
-            return mark_safe('<span>changed</span>')
+            return mark_safe('<span>Changed</span>')
 
     coloured_activity_type.short_description = 'Activity type'
     coloured_activity_type.admin_order_field = 'activity_type'

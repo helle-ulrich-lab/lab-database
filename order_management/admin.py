@@ -789,7 +789,7 @@ class OrderForm(forms.ModelForm):
 
     class Meta:
         model = Order
-        exclude = fields = "__all__"
+        fields = "__all__"
 
 class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelAdmin):
     
@@ -1036,7 +1036,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
             else:
                 return ['supplier','supplier_part_no', 'internal_order_no', 'part_description', 'quantity', 
             'price', 'cost_unit', 'status', 'urgent', 'delivery_alert', 'location', 'comment', 'url', 
-            'delivered_date', 'cas_number', 'ghs_pict_img', "ghs_symbols", 'signal_words', 'msds_form', 
+            'delivered_date', 'cas_number', "ghs_symbols", 'signal_words', 'msds_form', 
             'hazard_level_pregnancy', 'order_manager_created_date_time', 'created_date_time', 
             'last_changed_date_time', 'created_by',]
         else:
@@ -1092,6 +1092,20 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
             
             extra_context = extra_context or {}
 
+
+            self.fieldsets = (
+                (None, {
+                'fields': ('supplier','supplier_part_no', 'internal_order_no', 'part_description',
+                'quantity', 'price', 'cost_unit', 'status', 'urgent', 'delivery_alert', 'location', 
+                'comment', 'url', 'created_date_time', 'order_manager_created_date_time', 
+                'delivered_date', 'created_by',)
+                    }),
+                    ('SAFETY INFORMATION', {
+                        'fields': ('cas_number', 'ghs_symbols', 'ghs_pict_img', 
+                        'signal_words', 'msds_form', 'hazard_level_pregnancy',)
+                        }),
+                    )
+
             if request.user.groups.filter(name='Lab manager').exists() or request.user.groups.filter(name='Order manager').exists():
 
                 self.can_change = True
@@ -1102,39 +1116,9 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
                             'show_save_as_new': False,
                             'show_save': True
                             }
-
-                if Order.objects.get(id=object_id).ghs_symbols.filter(pictogram__isnull=False).exists():
-
-                    self.fieldsets = (
-                        (None, {
-                        'fields': ('supplier','supplier_part_no', 'internal_order_no', 'part_description', 
-                        'quantity', 'price', 'cost_unit', 'status', 'urgent', 'delivery_alert', 'location', 
-                        'comment', 'url', 'created_date_time', 'order_manager_created_date_time', 
-                        'delivered_date', 'created_by',)
-                            }),
-                            ('SAFETY INFORMATION', {
-                                'fields': ('cas_number', 'ghs_symbols', 'ghs_pict_img', 
-                                'signal_words', 'msds_form', 'hazard_level_pregnancy',)
-                                }),
-                            )
-                    
-                else:
-                    
-                    self.fieldsets = (
-                        (None, {
-                        'fields': ('supplier','supplier_part_no', 'internal_order_no', 'part_description',
-                        'quantity', 'price', 'cost_unit', 'status', 'urgent', 'delivery_alert', 'location', 
-                        'comment', 'url', 'created_date_time', 'order_manager_created_date_time', 
-                        'delivered_date', 'created_by',)
-                            }),
-                            ('SAFETY INFORMATION', {
-                                'fields': ('cas_number', 'ghs_symbols', 'ghs_pict_img', 
-                                'signal_words', 'msds_form', 'hazard_level_pregnancy',)
-                                }),
-                            )
-
+ 
             else:
-
+                
                 extra_context = {'show_close': True,
                             'show_save_and_add_another': False,
                             'show_save_and_continue': False,

@@ -309,10 +309,10 @@ def mass_update(modeladmin, request, queryset):
                 values = {}
                 for field_name, value in list(form.cleaned_data.items()):
                     if isinstance(form.fields[field_name], ModelMultipleChoiceField):
-                        messages.error(request, "Unable no mass update ManyToManyField without 'validate'")
+                        messages.error(request, "Unable to mass update ManyToManyField without 'validate'")
                         return HttpResponseRedirect(request.get_full_path())
                     elif callable(value):
-                        messages.error(request, "Unable no mass update using operators without 'validate'")
+                        messages.error(request, "Unable to mass update using operators without 'validate'")
                         return HttpResponseRedirect(request.get_full_path())
                     elif field_name not in ['_selected_action', '_validate', 'select_across', 'action',
                                             '_unique_transaction', '_clean']:
@@ -804,6 +804,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
     search_fields = ['id', 'part_description', 'supplier_part_no']
     form = OrderForm
     raw_id_fields = ["ghs_symbols", 'msds_form', 'signal_words']
+    autocomplete_fields = []
 
     def get_form(self, request, obj=None, **kwargs):
         
@@ -1045,6 +1046,9 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
         
         # Specifies which fields should be shown in the add view
 
+        self.raw_id_fields = ["ghs_symbols", 'msds_form', 'signal_words']
+        self.autocomplete_fields = []
+
         if request.user.groups.filter(name='Lab manager').exists() or request.user.groups.filter(name='Order manager').exists():            
 
             self.fieldsets = (
@@ -1124,8 +1128,8 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
                         'delivered_date', 'created_by',)
                             }),
                             ('SAFETY INFORMATION', {
-                                'fields': ('cas_number', 'ghs_symbols', 'signal_words', 
-                                'msds_form', 'hazard_level_pregnancy',)
+                                'fields': ('cas_number', 'ghs_symbols', 'ghs_pict_img', 
+                                'signal_words', 'msds_form', 'hazard_level_pregnancy',)
                                 }),
                             )
 
@@ -1140,6 +1144,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
         
         else:
             self.autocomplete_fields = []
+            self.raw_id_fields = ["ghs_symbols", 'msds_form', 'signal_words']
 
         return super(OrderPage,self).change_view(request, object_id, extra_context=extra_context)
     

@@ -306,17 +306,30 @@ def mass_update(modeladmin, request, queryset):
                     _doit()
 
             else:
+                success_message = False
                 values = {}
                 for field_name, value in list(form.cleaned_data.items()):
                     if isinstance(form.fields[field_name], ModelMultipleChoiceField):
-                        messages.error(request, "Unable to mass update ManyToManyField without 'validate'")
-                        return HttpResponseRedirect(request.get_full_path())
+                        if field_name == 'ghs_symbols' or field_name == 'signal_words':
+                            if field_name == 'ghs_symbols':
+                                for e in queryset:
+                                    e.ghs_symbols.clear()
+                                    e.ghs_symbols.add(*value)
+                            else:
+                                for e in queryset:
+                                    e.signal_words.clear()
+                                    e.signal_words.add(*value)
+                            success_message = True
+                        else:
+                            messages.error(request, "Unable to mass update ManyToManyField without 'validate'")
+                            return HttpResponseRedirect(request.get_full_path())
                     elif callable(value):
                         messages.error(request, "Unable to mass update using operators without 'validate'")
                         return HttpResponseRedirect(request.get_full_path())
                     elif field_name not in ['_selected_action', '_validate', 'select_across', 'action',
                                             '_unique_transaction', '_clean']:
                         values[field_name] = value
+                messages.info(request, _("Updated %s records") % len(queryset))
                 queryset.update(**values)
 
             return HttpResponseRedirect(request.get_full_path())

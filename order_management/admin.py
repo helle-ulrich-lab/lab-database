@@ -315,10 +315,15 @@ def mass_update(modeladmin, request, queryset):
                                 for e in queryset:
                                     e.ghs_symbols.clear()
                                     e.ghs_symbols.add(*value)
+                                history_ghs_symbols = str(tuple(value.order_by('code').values_list('code', flat=True))).replace(',)', ')')
+                                queryset.update(history_ghs_symbols=history_ghs_symbols)
                             else:
                                 for e in queryset:
                                     e.signal_words.clear()
                                     e.signal_words.add(*value)
+                                history_signal_words = str(tuple(value.order_by('signal_word').values_list('signal_word', flat=True))).replace(',)', ')')
+                                queryset.update(history_signal_words=history_signal_words)
+
                             success_message = True
                         else:
                             messages.error(request, "Unable to mass update ManyToManyField without 'validate'")

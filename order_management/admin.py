@@ -316,7 +316,7 @@ def mass_update(modeladmin, request, queryset):
                                     e.ghs_symbols.clear()
                                     e.ghs_symbols.add(*value)
                                 history_ghs_symbols = str(tuple(value.order_by('code').values_list('code', flat=True))).replace(',)', ')')
-                                ghs_symbols_autocomplete = str(tuple(value.order_by('signal_word').values_list('signal_word', flat=True))).replace(',)', ')')[1:-1]
+                                ghs_symbols_autocomplete = str(tuple(value.order_by('id').values_list('id', flat=True))).replace(',)', ')').replace(" ", "")[1:-1]
                                 queryset.update(history_ghs_symbols=history_ghs_symbols, ghs_symbols_autocomplete=ghs_symbols_autocomplete)
                             else:
                                 for e in queryset:

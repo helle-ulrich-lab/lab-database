@@ -6,7 +6,7 @@ certifi==2019.11.28
 chardet==3.0.4
 defusedxml==0.6.0
 diff-match-patch==20181111
-Django==3.1.6
+Django==3.1.12
 django-adminactions==1.9
 django-background-tasks==1.2.5
 django-classy-tags==2.0.0

@@ -810,6 +810,7 @@ class Antibody (models.Model, SaveWithoutHistoricalRecord):
     a_pplication = models.CharField("application", max_length = 255, blank=True)
     description_comment = models.TextField("description/comments", blank=True)
     info_sheet = models.FileField("info sheet", help_text = 'only .pdf files, max. 2 MB', upload_to="collection_management/antibody/", blank=True, null=True)
+    availability = models.BooleanField("available?", default=True, null=False)
 
     created_date_time = models.DateTimeField("created", auto_now_add=True)
     last_changed_date_time = models.DateTimeField("last changed", auto_now=True)

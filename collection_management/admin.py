@@ -3282,7 +3282,7 @@ class AntibodyQLSchema(DjangoQLSchema):
         
         if model == Antibody:
             return ['id', 'name', 'species_isotype', 'clone', 'received_from', 'catalogue_number', 'info_sheet',
-                FieldLocation(), FieldApplication(), 'description_comment','info_sheet', ]
+                FieldLocation(), FieldApplication(), 'description_comment','info_sheet', 'availability', ]
         return super(AntibodyQLSchema, self).get_fields(model)
 
 class AntibodyExportResource(resources.ModelResource):
@@ -3291,7 +3291,7 @@ class AntibodyExportResource(resources.ModelResource):
     class Meta:
         model = Antibody
         fields = ('id', 'name', 'species_isotype', 'clone', 'received_from', 'catalogue_number', 'l_ocation', 'a_pplication',
-                'description_comment', 'info_sheet',)
+                'description_comment', 'info_sheet','availability', )
 
 def export_antibody(modeladmin, request, queryset):
     """Export Antibody"""
@@ -3318,7 +3318,7 @@ export_antibody.short_description = "Export selected antibodies"
 
 class AntibodyPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelAdmin):
     
-    list_display = ('id', 'name', 'catalogue_number', 'received_from', 'species_isotype', 'clone', 'l_ocation', 'get_sheet_short_name')
+    list_display = ('id', 'name', 'catalogue_number', 'received_from', 'species_isotype', 'clone', 'l_ocation', 'get_sheet_short_name', 'availability',)
     list_display_links = ('id', )
     list_per_page = 25
     formfield_overrides = {CharField: {'widget': TextInput(attrs={'size':'93'})},}
@@ -3397,14 +3397,14 @@ class AntibodyPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.Mod
         '''Override default add_view to show only desired fields'''
 
         self.fields = ('name', 'species_isotype', 'clone', 'received_from', 'catalogue_number', 'l_ocation', 'a_pplication',
-                'description_comment', 'info_sheet', )
+                'description_comment', 'info_sheet', 'availability',)
         return super(AntibodyPage,self).add_view(request)
     
     def change_view(self,request,object_id,extra_context=None):
         '''Override default change_view to show only desired fields'''
 
         self.fields = ('name', 'species_isotype', 'clone', 'received_from', 'catalogue_number', 'l_ocation', 'a_pplication',
-                'description_comment', 'info_sheet','created_date_time','last_changed_date_time', )
+                'description_comment', 'info_sheet', 'availability', 'created_date_time','last_changed_date_time', )
         return super(AntibodyPage,self).change_view(request,object_id)
 
     def get_sheet_short_name(self, instance):

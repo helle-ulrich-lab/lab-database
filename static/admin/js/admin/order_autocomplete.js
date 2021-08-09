@@ -2,7 +2,7 @@ $('#id_part_description').autocomplete({
     minLength: 3, 
     source: function (request, response) {
         var ts = Date.now();
-        $.getJSON(`/order_management/order_autocomplete/part_description=${request.term.replace('=','')},${ts}`, function(data){
+        $.getJSON(`/order_management/order_autocomplete/part_description=${request.term.trim().replace('=','')},${ts}`, function(data){
             response(data);
         })
     },
@@ -48,7 +48,7 @@ $('#id_supplier_part_no').autocomplete({
     minLength: 3, 
     source: function (request, response) {
         var ts = Date.now();
-        $.getJSON(`/order_management/order_autocomplete/supplier_part_no=${request.term.replace('=','')},${ts}`, function(data){
+        $.getJSON(`/order_management/order_autocomplete/supplier_part_no=${request.term.trim().replace('=','')},${ts}`, function(data){
             response(data);
         })
     },

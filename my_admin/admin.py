@@ -123,11 +123,11 @@ class MyAdminSite(OrderAdmin, FormZAdmin, admin.AdminSite):
         urls = super(MyAdminSite, self).get_urls()
         # Note that custom urls get pushed to the list (not appended)
         # This doesn't work with urls += ...
-        urls = super(MyAdminSite, self).get_formz_urls() + [
+        urls = super(MyAdminSite, self).get_formz_urls() + \
+            super(MyAdminSite, self).get_order_urls() + [
             url(r'uploads/(?P<url_path>.*)$', self.admin_view(self.uploads)),
             url(r'^150freezer/$', self.freezer150_view)] + \
-            urls + \
-            super(MyAdminSite, self).get_order_urls() 
+            urls 
             
         return urls
 

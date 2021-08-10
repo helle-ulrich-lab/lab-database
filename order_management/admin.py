@@ -1219,24 +1219,23 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
     def coloured_status(self, instance):
         '''Custom coloured status field for changelist_view'''
 
-        status = instance.status
-        urgent = instance.urgent
-        
-        if status == "submitted":
-            if urgent:
-                return mark_safe('<span style="width:100%; height:100%; background-color:#F5B7B1; color:black;">{}</span>'.format('Urgent'))
-            else:
-                return mark_safe('<span style="width:100%; height:100%; background-color:#F5B041; color:black;">{}</span>'.format(status.capitalize()))
-        elif status == "open":
-            return mark_safe('<span style="width:100%; height:100%; background-color:#F9E79F; color:black;">{}</span>'.format(status.capitalize()))
-        elif status == "arranged":
-            return mark_safe('<span style="width:100%; height:100%; background-color:#ABEBC6; color:black;">{}</span>'.format(status.capitalize()))
-        elif status == "delivered":
-            return mark_safe('<span style="width:100%; height:100%; background-color:#D5D8DC; color:black;">{}</span>'.format(instance.delivered_date.strftime('%d.%m.%Y') if instance.delivered_date else status.capitalize()))
-        elif status == "cancelled":
-            return mark_safe('<span style="width:100%; height:100%; background-color:#000000; color: white;">{}</span>'.format(status.capitalize()))
-        elif status == "used up":
-            return mark_safe('<span style="width:100%; height:100%; border-style: double; background-color:white; color:black;">{}</span>'.format(status.capitalize()))
+        status = "urgent" if instance.urgent and instance.status == "open" else instance.status
+
+        commont_tag = '<span class="order-status" style="background-color:{};{};">{}</span>'
+
+        styles = {  "submitted": ["#F5B041", "border: 2px solid #8F4A00;"],
+                    "open": ["#F9E79F", "border: 2px solid #938139;"],
+                    "arranged": ["#ABEBC6", "border: 2px solid #458560;"],
+                    "delivered": ["#D5D8DC", "border: 2px solid #6F7276;"],
+                    "cancelled": ["#000000", "color:white; border: 2px solid #C4C4C4;"],
+                    "used up": ["#FFFFFF", "border: 2px solid #7F7F7F;"],
+                    "urgent": ["#F5B7B1", "border: 2px solid #8F514B;"]}
+
+        background_color, other_style = styles[status]
+
+        message_status = instance.delivered_date.strftime('%d.%m.%Y') if instance.delivered_date and status != "used up" else status.capitalize()
+
+        return mark_safe(commont_tag.format(background_color, other_style, message_status))
 
     coloured_status.short_description = 'Status'
     coloured_status.admin_order_field = 'status'

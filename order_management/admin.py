@@ -1219,7 +1219,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
     def coloured_status(self, instance):
         '''Custom coloured status field for changelist_view'''
 
-        status = "urgent" if instance.urgent and instance.status == "open" else instance.status
+        status = "urgent" if instance.urgent and instance.status == "submitted" else instance.status
 
         commont_tag = '<span class="order-status" style="background-color:{};{};">{}</span>'
 

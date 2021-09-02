@@ -1069,11 +1069,11 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
         self.raw_id_fields = ["ghs_symbols", 'msds_form', 'signal_words']
         self.autocomplete_fields = []
 
-        if request.user.groups.filter(name='Lab manager').exists() or request.user.groups.filter(name='Order manager').exists():            
+        if request.user.groups.filter(name='Lab manager').exists() or request.user.groups.filter(name='Order manager').exists() or request.user.is_superuser:            
 
             self.fieldsets = (
                 (None, {
-                'fields': ('supplier','supplier_part_no', 'part_description', 'quantity', 
+                'fields': ('supplier','supplier_part_no', 'internal_order_no', 'part_description', 'quantity', 
             'price', 'cost_unit', 'status', 'urgent', 'delivery_alert', 'location', 'comment', 
             'url', 'created_by')
                     }),
@@ -1126,7 +1126,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
                         }),
                     )
 
-            if request.user.groups.filter(name='Lab manager').exists() or request.user.groups.filter(name='Order manager').exists():
+            if request.user.groups.filter(name='Lab manager').exists() or request.user.groups.filter(name='Order manager').exists() or request.user.is_superuser:
 
                 self.can_change = True
 

@@ -32,6 +32,7 @@ from my_admin.admin import my_admin_site
 from django.urls.resolvers import URLPattern, URLResolver
 
 class DecoratedURLPattern(URLPattern):
+    
     def resolve(self, *args, **kwargs):
         result = super(DecoratedURLPattern, self).resolve(*args, **kwargs)
         if result:
@@ -39,6 +40,7 @@ class DecoratedURLPattern(URLPattern):
         return result
 
 class DecoratedURLResolver(URLResolver):
+    
     def resolve(self, *args, **kwargs):
         result = super(DecoratedURLResolver, self).resolve(*args, **kwargs)
         if result:
@@ -46,6 +48,7 @@ class DecoratedURLResolver(URLResolver):
         return result
 
 def decorated_includes(func, includes, *args, **kwargs):
+    
     urlconf_module, app_name, namespace = includes
 
     for item in urlconf_module:
@@ -63,45 +66,65 @@ def wiki_check_login_guest(f):
     """For wiki pages, verify that user is logged in and is not a guest"""
 
     def decorator(request, **kwargs):
+
         if request.user.is_authenticated:
+            
             if request.user.groups.filter(name='Guest').exists():
+                
                 from django.http import HttpResponseRedirect
                 from django.urls import reverse
                 from django.contrib import messages
+                
                 messages.error(request, 'Guests are not allowed to view our Wiki, you have been automatically redirected to this page')
+                
                 return HttpResponseRedirect(reverse('admin:app_list', kwargs={'app_label': 'collection_management'}))
+            
             else:
+                
                 return f(request, **kwargs)
         else:
+            
             from django.shortcuts import resolve_url
             from urllib.parse import urlparse
             from django.contrib.auth.views import redirect_to_login
             from django.contrib.auth import REDIRECT_FIELD_NAME
+            
             path = request.build_absolute_uri()
             resolved_login_url = resolve_url(settings.LOGIN_URL)
+            
             # If the login url is the same scheme and net location then just
             # use the path as the "next" url.
             login_scheme, login_netloc = urlparse(resolved_login_url)[:2]
             current_scheme, current_netloc = urlparse(path)[:2]
+            
             if ((not login_scheme or login_scheme == current_scheme) and
                     (not login_netloc or login_netloc == current_netloc)):
+                
                 path = request.get_full_path()
+            
             return redirect_to_login(
                 path, resolved_login_url, REDIRECT_FIELD_NAME)
+    
     return decorator
 
 def check_guest(f):
     """If guest, do not allow access to view"""
 
     def decorator(request, **kwargs):
+        
         if request.user.groups.filter(name='Guest').exists():
+            
             from django.http import HttpResponseRedirect
             from django.urls import reverse
             from django.contrib import messages
+            
             messages.error(request, 'Guests are not allowed to change their password, you have been automatically redirected to this page')
+            
             return HttpResponseRedirect(reverse('admin:app_list', kwargs={'app_label': 'collection_management'}))
         else:
+
             return f(request, **kwargs)
+
     return decorator
 
 #################################################

@@ -23,7 +23,6 @@ from django.contrib.auth.decorators import login_required
 from django.urls import reverse_lazy
 
 from wiki.urls import get_pattern as get_wiki_pattern
-from django_nyt.urls import get_pattern as get_nyt_pattern
 
 from my_admin.admin import my_admin_site
 

@@ -855,7 +855,9 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
             obj.save()
             
             # Automatically create internal_order_number and add it to record
-            obj.internal_order_no = "{}-{}".format(obj.pk, datetime.date.today().strftime("%y%m%d"))
+            if not obj.internal_order_no:
+                obj.internal_order_no = "{}-{}".format(obj.pk, datetime.date.today().strftime("%y%m%d"))
+            
             obj.save()
             
             # Delete first history record, which doesn't contain an internal_order_number, and change the newer history 

@@ -136,7 +136,7 @@ from wiki.plugins.attachments.views import AttachmentDownloadView
 urlpatterns = [
     url(r'^wiki/(?P<article_id>[0-9]+)/plugin/attachments/download/(?P<attachment_id>[0-9]+)/$', login_required(AttachmentDownloadView.as_view())),
     url(r'^notifications/', include('django_nyt.urls')),
-    url(r'^wiki/',  decorated_includes(wiki_check_login_guest, get_wiki_pattern())),
+    url(r'^wiki/', decorated_includes(wiki_check_login_guest, get_wiki_pattern())),
     url(r'^password_change/$', check_guest(auth_views.PasswordChangeView.as_view(success_url=reverse_lazy('admin:password_change_done')))),
     url(r'', my_admin_site.urls),
     ]

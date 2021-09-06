@@ -1075,7 +1075,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
 
             self.fieldsets = (
                 (None, {
-                'fields': ('supplier','supplier_part_no', 'internal_order_no', 'part_description', 'quantity', 
+                'fields': ('internal_order_no', 'supplier','supplier_part_no', 'part_description', 'quantity', 
             'price', 'cost_unit', 'status', 'urgent', 'delivery_alert', 'location', 'comment', 
             'url', 'created_by')
                     }),
@@ -1117,7 +1117,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
 
             self.fieldsets = (
                 (None, {
-                'fields': ('supplier','supplier_part_no', 'internal_order_no', 'part_description',
+                'fields': ('internal_order_no', 'supplier','supplier_part_no', 'part_description',
                 'quantity', 'price', 'cost_unit', 'status', 'urgent', 'delivery_alert', 'location', 
                 'comment', 'url', 'created_date_time', 'order_manager_created_date_time', 
                 'delivered_date', 'created_by',)

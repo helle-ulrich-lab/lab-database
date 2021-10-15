@@ -126,7 +126,9 @@ class MyAdminSite(OrderAdmin, FormZAdmin, admin.AdminSite):
         urls = super(MyAdminSite, self).get_formz_urls() + \
             super(MyAdminSite, self).get_order_urls() + [
             url(r'uploads/(?P<url_path>.*)$', self.admin_view(self.uploads)),
-            url(r'^150freezer/$', self.freezer150_view)] + \
+            url(r'^150freezer/$', self.freezer150_view),
+            # url(r'ove/(?P<url_path>.*)$', self.admin_view(self.ove_protected_view)),
+            ] + \
             urls 
             
         return urls
@@ -234,6 +236,15 @@ class MyAdminSite(OrderAdmin, FormZAdmin, admin.AdminSite):
             }
         
         return render(request, 'admin/freezer150.html', context)
+
+    # def ove_protected_view(self, request, *args, **kwargs):
+    #     """Put OVE behind Django's authentication system"""
+        
+    #     url_path = str(kwargs["url_path"])
+    #     response = HttpResponse()
+            
+    #     response['X-Accel-Redirect'] = "/ove_secret/{url_path}".format(url_path=url_path)
+    #     return response
 
 # Instantiate custom admin site 
 my_admin_site = MyAdminSite()

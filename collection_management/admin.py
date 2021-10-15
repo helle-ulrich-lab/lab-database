@@ -8,7 +8,7 @@ from django.db.models import CharField
 from django.urls import reverse, resolve
 from django.core.mail import mail_admins
 from django.core.exceptions import PermissionDenied
-from django.utils.translation import ugettext as _, ugettext_lazy
+from django.utils.translation import ugettext as _
 from django import forms
 from django.forms import TextInput
 from django.http import HttpResponseRedirect
@@ -25,7 +25,6 @@ from django.contrib.admin.templatetags.admin_urls import add_preserved_filters
 from django.template.response import TemplateResponse
 from django.shortcuts import get_object_or_404, render
 from django.conf import settings
-from django.contrib.contenttypes.models import ContentType
 from django.utils.encoding import force_text
 from django.utils.text import capfirst
 from django.utils import timezone
@@ -1734,7 +1733,11 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
         list_display = ('id', 'name', 'selection', 'get_plasmidmap_short_name','created_by',)'''
         
         if instance.map:
-            return mark_safe('<a class="image-link" href="{}">png</a> | <a href="{}">dna</a> | <a href="{}">gbk</a>'.format(str(instance.map_png.url),str(instance.map.url), str(instance.map_gbk.url)))
+            return mark_safe('<a class="magnificent" href="{}">⊙</a> | <a class="image-link" href="{}">png</a> | <a href="{}">dna</a> | <a href="{}">gbk</a>'.
+                format("/ove/?file_name=" + instance.map_gbk.name + "&title=" + "p{}{}".format(LAB_ABBREVIATION_FOR_FILES, instance), 
+                       str(instance.map_png.url), 
+                       str(instance.map.url), 
+                       str(instance.map_gbk.url)))
         else:
             return ''
     get_plasmidmap_short_name.short_description = 'Plasmid map'

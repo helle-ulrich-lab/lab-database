@@ -59,7 +59,7 @@ class FormZProject (models.Model):
     parent_project = models.ForeignKey('self', verbose_name = 'parent project', on_delete=models.PROTECT, blank=True, null=True)
 
     safety_level = models.PositiveSmallIntegerField('safety level', help_text='<i>Sicherheitsstufe</i>', choices=((1,1), (2,2)), blank=False, null=True)
-    project_leader = models.ManyToManyField(User, verbose_name = 'project leaders', help_text='<i>Projektleiter</i>', blank=False, default=6)
+    project_leader = models.ManyToManyField(User, verbose_name = 'project leaders', help_text='<i>Projektleiter</i>', blank=False)
     objectives = models.CharField("objectives of strategy", help_text='<i>Zielsetzung</i>', max_length=255, blank=True)
     description = models.TextField("Description of strategy/performance", help_text= 'Techniques, organisms, plasmids, etc. <i>Beschreibung der Durchführung</i>', blank=True)
     donor_organims = models.CharField("donor organisms", help_text='Used organisms, their risk group and safety-relevant properties. '

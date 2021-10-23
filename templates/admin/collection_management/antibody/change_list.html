@@ -15,6 +15,10 @@
     .mfp-iframe-scaler iframe {
       background: url("{% static "/admin/img/spinner.svg" %}") no-repeat scroll center center #ffffff !important;
     }
+    .mfp-iframe-holder .mfp-content {
+        max-width: 95%; 
+        max-height: 95%;
+    }
   </style>
   {{ media.css }}
   {% if not actions_on_top and not actions_on_bottom %}

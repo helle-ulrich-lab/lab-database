@@ -579,7 +579,7 @@ def export_chemicals(modeladmin, request, queryset):
     queryset = Order.objects.exclude(status="used up").filter(ghs_symbols__code__isnull=False).order_by('-id')
     export_data = OrderChemicalExportResource().export(queryset)
 
-    file_format = request.POST.get('format', default='none')
+    file_format = request.POST.get('format', default='xlsx')
 
     if file_format == 'xlsx':
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
@@ -602,7 +602,7 @@ def export_orders(modeladmin, request, queryset):
 
     export_data = OrderExportResource().export(queryset)
 
-    file_format = request.POST.get('format', default='none')
+    file_format = request.POST.get('format', default='xlsx')
 
     if file_format == 'xlsx':
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
@@ -846,6 +846,8 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
 
             # If an order is new, assign the request user to it only if the order's created_by
             # attribute is not null
+
+            obj.id = Order.objects.order_by('-id').first().id + 1
 
             try:
                 obj.created_by

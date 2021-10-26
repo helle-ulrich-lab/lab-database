@@ -622,7 +622,7 @@ def export_sacerevisiaestrain(modeladmin, request, queryset):
 
     export_data = SaCerevisiaeStrainExportResource().export(queryset)
 
-    file_format = request.POST.get('format', default='none')
+    file_format = request.POST.get('format', default='xlsx')
 
     if file_format == 'xlsx':
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
@@ -721,6 +721,7 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
 
         if obj.pk == None:
             
+            obj.id = SaCerevisiaeStrain.objects.order_by('-id').first().id + 1 # Don't rely on autoincrement value in DB table
             obj.created_by = request.user
             obj.save()
 
@@ -1075,7 +1076,7 @@ def export_plasmid(modeladmin, request, queryset):
 
     export_data = PlasmidExportResource().export(queryset)
 
-    file_format = request.POST.get('format', default='none')
+    file_format = request.POST.get('format', default='xlsx')
 
     if file_format == 'xlsx':
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
@@ -1168,7 +1169,8 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
         convert_map_to_dna = False
 
         if obj.pk == None:
-            
+
+            obj.id = Plasmid.objects.order_by('-id').first().id + 1
             obj.created_by = request.user
             obj.save()
             new_obj = True
@@ -1942,7 +1944,7 @@ def export_oligo(modeladmin, request, queryset):
 
     export_data = OligoExportResource().export(queryset)
 
-    file_format = request.POST.get('format', default='none')
+    file_format = request.POST.get('format', default='xlsx')
 
     if file_format == 'xlsx':
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
@@ -1991,6 +1993,7 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
         
         if obj.pk == None:
             
+            obj.id = Oligo.objects.order_by('-id').first().id + 1
             obj.created_by = request.user
             obj.save()
 
@@ -2200,7 +2203,7 @@ def export_scpombestrain(modeladmin, request, queryset):
 
     export_data = ScPombeStrainExportResource().export(queryset)
 
-    file_format = request.POST.get('format', default='none')
+    file_format = request.POST.get('format', default='xlsx')
 
     if file_format == 'xlsx':
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
@@ -2292,6 +2295,7 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admi
         
         if obj.pk == None:
             
+            obj.id = ScPombeStrain.objects.order_by('-id').first().id + 1
             obj.created_by = request.user
             obj.save()
 
@@ -2568,7 +2572,7 @@ def export_ecolistrain(modeladmin, request, queryset):
 
     export_data = EColiStrainExportResource().export(queryset)
 
-    file_format = request.POST.get('format', default='none')
+    file_format = request.POST.get('format', default='xlsx')
 
     if file_format == 'xlsx':
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
@@ -2605,6 +2609,7 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.
 
         if obj.pk == None:
             
+            obj.id = EColiStrain.objects.order_by('-id').first().id + 1
             obj.created_by = request.user
             obj.save()
 
@@ -2935,7 +2940,7 @@ def export_cellline(modeladmin, request, queryset):
 
     export_data = CellLineExportResource().export(queryset)
 
-    file_format = request.POST.get('format', default='none')
+    file_format = request.POST.get('format', default='xlsx')
 
     if file_format == 'xlsx':
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
@@ -3011,6 +3016,7 @@ class CellLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGua
 
         if obj.pk == None:
             
+            obj.id = CellLine.objects.order_by('-id').first().id + 1
             obj.created_by = request.user
             obj.save()
 
@@ -3301,7 +3307,7 @@ def export_antibody(modeladmin, request, queryset):
 
     export_data = AntibodyExportResource().export(queryset)
 
-    file_format = request.POST.get('format', default='none')
+    file_format = request.POST.get('format', default='xlsx')
 
     if file_format == 'xlsx':
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
@@ -3342,6 +3348,7 @@ class AntibodyPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.Mod
         new_obj = False
 
         if obj.pk == None:
+            obj.id = Antibody.objects.order_by('-id').first().id + 1
             obj.created_by = request.user
             if obj.info_sheet:
                 rename_doc = True

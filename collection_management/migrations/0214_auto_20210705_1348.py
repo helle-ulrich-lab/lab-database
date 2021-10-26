@@ -13,11 +13,11 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='antibody',
             name='availability',
-            field=models.BooleanField(default=True, verbose_name='available?'),
+            field=models.BooleanField(default=True, verbose_name='available?', null=False),
         ),
         migrations.AddField(
             model_name='historicalantibody',
             name='availability',
-            field=models.BooleanField(default=True, verbose_name='available?'),
+            field=models.BooleanField(default=True, verbose_name='available?', null=False),
         ),
     ]

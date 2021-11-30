@@ -58,7 +58,7 @@ unicodecsv==0.14.1
 urllib3==1.25.7
 uWSGI==2.0.19.1
 webencodings==0.5.1
-wiki==0.7.6
+wiki==0.7.9
 wrapt==1.11.2
 xlrd==1.1.0
 xlwt==1.3.0

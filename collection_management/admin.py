@@ -721,7 +721,7 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
 
         if obj.pk == None:
             
-            obj.id = SaCerevisiaeStrain.objects.order_by('-id').first().id + 1 # Don't rely on autoincrement value in DB table
+            obj.id = SaCerevisiaeStrain.objects.order_by('-id').first().id + 1 if SaCerevisiaeStrain.objects.exists() else 1 # Don't rely on autoincrement value in DB table
             obj.created_by = request.user
             obj.save()
 
@@ -1170,7 +1170,7 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
 
         if obj.pk == None:
 
-            obj.id = Plasmid.objects.order_by('-id').first().id + 1
+            obj.id = Plasmid.objects.order_by('-id').first().id + 1 if Plasmid.objects.exists() else 1
             obj.created_by = request.user
             obj.save()
             new_obj = True
@@ -1993,7 +1993,7 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
         
         if obj.pk == None:
             
-            obj.id = Oligo.objects.order_by('-id').first().id + 1
+            obj.id = Oligo.objects.order_by('-id').first().id + 1 if Oligo.objects.exists() else 1
             obj.created_by = request.user
             obj.save()
 
@@ -2295,7 +2295,7 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admi
         
         if obj.pk == None:
             
-            obj.id = ScPombeStrain.objects.order_by('-id').first().id + 1
+            obj.id = ScPombeStrain.objects.order_by('-id').first().id + 1 if ScPombeStrain.objects.exists() else 1
             obj.created_by = request.user
             obj.save()
 
@@ -2609,7 +2609,7 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.
 
         if obj.pk == None:
             
-            obj.id = EColiStrain.objects.order_by('-id').first().id + 1
+            obj.id = EColiStrain.objects.order_by('-id').first().id + 1 if EColiStrain.objects.exists() else 1
             obj.created_by = request.user
             obj.save()
 
@@ -3016,7 +3016,7 @@ class CellLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGua
 
         if obj.pk == None:
             
-            obj.id = CellLine.objects.order_by('-id').first().id + 1
+            obj.id = CellLine.objects.order_by('-id').first().id + 1 if CellLine.objects.exists() else 1
             obj.created_by = request.user
             obj.save()
 
@@ -3348,7 +3348,7 @@ class AntibodyPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.Mod
         new_obj = False
 
         if obj.pk == None:
-            obj.id = Antibody.objects.order_by('-id').first().id + 1
+            obj.id = Antibody.objects.order_by('-id').first().id + 1 if Antibody.objects.exists() else 1
             obj.created_by = request.user
             if obj.info_sheet:
                 rename_doc = True

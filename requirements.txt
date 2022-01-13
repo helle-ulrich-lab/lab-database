@@ -38,7 +38,7 @@ mysqlclient==1.4.6
 odfpy==1.4.0
 openpyxl==3.0.1
 packaging==20.4
-Pillow==6.2.1
+Pillow==9.0.0
 ply==3.11
 pylint==2.4.4
 pyparsing==2.4.7

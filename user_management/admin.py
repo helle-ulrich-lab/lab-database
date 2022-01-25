@@ -17,13 +17,29 @@ from django.utils.translation import ugettext_lazy as _
 
 from .models import LabUser
 
+def enable_login(modeladmin, request, queryset):
+    """Enable selected users to log in """
+
+    queryset.update(is_staff=True, is_active=True)
+
+enable_login.short_description = "Enable login for selected"
+
+def disable_login(modeladmin, request, queryset):
+    """Disable selected users to log in """
+
+    queryset.update(is_staff=False, is_active=False)
+
+disable_login.short_description = "Disable login for selected"
+
 class LabUserInline(admin.StackedInline):
     model = LabUser
 
 class LabUserAdmin(BaseUserAdmin):
-    list_display = ('username', 'email', 'first_name', 'last_name', 'is_staff', 'is_active', 'get_user_groups')
+    list_display = ('username', 'email', 'first_name', 'last_name', 'login_enabled', 'get_user_groups')
     inlines= (LabUserInline,)
     critical_groups = None
+    actions = [enable_login, disable_login]
+
     
     def save_model(self, request, obj, form, change):
         
@@ -150,3 +166,10 @@ class LabUserAdmin(BaseUserAdmin):
             else:
                 kwargs["queryset"] = Group.objects.filter(name__in=['Guest', 'Regular lab member', 'Order manager', 'Lab manager', 'Past member'])
         return super(LabUserAdmin, self).formfield_for_manytomany(db_field, request, **kwargs)
+
+    def login_enabled (self, instance):
+        """ Show if a user is enabled to log in """
+
+        return instance.is_staff and instance.is_active
+    login_enabled.short_description = 'Enabled to log in?'
+    login_enabled.boolean = True

@@ -20,7 +20,7 @@ django-nyt==1.2.2
 django-redis-cache==2.1.0
 django-sekizai==2.0.0
 django-simple-history==3.0.0
-djangoql==0.14.3
+djangoql==0.17.1
 et-xmlfile==1.0.1
 fuzzysearch==0.7.3
 html5lib==1.0.1

@@ -12,7 +12,7 @@ django-adminactions==1.9
 django-background-tasks==1.2.5
 django-classy-tags==2.0.0
 django-compat==1.0.15
-django-guardian==2.1.0
+django-guardian==2.4.0
 django-import-export==2.7.1
 django-js-asset==1.2.2
 django-mptt==0.13.4

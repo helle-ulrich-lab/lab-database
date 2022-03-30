@@ -97,77 +97,50 @@ class OrderAdmin(admin.AdminSite):
         """Given an order's product name or number, returns a json list of possible
         hits to be used for autocompletion"""
 
+        import json
+
         # Get field and query from url
-        field = kwargs['field']
-        query = kwargs['query']
+        query_field_name = kwargs['field']
+        search_query = kwargs['query']
+
+        first_export_field = "supplier_part_no" if query_field_name == "part_description" else "part_description"
+
+        export_fields =  [first_export_field, "supplier",  "location_id", "msds_form_id", 
+                          "price", "cas_number", "ghs_symbols_autocomplete",
+                          "signal_words_autocomplete", "hazard_level_pregnancy"]
 
         # Get possible hits
-        orders = Order.objects.filter(**{'{}__icontains'.format(field): query}) \
+        orders = Order.objects.filter(**{'{}__icontains'.format(query_field_name): search_query}) \
                                 .exclude(supplier_part_no__icontains="?") \
                                 .exclude(supplier_part_no="") \
                                 .exclude(part_description__iexact="none") \
-                                .order_by('-id')[:50] \
-                                .values("supplier", "supplier_part_no", "part_description", "location", "msds_form", "price", "cas_number", "hazard_level_pregnancy", "ghs_symbols_autocomplete", "signal_words_autocomplete")
-
+                                .order_by('-id')
         # Generate json
-        lstofprodname = []
-        json_line = ""
-
-        if field == "part_description":
+        prod_names = []
+        orders_for_autocomplete = []
         
-            # Loop through all elements (= rows) in the order list
-            for order in orders:
+        # Loop through all elements (= rows) in the order list
+        for order in orders:
+            
+            # Create label:data pairs using part_description or supplier_part_no as values
+            # only up to 10 orders, for the data entry create a dictionary of relevant fields
+            # in the process clean up the names of relevant field, i.e. those that contain
+            # _id and _autocomplete
+            part_description_lower = order.part_description.lower()
+            
+            if part_description_lower not in prod_names:
+
+                if len(prod_names) > 10: break
                 
-                # Create value:data pairs using part_description or supplier_part_no as values
-                part_description_lower = order["part_description"].lower()
-                
-                if part_description_lower not in lstofprodname:
+                prod_names.append(part_description_lower)
+                order_dict = order.__dict__
+                orders_for_autocomplete.append({"label": getattr(order, query_field_name), 
+                                                "data": {f.replace("_id", "").replace("_autocomplete", ""):
+                                                         order_dict[f]
+                                                         for f in export_fields}
+                                                })
 
-                    if len(lstofprodname) > 10: break
-                        
-                    json_line = json_line + '{{"value":"{}","data":"{}§§{}§§{}§§{}§§{}§§{}§§{}§§{}§§{}"}},'.format(
-                        order["part_description"], 
-                        order["supplier_part_no"], 
-                        order["supplier"], 
-                        order["location"],
-                        order["msds_form"] if order["msds_form"] else 0,
-                        order["price"],
-                        order["cas_number"], 
-                        order["ghs_symbols_autocomplete"],
-                        order["signal_words_autocomplete"],
-                        order["hazard_level_pregnancy"])
-                    
-                    lstofprodname.append(part_description_lower)
-
-        elif field == "supplier_part_no":
-                        
-            # Loop through all elements (= rows) in the order list
-            for order in orders:
-                
-                # Create value:data pairs using part_description or supplier_part_no as values
-                part_description_lower = order["part_description"].lower()
-                
-                if part_description_lower not in lstofprodname:
-
-                    if len(lstofprodname) > 10: break
-                        
-                    json_line = json_line + '{{"value":"{}","data":"{}§§{}§§{}§§{}§§{}§§{}§§{}§§{}§§{}"}},'.format(
-                        order["supplier_part_no"], 
-                        order["part_description"], 
-                        order["supplier"], 
-                        order["location"],
-                        order["msds_form"] if order["msds_form"] else 0,
-                        order["price"],
-                        order["cas_number"], 
-                        order["ghs_symbols_autocomplete"],
-                        order["signal_words_autocomplete"],
-                        order["hazard_level_pregnancy"])
-                    
-                    lstofprodname.append(part_description_lower)
-
-        json_out = """[{}]""".format(json_line[:-1])
-
-        return HttpResponse(json_out, content_type='application/json')
+        return HttpResponse(json.dumps(orders_for_autocomplete, ensure_ascii=False), content_type='application/json')
 
 #################################################
 #         CUSTOM MASS UPDATE FUNCTION           #

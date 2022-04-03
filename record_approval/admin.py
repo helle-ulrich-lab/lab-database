@@ -13,6 +13,7 @@ from .models import RecordToBeApproved
 from django.contrib.contenttypes.models import ContentType
 
 from django_project.private_settings import SITE_TITLE
+from django_project.private_settings import SERVER_EMAIL_ADDRESS
 
 from django.utils import timezone
 
@@ -114,7 +115,7 @@ def notify_user_edits_required(modeladmin, request, queryset):
 
             send_mail('Some records that you have created/changed need your attention', 
                     message, 
-                    'system@imbc2.imb.uni-mainz.de',
+                    SERVER_EMAIL_ADDRESS,
                     [user.email],
                     fail_silently=False,)
         messages.success(request, 'Users have been notified of required edits')

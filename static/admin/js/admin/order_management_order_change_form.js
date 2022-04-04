@@ -1,53 +1,43 @@
+// Order autocomplete
 
-window.onload = (event) => {
+let fillInFields = data => {
+    Object.entries(data).forEach((fieldData) =>{
+        $(`#id_${fieldData[0]}`).val(fieldData[1]);
+    });
+}
 
-    // Autocomplete for part_description and supplier_part_no
+// Autocomplete for part_description
 
-    let fillInCommonFields = data => {
-        const fields = ['supplier', 'location', 'msds_form',
-            'price', 'cas_number', 'ghs_symbols',
-            'signal_words', 'hazard_level_pregnancy'];
-        fields.forEach(field => {
-            let field_id = `#id_${field}`;
-            $(field_id).val(data[field]);
-        }
-        )
+$('#id_part_description').autocomplete({
+
+    minLength: 3,
+
+    source: (request, response) => {
+        let ts = Date.now();
+        $.getJSON(`/order_management/order_autocomplete/part_description=${request.term.trim().replace('=', '')},${ts}`, data => {
+            response(data);
+        })
+    },
+
+    select: (e, ui) => {
+        fillInFields(ui.item.data);
     }
+});
 
-    $('#id_part_description').autocomplete({
+// Autocomplete for supplier_part_no
 
-        minLength: 3,
+$('#id_supplier_part_no').autocomplete({
 
-        source: (request, response) => {
-            let ts = Date.now();
-            $.getJSON(`/order_management/order_autocomplete/part_description=${request.term.trim().replace('=', '')},${ts}`, data => {
-                response(data);
-            })
-        },
+    minLength: 3,
 
-        select: (e, ui) => {
-            let data = ui.item.data;
-            $('#id_supplier_part_no').val(data['supplier_part_no']);
-            fillInCommonFields(data);
-        }
-    });
+    source: (request, response) => {
+        let ts = Date.now();
+        $.getJSON(`/order_management/order_autocomplete/supplier_part_no=${request.term.trim().replace('=', '')},${ts}`, data => {
+            response(data);
+        })
+    },
 
-    $('#id_supplier_part_no').autocomplete({
-
-        minLength: 3,
-
-        source: (request, response) => {
-            let ts = Date.now();
-            $.getJSON(`/order_management/order_autocomplete/supplier_part_no=${request.term.trim().replace('=', '')},${ts}`, data => {
-                response(data);
-            })
-        },
-
-        select: (e, ui) => {
-            let data = ui.item.data;
-            $('#id_part_description').val(data['part_description']);
-            fillInCommonFields(data);
-        }
-    });
-
-};
+    select: (e, ui) => {
+        fillInFields(ui.item.data);
+    }
+});

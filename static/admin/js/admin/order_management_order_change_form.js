@@ -4,7 +4,7 @@ $('#id_part_description,#id_supplier_part_no').click(function () {
 
     let LabelFieldName = $(this).attr('id').replace('id_', '');
     let firstDataFieldName = LabelFieldName === 'part_description' ? 'supplier_part_no' : 'part_description';
-    let dotifyText = function (text, maxLength) {
+    let dotifyText = (text, maxLength) => {
         if (text.length > maxLength) {
            return text.substring(0, maxLength) + '...';
         }

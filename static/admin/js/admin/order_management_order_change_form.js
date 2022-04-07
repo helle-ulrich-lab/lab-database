@@ -28,11 +28,11 @@ $('#id_part_description,#id_supplier_part_no').click(function () {
             });
         },
     }).autocomplete("instance")._renderItem = (ul, item) => {
-        let spanStyle = 'color:#417690; margin:0; padding-left:3px; padding-right:3px;';
-        let displaText = [dotifyText(item['label'], 50), item['data'][firstDataFieldName], item['data']['supplier'].replace(" GmbH", "")].join(`<span style='${spanStyle}'>⬧</span>`);
+        let spanStyle = 'color:var(--link-fg); margin:0; padding-left:3px; padding-right:3px;';
+        let displaText = [dotifyText(item['label'], 50), item['data'][firstDataFieldName], item['data']['supplier'].replace(" GmbH", "")].join(`<span style='${spanStyle}'>┃</span>`);
         return $("<li>")
             .attr("data-value", item.value)
-            .append(`<span style='margin:0; padding-right:5px; padding-left:5px;'>${displaText}</span>`)
+            .append(`<span style='margin:0px 5px; white-space: nowrap; padding:0;'>${displaText}</span>`)
             .appendTo(ul);
     }
 });

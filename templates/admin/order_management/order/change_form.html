@@ -10,6 +10,12 @@
 <link rel="stylesheet" type="text/css" href="{% static "admin/css/vendor/jqueryui/jquery-ui.structure.min.css" %}" />
 <link rel="stylesheet" type="text/css" href="{% static "admin/css/vendor/jqueryui/jquery-ui.min.css" %}" />
 <link rel="stylesheet" type="text/css" href="{% static "admin/css/vendor/jqueryui/jquery-ui.theme.min.css" %}" />
+<style  type="text/css">
+  .ui-menu .ui-menu-item-wrapper:hover, .ui-menu .ui-menu-item-wrapper.ui-state-active {
+      background-color: var(--primary);
+      border: var(--link-fg) 1px solid;
+  }
+</style>
 {% endblock %}
 
 {% block coltype %}colM{% endblock %}

@@ -29,10 +29,12 @@ $('#id_part_description,#id_supplier_part_no').click(function () {
         },
     }).autocomplete("instance")._renderItem = (ul, item) => {
         let spanStyle = 'color:var(--link-fg); margin:0; padding-left:3px; padding-right:3px;';
-        let displaText = [dotifyText(item['label'], 50), item['data'][firstDataFieldName], item['data']['supplier'].replace(" GmbH", "")].join(`<span style='${spanStyle}'>┃</span>`);
+        let firstTextElement = LabelFieldName === 'part_description' ? dotifyText(item['label'], 50) : item['label'];
+        let secondTextElement = firstDataFieldName === 'part_description' ? dotifyText(item['data'][firstDataFieldName], 50) : item['data'][firstDataFieldName];
+        let displayText = [firstTextElement, secondTextElement, item['data']['supplier'].replace(" GmbH", "")].join(`<span style='${spanStyle}'>┃</span>`);
         return $("<li>")
             .attr("data-value", item.value)
-            .append(`<span style='margin:0px 5px; white-space: nowrap; padding:0;'>${displaText}</span>`)
+            .append(`<span style='margin:0px 5px; white-space: nowrap; padding:0;'>${displayText}</span>`)
             .appendTo(ul);
     }
 });

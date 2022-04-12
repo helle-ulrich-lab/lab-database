@@ -9,10 +9,6 @@ $('#id_part_description,#id_supplier_part_no').click(function () {
 
         minLength: 3,
 
-        open: function() {
-            $("ul.ui-menu").width( '50%' );
-        },
-
         source: (request, response) => {
             const timeStamp = Date.now();
             $.getJSON(`/order_management/order_autocomplete/${labelFieldName}=${request.term.trim().replace('=', '')},${timeStamp}`, data => {
@@ -34,7 +30,7 @@ $('#id_part_description,#id_supplier_part_no').click(function () {
                              <span class='field-separator'>|</span>
                              <span class='truncated' style='width:${secondTextElementWidth}%;'>${item['data'][firstDataFieldName]}</span>
                              <span class='field-separator'>|</span>
-                             <span class='truncated' style='width:24%;'>${item['data']['supplier']}</span>`;
+                             <span class='truncated' style='width:24%;'>${item['data']['supplier'].replace("GmbH", "")}</span>`;
 
         return $("<li>")
             .attr("data-value", item.value)

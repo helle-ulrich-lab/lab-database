@@ -15,6 +15,21 @@
   .ui-menu .ui-menu-item-wrapper:hover, .ui-menu .ui-menu-item-wrapper.ui-state-active {
       background-color: var(--primary);
       border: var(--link-fg) 1px solid;
+      border-radius:3px;
+  }
+  .truncated {
+    display: inline-block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: middle;
+  }
+  .field-separator {
+    color:var(--link-fg);
+    margin:0;
+    padding-left:3px;
+    padding-right:3px;
+    vertical-align: middle;
   }
 </style>
 {% endblock %}

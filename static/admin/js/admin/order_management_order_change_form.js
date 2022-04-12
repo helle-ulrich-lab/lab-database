@@ -2,22 +2,19 @@
 
 $('#id_part_description,#id_supplier_part_no').click(function () {
 
-    let labelFieldName = $(this).attr('id').replace('id_', '');
-    let firstDataFieldName = labelFieldName === 'part_description' ? 'supplier_part_no' : 'part_description';
-    
-    let dotifyText = (text, maxLength) => {
-        if (text.length > maxLength) {
-           return text.substring(0, maxLength) + '...';
-        }
-        return text;
-     };
+    const labelFieldName = $(this).attr('id').replace('id_', '');
+    const firstDataFieldName = labelFieldName === 'part_description' ? 'supplier_part_no' : 'part_description';
 
     $(`#id_${labelFieldName}`).autocomplete({
 
         minLength: 3,
 
+        open: function() {
+            $("ul.ui-menu").width( '50%' );
+        },
+
         source: (request, response) => {
-            let timeStamp = Date.now();
+            const timeStamp = Date.now();
             $.getJSON(`/order_management/order_autocomplete/${labelFieldName}=${request.term.trim().replace('=', '')},${timeStamp}`, data => {
                 response(data);
             })
@@ -30,12 +27,15 @@ $('#id_part_description,#id_supplier_part_no').click(function () {
 
     }).autocomplete("instance")._renderItem = (ul, item) => {
 
-        let firstTextElement = labelFieldName === 'part_description' ? dotifyText(item['label'], 50) : item['label'];
-        let secondTextElement = firstDataFieldName === 'part_description' ? dotifyText(item['data'][firstDataFieldName], 50) : item['data'][firstDataFieldName];
+        const firstTextElementWidth = labelFieldName === 'part_description' ? 50 : 16;
+        const secondTextElementWidth = firstDataFieldName === 'part_description' ? 50 : 16;
 
-        let spanStyle = 'color:var(--link-fg); margin:0; padding-left:3px; padding-right:3px;';
-        let displayText = [firstTextElement, secondTextElement, item['data']['supplier'].replace(" GmbH", "")].join(`<span style='${spanStyle}'>┃</span>`);
-        
+        const displayText = `<span class='truncated' style='width:${firstTextElementWidth}%;'>${item['label']}</span>
+                             <span class='field-separator'>|</span>
+                             <span class='truncated' style='width:${secondTextElementWidth}%;'>${item['data'][firstDataFieldName]}</span>
+                             <span class='field-separator'>|</span>
+                             <span class='truncated' style='width:24%;'>${item['data']['supplier']}</span>`;
+
         return $("<li>")
             .attr("data-value", item.value)
             .append(`<span style='margin:0px 5px; white-space: nowrap; padding:3px;'>${displayText}</span>`)

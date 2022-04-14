@@ -30,8 +30,8 @@ from django.utils.text import capfirst
 from django.utils import timezone
 from django.db.models import Q
 
-IS_POPUP_VAR = '_popup'
-TO_FIELD_VAR = '_to_field'
+from django.contrib.admin.options import IS_POPUP_VAR
+from django.contrib.admin.options import TO_FIELD_VAR
 
 #################################################
 #        ADDED FUNCTIONALITIES IMPORTS          #
@@ -177,8 +177,9 @@ class SimpleHistoryWithSummaryAdmin(SimpleHistoryAdmin):
                                     changes_list))
         except:
             pass
-
-        context = {
+        
+        context = self.admin_site.each_context(request)
+        context.update({
             'title': _('Change history: %s') % force_text(obj),
             'action_list': action_list,
             'module_name': capfirst(force_text(opts.verbose_name_plural)),
@@ -187,8 +188,8 @@ class SimpleHistoryWithSummaryAdmin(SimpleHistoryAdmin):
             'app_label': app_label,
             'opts': opts,
             'history_summary_data': history_summary_data,
-        }
-        context.update(self.admin_site.each_context(request))
+            'is_popup': "_popup" in request.GET,
+        })
         context.update(extra_context or {})
         extra_kwargs = {}
         

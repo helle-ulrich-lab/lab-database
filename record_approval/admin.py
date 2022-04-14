@@ -196,14 +196,97 @@ class ActivityTypeFilter(admin.SimpleListFilter):
         else:
             return queryset
 
+class ActivityUserFilter(admin.SimpleListFilter):
+
+    title = 'activity user'
+
+    # Parameter for the filter that will be used in the URL query.
+    parameter_name = 'activity_user'
+
+    def lookups(self, request, model_admin):
+        """Show only models for which records to be approved exist"""
+        
+        user_ids = RecordToBeApproved.objects.all().values_list("activity_user", flat=True).distinct()
+        users = User.objects.filter(id__in=user_ids).order_by("last_name")
+
+        # Set template to dropdown menu rather than plan list if > 5 users
+        if users.count() > 5:
+            self.template = 'admin/dropdown_filter.html'
+
+        return tuple((u.id, u) for u in users)
+
+    def queryset(self, request, queryset):
+        """
+        Returns the filtered queryset based on the value
+        provided in the query string and retrievable via
+        `self.value()`.
+        """
+
+        if self.value():
+            return queryset.filter(activity_user__id=self.value())
+        else:
+            return queryset
+
+class MessageExistsFilter(admin.SimpleListFilter):
+
+    title = 'message?'
+
+    # Parameter for the filter that will be used in the URL query.
+    parameter_name = 'message_exists'
+
+    def lookups(self, request, model_admin):
+
+        return (("1", "Yes"), ("0", "No"))
+
+    def queryset(self, request, queryset):
+        """
+        Returns the filtered queryset based on the value
+        provided in the query string and retrievable via
+        `self.value()`.
+        """
+
+        if self.value():
+            if self.value() == "1":
+                return queryset.exclude(message="")
+            else:
+                return queryset.filter(message="")
+        else:
+            return queryset
+
+class MessageSentFilter(admin.SimpleListFilter):
+
+    title = 'message sent?'
+
+    # Parameter for the filter that will be used in the URL query.
+    parameter_name = 'message_sent'
+
+    def lookups(self, request, model_admin):
+
+        return (("1", "Yes"), ("0", "No"))
+
+    def queryset(self, request, queryset):
+        """
+        Returns the filtered queryset based on the value
+        provided in the query string and retrievable via
+        `self.value()`.
+        """
+
+        if self.value():
+            if self.value() == "1":
+                return queryset.filter(message_date_time__isnull=False)
+            else:
+                return queryset.filter(message_date_time__isnull=True)
+        else:
+            return queryset
+
 class RecordToBeApprovedPage(admin.ModelAdmin):
     
-    list_display = ('id', 'titled_content_type', 'record_link', 'coloured_activity_type', 'activity_user', 'history_link', 'message_sent','edited', )
-    list_display_links = ('id', )
+    list_display = ('magnificent_id', 'titled_content_type', 'record_link', 'coloured_activity_type', 'activity_user', 'history_link', 'message_exists', 'message_sent','edited', )
+    list_display_links = None
     list_per_page = 50
     ordering = ['content_type', '-activity_type', 'object_id']
     actions = [approve_records, notify_user_edits_required, approve_all_new_orders]
-    list_filter = (ContentTypeFilter, ActivityTypeFilter, )
+    list_filter = (ContentTypeFilter, ActivityTypeFilter, ActivityUserFilter, MessageExistsFilter, MessageSentFilter, 'edited',)
     
     def get_readonly_fields(self, request, obj=None):
         
@@ -253,7 +336,7 @@ class RecordToBeApprovedPage(admin.ModelAdmin):
         record_name = str(instance.content_object)
         record_name =  record_name[:50] + "..." if len(record_name) > 50 else record_name 
        
-        return mark_safe('<a href="{}" target="_blank">{}</a>'.format(url, record_name))
+        return mark_safe('<a class="magnificent-ori-obj" href="{}?_to_field=id&_popup=1" target="_blank">{}</a>'.format(url, record_name))
 
     record_link.short_description = 'Record'
 
@@ -262,7 +345,7 @@ class RecordToBeApprovedPage(admin.ModelAdmin):
 
         url = reverse("admin:{}_{}_history".format(instance.content_object._meta.app_label, instance.content_object._meta.model_name), args=(instance.content_object.id,))
 
-        return mark_safe('<a href="{}" target="_blank">{}</a>'.format(url, 'History',))
+        return mark_safe('<a class="magnificent-history" href="{}?_to_field=id&_popup=1" target="_blank">{}</a>'.format(url, 'History',))
     history_link.short_description = 'History'
 
     def titled_content_type(self, instance):
@@ -277,7 +360,7 @@ class RecordToBeApprovedPage(admin.ModelAdmin):
         '''changew_view column to show created activity_type in red'''
         
         if instance.activity_type == 'created':
-            return mark_safe('<span style="color:red;">Created</span>')
+            return mark_safe('<span style="color:var(--error-fg);">Created</span>')
         elif instance.activity_type == 'changed':
             return mark_safe('<span>Changed</span>')
 
@@ -293,3 +376,18 @@ class RecordToBeApprovedPage(admin.ModelAdmin):
             return False
     message_sent.boolean = True
     message_sent.short_description = "Message sent?"
+
+    def message_exists(self, instance):
+        '''changew_view column to show whether a message exists'''
+
+        return bool(instance.message)
+    message_exists.boolean = True
+    message_exists.short_description = "Message?"
+    message_exists.admin_order_field = 'message'
+
+    def magnificent_id(self, instance):
+        '''changew_view column to show approval record link with for magnificent popup'''
+        
+        url = reverse(f'admin:{self.model._meta.app_label}_{self.model._meta.model_name}_change', args=(instance.id,) )
+        return mark_safe(f'<a class="magnificent-id" style="font-weight:bold;" href="{url}?_to_field=id&_popup=1" target="_blank">{instance.id}</a>')   
+    magnificent_id.short_description = 'Approval ID'

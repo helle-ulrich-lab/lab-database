@@ -203,3 +203,5 @@ en_gb_formats.DATE_FORMAT = "j N Y"
 LOGIN_URL="/login/"
 
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
+X_FRAME_OPTIONS = 'SAMEORIGIN'

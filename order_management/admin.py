@@ -1208,11 +1208,14 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
                     "used up": ["#FFFFFF", "border: 2px solid #7F7F7F;"],
                     "urgent": ["#F5B7B1", "border: 2px solid #8F514B;"]}
 
-        background_color, other_style = styles[status]
+        try:
+            background_color, other_style = styles[status]
+        except:
+            background_color, other_style = styles["delivered"]
 
         message_status = instance.delivered_date.strftime('%d.%m.%Y') if instance.delivered_date and status != "used up" else status.capitalize()
 
-        return mark_safe(commont_tag.format(background_color, other_style, message_status))
+        return mark_safe(commont_tag.format(background_color, other_style, message_status if message_status else "NA"))
 
     coloured_status.short_description = 'Status'
     coloured_status.admin_order_field = 'status'

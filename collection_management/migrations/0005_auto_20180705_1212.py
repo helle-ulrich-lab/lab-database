@@ -69,7 +69,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='mammalianline',
             name='document',
-            field=models.ForeignKey(default='None', on_delete=django.db.models.deletion.CASCADE, to='collection_management.MammalianLineDoc'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='collection_management.MammalianLineDoc'),
             preserve_default=False,
         ),
     ]

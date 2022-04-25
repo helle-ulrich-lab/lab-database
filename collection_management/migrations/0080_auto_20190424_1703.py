@@ -4,7 +4,7 @@ from django.db import migrations, models, connection
 import django.db.models.deletion
 
 def alter_table(apps, schema_editor):
-    query ="ALTER TABLE collection_management_mammalianline ADD UNIQUE (name);"
+    query ="ALTER TABLE collection_management_cellline ADD UNIQUE (name);"
     cursor = connection.cursor()
     cursor.execute(query)
     cursor.close()

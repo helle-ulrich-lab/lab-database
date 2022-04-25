@@ -6,7 +6,7 @@ from django.db import migrations, models, connection
 
 
 def alter_table(apps, schema_editor):
-    query ="ALTER TABLE collection_management_huplasmid ADD UNIQUE (name);"
+    query ="ALTER TABLE collection_management_plasmid ADD UNIQUE (name);"
     cursor = connection.cursor()
     cursor.execute(query)
     cursor.close()

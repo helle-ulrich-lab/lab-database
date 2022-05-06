@@ -1,0 +1,48 @@
+.order-status {
+    width: 100%;
+    height: 100%;
+    color: black;
+    padding: 2px;
+    border-radius: 4px;
+}
+
+.mfp-iframe-holder .mfp-content {
+    max-width: 95%;
+    max-height: 95%;
+}
+
+.order-status-submitted {
+    background-color: #F5B041;
+    border: 2px solid #8F4A00;
+}
+
+.order-status-open {
+    background-color: #F9E79F;
+    border: 2px solid #938139;
+}
+
+.order-status-arranged {
+    background-color: #ABEBC6;
+    border: 2px solid #458560;
+}
+
+.order-status-delivered {
+    background-color: #D5D8DC;
+    border: 2px solid #6F7276;
+}
+
+.order-status-cancelled {
+    background-color: black;
+    color: white;
+    border: 2px solid #C4C4C4;
+}
+
+.order-status-used-up {
+    background-color: white;
+    border: 2px solid #7F7F7F;
+}
+
+.order-status-urgent {
+    background-color: #F5B7B1;
+    border: 2px solid #8F514B;
+}

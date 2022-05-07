@@ -32,7 +32,6 @@ class LabUserAdmin(BaseUserAdmin):
             obj.is_active = True
             obj.is_staff = True
             obj.save()
-            LabUser.objects.create(user=obj)
         else:
             
             # If somebody tries to save a user for which it cannot see some of its groups,

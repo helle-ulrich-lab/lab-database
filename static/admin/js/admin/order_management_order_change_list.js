@@ -1,113 +1,127 @@
-// Refresh list of orders if mouse moves after x s
+// Refresh list of orders asynchronously, after a period of inactivity 
+// at least 1 min
+
 var idleTime = 0;
+let currentRootUrl = window.location.pathname + window.location.search;
 
-var current_root_url = window.location.pathname + window.location.search;
-
-if (order_root_url == current_root_url){
-$(document).ready(function () {
-    //Increment the idle time counter every minute.
-    var idleInterval = setInterval(timerIncrement, 1000); // 5 s
-
-    //Zero the idle timer on mouse movement.
-    $(this).mousemove(function (e) {
-        if (idleTime > 59){
-        refreshStream();
-        }
-        idleTime = 0;
-    });
-    $(this).keypress(function (e) {
-        if (idleTime > 59){
-        refreshStream();
-        }
-        idleTime = 0;
-    });
-});
+// Increment the idle time every min
+function timerIncrement() {
+    idleTime = idleTime + 1;
 }
 
-var refreshStream = function(){
-var getNewDataUrl = window.location.href;
+// Check if the page being viewed is the 'root' order list view
+if (orderRootUrl == currentRootUrl) {
+
+    $(document).ready(function () {
+
+        // Increment the idle time counter every minute.
+        var idleInterval = setInterval(timerIncrement, 1000);
+
+        // On mouse movement or key press, refresh the order list 
+        // reset the idle timer
+        $(this).mousemove(() => {
+            if (idleTime > 59) {
+                refreshOrderList();
+            }
+            idleTime = 0;
+        });
+
+        $(this).keypress(() => {
+            if (idleTime > 59) {
+                refreshOrderList();
+            }
+            idleTime = 0;
+        });
+    });
+
+}
+
+// AJAX request to update the order list in the background
+function refreshOrderList() {
+    let getNewDataUrl = window.location.href;
     $.ajax({
         url: getNewDataUrl,
         method: 'GET',
         data: {},
-        success: function(data){
-        $('#result_list').replaceWith($('#result_list',data));
+        success: (data) => {
+            $('#result_list').replaceWith($('#result_list', data));
         },
-        error: function(error){
+        error: (error) => {
             console.log(error);
         }
     });
 }
 
-function timerIncrement() {
-    idleTime = idleTime + 1;
-    }
+$(document).ready(function () {
 
-    $(document).ready(function() {
-
-    var action_drop_down = $('#changelist-form').find('select').first();
-
-    // Add plasmid map attachment type selection box if formz_as_html action is selected
-    // Add file  selection box if export action is selected
-    action_drop_down.change(function(){
-
-    if($(this).val().startsWith("export_"))
-    {
-
-    if ($('#changelist-form').find('label').length > 1)
-        {
-        $('#changelist-form').find('label')[1].remove();
-    }
-
-    var form = $('#changelist-form');
-    var select_attach_element = document.createElement('label');
-    select_attach_element.innerText = 'Format: ';
-    select_attach_element.style.cssText = 'padding-left: 1em;';
-
-    var select_attach_box = document.createElement('select');
-    select_attach_box.name = 'format';
-
-    var option_tsv = document.createElement('option');
-    option_tsv.innerText = 'Tab-separated values';
-    option_tsv.value = 'tsv';
-
-    var option_xlsx = document.createElement('option');
-    option_xlsx.innerText = 'Excel';
-    option_xlsx.value = 'xlsx';
-
-    select_attach_box.appendChild(option_xlsx);
-    select_attach_box.appendChild(option_tsv);
-
-    select_attach_element.appendChild(select_attach_box);
-    $('#changelist-form').find('label')[0].append(select_attach_element);
-
-    }
-    else {
-        if ($('#changelist-form').find('label').length > 1)
-        {
-        $('#changelist-form').find('label')[1].remove();
+    function removeCustomActionDropdown() {
+        if ($('#changelist-form').find('label').length > 1) {
+            $('#changelist-form').find('label')[1].remove();
         }
     }
 
-    });
+    // Get the Action dropdown menu
+    let actionDropDown = $('#changelist-form').find('select').first();
 
-    });
+    // If export action is selected, add file type dropdown
+    actionDropDown.change(function () {
 
-    $('.magnificent').magnificPopup({
+        if ($(this).val().startsWith("export_")) {
+
+            removeCustomActionDropdown();
+
+            // Create label new label for format selection dropdown
+            let selectAttachElement = document.createElement('label');
+            selectAttachElement.innerText = 'Format: ';
+            selectAttachElement.style.cssText = 'padding-left: 1em;';
+
+            // Create dropdown
+            let selectAttachBox = document.createElement('select');
+            selectAttachBox.name = 'format';
+
+            // Create options for dropdown
+            let optionTsv = document.createElement('option');
+            optionTsv.innerText = 'Tab-separated values';
+            optionTsv.value = 'tsv';
+
+            let optionXlsx = document.createElement('option');
+            optionXlsx.innerText = 'Excel';
+            optionXlsx.value = 'xlsx';
+
+            // Add options to dropdown
+            selectAttachBox.appendChild(optionXlsx);
+            selectAttachBox.appendChild(optionTsv);
+
+            // Add dropdown to label
+            selectAttachElement.appendChild(selectAttachBox);
+
+            // Add dropdown element to form
+            $('#changelist-form').find('label')[0].append(selectAttachElement);
+
+        }
+        else {
+            removeCustomActionDropdown();
+        }
+    });
+});
+
+// MagnificentPopup 
+
+$('.magnificent').magnificPopup({
     type: 'iframe',
     iframe: {
         markup: '<div class="mfp-iframe-scaler">' +
-                '<div class="mfp-close"></div>' +
-                '<iframe class="mfp-iframe" frameborder="0" style="background: #FFFFFF;" allowfullscreen></iframe>'+
-                '</div>'
+            '<div class="mfp-close"></div>' +
+            '<iframe class="mfp-iframe" frameborder="0" style="background: #FFFFFF;" allowfullscreen></iframe>' +
+            '</div>'
     },
     gallery: {
-        enabled: true, // set to true to enable gallery
-        preload: [0,2], // read about this option in next Lazy-loading section
+        enabled: true,
+        preload: [0, 2],
         navigateByImgClick: true,
-        arrowMarkup: '<button title="%title%" type="button" class="mfp-arrow mfp-arrow-%dir%"></button>', // markup of an arrow button
-        tPrev: 'Previous (Left arrow key)', // title for left button
-        tNext: 'Next (Right arrow key)', // title for right button
-        tCounter: '<span class="mfp-counter">%curr% of %total%</span>' // markup of counter
+        arrowMarkup: '<button title="%title%" type="button" class="mfp-arrow mfp-arrow-%dir%"></button>',
+        tPrev: 'Previous (Left arrow key)',
+        tNext: 'Next (Right arrow key)',
+        tCounter: '<span class="mfp-counter">%curr% of %total%</span>'
     }
 });

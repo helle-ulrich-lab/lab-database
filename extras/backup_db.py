@@ -86,16 +86,11 @@ pathlib.Path(join(BACKUP_DIR, 'wiki_articles')).mkdir(parents=True, exist_ok=Tru
 pathlib.Path(join(BACKUP_DIR, 'uploads')).mkdir(parents=True, exist_ok=True)
 
 # Remove all and .gz files older than 7 days from backup folder 
-check_output("/usr/bin/find {BACKUP_DIR}/db_dumps/ -maxdepth 1 -type f -mtime +7 -iname '*.gz' -delete".format(BACKUP_DIR=BACKUP_DIR), shell=True)
+check_output(f"/usr/bin/find {BACKUP_DIR}/db_dumps/ -maxdepth 1 -type f -mtime +7 -iname '*.gz' -delete", shell=True)
 
 # Create datadump for django database and gzip it
 CURRENT_DATE_TIME = datetime.now().strftime("%Y%m%d_%H%M")
-check_output("/usr/bin/mysqldump -u {DB_USER} -p{DB_PASSWORD} {DB_NAME} | gzip > {BACKUP_DIR}/db_dumps/{CURRENT_DATE_TIME}.sql.gz".format(
-    DB_USER=DB_USER,
-    DB_PASSWORD=DB_PASSWORD,
-    DB_NAME=DB_NAME,
-    BACKUP_DIR=BACKUP_DIR,
-    CURRENT_DATE_TIME=CURRENT_DATE_TIME), shell=True)
+check_output(f'export PGPASSWORD="{DB_PASSWORD}"; /usr/bin/pg_dump {DB_NAME} -U {DB_USER} -h localhost | /bin/gzip > {BACKUP_DIR}/db_dumps/{CURRENT_DATE_TIME}.sql.gz', shell=True)
 
 # Save db tables as Excel files
 
@@ -123,6 +118,4 @@ for article_id in article_ids:
     save_wiki_article_as_md(article_id)
 
 # Sync uploads
-check_output("/usr/bin/rsync -a {BASE_DIR}/uploads/ {BACKUP_DIR}/uploads".format(
-    BASE_DIR=BASE_DIR,
-    BACKUP_DIR=BACKUP_DIR), shell=True)
+check_output(f"/usr/bin/rsync -a {BASE_DIR}/uploads/ {BACKUP_DIR}/uploads", shell=True)

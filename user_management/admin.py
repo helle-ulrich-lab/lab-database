@@ -29,8 +29,10 @@ class LabUserAdmin(BaseUserAdmin):
         
         # Set is_active and is_staff to True for newly created users
         if obj.pk == None:
+            obj.save()
+            # Create User first, this triggers signal that sets is_active to false by default
+            # therefore set is_active to True after creating the object
             obj.is_active = True
-            obj.is_staff = True
             obj.save()
         else:
             

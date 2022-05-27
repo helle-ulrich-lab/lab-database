@@ -1736,11 +1736,11 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
         list_display = ('id', 'name', 'selection', 'get_plasmidmap_short_name','created_by',)'''
         
         if instance.map:
-            return mark_safe('<a class="magnificent" href="{}">⊙</a> | <a class="image-link" href="{}">png</a> | <a href="{}">dna</a> | <a href="{}">gbk</a>'.
-                format("/ove/?file_name=" + instance.map_gbk.url + "&title=" + "p{}{}".format(LAB_ABBREVIATION_FOR_FILES, instance), 
-                       str(instance.map_png.url), 
-                       str(instance.map.url), 
-                       str(instance.map_gbk.url)))
+            ove_dna_preview = f'/ove/?file_name={instance.map.url}&title=p{LAB_ABBREVIATION_FOR_FILES}{instance}'
+            ove_gbk_preview = f'/ove/?file_name={instance.map_gbk.url}&title=p{LAB_ABBREVIATION_FOR_FILES}{instance}'
+            return mark_safe(f'<a class="image-link" href="{instance.map_png.url}">png</a> | '
+                             f'<a href="{instance.map.url}">dna</a> <a class="magnificent" href="{ove_dna_preview}">⊙</a> | '
+                             f'<a href="{instance.map_gbk.url}">gbk</a> <a class="magnificent" href="{ove_gbk_preview}">⊙</a>')
         else:
             return ''
     get_plasmidmap_short_name.short_description = 'Plasmid map'

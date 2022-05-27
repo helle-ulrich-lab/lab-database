@@ -48,4 +48,40 @@ $(document).ready(function() {
         }
     });
 
+    // Add "button" to show plasmid map as OVE plasmid preview in a magnificent popup
+
+    let plasmidNameField = $('.field-name');
+    let plasmidName = plasmidNameField.find('.readonly')[0] ? plasmidNameField.find('.readonly')[0].innerHTML : plasmidNameField.find('input')[0].value;
+    
+    $('.field-map,.field-map_gbk').each((i, e) => {
+        let mapLinkElement = $(e).find('a')[0];
+        if (mapLinkElement !== undefined) {
+            let plasmidMapBaseUrl = `/ove/?file_name=${mapLinkElement.pathname}&title=${plasmidName}`;
+            $(`<a class="magnific-iframe" style="padding-left:10px; padding-right:10px;" href=${plasmidMapBaseUrl}>⊙</a>`).insertAfter(mapLinkElement);
+        }
+    }
+    );
+
+    $('.magnific-iframe').magnificPopup({
+          
+        type: 'iframe',
+        
+        iframe: {
+            markup: '<div class="mfp-iframe-scaler">' +
+                    '<div class="mfp-close"></div>' +
+                    '<iframe class="mfp-iframe" frameborder="0" allowfullscreen></iframe>'+
+                    '</div>'
+        },
+        
+        gallery: {
+          enabled: true,
+          preload: [0,2],
+          navigateByImgClick: true,
+          arrowMarkup: '<button title="%title%" type="button" class="mfp-arrow mfp-arrow-%dir%"></button>',
+          tPrev: 'Previous (Left arrow key)',
+          tNext: 'Next (Right arrow key)',
+          tCounter: '<span class="mfp-counter">%curr% of %total%</span>'
+        }
+      });
+    
 });

@@ -1339,7 +1339,7 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
             
             # For plasmid map, detect common features and save as png using snapgene server
             try:
-                detect_common_features_map_dna = request.POST.get("detect_common_features_map_dna", False)
+                detect_common_features_map_dna = request.POST.get("detect_common_features_map", False)
                 detect_common_features_map_gbk = request.POST.get("detect_common_features_map_gbk", False)
                 detect_common_features = True if (detect_common_features_map_dna or detect_common_features_map_gbk) else False
                 self.create_plasmid_map_preview(obj.map.path, obj.map_png.path, obj.map_gbk.path, obj.id, obj.name, detect_common_features)
@@ -1737,7 +1737,7 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
         
         if instance.map:
             return mark_safe('<a class="magnificent" href="{}">⊙</a> | <a class="image-link" href="{}">png</a> | <a href="{}">dna</a> | <a href="{}">gbk</a>'.
-                format("/ove/?file_name=" + instance.map_gbk.name + "&title=" + "p{}{}".format(LAB_ABBREVIATION_FOR_FILES, instance), 
+                format("/ove/?file_name=" + instance.map_gbk.url + "&title=" + "p{}{}".format(LAB_ABBREVIATION_FOR_FILES, instance), 
                        str(instance.map_png.url), 
                        str(instance.map.url), 
                        str(instance.map_gbk.url)))

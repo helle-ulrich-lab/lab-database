@@ -22,18 +22,20 @@ $(window).on('load', function() {
 
 $(document).ready(function() {
 
-    // If map field changes add ShowLoading to form onsubmit and show toggle to decide if common features shoudl be detected
-    $("#id_map").change(function() {
+    // If map field changes add ShowLoading to form onsubmit and show toggle to decide if common features should be detected
+    $("#id_map,#id_map_gbk").change(function() {
 
         $("#plasmid_form").attr('onsubmit', 'ShowLoading()');
 
-        if ($('#detect-common-features-dna_map_dna').length < 1) {
-            var dna_map_field_label = document.getElementsByClassName("form-row field-map").item(0).children.item(0).children.item(0);
+        const fieldName = $(this).attr('id').replace('id_', '');
+
+        if ($(`#detect-common-features-dna_${fieldName}`).length < 1) {
+            var dna_map_field_label = document.getElementsByClassName(`form-row field-${fieldName}`).item(0).children.item(0).children.item(0);
             dna_map_field_label.innerHTML = dna_map_field_label.innerHTML + '<br><br>';
 
             var detect_common_features_toggle = document.createElement('input');
-            detect_common_features_toggle.name = "detect_common_features_map_dna";
-            detect_common_features_toggle.id = "detect-common-features-dna_map_dna";
+            detect_common_features_toggle.name = `detect_common_features_${fieldName}`;
+            detect_common_features_toggle.id = `detect-common-features-dna_${fieldName}`;
             detect_common_features_toggle.type = "checkbox";
             detect_common_features_toggle.checked = true;
 
@@ -45,35 +47,5 @@ $(document).ready(function() {
             dna_map_field_label.appendChild(label_for_toggle);
         }
     });
-
-    $("#id_map_gbk").change(function() {
-
-        $("#plasmid_form").attr('onsubmit', 'ShowLoading()');
-
-        if ($('#detect-common-features-dna_map_gbk').length < 1) {
-            var gbk_map_field_label = document.getElementsByClassName("form-row field-map_gbk").item(0).children.item(0).children.item(0);
-            gbk_map_field_label.innerHTML = gbk_map_field_label.innerHTML + '<br><br>';
-
-            var detect_common_features_toggle = document.createElement('input');
-            detect_common_features_toggle.name = "detect_common_features_map_gbk";
-            detect_common_features_toggle.id = "detect-common-features-dna_map_gbk";
-            detect_common_features_toggle.type = "checkbox";
-            detect_common_features_toggle.checked = true;
-
-            var label_for_toggle = document.createElement('span');
-            label_for_toggle.innerText = ' Detect common features in this map?';
-            label_for_toggle.style = 'color: #efb829;';
-
-            gbk_map_field_label.appendChild(detect_common_features_toggle);
-            gbk_map_field_label.appendChild(label_for_toggle);
-        }
-    });
-
-    // DO NOT USE, it prevents the value of a submit
-    // line button to be passed to request
-    // Disable submit line if form is submitted
-    // $('[id$="_form"').submit(function(event) {
-    //     $("input:submit").attr('disabled', true);
-    // });
 
 });

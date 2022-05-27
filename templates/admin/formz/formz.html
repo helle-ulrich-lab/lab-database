@@ -21,6 +21,8 @@
 {% block extrahead %}
     {{ block.super }}
     {{ media.js }}
+    <link rel="stylesheet" type="text/css" media="all" href="/static/admin/css/vendor/magnific-popup.css">
+    <link rel="stylesheet" type="text/css" href="{% static "admin/css/custom_style_magnific-popup.css" %}">
 {% endblock %}
 
 {% block coltype %}flex{% endblock %}
@@ -568,5 +570,4 @@
         $('.image-link').magnificPopup({type:'image'});
         });
     </script>
-    <link href="/static/admin/css/vendor/magnific-popup.css" type="text/css" media="all" rel="stylesheet">
 {% endblock %}

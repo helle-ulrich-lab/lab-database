@@ -1,0 +1,26 @@
+  .mfp-iframe-scaler iframe {
+    background: url("{% static "/admin/img/spinner.svg" %}") no-repeat scroll center center #ffffff !important;
+    }
+
+  .mfp-iframe-holder .mfp-content {
+    max-width: 93%; 
+    max-height: 95%;
+    background: var(--body-bg);
+    border: 3px solid var(--secondary);
+    border-radius: 3px;
+  }
+
+  .mfp-arrow-left:after {
+    border-right: 17px solid var(--primary-fg);
+    margin-left: 31px; }
+  .mfp-arrow-left:before {
+    margin-left: 25px;
+    border-right: 27px solid var(--secondary); }
+
+  .mfp-arrow-right {
+    right: 0; }
+  .mfp-arrow-right:after {
+    border-left: 17px solid var(--primary-fg);
+    margin-left: 39px; }
+  .mfp-arrow-right:before {
+    border-left: 27px solid var(--secondary); }

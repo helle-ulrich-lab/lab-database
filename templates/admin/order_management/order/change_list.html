@@ -22,12 +22,8 @@
 {{ block.super }}
 {{ media.js }}
   <link rel='stylesheet' type='text/css' href="{% static 'admin/css/vendor/magnific-popup.css' %}">
+  <link rel="stylesheet" type="text/css" href="{% static 'admin/css/custom_style_magnific-popup.css' %}>
   <link rel='stylesheet' type='text/css' href="{% static 'admin/css/order_management_order_change_list.css' %}">
-  <style>
-    .mfp-iframe-scaler iframe {
-      background: url("{% static '/admin/img/spinner.svg' %}") no-repeat scroll center center #ffffff !important;
-    }
-  </style>
 {% endblock %}
 
 {% block bodyclass %}{{ block.super }} app-{{ opts.app_label }} model-{{ opts.model_name }} change-list{% endblock %}

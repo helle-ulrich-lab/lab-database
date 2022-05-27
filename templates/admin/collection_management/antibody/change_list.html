@@ -11,15 +11,7 @@
   <script src="{% url 'admin:jsi18n' %}"></script>
   {% endif %}
   <link rel="stylesheet" type="text/css" href="{% static "admin/css/vendor/magnific-popup.css" %}">
-  <style>
-    .mfp-iframe-scaler iframe {
-      background: url("{% static "/admin/img/spinner.svg" %}") no-repeat scroll center center #ffffff !important;
-    }
-    .mfp-iframe-holder .mfp-content {
-        max-width: 95%; 
-        max-height: 95%;
-    }
-  </style>
+  <link rel="stylesheet" type="text/css" href="{% static "admin/css/custom_style_magnific-popup.css" %}">
   {{ media.css }}
   {% if not actions_on_top and not actions_on_bottom %}
     <style>

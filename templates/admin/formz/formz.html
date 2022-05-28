@@ -180,7 +180,7 @@
                 <li>
                     <a href="{% url 'admin:collection_management_plasmid_change' plasmid.id %}">Plasmid #{{plasmid}}</a>
                     {% if plasmid.map %}
-                        (<a style='text-transform: none' href="{{plasmid.map_gbk.url}}">.gbk<a class="magnific-popup-iframe-plasmidmap" href="/ove/?file_name={{plasmid.map_gbk.url}}&title={{plasmid}}">⊙</a>,
+                        (<a style='text-transform: none' href="{{plasmid.map_gbk.url}}">.gbk<a class="magnific-popup-iframe-plasmidmap" href={{plasmid.get_ove_url_map_gbk}}>⊙</a>,
                         <a  class="magnific-popup-img-plasmidmap" style='text-transform: none' href="{{plasmid.map_png.url}}">.png</a>)
                     {% endif %}
                     {% if plasmid.vector_zkbs %}
@@ -298,7 +298,7 @@
                                 <a href="{% url 'admin:collection_management_plasmid_change' plasmid.plasmid.id %}">Plasmid #{{plasmid.plasmid}} </a>
                                 <span style="text-transform: none">
                                     {% if plasmid.plasmid.map %}
-                                        (<a href="{{plasmid.plasmid.map_gbk.url}}">.gbk</a><a class="magnific-popup-iframe-plasmidmap" href="/ove/?file_name={{plasmid.map_gbk.url}}&title={{plasmid}}">⊙</a>,
+                                        (<a href="{{plasmid.plasmid.map_gbk.url}}">.gbk</a><a class="magnific-popup-iframe-plasmidmap" href={{plasmid.get_ove_url_map_gbk}}>⊙</a>,
                                         <a  class="magnific-popup-img-plasmidmap" href="{{plasmid.plasmid.map_png.url}}">.png</a>);
                                     {% endif %}
                                     {% if not plasmid.plasmid.map and plasmid.created_date %}
@@ -440,7 +440,7 @@
                                     <a href="{% url 'admin:collection_management_plasmid_change' plasmid.plasmid.id %}">Plasmid #{{plasmid.plasmid}} </a>
                                     <span style="text-transform: none">
                                         {% if plasmid.plasmid.map %}
-                                            (<a href="{{plasmid.plasmid.map_gbk.url}}">.gbk</a><a class="magnific-popup-iframe-plasmidmap" href="/ove/?file_name={{plasmid.map_gbk.url}}&title={{plasmid}}">⊙</a>,
+                                            (<a href="{{plasmid.plasmid.map_gbk.url}}">.gbk</a><a class="magnific-popup-iframe-plasmidmap" href={{plasmid.get_ove_url_map_gbk}}>⊙</a>,
                                             <a  class="magnific-popup-img-plasmidmap" href="{{plasmid.plasmid.map_png.url}}">.png</a>);
                                         {% endif %}
                                         {% if not plasmid.plasmid.map and plasmid.created_date %}

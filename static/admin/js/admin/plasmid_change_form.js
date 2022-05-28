@@ -56,8 +56,11 @@ $(document).ready(function() {
     $('.field-map,.field-map_gbk').each((i, e) => {
         let mapLinkElement = $(e).find('a')[0];
         if (mapLinkElement !== undefined) {
-            let plasmidMapBaseUrl = `/ove/?file_name=${mapLinkElement.pathname}&title=${plasmidName}`;
-            $(`<a class="magnific-popup-iframe-plasmidmap" style="padding-left:10px; padding-right:10px;" href=${plasmidMapBaseUrl}>⊙</a>`).insertAfter(mapLinkElement);
+            const fieldName = $(e).attr('class').split(' ')[1].split('-')[1];
+            if (fieldName !== undefined) { 
+                let plasmidMapBaseUrl = oveUrls[fieldName];
+                $(`<a class="magnific-popup-iframe-plasmidmap" style="padding-left:10px; padding-right:10px;" href=${plasmidMapBaseUrl}>⊙</a>`).insertAfter(mapLinkElement);
+            }
         }
     }
     );

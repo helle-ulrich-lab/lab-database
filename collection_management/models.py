@@ -18,6 +18,7 @@ from formz.models import Species
 
 from record_approval.models import RecordToBeApproved
 from django_project.private_settings import LAB_ABBREVIATION_FOR_FILES
+from django_project.settings import OVE_URL
 
 #################################################
 #        ADDED FUNCTIONALITIES IMPORTS          #
@@ -28,6 +29,7 @@ import os
 import time
 from datetime import timedelta, datetime
 import random
+from urllib.parse import urlencode
 
 #################################################
 #                CUSTOM CLASSES                 #
@@ -348,6 +350,22 @@ class Plasmid (models.Model, SaveWithoutHistoricalRecord):
         """Returns a decoded gbk plasmid map"""
 
         return self.map_gbk.read().decode()
+
+    def get_ove_url_map(self):
+
+        """Returns the url to view the a SnapGene file in OVE"""
+
+        params = {'file_name': self.map.url, 'title': f'p{LAB_ABBREVIATION_FOR_FILES}{self.__str__()}'}
+
+        return f'{OVE_URL}?{urlencode(params)}'
+
+    def get_ove_url_map_gbk(self):
+
+        """Returns the url to view the a gbk file in OVE"""
+
+        params = {'file_name': self.map_gbk.url, 'title': f'p{LAB_ABBREVIATION_FOR_FILES}{self.__str__()}'}
+
+        return f'{OVE_URL}?{urlencode(params)}'
 
 #################################################
 #                     OLIGO                     #

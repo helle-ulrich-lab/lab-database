@@ -53,7 +53,6 @@ INSTALLED_APPS = [
     'formz',
     'record_approval',
     'my_admin',
-    # 'mozilla_django_oidc',
     ]
 
 FORM_RENDERER = 'django.forms.renderers.TemplatesSetting' 

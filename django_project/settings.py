@@ -12,14 +12,7 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 
 import os
 
-from .private_settings import SECRET_KEY
-from .private_settings import ALLOWED_HOSTS
-from .private_settings import DB_NAME 
-from .private_settings import DB_USER
-from .private_settings import DB_PASSWORD
-from .private_settings import DEBUG
-from .private_settings import SERVER_EMAIL_ADDRESS
-from .private_settings import SITE_ADMIN_EMAIL_ADDRESSES
+from .private_settings import *
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -60,6 +53,7 @@ INSTALLED_APPS = [
     'formz',
     'record_approval',
     'my_admin',
+    'mozilla_django_oidc',
     ]
 
 FORM_RENDERER = 'django.forms.renderers.TemplatesSetting' 
@@ -77,6 +71,7 @@ MIDDLEWARE = [
 
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend', # this is default
+    'mozilla_django_oidc.auth.OIDCAuthenticationBackend',
     'guardian.backends.ObjectPermissionBackend',
 )
 
@@ -204,3 +199,5 @@ LOGIN_URL="/login/"
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
 X_FRAME_OPTIONS = 'SAMEORIGIN'
+
+OVE_URL = '/ove/'

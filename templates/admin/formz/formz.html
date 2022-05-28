@@ -19,8 +19,21 @@
     <link rel="stylesheet" type="text/css" media="all" href="/static/admin/css/vendor/magnific-popup.css">
     <link rel="stylesheet" type="text/css" href="{% static "admin/css/custom_style_magnific-popup.css" %}">
     <style>
-        .magnific-popup-iframe-plasmidmap {
+        .magnific-popup-iframe-plasmid-map, 
+        .magnific-popup-iframe-transient-episomal-plasmid-map,
+        .magnific-popup-iframe-s2-plasmid-map
+        {
             padding-left:5px;
+        }
+
+        thead th a:link, thead th a:visited {
+            color: var(--link-fg);
+            text-decoration: none;
+            transition: color 0.15s, background 0.15s;
+        }
+
+        thead th a:focus, thead th a:hover {
+            color: var(--link-hover-color);
         }
     </style>
 {% endblock %}
@@ -74,16 +87,16 @@
         {% if object.formz_ecoli_strains %}
             {% if object.formz_ecoli_strains.all|length == 1 %}
                     {% for ecoli in object.formz_ecoli_strains.all %}
-                        (Stamm: <a href="{% url 'admin:collection_management_ecolistrain_change' ecoli.id %}">{{ecoli.name}}</a> - Hintergrund {{ecoli.background}}; Risikogruppe: {{ecoli.formz_risk_group}})
+                        (Stamm: <a class='magnific-popup-iframe-ecolistrain' href="{% url 'admin:collection_management_ecolistrain_change' ecoli.id %}?_to_field=id&_popup=1" target="_blank">{{ecoli.name}}</a> - Hintergrund {{ecoli.background}}; Risikogruppe: {{ecoli.formz_risk_group}})
                     {% endfor %}
                 {% else %}
                     {% for ecoli in object.formz_ecoli_strains.all %}
                         {% if forloop.first %}
-                            (Stamm: <a href="{% url 'admin:collection_management_ecolistrain_change' ecoli.id %}">{{ecoli.name}}</a> - Hintergrund {{ecoli.background}},
+                            (Stamm: <a class='magnific-popup-iframe-ecolistrain' href="{% url 'admin:collection_management_ecolistrain_change' ecoli.id %}?_to_field=id&_popup=1" target="_blank">{{ecoli.name}}</a> - Hintergrund {{ecoli.background}},
                         {% elif forloop.last %}
-                            <a href="{% url 'admin:collection_management_ecolistrain_change' ecoli.id %}">{{ecoli.name}}</a> - Hintergrund {{ecoli.background}}; Risikogruppe: {{ecoli.formz_risk_group}})
+                            <a class='magnific-popup-iframe-ecolistrain' href="{% url 'admin:collection_management_ecolistrain_change' ecoli.id %}?_to_field=id&_popup=1" target="_blank">{{ecoli.name}}</a> - Hintergrund {{ecoli.background}}; Risikogruppe: {{ecoli.formz_risk_group}})
                         {% else %}
-                            <a href="{% url 'admin:collection_management_ecolistrain_change' ecoli.id %}">{{ecoli.name}}</a> - Hintergrund {{ecoli.background}},
+                            <a class='magnific-popup-iframe-ecolistrain' href="{% url 'admin:collection_management_ecolistrain_change' ecoli.id %}?_to_field=id&_popup=1" target="_blank">{{ecoli.name}}</a> - Hintergrund {{ecoli.background}},
                         {% endif %}
                     {% endfor %}
             {% endif %}
@@ -104,22 +117,22 @@
         <div><span style='font-weight: bold'>Projekt/e:</span>
             {% if object.formz_projects.all|length == 1 %}
                 {% for project in object.formz_projects.all %}
-                    <a href="{% url 'admin:formz_formzproject_change' project.id %}">{{project.short_title}}</a>
+                    <a class='magnific-popup-iframe-formzproject' href="{% url 'admin:formz_formzproject_change' project.id %}?_to_field=id&_popup=1" target="_blank">{{project.short_title}}</a>
                     {% if project.parent_project%}
-                        (Hauptprojekt: <a href="{% url 'admin:formz_formzproject_change' project.parent_project.id %}">{{project.parent_project.short_title}}</a>)
+                        (Hauptprojekt: <a class='magnific-popup-iframe-formzproject-parent' href="{% url 'admin:formz_formzproject_change' project.parent_project.id %}?_to_field=id&_popup=1" target="_blank">{{project.parent_project.short_title}}</a>)
                     {% endif %}
                 {% endfor %}
             {% else %}
                 {% for project in object.formz_projects.all %}
                     {% if forloop.last %}
-                        <a href="{% url 'admin:formz_formzproject_change' project.id %}">{{project.short_title}}</a>
+                        <a class='magnific-popup-iframe-formzproject' href="{% url 'admin:formz_formzproject_change' project.id %}?_to_field=id&_popup=1" target="_blank">{{project.short_title}}</a>
                         {% if project.parent_project%}
-                            (Hauptprojekt: <a href="{% url 'admin:formz_formzproject_change' project.parent_project.id %}">{{project.parent_project.short_title}}</a>)
+                            (Hauptprojekt: <a class='magnific-popup-iframe-formzproject-parent' href="{% url 'admin:formz_formzproject_change' project.parent_project.id %}?_to_field=id&_popup=1" target="_blank">{{project.parent_project.short_title}}</a>)
                         {% endif %}
                     {% else %}
                         <a href="{% url 'admin:formz_formzproject_change' project.id %}">{{project.short_title}}</a>
                         {% if project.parent_project%}
-                            (Hauptprojekt: <a href="{% url 'admin:formz_formzproject_change' project.parent_project.id %}">{{project.parent_project.short_title}}</a>),
+                            (Hauptprojekt: <a class='magnific-popup-iframe-formzproject-parent' href="{% url 'admin:formz_formzproject_change' project.parent_project.id %}?_to_field=id&_popup=1" target="_blank">{{project.parent_project.short_title}}</a>),
                         {% else %}
                         ,
                         {% endif %}
@@ -145,7 +158,7 @@
         {% endif %}
         </div>
         {% if object.zkbs_cell_line and object.zkbs_cell_line.name != 'none' %}
-            <div><span style='font-weight: bold'>ZKBS Datenbank Zelllinien:</span> <a href="{% url 'admin:formz_zkbscellline_change' object.zkbs_cell_line.id %}">{{object.zkbs_cell_line}}</a></div>
+            <div><span style='font-weight: bold'>ZKBS Datenbank Zelllinien:</span> <a class='magnific-popup-iframe-zkbscellline' href="{% url 'admin:formz_zkbscellline_change' object.zkbs_cell_line.id %}?_to_field=id&_popup=1" target="_blank">{{object.zkbs_cell_line}}</a></div>
         {% endif %}
         <div><span style='font-weight: bold'>Erzeugt:</span> {{object.created_date_time | date:"d.m.Y"}}</div>
         <div><span style='font-weight: bold'>Entsorgt:</span> 
@@ -176,20 +189,22 @@
     {% if object.instock_plasmids %}
         <div id='instock-plasmids'>
             <h3>Plasmid/e, die zur Erschaffung des Organismus genutzt wurden</h3>
+            <ul>
             {% for plasmid in object.instock_plasmids %}
                 <li>
-                    <a href="{% url 'admin:collection_management_plasmid_change' plasmid.id %}">Plasmid #{{plasmid}}</a>
+                    <a class="magnific-popup-iframe-plasmid" href="{% url 'admin:collection_management_plasmid_change' plasmid.id %}?_to_field=id&_popup=1" target="_blank">Plasmid #{{plasmid}}</a>
                     {% if plasmid.map %}
-                        (<a style='text-transform: none' href="{{plasmid.map_gbk.url}}">.gbk<a class="magnific-popup-iframe-plasmidmap" href={{plasmid.get_ove_url_map_gbk}}>⊙</a>,
-                        <a  class="magnific-popup-img-plasmidmap" style='text-transform: none' href="{{plasmid.map_png.url}}">.png</a>)
+                        (<a style='text-transform: none' href="{{plasmid.map_gbk.url}}">.gbk<a class="magnific-popup-iframe-plasmid-map" href={{plasmid.get_ove_url_map_gbk}}>⊙</a>,
+                        <a  class="magnific-popup-img-plasmid-map" style='text-transform: none' href="{{plasmid.map_png.url}}">.png</a>)
                     {% endif %}
                     {% if plasmid.vector_zkbs %}
                         {% if plasmid.vector_zkbs.name != 'none' %}
-                            <span style='text-transform: none'>- ZKBS Plasmid </span><a style='text-transform: none' href="{% url 'admin:formz_zkbsplasmid_change' plasmid.vector_zkbs.id %}">{{plasmid.vector_zkbs.name}}</a>
+                            <span style='text-transform: none'>- ZKBS Plasmid </span><a class='magnific-popup-iframe-zkbsplasmid' style='text-transform: none' href="{% url 'admin:formz_zkbsplasmid_change' plasmid.vector_zkbs.id %}?_to_field=id&_popup=1" target="_blank">{{plasmid.vector_zkbs.name}}</a>
                         {% endif %}
                     {% endif %}
                 </li>
             {% endfor %}
+            </ul>
         </div>
     {% endif %}
 
@@ -229,7 +244,7 @@
                         <tbody>
                             {% for formz_elem in object.uncommon_formz_elements %}
                                 <tr class="row">
-                                    <td class="field-name"><a href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}">{{formz_elem.name}}</a></td>
+                                    <td class="field-name"><a class='magnific-popup-iframe-formzbaseelement-uncommon' href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}?_to_field=id&_popup=1" target="_blank">{{formz_elem.name}}</a></td>
                                     <td class="field-donor_organism" style="text-align:center;">{% if formz_elem.get_donor_species_names %}{{formz_elem.get_donor_species_names}}{% else %}Artifiziell{% endif %}</td>
                                     <td class="field-donor_organism_risk" style="text-align:center;">{% if formz_elem.get_donor_species_risk_groups %}{{formz_elem.get_donor_species_risk_groups}}{% else %}Keine{% endif %}</td>
                                     <td class="field-nuc_acid_purity" style="text-align:center">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
@@ -259,9 +274,9 @@
                             <td  colspan="5" scope="col" class="column-common_features">
                                 {% for formz_elem in object.common_formz_elements %}
                                     {% if not forloop.last %}
-                                        <a href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}">{{formz_elem.name}}</a>,
+                                        <a class='magnific-popup-iframe-formzbaseelement-common' href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}?_to_field=id&_popup=1" target="_blank">{{formz_elem.name}}</a>,
                                     {% else %}
-                                        <a href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}">{{formz_elem.name}}</a>
+                                        <a class='magnific-popup-iframe-formzbaseelement-common' href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}?_to_field=id&_popup=1" target="_blank">{{formz_elem.name}}</a>
                                     {% endif %}
                                 {% endfor %}
                             </td>
@@ -294,12 +309,12 @@
                 <table>
                     <thead>
                         <tr>
-                            <th  colspan="5" scope="col" style="background:#ccc;" class="column-plasmid">
-                                <a href="{% url 'admin:collection_management_plasmid_change' plasmid.plasmid.id %}">Plasmid #{{plasmid.plasmid}} </a>
+                            <th colspan="5" scope="col" class="column-plasmid">
+                                <a class="magnific-popup-iframe-transient-episomal-plasmid" href="{% url 'admin:collection_management_plasmid_change' plasmid.plasmid.id %}?_to_field=id&_popup=1" target="_blank">Plasmid #{{plasmid.plasmid}} </a>
                                 <span style="text-transform: none">
                                     {% if plasmid.plasmid.map %}
-                                        (<a href="{{plasmid.plasmid.map_gbk.url}}">.gbk</a><a class="magnific-popup-iframe-plasmidmap" href={{plasmid.get_ove_url_map_gbk}}>⊙</a>,
-                                        <a  class="magnific-popup-img-plasmidmap" href="{{plasmid.plasmid.map_png.url}}">.png</a>);
+                                        (<a href="{{plasmid.plasmid.map_gbk.url}}">.gbk</a><a class="magnific-popup-iframe-transient-episomal-plasmid-map" href={{plasmid.plasmid.get_ove_url_map_gbk}}>⊙</a>,
+                                        <a  class="magnific-popup-img-transient-episomal-plasmid-map" href="{{plasmid.plasmid.map_png.url}}">.png</a>);
                                     {% endif %}
                                     {% if not plasmid.plasmid.map and plasmid.created_date %}
                                     (Organismus {% if transfected %}transfiziert{% else %}transformiert{% endif %} am {{plasmid.created_date | date:"d.m.Y"}},
@@ -311,28 +326,28 @@
 
                                     {% if plasmid.formz_projects.all|length == 1 %}
                                         {% for project in plasmid.formz_projects.all %}
-                                            <a href="{% url 'admin:formz_formzproject_change' project.id %}">{{project.short_title}}</a>;
+                                            <a class="magnific-popup-iframe-transient-episomal-plasmid-formzproject" href="{% url 'admin:formz_formzproject_change' project.id %}?_to_field=id&_popup=1" target="_blank">{{project.short_title}}</a>;
                                         {% endfor %}
                                     {% else %}
                                         {% for project in plasmid.formz_projects.all %}
                                             {% if forloop.last %}
-                                                <a href="{% url 'admin:formz_formzproject_change' project.id %}">{{project.short_title}}</a>;
+                                                <a class="magnific-popup-iframe-transient-episomal-plasmid-formzproject" href="{% url 'admin:formz_formzproject_change' project.id %}?_to_field=id&_popup=1" target="_blank">{{project.short_title}}</a>;
                                             {% else %}
-                                                <a href="{% url 'admin:formz_formzproject_change' project.id %}">{{project.short_title}}</a>,
+                                                <a class="magnific-popup-iframe-transient-episomal-plasmid-formzproject" href="{% url 'admin:formz_formzproject_change' project.id %}?_to_field=id&_popup=1" target="_blank">{{project.short_title}}</a>,
                                             {% endif %}
                                         {% endfor %}
                                     {% endif %}
 
                                     {% if plasmid.destroyed_date %}
-                                        entsorgt am {{plasmid.destroyed_date | date:"d.m.Y"}})
+                                        entsorgt am {{plasmid.destroyed_date | date:"d.m.Y"}}
                                     {% else %}
-                                        noch nicht entsorgt)
+                                        noch nicht entsorgt
                                     {% endif %}
                                 </span>
                                 
                                 {% if plasmid.plasmid.vector_zkbs %}
                                     {% if plasmid.plasmid.vector_zkbs.name != 'none' %}
-                                        <span style='text-transform: none'>- ZKBS Plasmid </span><a style='text-transform: none' href="{% url 'admin:formz_zkbsplasmid_change' plasmid.plasmid.vector_zkbs.id %}">{{plasmid.plasmid.vector_zkbs.name}}</a>
+                                        <span style='text-transform: none'>- ZKBS Plasmid </span><a class="magnific-popup-iframe-transient-episomal-plasmid-zkbsplasmid" style='text-transform: none' href="{% url 'admin:formz_zkbsplasmid_change' plasmid.plasmid.vector_zkbs.id %}?_to_field=id&_popup=1" target="_blank">{{plasmid.plasmid.vector_zkbs.name}}</a>
                                     {% endif %}
                                 {% endif %}
                             </th>
@@ -372,7 +387,7 @@
                                 <tbody>
                                         {% for formz_elem in plasmid.plasmid.get_all_uncommon_formz_elements %}
                                             <tr class="row">
-                                                <td class="field-name"><a href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}">{{formz_elem.name}}</a></td>
+                                                <td class="field-name"><a class="magnific-popup-iframe-transient-episomal-plasmid-formzbaseelement-uncommon" href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}?_to_field=id&_popup=1" target="_blank">{{formz_elem.name}}</a></td>
                                                 <td class="field-donor_organism" style="text-align:center;">{% if formz_elem.get_donor_species_names %}{{formz_elem.get_donor_species_names}}{% else %}Artifiziell{% endif %}</td>
                                                 <td class="field-donor_organism_risk" style="text-align:center;">{% if formz_elem.get_donor_species_risk_groups %}{{formz_elem.get_donor_species_risk_groups}}{% else %}Keine{% endif %}</td>
                                                 <td class="field-nuc_acid_purity" style="text-align:center">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
@@ -408,9 +423,9 @@
                                         <td  colspan="5" scope="col" class="column-common_features">
                                             {% for formz_elem in plasmid.plasmid.get_all_common_formz_elements %}
                                                 {% if not forloop.last %}
-                                                    <a href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}">{{formz_elem.name}}</a>,
+                                                    <a class="magnific-popup-iframe-transient-episomal-plasmid-formzbaseelement-common" href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}?_to_field=id&_popup=1" target="_blank">{{formz_elem.name}}</a>,
                                                 {% else %}
-                                                    <a href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}">{{formz_elem.name}}</a>
+                                                    <a class="magnific-popup-iframe-transient-episomal-plasmid-formzbaseelement-common" href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}?_to_field=id&_popup=1" target="_blank">{{formz_elem.name}}</a>
                                                 {% endif %}
                                             {% endfor %}
                                         </td>
@@ -428,7 +443,7 @@
             
             </br>
             <h4>Virusverpackung</h4>
-            <div>Das oben genannten Plasmid/die oben genannten Plasmide wurden mit dem/den unten genannten Plasmid/Plasmiden zum Verpacken viraler Partikel in {% if virus_packaging_cell_line.id %}<a href="{% url 'admin:formz_zkbscellline_change' virus_packaging_cell_line.id %}">{{virus_packaging_cell_line.name}}</a>{% else %}{{virus_packaging_cell_line.name}}{% endif %} Zellen genutzt.</div>
+            <div>Das oben genannten Plasmid/die oben genannten Plasmide wurden mit dem/den unten genannten Plasmid/Plasmiden zum Verpacken viraler Partikel in {% if virus_packaging_cell_line.id %}<a class="magnific-popup-iframe-virus_packaging_cell_line" href="{% url 'admin:formz_zkbscellline_change' virus_packaging_cell_line.id %}?_to_field=id&_popup=1">{{virus_packaging_cell_line.name}}</a>{% else %}{{virus_packaging_cell_line.name}}{% endif %} Zellen genutzt.</div>
                 
             {% for plasmid in object.s2_plasmids %}
 
@@ -436,12 +451,12 @@
                     <table>
                         <thead>
                             <tr>
-                                <th  colspan="5" scope="col" style="background:#ccc;" class="column-plasmid">
-                                    <a href="{% url 'admin:collection_management_plasmid_change' plasmid.plasmid.id %}">Plasmid #{{plasmid.plasmid}} </a>
+                                <th  colspan="5" scope="col" class="column-plasmid">
+                                    <a class="magnific-popup-iframe-s2-plasmid" href="{% url 'admin:collection_management_plasmid_change' plasmid.plasmid.id %}?_to_field=id&_popup=1" target="_blank">Plasmid #{{plasmid.plasmid}} </a>
                                     <span style="text-transform: none">
                                         {% if plasmid.plasmid.map %}
-                                            (<a href="{{plasmid.plasmid.map_gbk.url}}">.gbk</a><a class="magnific-popup-iframe-plasmidmap" href={{plasmid.get_ove_url_map_gbk}}>⊙</a>,
-                                            <a  class="magnific-popup-img-plasmidmap" href="{{plasmid.plasmid.map_png.url}}">.png</a>);
+                                            (<a href="{{plasmid.plasmid.map_gbk.url}}">.gbk</a><a class="magnific-popup-iframe-s2-plasmid-map" href={{plasmid.plasmid.get_ove_url_map_gbk}}>⊙</a>,
+                                            <a  class="magnific-popup-iframe-s2-plasmid-map" href="{{plasmid.plasmid.map_png.url}}">.png</a>);
                                         {% endif %}
                                         {% if not plasmid.plasmid.map and plasmid.created_date %}
                                         (Organismus {% if transfected %}transfiziert{% else %}transformiert{% endif %} am {{plasmid.created_date | date:"d.m.Y"}},
@@ -453,27 +468,27 @@
 
                                         {% if plasmid.formz_projects.all|length == 1 %}
                                             {% for project in plasmid.formz_projects.all %}
-                                                <a href="{% url 'admin:formz_formzproject_change' project.id %}">{{project.short_title}}</a>;
+                                                <a class="magnific-popup-iframe-s2-formzproject" href="{% url 'admin:formz_formzproject_change' project.id %}?_to_field=id&_popup=1" target="_blank">{{project.short_title}}</a>;
                                             {% endfor %}
                                         {% else %}
                                             {% for project in plasmid.formz_projects.all %}
                                                 {% if forloop.last %}
-                                                    <a href="{% url 'admin:formz_formzproject_change' project.id %}">{{project.short_title}}</a>;
+                                                    <a class="magnific-popup-iframe-s2-formzproject" href="{% url 'admin:formz_formzproject_change' project.id %}?_to_field=id&_popup=1" target="_blank">{{project.short_title}}</a>;
                                                 {% else %}
-                                                    <a href="{% url 'admin:formz_formzproject_change' project.id %}">{{project.short_title}}</a>,
+                                                    <a class="magnific-popup-iframe-s2-formzproject" href="{% url 'admin:formz_formzproject_change' project.id %}?_to_field=id&_popup=1" target="_blank">{{project.short_title}}</a>,
                                                 {% endif %}
                                             {% endfor %}
                                         {% endif %}
 
                                         {% if plasmid.destroyed_date %}
-                                            entsorgt am {{plasmid.destroyed_date | date:"d.m.Y"}})
+                                            entsorgt am {{plasmid.destroyed_date | date:"d.m.Y"}}
                                         {% else %}
-                                            noch nicht entsorgt)
+                                            noch nicht entsorgt
                                         {% endif %}
                                     </span>
                                     {% if plasmid.plasmid.vector_zkbs %}
                                         {% if plasmid.plasmid.vector_zkbs.name != 'none' %}
-                                            <span style='text-transform: none'>- ZKBS Plasmid </span><a style='text-transform: none' href="{% url 'admin:formz_zkbsplasmid_change' plasmid.plasmid.vector_zkbs.id %}">{{plasmid.plasmid.vector_zkbs.name}}</a>
+                                            <span style='text-transform: none'>- ZKBS Plasmid </span><a class="magnific-popup-iframe-s2-zkbsplasmid" style='text-transform: none' href="{% url 'admin:formz_zkbsplasmid_change' plasmid.plasmid.vector_zkbs.id %}?_to_field=id&_popup=1" target="_blank">{{plasmid.plasmid.vector_zkbs.name}}</a>
                                         {% endif %}
                                     {% endif %}
                                 </th>
@@ -513,7 +528,7 @@
                                     <tbody>
                                             {% for formz_elem in plasmid.plasmid.get_all_uncommon_formz_elements %}
                                                 <tr class="row">
-                                                    <td class="field-name"><a href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}">{{formz_elem.name}}</a></td>
+                                                    <td class="field-name"><a class="magnific-popup-iframe-s2-formzbaseelement-uncommon" href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}?_to_field=id&_popup=1" target="_blank">{{formz_elem.name}}</a></td>
                                                     <td class="field-donor_organism" style="text-align:center;">{% if formz_elem.get_donor_species_names %}{{formz_elem.get_donor_species_names}}{% else %}Artifiziell{% endif %}</td>
                                                     <td class="field-donor_organism_risk" style="text-align:center;">{% if formz_elem.get_donor_species_risk_groups %}{{formz_elem.get_donor_species_risk_groups}}{% else %}Keine{% endif %}</td>
                                                     <td class="field-nuc_acid_purity" style="text-align:center">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
@@ -549,9 +564,9 @@
                                             <td  colspan="5" scope="col" class="column-common_features">
                                                 {% for formz_elem in plasmid.plasmid.get_all_common_formz_elements %}
                                                     {% if not forloop.last %}
-                                                        <a href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}">{{formz_elem.name}}</a>,
+                                                        <a class="magnific-popup-iframe-s2-formzbaseelement-common" href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}?_to_field=id&_popup=1" target="_blank">{{formz_elem.name}}</a>,
                                                     {% else %}
-                                                        <a href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}">{{formz_elem.name}}</a>
+                                                        <a class="magnific-popup-iframe-s2-formzbaseelement-common" href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}?_to_field=id&_popup=1" target="_blank">{{formz_elem.name}}</a>
                                                     {% endif %}
                                                 {% endfor %}
                                             </td>
@@ -571,8 +586,31 @@
     <script type="text/javascript" src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
     <script type="text/javascript" src="{% static 'admin/js/vendor/jquery.magnific-popup.min.js' %}"></script>
     <script type="text/javascript">
-        const MagnificiFrameClassIds = ['magnific-popup-iframe-plasmidmap'];
-        const MagnificImgClassIds = ['magnific-popup-img-plasmidmap'];
+        const MagnificiFrameClassIds = ['magnific-popup-iframe-ecolistrain',
+                                        'magnific-popup-iframe-formzproject',
+                                        'magnific-popup-iframe-formzproject-parent',
+                                        'magnific-popup-iframe-zkbscellline',
+                                        'magnific-popup-iframe-zkbsplasmid',
+                                        'magnific-popup-iframe-formzbaseelement-common',
+                                        'magnific-popup-iframe-formzbaseelement-uncommon',
+                                        'magnific-popup-iframe-plasmid',
+                                        'magnific-popup-iframe-transient-episomal-plasmid',
+                                        'magnific-popup-iframe-transient-episomal-plasmid-formzproject',
+                                        'magnific-popup-iframe-transient-episomal-plasmid-zkbsplasmid',
+                                        'magnific-popup-iframe-transient-episomal-plasmid-formzbaseelement-uncommon',
+                                        'magnific-popup-iframe-transient-episomal-plasmid-formzbaseelement-common',
+                                        'magnific-popup-iframe-s2-plasmid',
+                                        'magnific-popup-iframe-s2-formzproject',
+                                        'magnific-popup-iframe-s2-zkbsplasmid',
+                                        'magnific-popup-iframe-s2-formzbaseelement-uncommon',
+                                        'magnific-popup-iframe-s2-formzbaseelement-common',
+                                        'magnific-popup-iframe-s2-plasmid-map',
+                                        'magnific-popup-iframe-transient-episomal-plasmid-map',
+                                        'magnific-popup-iframe-plasmid-map',
+                                        'magnific-popup-iframe-virus_packaging_cell_line'];
+        const MagnificImgClassIds = ['magnific-popup-img-plasmid-map',
+                                     'magnific-popup-img-s2-plasmid-map',
+                                     'magnific-popup-img-transient-episomal-plasmid-map'];
     </script>
     <script type="text/javascript" src="{% static 'admin/js/admin/MagnificPopUpiFrame.js' %}"></script>
     <script type="text/javascript" src="{% static 'admin/js/admin/MagnificPopUpImg.js' %}"></script>

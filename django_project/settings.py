@@ -70,7 +70,6 @@ MIDDLEWARE = [
 
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend', # this is default
-    'mozilla_django_oidc.auth.OIDCAuthenticationBackend',
     'guardian.backends.ObjectPermissionBackend',
 )
 

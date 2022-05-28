@@ -336,7 +336,7 @@ class RecordToBeApprovedPage(admin.ModelAdmin):
         record_name = str(instance.content_object)
         record_name =  record_name[:50] + "..." if len(record_name) > 50 else record_name 
        
-        return mark_safe('<a class="magnificent-ori-obj" href="{}?_to_field=id&_popup=1" target="_blank">{}</a>'.format(url, record_name))
+        return mark_safe('<a class="magnific-popup-iframe-original-object" href="{}?_to_field=id&_popup=1" target="_blank">{}</a>'.format(url, record_name))
 
     record_link.short_description = 'Record'
 
@@ -345,7 +345,7 @@ class RecordToBeApprovedPage(admin.ModelAdmin):
 
         url = reverse("admin:{}_{}_history".format(instance.content_object._meta.app_label, instance.content_object._meta.model_name), args=(instance.content_object.id,))
 
-        return mark_safe('<a class="magnificent-history" href="{}?_to_field=id&_popup=1" target="_blank">{}</a>'.format(url, 'History',))
+        return mark_safe('<a class="magnific-popup-iframe-history" href="{}?_to_field=id&_popup=1" target="_blank">{}</a>'.format(url, 'History',))
     history_link.short_description = 'History'
 
     def titled_content_type(self, instance):
@@ -360,9 +360,9 @@ class RecordToBeApprovedPage(admin.ModelAdmin):
         '''changew_view column to show created activity_type in red'''
         
         if instance.activity_type == 'created':
-            return mark_safe('<span style="color:var(--error-fg);">Created</span>')
+            return mark_safe('<span class="activity-created"">Created</span>')
         elif instance.activity_type == 'changed':
-            return mark_safe('<span>Changed</span>')
+            return 'Changed'
 
     coloured_activity_type.short_description = 'Activity type'
     coloured_activity_type.admin_order_field = 'activity_type'
@@ -389,5 +389,5 @@ class RecordToBeApprovedPage(admin.ModelAdmin):
         '''changew_view column to show approval record link with for magnificent popup'''
         
         url = reverse(f'admin:{self.model._meta.app_label}_{self.model._meta.model_name}_change', args=(instance.id,) )
-        return mark_safe(f'<a class="magnificent-id" style="font-weight:bold;" href="{url}?_to_field=id&_popup=1" target="_blank">{instance.id}</a>')   
+        return mark_safe(f'<a class="magnific-popup-iframe-id" href="{url}?_to_field=id&_popup=1" target="_blank">{instance.id}</a>')   
     magnificent_id.short_description = 'Approval ID'

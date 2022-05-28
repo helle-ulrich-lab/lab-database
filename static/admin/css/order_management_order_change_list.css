@@ -6,11 +6,6 @@
     border-radius: 4px;
 }
 
-.mfp-iframe-holder .mfp-content {
-    max-width: 95%;
-    max-height: 95%;
-}
-
 .order-status-submitted {
     background-color: #F5B041;
     border: 2px solid #8F4A00;

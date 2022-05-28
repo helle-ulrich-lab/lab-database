@@ -16,13 +16,13 @@
       #changelist table thead th:first-child {width: inherit}
     </style>
   {% endif %}
+  <link rel="stylesheet" type="text/css" href="{% static "admin/css/vendor/magnific-popup.css" %}">
+  <link rel="stylesheet" type="text/css" href="{% static "admin/css/custom_style_magnific-popup.css" %}">
 {% endblock %}
 
 {% block extrahead %}
 {{ block.super }}
 {{ media.js }}
-<link rel="stylesheet" type="text/css" href="{% static "admin/css/vendor/magnific-popup.css" %}">
-<link rel="stylesheet" type="text/css" href="{% static "admin/css/custom_style_magnific-popup.css" %}">
 {% endblock %}
 
 {% block bodyclass %}{{ block.super }} app-{{ opts.app_label }} model-{{ opts.model_name }} change-list{% endblock %}
@@ -107,38 +107,14 @@
   <script type="text/javascript" src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
   <script type="text/javascript" src="{% static 'admin/js/vendor/jquery.magnific-popup.min.js' %}"></script>
   <script type="text/javascript">
+    const MagnificiFrameClassIds = ['magnific-popup-iframe-plasmidmap-dna', 'magnific-popup-iframe-plasmidmap-gbk'];
+    const MagnificImgClassIds = ['magnific-popup-img-plasmidmap'];
+  </script>
+  <script type="text/javascript" src="{% static 'admin/js/admin/MagnificPopUpiFrame.js' %}"></script>
+  <script type="text/javascript" src="{% static 'admin/js/admin/MagnificPopUpImg.js' %}"></script>
+  <script type="text/javascript">
     
     $(document).ready(function() {
-    $('.image-link').magnificPopup({
-      type:'image',
-      gallery: {
-        enabled: true, // set to true to enable gallery
-        preload: [0, 2], // read about this option in next Lazy-loading section
-        navigateByImgClick: true,
-        arrowMarkup: '<button title="%title%" type="button" class="mfp-arrow mfp-arrow-%dir%"></button>', // markup of an arrow button
-        tPrev: 'Previous (Left arrow key)', // title for left button
-        tNext: 'Next (Right arrow key)', // title for right button
-        tCounter: '<span class="mfp-counter">%curr% of %total%</span>' // markup of counter
-      }});
-
-      $('.magnificent').magnificPopup({
-      type: 'iframe',
-      iframe: {
-        markup: '<div style><div class="mfp-iframe-scaler">' +
-          '<div class="mfp-close"></div>' +
-          '<iframe class="mfp-iframe" frameborder="0" style="background: #FFFFFF;" allowfullscreen></iframe>' +
-          '</div></div>'
-      },
-      gallery: {
-        enabled: true, // set to true to enable gallery
-        preload: [0, 2], // read about this option in next Lazy-loading section
-        navigateByImgClick: true,
-        arrowMarkup: '<button title="%title%" type="button" class="mfp-arrow mfp-arrow-%dir%"></button>', // markup of an arrow button
-        tPrev: 'Previous (Left arrow key)', // title for left button
-        tNext: 'Next (Right arrow key)', // title for right button
-        tCounter: '<span class="mfp-counter">%curr% of %total%</span>' // markup of counter
-      }
-    });
 
     var action_drop_down = $('#changelist-form').find('select').first();
 

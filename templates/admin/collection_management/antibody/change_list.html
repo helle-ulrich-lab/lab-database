@@ -10,14 +10,14 @@
   {% if cl.formset or action_form %}
   <script src="{% url 'admin:jsi18n' %}"></script>
   {% endif %}
-  <link rel="stylesheet" type="text/css" href="{% static "admin/css/vendor/magnific-popup.css" %}">
-  <link rel="stylesheet" type="text/css" href="{% static "admin/css/custom_style_magnific-popup.css" %}">
   {{ media.css }}
   {% if not actions_on_top and not actions_on_bottom %}
     <style>
       #changelist table thead th:first-child {width: inherit}
     </style>
   {% endif %}
+  <link rel="stylesheet" type="text/css" href="{% static "admin/css/vendor/magnific-popup.css" %}">
+  <link rel="stylesheet" type="text/css" href="{% static "admin/css/custom_style_magnific-popup.css" %}">
 {% endblock %}
 
 {% block extrahead %}
@@ -83,9 +83,12 @@
 {% endblock %}
 
 {% block footer %}
-  <div id="footer"></div>
   <script type="text/javascript" src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
   <script type="text/javascript" src="{% static 'admin/js/vendor/jquery.magnific-popup.min.js' %}"></script>
+  <script type="text/javascript">
+    const MagnificiFrameClassIds = ['magnific-popup-iframe-pdflink'];
+  </script>
+  <script type="text/javascript" src="{% static 'admin/js/admin/MagnificPopUpiFrame.js' %}"></script>
   <script type="text/javascript">
     
     $(document).ready(function() {
@@ -136,25 +139,6 @@
 
     });
 
-    });
-
-    $('.magnificent').magnificPopup({
-      type: 'iframe',
-      iframe: {
-        markup: '<div class="mfp-iframe-scaler">' +
-          '<div class="mfp-close"></div>' +
-          '<iframe class="mfp-iframe" frameborder="0" style="background: #FFFFFF;" allowfullscreen></iframe>' +
-          '</div>'
-      },
-      gallery: {
-        enabled: true, // set to true to enable gallery
-        preload: [0, 2], // read about this option in next Lazy-loading section
-        navigateByImgClick: true,
-        arrowMarkup: '<button title="%title%" type="button" class="mfp-arrow mfp-arrow-%dir%"></button>', // markup of an arrow button
-        tPrev: 'Previous (Left arrow key)', // title for left button
-        tNext: 'Next (Right arrow key)', // title for right button
-        tCounter: '<span class="mfp-counter">%curr% of %total%</span>' // markup of counter
-      }
     });
   </script>
 {% endblock %}

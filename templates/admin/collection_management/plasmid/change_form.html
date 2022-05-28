@@ -101,8 +101,14 @@
     <script type="text/javascript" src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
     <script type="text/javascript" src="{% static 'admin/js/vendor/jqueryui/jquery-ui.js' %}"></script>
     <script type="text/javascript" src="{% static 'admin/js/admin/ShowLoading.js' %}"></script>
-    <script type="text/javascript" src="{% static 'admin/js/vendor/jquery.magnific-popup.min.js' %}"></script>
     <script type="text/javascript" src="{% static 'admin/js/admin/plasmid_change_form.js' %}"></script>
+    <script type="text/javascript" src="{% static 'admin/js/vendor/jquery.magnific-popup.min.js' %}"></script>
+    <script type="text/javascript">
+      const MagnificiFrameClassIds = ['magnific-popup-iframe-plasmidmap'];
+      const MagnificImgClassIds = ['magnific-popup-img-plasmidmap'];
+    </script>
+    <script type="text/javascript" src="{% static 'admin/js/admin/MagnificPopUpiFrame.js' %}"></script>
+    <script type="text/javascript" src="{% static 'admin/js/admin/MagnificPopUpImg.js' %}"></script>
 {% endblock %}
 
 {# JavaScript for prepopulated fields #}

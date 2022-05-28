@@ -1224,7 +1224,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
         '''Custom comment field for changelist_view'''
         
         if instance.msds_form:
-            return mark_safe('<a class="magnificent" href="{0}">View</a>'.format(instance.msds_form.name.url))
+            return mark_safe('<a class="magnific-popup-iframe-msds" href="{0}">View</a>'.format(instance.msds_form.name.url))
         else:
             None
     msds_link.short_description = 'MSDS'
@@ -1328,7 +1328,7 @@ class MsdsFormPage(DjangoQLSearchMixin, admin.ModelAdmin):
     def view_file_link(self, instance):
         '''Custom field which shows the url of a MSDS form as a HTML <a> tag with 
         text View'''
-        return(mark_safe('<a class="magnificent" href="{}">{}</a>'.format(instance.name.url, "View")))
+        return(mark_safe('<a class="magnific-popup-iframe-pdflink" href="{}">{}</a>'.format(instance.name.url, "View")))
     view_file_link.short_description = ""
 
 #################################################

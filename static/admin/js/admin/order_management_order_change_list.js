@@ -104,24 +104,3 @@ $(document).ready(function () {
         }
     });
 });
-
-// MagnificentPopup 
-
-$('.magnificent').magnificPopup({
-    type: 'iframe',
-    iframe: {
-        markup: '<div class="mfp-iframe-scaler">' +
-            '<div class="mfp-close"></div>' +
-            '<iframe class="mfp-iframe" frameborder="0" style="background: #FFFFFF;" allowfullscreen></iframe>' +
-            '</div>'
-    },
-    gallery: {
-        enabled: true,
-        preload: [0, 2],
-        navigateByImgClick: true,
-        arrowMarkup: '<button title="%title%" type="button" class="mfp-arrow mfp-arrow-%dir%"></button>',
-        tPrev: 'Previous (Left arrow key)',
-        tNext: 'Next (Right arrow key)',
-        tCounter: '<span class="mfp-counter">%curr% of %total%</span>'
-    }
-});

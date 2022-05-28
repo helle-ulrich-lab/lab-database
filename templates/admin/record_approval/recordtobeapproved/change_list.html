@@ -16,13 +16,21 @@
       #changelist table thead th:first-child {width: inherit}
     </style>
   {% endif %}
+  <link rel="stylesheet" type="text/css" href="{% static "admin/css/vendor/magnific-popup.css" %}">
+  <link rel="stylesheet" type="text/css" href="{% static "admin/css/custom_style_magnific-popup.css" %}">
+  <style>
+    .activity-created {
+      color: var(--error-fg);
+    }
+    .magnific-popup-iframe-id {
+      font-weight: bold;
+    }
+  </style>
 {% endblock %}
 
 {% block extrahead %}
 {{ block.super }}
 {{ media.js }}
-<link rel="stylesheet" type="text/css" href="{% static "admin/css/vendor/magnific-popup.css" %}">
-<link rel="stylesheet" type="text/css" href="{% static "admin/css/custom_style_magnific-popup.css" %}">
 {% endblock %}
 
 {% block bodyclass %}{{ block.super }} app-{{ opts.app_label }} model-{{ opts.model_name }} change-list{% endblock %}
@@ -99,36 +107,7 @@
   <script type="text/javascript" src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
   <script type="text/javascript" src="{% static 'admin/js/vendor/jquery.magnific-popup.min.js' %}"></script>
   <script type="text/javascript">
-    
-    $(document).ready(function() {
-
-      const classIds = ['magnificent-id', 'magnificent-ori-obj', 'magnificent-history'];
-      
-      for (classId of classIds){
-        
-        $(`.${classId}`).magnificPopup({
-          
-          type: 'iframe',
-          
-          iframe: {
-              markup: '<div class="mfp-iframe-scaler">' +
-                      '<div class="mfp-close"></div>' +
-                      '<iframe class="mfp-iframe" frameborder="0" allowfullscreen></iframe>'+
-                      '</div>'
-          },
-          
-          gallery: {
-            enabled: true,
-            preload: [0,2],
-            navigateByImgClick: true,
-            arrowMarkup: '<button title="%title%" type="button" class="mfp-arrow mfp-arrow-%dir%"></button>',
-            tPrev: 'Previous (Left arrow key)',
-            tNext: 'Next (Right arrow key)',
-            tCounter: '<span class="mfp-counter">%curr% of %total%</span>'
-          }
-        });
-
-      }
-  })
+    const MagnificiFrameClassIds = ['magnific-popup-iframe-id', 'magnific-popup-iframe-original-object', 'magnific-popup-iframe-history'];
   </script>
+  <script type="text/javascript" src="{% static 'admin/js/admin/MagnificPopUpiFrame.js' %}"></script>
 {% endblock %}

@@ -16,13 +16,18 @@
         #changelist table thead th:first-child {width: inherit}
         </style>
     {% endif %}
+    <link rel="stylesheet" type="text/css" media="all" href="/static/admin/css/vendor/magnific-popup.css">
+    <link rel="stylesheet" type="text/css" href="{% static "admin/css/custom_style_magnific-popup.css" %}">
+    <style>
+        .magnific-popup-iframe-plasmidmap {
+            padding-left:5px;
+        }
+    </style>
 {% endblock %}
 
 {% block extrahead %}
     {{ block.super }}
     {{ media.js }}
-    <link rel="stylesheet" type="text/css" media="all" href="/static/admin/css/vendor/magnific-popup.css">
-    <link rel="stylesheet" type="text/css" href="{% static "admin/css/custom_style_magnific-popup.css" %}">
 {% endblock %}
 
 {% block coltype %}flex{% endblock %}
@@ -175,8 +180,8 @@
                 <li>
                     <a href="{% url 'admin:collection_management_plasmid_change' plasmid.id %}">Plasmid #{{plasmid}}</a>
                     {% if plasmid.map %}
-                        (<a style='text-transform: none' href="{{plasmid.map_gbk.url}}">.gbk</a>,
-                        <a  class="image-link" style='text-transform: none' href="{{plasmid.map_png.url}}">.png</a>)
+                        (<a style='text-transform: none' href="{{plasmid.map_gbk.url}}">.gbk<a class="magnific-popup-iframe-plasmidmap" href="/ove/?file_name={{plasmid.map_gbk.url}}&title={{plasmid}}">⊙</a>,
+                        <a  class="magnific-popup-img-plasmidmap" style='text-transform: none' href="{{plasmid.map_png.url}}">.png</a>)
                     {% endif %}
                     {% if plasmid.vector_zkbs %}
                         {% if plasmid.vector_zkbs.name != 'none' %}
@@ -293,8 +298,8 @@
                                 <a href="{% url 'admin:collection_management_plasmid_change' plasmid.plasmid.id %}">Plasmid #{{plasmid.plasmid}} </a>
                                 <span style="text-transform: none">
                                     {% if plasmid.plasmid.map %}
-                                        (<a href="{{plasmid.plasmid.map_gbk.url}}">.gbk</a>,
-                                        <a  class="image-link" href="{{plasmid.plasmid.map_png.url}}">.png</a>);
+                                        (<a href="{{plasmid.plasmid.map_gbk.url}}">.gbk</a><a class="magnific-popup-iframe-plasmidmap" href="/ove/?file_name={{plasmid.map_gbk.url}}&title={{plasmid}}">⊙</a>,
+                                        <a  class="magnific-popup-img-plasmidmap" href="{{plasmid.plasmid.map_png.url}}">.png</a>);
                                     {% endif %}
                                     {% if not plasmid.plasmid.map and plasmid.created_date %}
                                     (Organismus {% if transfected %}transfiziert{% else %}transformiert{% endif %} am {{plasmid.created_date | date:"d.m.Y"}},
@@ -435,8 +440,8 @@
                                     <a href="{% url 'admin:collection_management_plasmid_change' plasmid.plasmid.id %}">Plasmid #{{plasmid.plasmid}} </a>
                                     <span style="text-transform: none">
                                         {% if plasmid.plasmid.map %}
-                                            (<a href="{{plasmid.plasmid.map_gbk.url}}">.gbk</a>,
-                                            <a  class="image-link" href="{{plasmid.plasmid.map_png.url}}">.png</a>);
+                                            (<a href="{{plasmid.plasmid.map_gbk.url}}">.gbk</a><a class="magnific-popup-iframe-plasmidmap" href="/ove/?file_name={{plasmid.map_gbk.url}}&title={{plasmid}}">⊙</a>,
+                                            <a  class="magnific-popup-img-plasmidmap" href="{{plasmid.plasmid.map_png.url}}">.png</a>);
                                         {% endif %}
                                         {% if not plasmid.plasmid.map and plasmid.created_date %}
                                         (Organismus {% if transfected %}transfiziert{% else %}transformiert{% endif %} am {{plasmid.created_date | date:"d.m.Y"}},
@@ -566,8 +571,9 @@
     <script type="text/javascript" src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
     <script type="text/javascript" src="{% static 'admin/js/vendor/jquery.magnific-popup.min.js' %}"></script>
     <script type="text/javascript">
-        $(document).ready(function() {
-        $('.image-link').magnificPopup({type:'image'});
-        });
+        const MagnificiFrameClassIds = ['magnific-popup-iframe-plasmidmap'];
+        const MagnificImgClassIds = ['magnific-popup-img-plasmidmap'];
     </script>
+    <script type="text/javascript" src="{% static 'admin/js/admin/MagnificPopUpiFrame.js' %}"></script>
+    <script type="text/javascript" src="{% static 'admin/js/admin/MagnificPopUpImg.js' %}"></script>
 {% endblock %}

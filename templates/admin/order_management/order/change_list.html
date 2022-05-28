@@ -16,14 +16,14 @@
       #changelist table thead th:first-child {width: inherit}
     </style>
   {% endif %}
+  <link rel="stylesheet" type="text/css" href="{% static "admin/css/vendor/magnific-popup.css" %}">
+  <link rel="stylesheet" type="text/css" href="{% static "admin/css/custom_style_magnific-popup.css" %}">
+  <link rel="stylesheet" type="text/css" href="{% static "admin/css/order_management_order_change_list.css" %}">
 {% endblock %}
 
 {% block extrahead %}
 {{ block.super }}
 {{ media.js }}
-  <link rel='stylesheet' type='text/css' href="{% static 'admin/css/vendor/magnific-popup.css' %}">
-  <link rel="stylesheet" type="text/css" href="{% static 'admin/css/custom_style_magnific-popup.css' %}>
-  <link rel='stylesheet' type='text/css' href="{% static 'admin/css/order_management_order_change_list.css' %}">
 {% endblock %}
 
 {% block bodyclass %}{{ block.super }} app-{{ opts.app_label }} model-{{ opts.model_name }} change-list{% endblock %}
@@ -91,12 +91,13 @@
 
 {% block footer %}
 {% block admin_change_form_document_ready %}
-<script  src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
+<script src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
 <script type="text/javascript" src="{% static 'admin/js/vendor/jquery.magnific-popup.min.js' %}"></script>
 <script type="text/javascript">
-  var orderRootUrl = "{% url opts|admin_urlname:'changelist' %}";
+  const orderRootUrl = "{% url opts|admin_urlname:'changelist' %}";
+  const MagnificiFrameClassIds = ['magnific-popup-iframe-msds'];
 </script>
+<script type="text/javascript" src="{% static 'admin/js/admin/MagnificPopUpiFrame.js' %}"></script>
 <script type="text/javascript" src="{% static 'admin/js/admin/order_management_order_change_list.js' %}"></script>
-  
 {% endblock %}
 {% endblock %}

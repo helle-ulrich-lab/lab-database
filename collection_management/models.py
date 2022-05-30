@@ -355,19 +355,17 @@ class Plasmid (models.Model, SaveWithoutHistoricalRecord):
 
         """Returns the url to view the a SnapGene file in OVE"""
 
-        if self.map:
-            params = {'file_name': self.map.url, 'title': f'p{LAB_ABBREVIATION_FOR_FILES}{self.__str__()}'}
+        params = {'file_name': self.map.url, 'title': f'p{LAB_ABBREVIATION_FOR_FILES}{self.__str__()}'}
 
-            return f'{OVE_URL}?{urlencode(params)}'
+        return f'{OVE_URL}?{urlencode(params)}'
 
     def get_ove_url_map_gbk(self):
 
         """Returns the url to view the a gbk file in OVE"""
 
-        if self.map:
-            params = {'file_name': self.map_gbk.url, 'title': f'p{LAB_ABBREVIATION_FOR_FILES}{self.__str__()}'}
+        params = {'file_name': self.map_gbk.url, 'title': f'p{LAB_ABBREVIATION_FOR_FILES}{self.__str__()}'}
 
-            return f'{OVE_URL}?{urlencode(params)}'
+        return f'{OVE_URL}?{urlencode(params)}'
 
 #################################################
 #                     OLIGO                     #

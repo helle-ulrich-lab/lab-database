@@ -49,9 +49,6 @@ $(document).ready(function() {
     });
 
     // Add "button" to show plasmid map as OVE plasmid preview in a magnific popup
-
-    let plasmidNameField = $('.field-name');
-    let plasmidName = plasmidNameField.find('.readonly')[0] ? plasmidNameField.find('.readonly')[0].innerHTML : plasmidNameField.find('input')[0].value;
     
     $('.field-map,.field-map_gbk').each((i, e) => {
         let mapLinkElement = $(e).find('a')[0];

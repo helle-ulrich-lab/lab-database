@@ -1736,19 +1736,14 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
         list_display = ('id', 'name', 'selection', 'get_plasmidmap_short_name','created_by',)'''
         
         if instance.map:
-            ove_dna_preview = f'/ove/?file_name={instance.map.url}&title=p{LAB_ABBREVIATION_FOR_FILES}{instance}'
-            ove_gbk_preview = f'/ove/?file_name={instance.map_gbk.url}&title=p{LAB_ABBREVIATION_FOR_FILES}{instance}'
-            return mark_safe(f'<a class="image-link" href="{instance.map_png.url}">png</a> | '
-                             f'<a href="{instance.map.url}">dna</a> <a class="magnificent" href="{ove_dna_preview}">⊙</a> | '
-                             f'<a href="{instance.map_gbk.url}">gbk</a> <a class="magnificent" href="{ove_gbk_preview}">⊙</a>')
+            ove_dna_preview = instance.get_ove_url_map()
+            ove_gbk_preview =  instance.get_ove_url_map_gbk()
+            return mark_safe(f'<a class="magnific-popup-img-plasmidmap" href="{instance.map_png.url}">png</a> | '
+                             f'<a href="{instance.map.url}">dna</a> <a class="magnific-popup-iframe-plasmidmap-dna" href="{ove_dna_preview}">⊙</a> | '
+                             f'<a href="{instance.map_gbk.url}">gbk</a> <a class="magnific-popup-iframe-plasmidmap-gbk" href="{ove_gbk_preview}">⊙</a>')
         else:
             return ''
     get_plasmidmap_short_name.short_description = 'Plasmid map'
-
-    class Media:
-        css = {
-            "all": ('admin/css/vendor/magnific-popup.css',
-            )}
 
     def obj_perms_manage_view(self, request, object_pk):
         """
@@ -3424,7 +3419,7 @@ class AntibodyPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.Mod
         such that the text shown for a link is always View'''
 
         if instance.info_sheet:
-            return mark_safe('<a class="magnificent" href="{}">View</a>'.format(str(instance.info_sheet.url)))
+            return mark_safe('<a class="magnific-popup-iframe-pdflink" href="{}">View</a>'.format(str(instance.info_sheet.url)))
         else:
             return ''
     get_sheet_short_name.short_description = 'Info Sheet'

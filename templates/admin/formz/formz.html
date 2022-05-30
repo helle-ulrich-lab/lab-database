@@ -310,20 +310,13 @@
                     <thead>
                         <tr>
                             <th colspan="5" scope="col" class="column-plasmid">
-                                <a class="magnific-popup-iframe-transient-episomal-plasmid" href="{% url 'admin:collection_management_plasmid_change' plasmid.plasmid.id %}?_to_field=id&_popup=1" target="_blank">Plasmid #{{plasmid.plasmid}} </a>
+                                <a class="magnific-popup-iframe-transient-episomal-plasmid" href="{% url 'admin:collection_management_plasmid_change' plasmid.plasmid.id %}?_to_field=id&_popup=1" target="_blank">Plasmid #{{plasmid.plasmid}}</a>
                                 <span style="text-transform: none">
-                                    {% if plasmid.plasmid.map %}
-                                        (<a href="{{plasmid.plasmid.map_gbk.url}}">.gbk</a><a class="magnific-popup-iframe-transient-episomal-plasmid-map" href={{plasmid.plasmid.get_ove_url_map_gbk}}>⊙</a>,
-                                        <a  class="magnific-popup-img-transient-episomal-plasmid-map" href="{{plasmid.plasmid.map_png.url}}">.png</a>);
+                                {% if plasmid.plasmid.map %}
+                                       (<a href="{{plasmid.plasmid.map_gbk.url}}">.gbk</a><a class="magnific-popup-iframe-transient-episomal-plasmid-map" href={{plasmid.plasmid.get_ove_url_map_gbk}}>⊙</a>,
+                                        <a class="magnific-popup-img-transient-episomal-plasmid-map" href="{{plasmid.plasmid.map_png.url}}">.png</a>)
                                     {% endif %}
-                                    {% if not plasmid.plasmid.map and plasmid.created_date %}
-                                    (Organismus {% if transfected %}transfiziert{% else %}transformiert{% endif %} am {{plasmid.created_date | date:"d.m.Y"}},
-                                    {% else %}
-                                    Organismus {% if transfected %}transfiziert{% else %}transformiert{% endif %} am {{plasmid.created_date | date:"d.m.Y"}},
-                                    {% endif %}
-
-                                    unter Projekt/e:
-
+                                    - Organismus {% if transfected %}transfiziert{% else %}transformiert{% endif %} am {{plasmid.created_date | date:"d.m.Y"}}, unter Projekt/e:
                                     {% if plasmid.formz_projects.all|length == 1 %}
                                         {% for project in plasmid.formz_projects.all %}
                                             <a class="magnific-popup-iframe-transient-episomal-plasmid-formzproject" href="{% url 'admin:formz_formzproject_change' project.id %}?_to_field=id&_popup=1" target="_blank">{{project.short_title}}</a>;
@@ -452,14 +445,14 @@
                         <thead>
                             <tr>
                                 <th  colspan="5" scope="col" class="column-plasmid">
-                                    <a class="magnific-popup-iframe-s2-plasmid" href="{% url 'admin:collection_management_plasmid_change' plasmid.plasmid.id %}?_to_field=id&_popup=1" target="_blank">Plasmid #{{plasmid.plasmid}} </a>
+                                    <a class="magnific-popup-iframe-s2-plasmid" href="{% url 'admin:collection_management_plasmid_change' plasmid.plasmid.id %}?_to_field=id&_popup=1" target="_blank">Plasmid #{{plasmid.plasmid}}</a>
                                     <span style="text-transform: none">
                                         {% if plasmid.plasmid.map %}
-                                            (<a href="{{plasmid.plasmid.map_gbk.url}}">.gbk</a><a class="magnific-popup-iframe-s2-plasmid-map" href={{plasmid.plasmid.get_ove_url_map_gbk}}>⊙</a>,
-                                            <a  class="magnific-popup-iframe-s2-plasmid-map" href="{{plasmid.plasmid.map_png.url}}">.png</a>);
+                                        (<a href="{{plasmid.plasmid.map_gbk.url}}">.gbk</a><a class="magnific-popup-iframe-s2-plasmid-map" href={{plasmid.plasmid.get_ove_url_map_gbk}}>⊙</a>,
+                                         <a  class="magnific-popup-iframe-s2-plasmid-map" href="{{plasmid.plasmid.map_png.url}}">.png</a>);
                                         {% endif %}
                                         {% if not plasmid.plasmid.map and plasmid.created_date %}
-                                        (Organismus {% if transfected %}transfiziert{% else %}transformiert{% endif %} am {{plasmid.created_date | date:"d.m.Y"}},
+                                        - Organismus {% if transfected %}transfiziert{% else %}transformiert{% endif %} am {{plasmid.created_date | date:"d.m.Y"}},
                                         {% else %}
                                         Organismus {% if transfected %}transfiziert{% else %}transformiert{% endif %} am {{plasmid.created_date | date:"d.m.Y"}},
                                         {% endif %}

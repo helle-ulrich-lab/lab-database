@@ -226,10 +226,10 @@
                     <thead>
                         <tr>
                             <th colspan="6" scope="col" style="text-align:left; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
-                                Plasmid #{{plasmid.plasmid}} 
+                                Plasmid #{{plasmid.plasmid}}
                                 <span style="text-transform: none">
                                     {% if plasmid.created_date %}
-                                        (Organismus {% if transfected %}transfiziert{% else %}transformiert{% endif %} am {{plasmid.created_date | date:"d.m.Y"}},
+                                        - Organismus {% if transfected %}transfiziert{% else %}transformiert{% endif %} am {{plasmid.created_date | date:"d.m.Y"}},
                                     {% endif %}
 
                                     unter Projekt/e:
@@ -249,9 +249,9 @@
                                     {% endif %}
 
                                     {% if plasmid.destroyed_date %}
-                                        entsorgt am {{plasmid.destroyed_date | date:"d.m.Y"}})
+                                        entsorgt am {{plasmid.destroyed_date | date:"d.m.Y"}}
                                     {% else %}
-                                        noch nicht entsorgt)
+                                        noch nicht entsorgt
                                     {% endif %}
                                 </span>
                                 
@@ -349,10 +349,10 @@
                         <thead>
                             <tr>
                                 <th colspan="6" scope="col" style="text-align:left; border: 1px solid rgb(0, 0, 0); background:grey;">
-                                    Plasmid #{{plasmid.plasmid}} 
+                                    Plasmid #{{plasmid.plasmid}}
                                     <span style="text-transform: none">
                                         {% if plasmid.created_date %}
-                                            (Organismus transfiziert am {{plasmid.created_date | date:"d.m.Y"}},
+                                            -  Organismus transfiziert am {{plasmid.created_date | date:"d.m.Y"}},
                                         {% endif %}
     
                                         unter Projekt/e:
@@ -372,9 +372,9 @@
                                         {% endif %}
     
                                         {% if plasmid.destroyed_date %}
-                                            entsorgt am {{plasmid.destroyed_date | date:"d.m.Y"}})
+                                            entsorgt am {{plasmid.destroyed_date | date:"d.m.Y"}}
                                         {% else %}
-                                            noch nicht entsorgt)
+                                            noch nicht entsorgt
                                         {% endif %}
                                     </span>
                                     

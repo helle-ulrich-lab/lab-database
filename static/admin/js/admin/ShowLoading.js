@@ -1,15 +1,14 @@
-function ShowLoading(e) {
+function ShowLoading() {
     var div = document.createElement('div');
-    var img = document.createElement('img');
-    img.style.cssText = 'display:block, height: 40%; width:auto;'
-    img.src = '/static/admin/img/loader.gif'; //'/static/admin/img/spinner.svg';
+    var loader = document.createElement('div');
+    loader.className = "lds-ring";
+    loader.innerHTML = "<div></div><div></div><div></div><div></div>";
     div.innerHTML = "</br>Please wait...</br></br>";
-    div.style.cssText = 'margin: 0; height: 12vw; width:15vw; position: fixed; \
-     top: 50%; left:50%; z-index: 5000; transform: translatey(-50%); \
-     box-shadow: 0 0 0 100vmax rgba(0,0,0,.3); background-color: var(--body-bg); \
-     border: 3px solid var(--secondary); border-radius: 3px;font-family: "Roboto"; \
-     text-align: center;';
-    div.appendChild(img);
+    div.style.cssText = 'margin: 0; height: 10vw; width: 10vw; position: fixed; \
+     top: 50%; left: 50%; z-index: 5000; transform: translate(-50% , -50%); \
+     -webkit-transform: translate(-50%, -50%); box-shadow: 0 0 0 100vmax rgba(0,0,0,.5); \
+     background-color: var(--body-bg); border: 3px solid var(--secondary); \
+     border-radius: 3px; font-family: "Roboto"; text-align: center;';
+    div.appendChild(loader);
     document.body.appendChild(div);
-    return true;
 }

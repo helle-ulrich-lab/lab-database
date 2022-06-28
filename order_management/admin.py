@@ -549,7 +549,7 @@ def export_chemicals(modeladmin, request, queryset):
     """Export all chemicals. A chemical is defines as an order
     which has a non-null ghs_pictogram_old field and is not used up"""
 
-    queryset = Order.objects.exclude(status="used up").filter(ghs_symbols__code__isnull=False).order_by('-id')
+    queryset = Order.objects.exclude(status="used up").filter(ghs_symbols__code__isnull=False).order_by('-id').distinct()
     export_data = OrderChemicalExportResource().export(queryset)
 
     file_format = request.POST.get('format', default='xlsx')

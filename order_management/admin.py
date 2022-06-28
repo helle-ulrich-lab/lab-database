@@ -34,7 +34,7 @@ from django_project.private_settings import ALLOWED_HOSTS
 
 # Advanced search functionalities from DjangoQL
 from djangoql.admin import DjangoQLSearchMixin
-from djangoql.schema import DjangoQLSchema, StrField
+from djangoql.schema import DjangoQLSchema, StrField, BoolField
 from collection_management.admin import SearchFieldOptUsername, SearchFieldOptLastname
 
 # Object history tracking from django-simple-history
@@ -549,18 +549,17 @@ def export_chemicals(modeladmin, request, queryset):
     """Export all chemicals. A chemical is defines as an order
     which has a non-null ghs_pictogram_old field and is not used up"""
 
-    queryset = Order.objects.exclude(status="used up").filter(ghs_symbols__code__isnull=False).order_by('-id').distinct()
     export_data = OrderChemicalExportResource().export(queryset)
 
     file_format = request.POST.get('format', default='xlsx')
 
     if file_format == 'xlsx':
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.xlsx'.format(queryset.model.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
+        response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.xlsx'.format('chemical', time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
         response.write(export_data.xlsx)
     elif file_format == 'tsv':
         response = HttpResponse(content_type='text/tab-separated-values')
-        response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.tsv'.format(queryset.model.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
+        response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.tsv'.format('chemical', time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
         xlsx_file = xlrd.open_workbook(file_contents=export_data.xlsx)
         sheet = xlsx_file.sheet_by_index(0)
         wr = csv.writer(response, delimiter="\t")
@@ -568,7 +567,7 @@ def export_chemicals(modeladmin, request, queryset):
             row_values = [str(i).replace("\n", "").replace('\r', '').replace("\t", "") for i in sheet.row_values(rownum)]
             wr.writerow(row_values)
     return response
-export_chemicals.short_description = "Export all chemicals"
+export_chemicals.short_description = "Export as chemical"
 
 def export_orders(modeladmin, request, queryset):
     """Export orders"""
@@ -714,6 +713,20 @@ class SearchFieldOptMsdsForm(StrField):
     def get_lookup_name(self):
         return 'msds_form__name'
 
+class SearchFieldHasGhsSymbol(BoolField):
+    """Boolean field to search for orders with GHS symbol"""
+
+    model = Order
+    name = 'has_ghs_symbol'
+
+    def get_lookup_name(self):
+        return 'ghs_symbols__code__isnull'
+
+    def get_operator(self, operator):
+
+        op, _ = super(BoolField, self).get_operator(operator)
+        return op, True
+
 class OrderQLSchema(DjangoQLSchema):
     '''Customize search functionality'''
     
@@ -731,8 +744,8 @@ class OrderQLSchema(DjangoQLSchema):
             SearchFieldOptPartDescription(), SearchFieldOptCostUnit(), 'status', 'urgent', 
             SearchFieldOptLocation(), 'comment', 'delivered_date', 'cas_number', 
             SearchFieldOptGhsSymbol(), SearchFieldOptSignalWord(), SearchFieldOptMsdsForm(), 
-            SearchFieldOptAzardousPregnancy(), 'created_date_time', 'last_changed_date_time', 
-            'created_by',]
+            SearchFieldOptAzardousPregnancy(), SearchFieldHasGhsSymbol(), 'created_date_time', 
+            'last_changed_date_time', 'created_by',]
         elif model == User:
             return [SearchFieldOptUsernameOrder(), SearchFieldOptLastnameOrder()]
         return super(OrderQLSchema, self).get_fields(model)
@@ -1128,19 +1141,6 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
             self.raw_id_fields = ["ghs_symbols", 'msds_form', 'signal_words']
 
         return super(OrderPage,self).change_view(request, object_id, extra_context=extra_context)
-    
-    def changelist_view(self, request, extra_context=None):
-        
-        # Set queryset of action export_chemicals to all orders
-
-        if 'action' in request.POST and request.POST['action'] == 'export_chemicals':
-            if not request.POST.getlist(admin.helpers.ACTION_CHECKBOX_NAME):
-                post = request.POST.copy()
-                for u in Order.objects.all():
-                    post.update({admin.helpers.ACTION_CHECKBOX_NAME: str(u.id)})
-                request._set_post(post)
-        
-        return super(OrderPage, self).changelist_view(request, extra_context=extra_context)
 
     def get_formsets_with_inlines(self, request, obj=None):
         

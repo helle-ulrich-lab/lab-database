@@ -16,6 +16,7 @@ from django.utils.translation import ugettext as _
 from django import forms
 from django.conf.urls import url
 from django.contrib.admin.widgets import AdminFileWidget
+from django.forms import ValidationError
 
 #################################################
 #          DJANGO PROJECT SETTINGS              #
@@ -796,6 +797,18 @@ class OrderForm(forms.ModelForm):
     class Meta:
         model = Order
         fields = "__all__"
+
+    def clean(self):
+        """
+        If a GHS symbol is provided, check that a CAS number is also supplied.
+        """
+
+        ghs_symbols = self.cleaned_data.get('ghs_symbols')
+        cas_number = self.cleaned_data.get('cas_number')
+        if ghs_symbols and not cas_number:
+            raise ValidationError({"cas_number": "If you provide a GHS symbol, you must also enter a CAS number."})
+        
+        return self.cleaned_data
 
 class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelAdmin):
     

@@ -16,6 +16,7 @@
       #changelist table thead th:first-child {width: inherit}
     </style>
   {% endif %}
+  <link rel="stylesheet" type="text/css" href="{% static "admin/css/spinner_loader.css" %}">
 {% endblock %}
 
 {% block extrahead %}
@@ -72,7 +73,7 @@
         {% block search %}{% search_form cl %}{% endblock %}
         {% block date_hierarchy %}{% if cl.date_hierarchy %}{% date_hierarchy cl %}{% endif %}{% endblock %}
 
-        <form id="changelist-form" method="post"{% if cl.formset and cl.formset.is_multipart %} enctype="multipart/form-data"{% endif %} novalidate>{% csrf_token %}
+        <form id="changelist-form" method="post"{% if cl.formset and cl.formset.is_multipart %} enctype="multipart/form-data"{% endif %} novalidate onsubmit="ShowLoading()">{% csrf_token %}
       {% if cl.formset %}
         <div>{{ cl.formset.management_form }}</div>
       {% endif %}
@@ -91,6 +92,7 @@
 {% block footer %}
   <div id="footer"></div>
   <script type="text/javascript" src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
+  <script type="text/javascript" src="{% static 'admin/js/admin/ShowLoading.js' %}"></script>
   <script type="text/javascript">
     
     $(document).ready(function() {

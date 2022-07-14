@@ -1,7 +1,7 @@
 from os import path
 from django.apps import AppConfig
 
-VERBOSE_APP_NAME = "Order management"
+VERBOSE_APP_NAME = "Ordering"
 
 
 def get_current_app_name(file):

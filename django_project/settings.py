@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'formz',
     'record_approval',
     'my_admin',
+    'mozilla_django_oidc',
     ]
 
 FORM_RENDERER = 'django.forms.renderers.TemplatesSetting' 
@@ -68,10 +69,10 @@ MIDDLEWARE = [
     'simple_history.middleware.HistoryRequestMiddleware',
 ]
 
-AUTHENTICATION_BACKENDS = (
-    'django.contrib.auth.backends.ModelBackend', # this is default
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
     'guardian.backends.ObjectPermissionBackend',
-)
+]
 
 ROOT_URLCONF = 'django_project.urls'
 
@@ -192,10 +193,18 @@ from django.conf.locale.en_GB import formats as en_gb_formats
 en_gb_formats.DATETIME_FORMAT = "j N Y, H:i:s"
 en_gb_formats.DATE_FORMAT = "j N Y"
 
-LOGIN_URL="/login/"
+LOGIN_URL = "/login/"
 
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
 X_FRAME_OPTIONS = 'SAMEORIGIN'
 
 OVE_URL = '/ove/'
+
+# OIDC settings
+LOGIN_REDIRECT_URL = "/login/"
+LOGOUT_REDIRECT_URL = "/logout/"
+if ALLOW_OIDC:
+    AUTHENTICATION_BACKENDS = ['user_management.oidc.MyOIDCAB'] + AUTHENTICATION_BACKENDS
+    MIDDLEWARE += ['mozilla_django_oidc.middleware.SessionRefresh']
+OIDC_RENEW_ID_TOKEN_EXPIRY_SECONDS = 86400 # 24 h

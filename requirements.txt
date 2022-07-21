@@ -4,7 +4,9 @@ attrs==21.2.0
 beautifulsoup4==4.8.1
 bleach==5.0.1
 certifi==2019.11.28
+cffi==1.15.0
 chardet==3.0.4
+cryptography==37.0.2
 defusedxml==0.6.0
 diff-match-patch==20181111
 Django==3.2.14
@@ -28,12 +30,14 @@ idna==2.8
 importlib-metadata==4.12.0
 isort==4.3.21
 jdcal==1.4.1
+josepy==1.13.0
 jsmin==2.2.2
 lazy-object-proxy==1.4.3
 lxml==4.4.1
 Markdown==3.3.7
 MarkupPy==1.14
 mccabe==0.6.1
+mozilla-django-oidc==2.0.0
 mysqlclient==1.4.6
 numpy==1.20.1
 odfpy==1.4.0
@@ -42,7 +46,9 @@ packaging==20.4
 Pillow==6.2.1
 ply==3.11
 psycopg2==2.9.3
+pycparser==2.21
 pylint==2.4.4
+pyOpenSSL==22.0.0
 pyparsing==2.4.7
 pytz==2019.3
 PyYAML==5.1.2

@@ -1,0 +1,23 @@
+/* Plain ripoff of https://stackoverflow.com/questions/2812770/add-centered-text-to-the-middle-of-a-horizontal-rule */
+
+.separator {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  padding-top: 2em;
+}
+
+.separator::before,
+.separator::after {
+  content: '';
+  flex: 1;
+  border-bottom: 2px solid var(--body-fg);
+}
+
+.separator:not(:empty)::before {
+  margin-right: .5em;
+}
+
+.separator:not(:empty)::after {
+  margin-left: .5em;
+}

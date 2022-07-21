@@ -15,6 +15,7 @@ from .models import LabUser
 
 class LabUserInline(admin.StackedInline):
     model = LabUser
+    fields = ('is_principal_investigator',)
 
 class LabUserAdmin(BaseUserAdmin):
     list_display = ('username', 'email', 'first_name', 'last_name', 'is_active', 'get_user_groups')

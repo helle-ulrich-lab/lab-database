@@ -21,8 +21,10 @@ from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse_lazy
+from django.urls import path
 
 from wiki.urls import get_pattern as get_wiki_pattern
+from django_project.private_settings import ALLOW_OIDC
 
 from my_admin.admin import my_admin_site
 
@@ -140,6 +142,9 @@ urlpatterns = [
     url(r'^password_change/$', check_guest(auth_views.PasswordChangeView.as_view(success_url=reverse_lazy('admin:password_change_done')))),
     url(r'', my_admin_site.urls),
     ]
+
+if ALLOW_OIDC:
+    urlpatterns = [path('oidc/', include('mozilla_django_oidc.urls'))] + urlpatterns
 
 if settings.DEBUG is True:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -39,7 +39,10 @@ class MyOIDCAB(OIDCAuthenticationBackend):
         # Otherwise try with zdv_upn
         if zdv_upn:
             try:
-                return self.UserModel.objects.filter(username=zdv_upn.split('@')[0].lower())
+                users = self.UserModel.objects.filter(username=zdv_upn.split('@')[0].lower())
+                if len(users) == 0:
+                    raise Exception
+                return users
             except:
                 #If everything fails, try the regular filter_users_by_claims
                 return super(MyOIDCAB, self).filter_users_by_claims(claims)

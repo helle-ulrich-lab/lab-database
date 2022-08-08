@@ -1,5 +1,5 @@
 {% extends "admin/base_site.html" %}
-{% load i18n static %}
+{% load i18n static settings_value %}
 
 {% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static "admin/css/login.css" %}">
 <link rel="stylesheet" href="{% static "admin/css/separator.css" %}">
@@ -45,10 +45,11 @@
 {% endif %}
 
 {% url 'oidc_authentication_init' as oidc_login_url %}
+{% settings_value "OIDC_PROVIDER_NAME" as oidc_provider_name %}
 {% if oidc_login_url %}
 <form>
   <div class="submit-row">
-  <input type="button" onclick='window.location.href="{{oidc_login_url}}";' value="Log in with OpenID"/>
+  <input type="button" onclick='window.location.href="{{oidc_login_url}}";' value="Log in with{% if oidc_provider_name %} your {{oidc_provider_name}} account {% else %} OpenID {% endif %}"/>
   </div>
 </form>
 <div class="separator">or use your personal account below</div>

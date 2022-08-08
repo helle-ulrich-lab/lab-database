@@ -1,78 +1,83 @@
 #################################################
-#    DJANGO 'CORE' FUNCTIONALITIES IMPORTS      #
+#         DJANGO 'CORE' FUNCTIONALITIES         #
 #################################################
 
-from django.contrib import admin
-from django.core.mail import send_mail
-from django.utils import timezone
-from django.utils.safestring import mark_safe
-from django.contrib.auth.models import User
-from django.contrib import messages
-from django.db import models
-from django.http import HttpResponse
-from django.db.models.functions import Length
-from django.core.exceptions import PermissionDenied
-from django.utils.translation import ugettext as _
 from django import forms
 from django.conf.urls import url
+from django.contrib import admin, messages
+from django.contrib.admin import helpers
 from django.contrib.admin.widgets import AdminFileWidget
+from django.contrib.auth.models import User
+from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
+from django.core.mail import send_mail
+from django.db import models
+from django.db.models import ForeignKey, fields as df
+from django.db.transaction import atomic
 from django.forms import ValidationError
+from django.forms.models import ModelMultipleChoiceField, modelform_factory
+from django.http import HttpResponse, HttpResponseRedirect
+from django.shortcuts import render
+from django.utils import timezone
+from django.utils.encoding import smart_str
+from django.utils.safestring import mark_safe
+from django.utils.translation import ugettext as _
+
+#################################################
+#                DJANGO MODELS                  #
+#################################################
+
+from order_management.models import OrderExtraDoc
+from order_management.models import Order
+from order_management.models import Location
+from order_management.models import CostUnit
+from order_management.models import MsdsForm
+from order_management.models import GhsSymbol
+from order_management.models import SignalWord
+from order_management.models import GhsSymbol
 
 #################################################
 #          DJANGO PROJECT SETTINGS              #
 #################################################
 
-from django_project.private_settings import SITE_TITLE
-from django_project.private_settings import SERVER_EMAIL_ADDRESS
+from django_project.settings import TIME_ZONE
+from django_project.private_settings import SITE_TITLE, SERVER_EMAIL_ADDRESS, ALLOWED_HOSTS
 from my_admin.models import GeneralSetting
 
-from django_project.settings import TIME_ZONE
-from django_project.private_settings import ALLOWED_HOSTS
-
 #################################################
-#        ADDED FUNCTIONALITIES IMPORTS          #
+#     DJANGO ADDED FUNCTIONALITIES IMPORTS      #
 #################################################
 
-# Advanced search functionalities from DjangoQL
+# DjangoQL
 from djangoql.admin import DjangoQLSearchMixin
 from djangoql.schema import DjangoQLSchema, StrField, BoolField
 from collection_management.admin import SearchFieldOptUsername, SearchFieldOptLastname
 
-# Object history tracking from django-simple-history
+# django-simple-history
 from collection_management.admin import SimpleHistoryWithSummaryAdmin
 
-# Import/Export functionalities from django-import-export
-from import_export.admin import ExportActionModelAdmin
+# django-import-export
+from import_export import resources
 from import_export.fields import Field
 
-# Background tasks
-from background_task import background
-
-# Mass update
+# adminactions (for mass update functionality)
 from adminactions.mass_update import MassUpdateForm, get_permission_codename,\
     ActionInterrupted, adminaction_requested, adminaction_start, adminaction_end
-
-from jsmin import jsmin
-import xlrd
-import csv
-import requests
-import pytz
-import datetime
-import time
-import inspect
-from ast import literal_eval
 
 #################################################
 #                OTHER IMPORTS                  #
 #################################################
 
-from .models import OrderExtraDoc
-from .models import Order
-from .models import Location
-from .models import CostUnit
-from .models import MsdsForm
-from .models import GhsSymbol
-from .models import SignalWord
+import csv
+import requests
+import pytz
+import datetime
+import json
+from time import strftime
+from xlrd import open_workbook
+from inspect import cleandoc
+from ast import literal_eval
+from collections import defaultdict
+from os.path import basename
 
 #################################################
 #                ORDER ADMIN                    #
@@ -90,15 +95,12 @@ class OrderAdmin(admin.AdminSite):
     def my_orders_redirect_view(self, request):
         """ Redirect a user to its My Orders page """
 
-        from django.http import HttpResponseRedirect
 
         return HttpResponseRedirect('/order_management/order/?q-l=on&q=created_by.username+%3D+"{}"'.format(request.user.username))
 
     def autocomplete_order_view(self, request, *args, **kwargs):
         """Given an order's product name or number, returns a json list of possible
         hits to be used for autocompletion"""
-
-        import json
 
         # Get field and query from url
         query_field_name = kwargs['field']
@@ -152,20 +154,6 @@ def mass_update(modeladmin, request, queryset):
         mass update queryset
         From adminactions.mass_update. Modified to allow specifiying a custom form
     """
-
-    import json
-    from collections import defaultdict
-
-    from django.contrib.admin import helpers
-    from django.core.exceptions import ObjectDoesNotExist
-    from django.db.models import ForeignKey, fields as df
-    from django.db.transaction import atomic
-    from django.forms.models import (InlineForeignKeyField,
-                                    ModelMultipleChoiceField, construct_instance,
-                                    modelform_factory, )
-    from django.http import HttpResponseRedirect
-    from django.shortcuts import render
-    from django.utils.encoding import smart_str
 
     def not_required(field, **kwargs):
         """force all fields as not required and return modeladmin field"""
@@ -441,8 +429,6 @@ class AddOrderExtraDocInline(admin.TabularInline):
 #         ORDER IMPORT/EXPORT RESOURCE          #
 #################################################
 
-from import_export import resources
-
 class BaseOrderResource(resources.ModelResource):
     """Defines custom fields"""
 
@@ -523,7 +509,7 @@ def change_order_status_to_delivered(modeladmin, request, queryset):
 
                     """.format(order.created_by.first_name, order.pk, order.part_description, SITE_TITLE)
                     
-                    message = inspect.cleandoc(message)
+                    message = cleandoc(message)
                     send_mail('Delivery notification', 
                     message, 
                     SERVER_EMAIL_ADDRESS,
@@ -556,12 +542,12 @@ def export_chemicals(modeladmin, request, queryset):
 
     if file_format == 'xlsx':
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.xlsx'.format('chemical', time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
+        response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.xlsx'.format('chemical',strftime("%Y%m%d"),strftime("%H%M%S"))
         response.write(export_data.xlsx)
     elif file_format == 'tsv':
         response = HttpResponse(content_type='text/tab-separated-values')
-        response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.tsv'.format('chemical', time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
-        xlsx_file = xlrd.open_workbook(file_contents=export_data.xlsx)
+        response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.tsv'.format('chemical',strftime("%Y%m%d"),strftime("%H%M%S"))
+        xlsx_file = open_workbook(file_contents=export_data.xlsx)
         sheet = xlsx_file.sheet_by_index(0)
         wr = csv.writer(response, delimiter="\t")
         for rownum in range(sheet.nrows):
@@ -579,12 +565,12 @@ def export_orders(modeladmin, request, queryset):
 
     if file_format == 'xlsx':
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.xlsx'.format(queryset.model.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
+        response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.xlsx'.format(queryset.model.__name__,strftime("%Y%m%d"),strftime("%H%M%S"))
         response.write(export_data.xlsx)
     elif file_format == 'tsv':
         response = HttpResponse(content_type='text/tab-separated-values')
-        response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.tsv'.format(queryset.model.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
-        xlsx_file = xlrd.open_workbook(file_contents=export_data.xlsx)
+        response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.tsv'.format(queryset.model.__name__,strftime("%Y%m%d"),strftime("%H%M%S"))
+        xlsx_file = open_workbook(file_contents=export_data.xlsx)
         sheet = xlsx_file.sheet_by_index(0)
         wr = csv.writer(response, delimiter="\t")
         for rownum in range(sheet.nrows):
@@ -768,8 +754,6 @@ class MyMassUpdateOrderForm(MassUpdateForm):
     def clean__clean(self):
         return False
 
-from .models import GhsSymbol
-
 class GhsImageWidget(AdminFileWidget):
     """
     A custom widget that displays GHS pictograms in a change_view
@@ -938,7 +922,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
                     The {}
 
                     """.format(request.user.first_name, request.user.last_name, obj.supplier, obj.supplier_part_no, obj.part_description, SITE_TITLE)
-                    message = inspect.cleandoc(message)
+                    message = cleandoc(message)
                 
                     try:
                         
@@ -993,7 +977,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
 
                                     """.format(obj.created_by.first_name, obj.pk, obj.part_description, SITE_TITLE)
                                     
-                                    message = inspect.cleandoc(message)
+                                    message = cleandoc(message)
                                     try:
                                         send_mail('Delivery notification', 
                                         message, 
@@ -1331,7 +1315,6 @@ class MsdsFormPage(DjangoQLSearchMixin, admin.ModelAdmin):
 
     def pretty_file_name(self, instance):
         '''Custom file name field for changelist_view'''
-        from os.path import basename
         short_name = basename(instance.name.name).split('.')
         short_name = ".".join(short_name[:-1]).replace("_", " ")
         return(short_name)

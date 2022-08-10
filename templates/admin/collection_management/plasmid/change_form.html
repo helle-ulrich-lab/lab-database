@@ -108,7 +108,7 @@
       const MagnificiFrameClassIds = ['magnific-popup-iframe-plasmidmap'];
       const MagnificImgClassIds = ['magnific-popup-img-plasmidmap'];
       {% if original.map %} const oveUrls = {map: "{{original.get_ove_url_map}}"}; {% else %} const oveUrls = {}; {% endif %}
-      {% if original.map_gbk %} const oveUrls[] = {map_gbk: "{{original.get_ove_url_map_gbk}}"}; {% endif %}
+      {% if original.map_gbk %} const oveUrls['map_gbk'] = {{original.get_ove_url_map_gbk}}; {% endif %}
     </script>
     <script type="text/javascript" src="{% static 'admin/js/admin/MagnificPopUpiFrame.js' %}"></script>
     <script type="text/javascript" src="{% static 'admin/js/admin/MagnificPopUpImg.js' %}"></script>

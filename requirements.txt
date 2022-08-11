@@ -9,7 +9,7 @@ chardet==3.0.4
 cryptography==37.0.2
 defusedxml==0.7.1
 diff-match-patch==20181111
-Django==3.2.14
+Django==3.2.15
 django-adminactions==1.9
 django-background-tasks==1.2.5
 django-classy-tags==2.0.0

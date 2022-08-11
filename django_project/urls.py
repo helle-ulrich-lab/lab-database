@@ -77,9 +77,9 @@ def wiki_check_login_guest(f):
                 from django.urls import reverse
                 from django.contrib import messages
                 
-                messages.error(request, 'Guests are not allowed to view our Wiki, you have been automatically redirected to this page')
+                messages.error(request, 'Guests are not allowed to view our Wiki, you have been automatically redirected to the home page.')
                 
-                return HttpResponseRedirect(reverse('admin:app_list', kwargs={'app_label': 'collection_management'}))
+                return HttpResponseRedirect('/')
             
             else:
                 
@@ -120,9 +120,9 @@ def check_guest(f):
             from django.urls import reverse
             from django.contrib import messages
             
-            messages.error(request, 'Guests are not allowed to change their password, you have been automatically redirected to this page')
+            messages.error(request, 'Guests are not allowed to change their password, you have been automatically redirected to the home page.')
             
-            return HttpResponseRedirect(reverse('admin:app_list', kwargs={'app_label': 'collection_management'}))
+            return HttpResponseRedirect('/')
         else:
 
             return f(request, **kwargs)

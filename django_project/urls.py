@@ -136,7 +136,7 @@ def check_guest(f):
 from wiki.plugins.attachments.views import AttachmentDownloadView
 
 urlpatterns = [
-    path('wiki/(?P<article_id>[0-9]+)/plugin/attachments/download/(?P<attachment_id>[0-9]+)/', login_required(AttachmentDownloadView.as_view())),
+    url(r'^wiki/(?P<article_id>[0-9]+)/plugin/attachments/download/(?P<attachment_id>[0-9]+)/$', login_required(AttachmentDownloadView.as_view())),
     path('notifications/', include('django_nyt.urls')),
     path('wiki/', decorated_includes(wiki_check_login_guest, get_wiki_pattern())),
     path('password_change/', check_guest(auth_views.PasswordChangeView.as_view(success_url=reverse_lazy('admin:password_change_done')))),

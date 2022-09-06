@@ -336,7 +336,7 @@ class RecordToBeApprovedPage(admin.ModelAdmin):
         record_name = str(instance.content_object)
         record_name =  record_name[:50] + "..." if len(record_name) > 50 else record_name 
        
-        return mark_safe('<a class="magnific-popup-iframe-original-object" href="{}?_to_field=id&_popup=1" target="_blank">{}</a>'.format(url, record_name))
+        return mark_safe('<a class="magnific-popup-iframe-original-object" href="{}?_to_field=id&_popup=1&_approval=1" target="_blank">{}</a>'.format(url, record_name))
 
     record_link.short_description = 'Record'
 

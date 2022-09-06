@@ -958,7 +958,7 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
                     'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',)
                 }),
                 ('FormZ', {
-                    'classes': ('collapse',),
+                    'classes': ('collapse',) if not request.GET.get('_approval', '') else tuple(),
                     'fields': ('formz_projects', 'formz_risk_group', 'formz_gentech_methods', 'formz_elements','destroyed_date')
                 }),
                 )
@@ -971,7 +971,7 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
                     'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by')
                 }),
                 ('FormZ', {
-                    'classes': ('collapse',),
+                    'classes': ('collapse',) if not request.GET.get('_approval', '') else tuple(),
                     'fields': ('formz_projects', 'formz_risk_group', 'formz_gentech_methods', 'formz_elements', 'destroyed_date')
                 }),
                 )
@@ -1680,7 +1680,7 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
                         'last_changed_approval_by_pi', 'created_by', )
                 }),
                 ('FormZ', {
-                    'classes': ('collapse',),
+                    'classes': ('collapse',) if not request.GET.get('_approval', '') else tuple(),
                     'fields': ('formz_projects', 'formz_risk_group', 'vector_zkbs', 'formz_gentech_methods', 'formz_elements', 'formz_ecoli_strains', 'destroyed_date',)
                 }),
                 )
@@ -1692,7 +1692,7 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
                         'last_changed_approval_by_pi', 'created_by', )
                 }),
                 ('FormZ', {
-                    'classes': ('collapse',),
+                    'classes': ('collapse',) if not request.GET.get('_approval', '') else tuple(),
                     'fields': ('formz_projects', 'formz_risk_group', 'vector_zkbs', 'formz_gentech_methods', 'formz_elements', 'formz_ecoli_strains', 'destroyed_date',)
                 }),
                 )
@@ -2501,7 +2501,7 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admi
                 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi','created_by',)
             }),
             ('FormZ', {
-                'classes': ('collapse',),
+                'classes': ('collapse',) if not request.GET.get('_approval', '') else tuple(),
                 'fields': ('formz_projects', 'formz_risk_group', 'formz_gentech_methods', 'formz_elements', 'destroyed_date')
             }),
             )
@@ -2743,7 +2743,7 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.
                 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',)
             }),
             ('FormZ', {
-                'classes': ('collapse',),
+                'classes': ('collapse',) if not request.GET.get('_approval', '') else tuple(),
                 'fields': ('formz_projects', 'formz_risk_group', 'formz_elements', 'destroyed_date')
             }),
             )
@@ -3201,7 +3201,7 @@ class CellLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGua
                 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',)
             }),
             ('FormZ', {
-                'classes': ('collapse',),
+                'classes': ('collapse',) if not request.GET.get('_approval', '') else tuple(),
                 'fields': ('formz_projects', 'formz_risk_group','zkbs_cell_line', 'formz_gentech_methods', 'formz_elements', 'destroyed_date',)
             }),
             )

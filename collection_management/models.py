@@ -196,6 +196,9 @@ class SaCerevisiaeStrainEpisomalPlasmid (models.Model):
         
         super(SaCerevisiaeStrainEpisomalPlasmid, self).save(force_insert, force_update, using, update_fields)
 
+    def is_highlighted(self):
+        return self.present_in_stocked_strain
+
 #################################################
 #                    PLASMID                    #
 #################################################
@@ -537,6 +540,9 @@ class ScPombeStrainEpisomalPlasmid (models.Model):
         
         super(ScPombeStrainEpisomalPlasmid, self).save(force_insert, force_update, using, update_fields)
 
+    def is_highlighted(self):
+        return self.present_in_stocked_strain
+
 #################################################
 #                E. COLI STRAIN                 #
 #################################################
@@ -719,6 +725,9 @@ class CellLineEpisomalPlasmid (models.Model):
                 self.destroyed_date = self.created_date + timedelta(days=random.randint(7,28))
         
         super(CellLineEpisomalPlasmid, self).save(force_insert, force_update, using, update_fields)
+    
+    def is_highlighted(self):
+        return self.s2_work_episomal_plasmid
 
 ################################################
 #               CELL LINE DOC                  #

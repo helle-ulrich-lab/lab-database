@@ -681,7 +681,7 @@ class SaCerevisiaeStrainEpisomalPlasmidInline(admin.TabularInline):
     
     autocomplete_fields = ['plasmid', 'formz_projects']
     model = SaCerevisiaeStrainEpisomalPlasmid
-    verbose_name_plural = "Episomal plasmids"
+    verbose_name_plural = mark_safe('Episomal plasmids <span style="text-transform:lowercase;">(highlighted in <span style="color:var(--accent)">yellow</span>, if present in the stocked strain</span>')
     verbose_name = 'Episomal Plasmid'
     classes = ['collapse']
     ordering = ("-present_in_stocked_strain",'id',)
@@ -2253,7 +2253,7 @@ class ScPombeStrainEpisomalPlasmidInline(admin.TabularInline):
     
     autocomplete_fields = ['plasmid', 'formz_projects']
     model = ScPombeStrainEpisomalPlasmid
-    verbose_name_plural = "Episomal plasmids"
+    verbose_name_plural = mark_safe('Episomal plasmids <span style="text-transform:lowercase;">(highlighted in <span style="color:var(--accent)">yellow</span>, if present in the stocked strain</span>')
     verbose_name = 'Episomal Plasmid'
     classes = ['collapse']
     ordering = ("-present_in_stocked_strain",'id',)
@@ -2976,7 +2976,7 @@ class CellLineEpisomalPlasmidInline(admin.TabularInline):
     
     autocomplete_fields = ['plasmid', 'formz_projects']
     model = CellLineEpisomalPlasmid
-    verbose_name_plural = "Transiently transfected plasmids"
+    verbose_name_plural = mark_safe('Transiently transfected plasmids <span style="text-transform:lowercase;">(virus packaging plasmids are highlighted in <span style="color:var(--accent)">yellow</span>)</span>')
     verbose_name = 'Episomal Plasmid'
     classes = ['collapse']
     extra = 0

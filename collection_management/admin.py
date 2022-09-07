@@ -42,6 +42,7 @@ from djangoql.admin import DjangoQLSearchMixin
 from djangoql.schema import DjangoQLSchema
 from djangoql.schema import StrField
 from djangoql.schema import IntField
+from djangoql.schema import DateTimeField
 
 # Import/Export functionalities from django-import-export
 from import_export import resources
@@ -422,6 +423,20 @@ class FieldApplication(StrField):
     def get_lookup_name(self):
         return 'a_pplication'
 
+class FieldCreated(DateTimeField):
+
+    name = 'created_timestamp'
+
+    def get_lookup_name(self):
+        return 'created_date_time'
+
+class FieldLastChanged(DateTimeField):
+
+    name = 'last_changed_timestamp'
+
+    def get_lookup_name(self):
+        return 'last_changed_date_time'
+
 #################################################
 #          DOWNLOAD FORMBLATT Z ACTION          #
 #################################################
@@ -595,7 +610,8 @@ class SaCerevisiaeStrainQLSchema(DjangoQLSchema):
         if model == SaCerevisiaeStrain:
             return ['id', 'name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', FieldParent1(), FieldParent2(), 'parental_strain',
                 'construction', 'modification', FieldIntegratedPlasmidM2M(), FieldCassettePlasmidM2M(), FieldEpisomalPlasmidM2M(), 'plasmids', 'selection', 
-                'phenotype', 'background', 'received_from', FieldUse(), 'note', 'reference', 'created_by', FieldFormZProject(), FieldEpisomalPlasmidFormZProjectSaCerStrain()]
+                'phenotype', 'background', 'received_from', FieldUse(), 'note', 'reference', 'created_by', FieldCreated(), FieldLastChanged(),
+                FieldFormZProject(), FieldEpisomalPlasmidFormZProjectSaCerStrain()]
         elif model == User:
             return [SearchFieldOptUsernameSaCerStrain(), SearchFieldOptLastnameSaCerStrain()]
         return super(SaCerevisiaeStrainQLSchema, self).get_fields(model)
@@ -1053,7 +1069,7 @@ class PlasmidQLSchema(DjangoQLSchema):
         
         if model == Plasmid:
             return ['id', 'name', 'other_name', 'parent_vector', 'selection', FieldUse(), 'construction_feature', 'received_from', 'note', 
-                'reference', 'created_by', FieldFormZBaseElement(), FieldFormZProject()]
+                'reference', 'created_by', FieldCreated(), FieldLastChanged(), FieldFormZBaseElement(), FieldFormZProject()]
         elif model == User:
             return [SearchFieldOptUsernamePlasmid(), SearchFieldOptLastnamePlasmid()]
         return super(PlasmidQLSchema, self).get_fields(model)
@@ -1922,7 +1938,8 @@ class OligoQLSchema(DjangoQLSchema):
         '''Define fields that can be searched'''
         
         if model == Oligo:
-            return ['id', 'name','sequence', FieldUse(), 'gene', 'restriction_site', 'description', 'comment', 'created_by',]
+            return ['id', 'name','sequence', FieldUse(), 'gene', 'restriction_site', 'description', 'comment', 'created_by',
+                    FieldCreated(), FieldLastChanged(),]
         elif model == User:
             return [SearchFieldOptUsernameOligo(), SearchFieldOptLastnameOligo()]
         return super(OligoQLSchema, self).get_fields(model)
@@ -2171,7 +2188,8 @@ class ScPombeStrainQLSchema(DjangoQLSchema):
         if model == ScPombeStrain:
             return ['id', 'box_number', FieldParent1(), FieldParent2(), 'parental_strain', 'mating_type', 
             'auxotrophic_marker', 'name', FieldIntegratedPlasmidM2M(), FieldCassettePlasmidM2M(), FieldEpisomalPlasmidM2M(),
-            'phenotype', 'received_from', 'comment', 'created_by', FieldFormZProject(), FieldEpisomalPlasmidFormZProjectScPom()]
+            'phenotype', 'received_from', 'comment', 'created_by', FieldCreated(), FieldLastChanged(),
+            FieldFormZProject(), FieldEpisomalPlasmidFormZProjectScPom()]
         elif model == User:
             return [SearchFieldOptUsernameScPom(), SearchFieldOptLastnameScPom()]
         return super(ScPombeStrainQLSchema, self).get_fields(model)
@@ -2550,7 +2568,7 @@ class EColiStrainQLSchema(DjangoQLSchema):
         
         if model == EColiStrain:
             return ['id', 'name', 'resistance', 'genotype', 'supplier', FieldUse(), 'purpose', 
-            'note', 'created_by', FieldFormZProject(), ]
+            'note', 'created_by', FieldCreated(), FieldLastChanged(), FieldFormZProject(), ]
         elif model == User:
             return [SearchFieldOptUsernameEColi(), SearchFieldOptLastnameEColi()]
         return super(EColiStrainQLSchema, self).get_fields(model)
@@ -2909,7 +2927,7 @@ class CellLineQLSchema(DjangoQLSchema):
         if model == CellLine:
             return ['id', 'name', 'box_name', 'alternative_name', FieldParentalLine(), 'organism', 'cell_type_tissue', 'culture_type', 
             'growth_condition','freezing_medium', 'received_from', FieldIntegratedPlasmidM2M(), FieldEpisomalPlasmidM2M(),'description_comment', 
-            'created_by', FieldFormZProject(), FieldEpisomalPlasmidFormZProjectCellLine()]
+            'created_by', FieldCreated(), FieldLastChanged(), FieldFormZProject(), FieldEpisomalPlasmidFormZProjectCellLine()]
         elif model == User:
             return [SearchFieldOptUsernameCellLine(), SearchFieldOptLastnameCellLine()]
         return super(CellLineQLSchema, self).get_fields(model)

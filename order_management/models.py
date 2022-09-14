@@ -17,6 +17,7 @@ import os
 import time
 from record_approval.models import RecordToBeApproved
 from django_project.private_settings import LAB_ABBREVIATION_FOR_FILES
+from os.path import basename
 
 #################################################
 #                CUSTOM CLASSES                 #
@@ -95,6 +96,7 @@ class Location(models.Model):
 
 class MsdsForm(models.Model):
     
+    label = models.CharField("label", max_length=255, blank=True)
     name = models.FileField("file name", help_text = 'max. 2 MB', upload_to="order_management/msdsform/", unique=True, blank=False)
     
     created_date_time = models.DateTimeField("created", auto_now_add=True, null=True)
@@ -104,7 +106,7 @@ class MsdsForm(models.Model):
         verbose_name = 'MSDS form'
     
     def __str__(self):
-        return os.path.splitext(os.path.basename(str(self.name)))[0]
+        return self.file_name_description
 
     def clean(self):
 
@@ -125,6 +127,16 @@ class MsdsForm(models.Model):
 
         if len(errors) > 0:
             raise ValidationError(errors)
+
+    @property
+    def file_name_description(self):
+        short_name = os.path.basename(self.label).split('.')
+        short_name = ".".join(short_name[:-1]).replace("_", " ")
+        return(short_name)
+
+    @property
+    def download_file_name(self):
+        return self.label
 
 #################################################
 #                 ORDER MODEL                   #

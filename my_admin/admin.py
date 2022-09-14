@@ -147,20 +147,22 @@ class MyAdminSite(OrderAdmin, FormZAdmin, admin.AdminSite):
             response["Content-Type"] = mimetype
             if encoding:
                 response["Content-Encoding"] = encoding
+
+            download_file_name = os.path.basename(url_path)
             
             # Get app and model names
             try:
-                #app_name, model_name, file_type, file_name = url_path.split('/')
                 url_path_split = url_path.split('/')
                 app_name = url_path_split[0]
                 model_name = url_path_split[1]
+                file_name, file_ext = os.path.splitext(url_path_split[-1]) 
 
                 # Generate name for download file
                 if app_name == 'collection_management':
 
                     # Get object 
-                    file_name, file_ext = os.path.splitext(url_path_split[-1]) 
                     file_prefix = file_name.split('_')[0]
+
                     if model_name == 'celllinedoc':
                         obj_id = int(file_name.split('_')[-1])
                     else:
@@ -173,11 +175,14 @@ class MyAdminSite(OrderAdmin, FormZAdmin, admin.AdminSite):
                         obj_name = obj.name
 
                     download_file_name = "{} - {}{}".format(file_prefix, obj_name, file_ext).replace(',','')
-                else:
-                    download_file_name = os.path.basename(url_path)
+
+                if model_name == 'msdsform':
+                    obj_id = int(re.findall('\d+(?=_)', file_name + '_')[0])
+                    obj = apps.get_model(app_name, model_name).objects.get(id=obj_id)  
+                    download_file_name = obj.download_file_name
             
             except:
-                download_file_name = os.path.basename(url_path)
+                pass
 
             # Needed for file names that include special, non ascii, characters 
             file_expr = "filename*=utf-8''{}".format(urllib.parse.quote(download_file_name))

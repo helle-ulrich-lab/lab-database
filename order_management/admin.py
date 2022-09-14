@@ -21,6 +21,8 @@ from django.utils import timezone
 from django.utils.encoding import smart_str
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
+from django_project.private_settings import LAB_ABBREVIATION_FOR_FILES
+from django_project.settings import MEDIA_ROOT
 
 #################################################
 #                DJANGO MODELS                  #
@@ -77,7 +79,8 @@ from xlrd import open_workbook
 from inspect import cleandoc
 from ast import literal_eval
 from collections import defaultdict
-from os.path import basename
+import time
+import os
 
 #################################################
 #                ORDER ADMIN                    #
@@ -1285,41 +1288,70 @@ class MsdsFormQLSchema(DjangoQLSchema):
         return super(MsdsFormQLSchema, self).get_fields(model)
 
 class MsdsFormForm(forms.ModelForm):
-    def clean_name(self):
+
+    class Meta:
+        model = MsdsForm
+        fields = '__all__'
+
+    def clean(self):
         
         # Check if the name of a MSDS form is unique before saving
-        
-        qs = MsdsForm.objects.filter(name__icontains=self.cleaned_data["name"].name)
+        qs = MsdsForm.objects.filter(label=self.cleaned_data["name"].name)
         if qs.exists():
-            raise forms.ValidationError('A form with this name already exists.')
-        else:
-            return self.cleaned_data["name"]
+            self.add_error('name', "A form with this file name already exists.")
+        return self.cleaned_data
 
 class MsdsFormPage(DjangoQLSearchMixin, admin.ModelAdmin):
     
     list_display = ('id', 'pretty_file_name', 'view_file_link')
     list_per_page = 25
-    ordering = ['name']
+    ordering = ['label']
     djangoql_schema = MsdsFormQLSchema
     djangoql_completion_enabled_by_default = False
-    search_fields = ['id', 'name']
+    search_fields = ['id', 'label']
     form = MsdsFormForm
+
+    def save_model(self, request, obj, form, change):
+
+        rename = False
+
+        if obj.pk == None:
+            rename = True
+            obj.label = os.path.basename(obj.name.name)
+            obj.save()
+
+        saved_obj = MsdsForm.objects.get(pk=obj.pk)
+
+        if rename or obj.name.name != saved_obj.name.name:
+
+            obj.save()
+
+            obj.label = os.path.basename(obj.name.name)
+
+            # Rename file
+            new_file_name = os.path.join('order_management/msdsform/',
+                                         f'msds{LAB_ABBREVIATION_FOR_FILES}{obj.id}_' \
+                                         f'{time.strftime("%Y%m%d")}_{time.strftime("%H%M%S")}.' \
+                                         f'{obj.name.name.split(".")[-1].lower()}') 
+            new_file_path = os.path.join(MEDIA_ROOT, new_file_name)
+            os.rename(obj.name.path, new_file_path)
+            obj.name.name = new_file_name
+
+        return super(MsdsFormPage,self).save_model(request, obj, form, change)
     
     def add_view(self,request,extra_context=None):
         self.fields = (['name',])
         return super(MsdsFormPage,self).add_view(request)
 
     def change_view(self,request,object_id,extra_context=None):
-        self.fields = (['name',])
+        self.fields = (['name', 'label'])
         return super(MsdsFormPage,self).change_view(request,object_id)
 
     def pretty_file_name(self, instance):
         '''Custom file name field for changelist_view'''
-        short_name = basename(instance.name.name).split('.')
-        short_name = ".".join(short_name[:-1]).replace("_", " ")
-        return(short_name)
+        return(instance.file_name_description)
     pretty_file_name.short_description = "File name"
-    pretty_file_name.admin_order_field = 'name'
+    pretty_file_name.admin_order_field = 'label'
 
     def view_file_link(self, instance):
         '''Custom field which shows the url of a MSDS form as a HTML <a> tag with 

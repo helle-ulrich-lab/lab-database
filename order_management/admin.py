@@ -1347,6 +1347,12 @@ class MsdsFormPage(DjangoQLSearchMixin, admin.ModelAdmin):
         self.fields = (['name', 'label'])
         return super(MsdsFormPage,self).change_view(request,object_id)
 
+    def get_readonly_fields(self, request, obj):
+        if obj.pk:
+            return ['label',]
+        else:
+            return []
+
     def pretty_file_name(self, instance):
         '''Custom file name field for changelist_view'''
         return(instance.file_name_description)

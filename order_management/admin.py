@@ -1348,7 +1348,7 @@ class MsdsFormPage(DjangoQLSearchMixin, admin.ModelAdmin):
         return super(MsdsFormPage,self).change_view(request,object_id)
 
     def get_readonly_fields(self, request, obj):
-        if obj.pk:
+        if obj:
             return ['label',]
         else:
             return []

@@ -774,6 +774,7 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
                 # create an approval record
                 if request.user.labuser.is_principal_investigator and request.user.id in obj.formz_projects.all().values_list('project_leader__id', flat=True):
                     obj.last_changed_approval_by_pi = True
+                    if not obj.created_approval_by_pi: obj.created_approval_by_pi = True # Set created_approval_by_pi to True, should it still be None or False
                     obj.approval_user = request.user
                     obj.approval_by_pi_date_time = timezone.now()
                     obj.save()
@@ -1237,6 +1238,7 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
             # create an approval record
             if request.user.labuser.is_principal_investigator and request.user.id in obj.formz_projects.all().values_list('project_leader__id', flat=True):
                 obj.last_changed_approval_by_pi = True
+                if not obj.created_approval_by_pi: obj.created_approval_by_pi = True # Set created_approval_by_pi to True, should it still be None or False
                 obj.approval_user = request.user
                 obj.approval_by_pi_date_time = timezone.now()
                 if obj.approval.all().exists():
@@ -2040,6 +2042,7 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
                 # create an approval record
                 if request.user.labuser.is_principal_investigator:
                     obj.last_changed_approval_by_pi = True
+                    if not obj.created_approval_by_pi: obj.created_approval_by_pi = True # Set created_approval_by_pi to True, should it still be None or False
                     obj.approval_by_pi_date_time = timezone.now()
                     obj.save()
 
@@ -2345,6 +2348,7 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admi
                 # create an approval record
                 if request.user.labuser.is_principal_investigator and request.user.id in obj.formz_projects.all().values_list('project_leader__id', flat=True):
                     obj.last_changed_approval_by_pi = True
+                    if not obj.created_approval_by_pi: obj.created_approval_by_pi = True # Set created_approval_by_pi to True, should it still be None or False
                     obj.approval_user = request.user
                     obj.approval_by_pi_date_time = timezone.now()
                     obj.save()
@@ -2659,6 +2663,7 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.
                 # create an approval record
                 if request.user.labuser.is_principal_investigator and request.user.id in obj.formz_projects.all().values_list('project_leader__id', flat=True):
                     obj.last_changed_approval_by_pi = True
+                    if not obj.created_approval_by_pi: obj.created_approval_by_pi = True # Set created_approval_by_pi to True, should it still be None or False
                     obj.approval_user = request.user
                     obj.approval_by_pi_date_time = timezone.now()
                     obj.save()
@@ -3064,6 +3069,7 @@ class CellLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGua
             # create an approval record
             if request.user.labuser.is_principal_investigator and request.user.id in obj.formz_projects.all().values_list('project_leader__id', flat=True):
                 obj.last_changed_approval_by_pi = True
+                if not obj.created_approval_by_pi: obj.created_approval_by_pi = True # Set created_approval_by_pi to True, should it still be None or False
                 obj.approval_user = request.user
                 obj.approval_by_pi_date_time = timezone.now()
                 obj.save()

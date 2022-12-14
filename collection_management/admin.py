@@ -29,6 +29,7 @@ from django.utils.encoding import force_text
 from django.utils.text import capfirst
 from django.utils import timezone
 from django.db.models import Q
+from django.contrib.admin.widgets import AdminFileWidget
 
 from django.contrib.admin.options import IS_POPUP_VAR
 from django.contrib.admin.options import TO_FIELD_VAR
@@ -1133,11 +1134,22 @@ def export_plasmid(modeladmin, request, queryset):
     return response
 export_plasmid.short_description = "Export selected plasmids"
 
+class PlasmidMapFileWidget(AdminFileWidget):
+    """
+    A custom widget to add an extra link for a plasmid map field that points to its OVE preview
+    """
+
+    template_name = 'admin/widgets/clearable_file_input_with_plasmid_map_preview.html'
+
 class PlasmidForm(forms.ModelForm):
-    
-    class Meta:
-        model = Plasmid
-        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+            
+        super(PlasmidForm, self).__init__(*args, **kwargs)
+
+        if self.instance:
+            self.fields['map'].widget = PlasmidMapFileWidget(attrs={'map_preview_url': self.instance.get_ove_url_map()})
+            self.fields['map_gbk'].widget = PlasmidMapFileWidget(attrs={'map_preview_url': self.instance.get_ove_url_map_gbk()})
 
     def clean_name(self):
         """Check if name is unique before saving"""
@@ -1174,6 +1186,14 @@ class PlasmidForm(forms.ModelForm):
                 self.add_error(None, "You cannot change both a .dna and a .gbk map at the same time. Please choose only one")
 
         return self.cleaned_data
+
+class PlasmidMapFileWidget(AdminFileWidget):
+    """
+    A custom widget to add an extra link for a plasmid map field that points to its OVE preview
+    """
+
+    template_name = 'admin/widgets/clearable_file_input_with_plasmid_map_preview.html'
+
 
 class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin, Approval):
     

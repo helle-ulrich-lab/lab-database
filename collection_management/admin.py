@@ -142,7 +142,7 @@ class SimpleHistoryWithSummaryAdmin(SimpleHistoryAdmin):
             'history_formz_projects': FormZProject,
             'history_formz_gentech_methods': GenTechMethod,
             'history_formz_elements': FormZBaseElement,
-            'history_formz_ecolistrains': FormZBaseElement,
+            'history_formz_ecoli_strains': FormZBaseElement,
             'history_documents': CellLineDoc
         }
 

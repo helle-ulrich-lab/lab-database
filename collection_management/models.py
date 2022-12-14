@@ -163,6 +163,14 @@ class SaCerevisiaeStrain (models.Model, SaveWithoutHistoricalRecord):
         elements = elements.distinct().filter(common_feature=True).order_by('name')
         return elements
 
+    @property
+    def next(self):
+        return SaCerevisiaeStrain.objects.filter(id__gt=self.id).order_by('id').first()
+    
+    @property
+    def previous(self):
+        return SaCerevisiaeStrain.objects.filter(id__lt=self.id).order_by('-id').first()
+
 class SaCerevisiaeStrainEpisomalPlasmid (models.Model):
     
     sacerevisiae_strain = models.ForeignKey(SaCerevisiaeStrain, on_delete=models.PROTECT)
@@ -370,6 +378,14 @@ class Plasmid (models.Model, SaveWithoutHistoricalRecord):
         params = {'file_name': self.map_gbk.url, 'title': f'p{LAB_ABBREVIATION_FOR_FILES}{self.__str__()}'}
 
         return f'{OVE_URL}?{urlencode(params)}'
+    
+    @property
+    def next(self):
+        return Plasmid.objects.filter(id__gt=self.id).order_by('id').first()
+    
+    @property
+    def previous(self):
+        return Plasmid.objects.filter(id__lt=self.id).order_by('-id').first()
 
 #################################################
 #                     OLIGO                     #
@@ -407,6 +423,14 @@ class Oligo (models.Model, SaveWithoutHistoricalRecord):
         self.length = len(self.sequence)
         
         super(Oligo, self).save(force_insert, force_update, using, update_fields)
+    
+    @property
+    def next(self):
+        return Oligo.objects.filter(id__gt=self.id).order_by('id').first()
+    
+    @property
+    def previous(self):
+        return Oligo.objects.filter(id__lt=self.id).order_by('-id').first()
 
 #################################################
 #               SC. POMBE STRAIN                #
@@ -509,6 +533,14 @@ class ScPombeStrain (models.Model, SaveWithoutHistoricalRecord):
 
         return ' '.join([e for e in [self.auxotrophic_marker, self.name] if e])
 
+    @property
+    def next(self):
+        return ScPombeStrain.objects.filter(id__gt=self.id).order_by('id').first()
+    
+    @property
+    def previous(self):
+        return ScPombeStrain.objects.filter(id__lt=self.id).order_by('-id').first()
+
 class ScPombeStrainEpisomalPlasmid (models.Model):
     
     scpombe_strain = models.ForeignKey(ScPombeStrain, on_delete=models.PROTECT)
@@ -609,6 +641,14 @@ class EColiStrain (models.Model, SaveWithoutHistoricalRecord):
     def __str__(self):
        return "{} - {}".format(self.id, self.name)
 
+    @property
+    def next(self):
+        return EColiStrain.objects.filter(id__gt=self.id).order_by('id').first()
+    
+    @property
+    def previous(self):
+        return EColiStrain.objects.filter(id__lt=self.id).order_by('-id').first()
+
 ################################################
 #                   CELL LINE                  #
 ################################################
@@ -705,7 +745,14 @@ class CellLine (models.Model, SaveWithoutHistoricalRecord):
             elements = elements | pl.formz_elements.all()
         elements = elements.distinct().filter(common_feature=True).order_by('name')
         return elements
+
+    @property
+    def next(self):
+        return CellLine.objects.filter(id__gt=self.id).order_by('id').first()
     
+    @property
+    def previous(self):
+        return CellLine.objects.filter(id__lt=self.id).order_by('-id').first()
 
 class CellLineEpisomalPlasmid (models.Model):
     
@@ -873,3 +920,11 @@ class Antibody (models.Model, SaveWithoutHistoricalRecord):
     
     def __str__(self):
         return str(self.id)
+    
+    @property
+    def next(self):
+        return Antibody.objects.filter(id__gt=self.id).order_by('id').first()
+    
+    @property
+    def previous(self):
+        return Antibody.objects.filter(id__lt=self.id).order_by('-id').first()

@@ -201,6 +201,16 @@
 
     });
   </script>
+  <script type="text/javascript" >
+    $(function($) {
+    $('#golink').click(function() {
+        return false;
+    }).dblclick(function() {
+        window.location = this.href;
+        return false;
+    });
+});
+  </script>
 {% endblock %}
 
 

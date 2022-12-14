@@ -1,0 +1,35 @@
+{% load admin_urls %}
+
+<style>
+    #navigation-floater {
+        position: fixed;
+        top: 25%;
+        right: 30px;
+        z-index: 99;
+        border: 3px solid var(--primary);
+        background-color: var(--header-bg);
+        color: var(--body-fg);
+        padding: 15px;
+        border-radius: 5px;
+        font-size: 1.5rem;
+    }
+
+    #navigation-close, #navigation-next {
+        margin: auto;
+        display: block;
+        padding-bottom: 10px;
+    }
+
+    #navigation-previous {
+        margin: auto;
+        display: block;
+    }
+</style>
+
+<div id="navigation-floater">
+    <a id="navigation-close" href="{% url opts|admin_urlname:'changelist' %}">🞭</a>
+    {% if original.next %} <a id="navigation-next" href="{% url opts|admin_urlname:'change' original.next.id %}"
+        title="{{original.next}}">►</a> {% endif %}
+    {% if original.previous %} <a id="navigation-previous"
+        href="{% url opts|admin_urlname:'change' original.previous.id %}" title="{{original.previous}}">◀</a> {% endif %}
+</div>

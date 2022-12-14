@@ -59,6 +59,9 @@
     {% endblock %}
   </ul>
 {% endif %}{% endif %}
+
+{% include "admin/collection_management/navigation_floater.html" %}
+
 {% endblock %}
 <form {% if has_file_field %}enctype="multipart/form-data" {% endif %}action="{{ form_url }}" method="post" id="{{ opts.model_name }}_form" novalidate>{% csrf_token %}{% block form_top %}{% endblock %}
 <div>

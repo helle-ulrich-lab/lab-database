@@ -146,60 +146,61 @@ class SimpleHistoryWithSummaryAdmin(SimpleHistoryAdmin):
             'history_documents': CellLineDoc
         }
 
+        ignore_fields = ("time", "_pi", "map_png", "map_gbk", '_user', '_autocomplete')
+
         # Create data structure for history summary
         history_summary_data = []
 
         # If more than one history obj, create pairs of history objs
-        if obj.history.count() > 1:
+        pairs = pairwise(obj.history.all()) if obj.history.count() > 1 else []
 
-            for newer_hist_obj, older_hist_obj in pairwise(obj.history.all()):
+        for newer_hist_obj, older_hist_obj in pairs:
 
-                # Get differences between history obj pairs and add them to a list
-                delta = newer_hist_obj.diff_against(older_hist_obj)
+            # Get differences between history obj pairs and add them to a list
+            delta = newer_hist_obj.diff_against(older_hist_obj)
 
-                if delta and getattr(delta, 'changes', False):
+            if delta and getattr(delta, 'changes', False):
 
-                    changes_list = []
+                changes_list = []
 
-                    # Do not show created/changed date/time or approval by PI fields, and png/gbk map fields
-                    for change in [c for c in delta.changes if not c.field.endswith(("time", "_pi", "map_png", "map_gbk", '_user', '_autocomplete'))]:
+                # Do not show created/changed date/time or approval by PI fields, and png/gbk map fields
+                for change in [c for c in delta.changes if not c.field.endswith(ignore_fields)]:
 
-                        field = model._meta.get_field(change.field)
-                        field_name = field.verbose_name
-                        field_type = field.get_internal_type()
+                    field = model._meta.get_field(change.field)
+                    field_name = field.verbose_name
+                    field_type = field.get_internal_type()
 
-                        if field_type == 'FileField':
-                            if change.field == 'map':
-                                field_name = field_name.replace(' (.dna)', '')
-                            change_old = os.path.basename(change.old.path). \
-                                replace('.dna', '') if change.old else 'None'
-                            change_new = os.path.basename(change.new.path). \
-                                replace('.dna', '') if change.new else 'None'
-                        elif field_type == 'ForeignKey':
-                            field_model = field.remote_field.model
-                            change_old = str(field_model.objects. \
-                                get(id=change.old)) if change.old else 'None'
-                            change_new = str(field_model.objects. \
-                                get(id=change.new)) if change.new else 'None'
-                        elif field_type == 'ArrayField':
-                            array_field_model = array_fields[change.field]
-                            change_old = ', '.join(map(str, array_field_model.objects. \
-                                filter(id__in=change.old))) if change.old else 'None'
-                            change_new = ', '.join(map(str, array_field_model.objects. \
-                                filter(id__in=change.new))) if change.new else 'None'
-                        else:
-                            change_old = change.old if change.old else 'None'
-                            change_new = change.new if change.new else 'None'
+                    if field_type == 'FileField':
+                        field_name = field_name.replace(' (.dna)', '') # Remove unwanted characters from field name
+                        change_old = os.path.basename(change.old.path). \
+                            replace('.dna', '') if change.old else 'None'
+                        change_new = os.path.basename(change.new.path). \
+                            replace('.dna', '') if change.new else 'None'
+                    elif field_type == 'ForeignKey':
+                        field_model = field.remote_field.model
+                        change_old = str(field_model.objects. \
+                            get(id=change.old)) if change.old else 'None'
+                        change_new = str(field_model.objects. \
+                            get(id=change.new)) if change.new else 'None'
+                    elif field_type == 'ArrayField':
+                        array_field_model = array_fields[change.field]
+                        change_old = ', '.join(map(str, array_field_model.objects. \
+                            filter(id__in=change.old))) if change.old else 'None'
+                        change_new = ', '.join(map(str, array_field_model.objects. \
+                            filter(id__in=change.new))) if change.new else 'None'
+                    else:
+                        change_old = change.old if change.old else 'None'
+                        change_new = change.new if change.new else 'None'
 
-                        changes_list.append(
-                            (capfirst(field_name), change_old, change_new))
+                    changes_list.append(
+                        (capfirst(field_name), change_old, change_new))
 
-                    if changes_list:
-                        history_summary_data.append(
-                            (newer_hist_obj.last_changed_date_time,
-                             User.objects.get(
-                                 id=int(newer_hist_obj.history_user_id)),
-                             changes_list))
+                if changes_list:
+                    history_summary_data.append(
+                        (newer_hist_obj.last_changed_date_time,
+                            User.objects.get(
+                                id=int(newer_hist_obj.history_user_id)),
+                            changes_list))
 
         context = self.admin_site.each_context(request)
 

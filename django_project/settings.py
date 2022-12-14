@@ -143,6 +143,15 @@ USE_I18N = True
 USE_L10N = True
 USE_TZ = True
 
+# Force specific datetime formats
+from django.conf.locale.en import formats as en_formats
+en_formats.DATETIME_FORMAT = "j N Y, H:i:s"
+en_formats.DATE_FORMAT = "j N Y"
+
+from django.conf.locale.en_GB import formats as en_gb_formats
+en_gb_formats.DATETIME_FORMAT = "j N Y, H:i:s"
+en_gb_formats.DATE_FORMAT = "j N Y"
+
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
@@ -170,6 +179,77 @@ DEFAULT_FROM_EMAIL = SERVER_EMAIL_ADDRESS
 SERVER_EMAIL = SERVER_EMAIL_ADDRESS
 ADMINS = SITE_ADMIN_EMAIL_ADDRESSES
 
+
+# Plainly stolen from Parkour LIMS :)
+# Make sure the 'logs' directory exists. If not, create it
+LOG_DIR = os.path.join(BASE_DIR, "logs")
+try:
+    os.makedirs(LOG_DIR)
+except OSError:
+    pass
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "filters": {"require_debug_false": {"()": "django.utils.log.RequireDebugFalse"}},
+    "formatters": {
+        "simple": {
+            "format": "[%(levelname)s] [%(asctime)s] %(message)s",
+            "datefmt": "%d/%b/%Y %H:%M:%S",
+        },
+        "verbose": {
+            "format": "[%(levelname)s] [%(asctime)s] [%(pathname)s:%(lineno)s]: %(funcName)s(): %(message)s",
+            "datefmt": "%d/%b/%Y %H:%M:%S",
+        },
+    },
+    "handlers": {
+        "mail_admins": {
+            "level": "ERROR",
+            "filters": ["require_debug_false"],
+            "class": "django.utils.log.AdminEmailHandler"
+        },
+        "console": {
+            "level": "INFO",
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
+        },
+        "logfile": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": os.path.join(LOG_DIR, "django.log"),
+            "formatter": "verbose",
+            "maxBytes": 15 * 1024 * 1024,  # 15 MB
+            "backupCount": 2,
+        },
+        "dblogfile": {
+            "level": "DEBUG",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": os.path.join(LOG_DIR, "db.log"),
+            "formatter": "verbose",
+            "maxBytes": 15 * 1024 * 1024,
+            "backupCount": 2,
+        },
+    },
+    'loggers': {
+        'mail_admins': {
+            'level': 'ERROR',
+            'handlers': ['mail_admins'],
+        },
+        'console': {
+            'level': 'INFO',
+            'handlers': ['console'],
+        },
+        'logfile': {
+            'level': 'DEBUG',
+            'handlers': ['logfile'],
+        },
+        'dblogfile': {
+            'level': 'DEBUG',
+            'handlers': ['dblogfile'],
+        }
+    }
+}
+
+
 # Wiki settings
 
 SITE_ID = 1
@@ -181,17 +261,19 @@ WIKI_MARKDOWN_HTML_WHITELIST = ['a', 'abbr', 'acronym', 'b', 'blockquote', 'code
 'h0', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'h7', 'sub', 'sup']
 
 
+# OIDC settings
+
+LOGIN_REDIRECT_URL = "/login/"
+LOGOUT_REDIRECT_URL = "/logout/"
+if ALLOW_OIDC:
+    AUTHENTICATION_BACKENDS = ['user_management.oidc.MyOIDCAB'] + AUTHENTICATION_BACKENDS
+    MIDDLEWARE += ['mozilla_django_oidc.middleware.SessionRefresh']
+OIDC_RENEW_ID_TOKEN_EXPIRY_SECONDS = 86400 # 24 h
+
+
 # Other settings
 
 FILE_UPLOAD_PERMISSIONS = 0o664
-
-from django.conf.locale.en import formats as en_formats
-en_formats.DATETIME_FORMAT = "j N Y, H:i:s"
-en_formats.DATE_FORMAT = "j N Y"
-
-from django.conf.locale.en_GB import formats as en_gb_formats
-en_gb_formats.DATETIME_FORMAT = "j N Y, H:i:s"
-en_gb_formats.DATE_FORMAT = "j N Y"
 
 LOGIN_URL = "/login/"
 
@@ -200,11 +282,3 @@ DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 X_FRAME_OPTIONS = 'SAMEORIGIN'
 
 OVE_URL = '/ove/'
-
-# OIDC settings
-LOGIN_REDIRECT_URL = "/login/"
-LOGOUT_REDIRECT_URL = "/logout/"
-if ALLOW_OIDC:
-    AUTHENTICATION_BACKENDS = ['user_management.oidc.MyOIDCAB'] + AUTHENTICATION_BACKENDS
-    MIDDLEWARE += ['mozilla_django_oidc.middleware.SessionRefresh']
-OIDC_RENEW_ID_TOKEN_EXPIRY_SECONDS = 86400 # 24 h

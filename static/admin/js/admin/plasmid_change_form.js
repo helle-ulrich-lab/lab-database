@@ -48,20 +48,6 @@ $(document).ready(function() {
         }
     });
 
-    // Add "button" to show plasmid map as OVE plasmid preview in a magnific popup
-    
-    $('.field-map,.field-map_gbk').each((i, e) => {
-        let mapLinkElement = $(e).find('a')[0];
-        if (mapLinkElement !== undefined) {
-            const fieldName = $(e).attr('class').split(' ')[1].split('-')[1];
-            if (fieldName !== undefined) { 
-                let plasmidMapBaseUrl = oveUrls[fieldName];
-                $(`<a class="magnific-popup-iframe-plasmidmap" style="padding-left:10px; padding-right:10px;" href=${plasmidMapBaseUrl}>⊙</a>`).insertAfter(mapLinkElement);
-            }
-        }
-    }
-    );
-
     // Show png map as a magnific popup
 
     let png_url = $('.field-map_png',).find('a')[0];

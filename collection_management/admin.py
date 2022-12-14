@@ -75,6 +75,7 @@ import time
 from formz.models import FormZBaseElement
 from formz.models import FormZProject
 from formz.models import Species
+from formz.models import GenTechMethod
 
 import xlrd
 import csv
@@ -99,7 +100,7 @@ class Approval():
 class SimpleHistoryWithSummaryAdmin(SimpleHistoryAdmin):
 
     object_history_template = "admin/object_history_with_change_summary.html"
-    
+
     def history_view(self, request, object_id, extra_context=None):
         """The 'history' admin view for this model."""
 
@@ -122,6 +123,7 @@ class SimpleHistoryWithSummaryAdmin(SimpleHistoryAdmin):
         history = getattr(model, model._meta.simple_history_manager_attribute)
         object_id = unquote(object_id)
         action_list = history.filter(**{pk_name: object_id})
+        
         # If no history was found, see whether this object even exists.
         try:
             obj = self.get_queryset(request).get(**{pk_name: object_id})
@@ -131,55 +133,76 @@ class SimpleHistoryWithSummaryAdmin(SimpleHistoryAdmin):
             except action_list.model.DoesNotExist:
                 raise Http404
 
-        # if not self.has_change_permission(request, obj): # Disable so that guests can access history summary view
-        #     raise PermissionDenied
+        array_fields = {
+            'history_integrated_plasmids': Plasmid,
+            'history_cassette_plasmids': Plasmid,
+            'history_episomal_plasmids': Plasmid,
+            'history_all_plasmids_in_stocked_strain': Plasmid,
+            'history_formz_projects': FormZProject,
+            'history_formz_gentech_methods': GenTechMethod,
+            'history_formz_elements': FormZBaseElement,
+            'history_formz_ecolistrains': FormZBaseElement,
+            'history_documents': CellLineDoc
+        }
 
         # Create data structure for history summary
         history_summary_data = []
-        try:
-            # Get all history
-            history_summary = obj.history.all()
-            
-            # If more than one history obj, create pairs of history objs
-            if len(history_summary) > 1:
-                history_pairs = pairwise(history_summary)
-                for history_element in history_pairs:
-                    
-                    # Get differences between history obj pairs and add them to a list
-                    delta = history_element[0].diff_against(history_element[1])
-                    if delta:
-                        if delta.changes:
-                            changes_list = []
-                            for change in delta.changes:
-                                
-                                # Do not show created/changed date/time or approval by PI fields, and png/gbk map fields
-                                if not change.field.endswith(("time", "_pi", "map_png", "map_gbk", '_user', '_autocomplete')):
-                                    
-                                    field_name = model._meta.get_field(change.field).verbose_name
-                                    field_type = model._meta.get_field(change.field).get_internal_type()
-                                    
-                                    if field_type == 'FileField':
-                                        if change.field == 'map':
-                                            field_name = field_name.replace(' (.dna)', '')
-                                        changes_list.append(
-                                            (capfirst(field_name), 
-                                            os.path.basename(change.old).replace('.dna', '') if change.old else 'None', 
-                                            os.path.basename(change.new).replace('.dna', '') if change.new else 'None'))
-                                    else:
-                                        changes_list.append(
-                                            (capfirst(field_name), 
-                                            change.old if change.old else 'None', 
-                                            change.new if change.new else 'None'))
-                            
-                            if changes_list:
-                                history_summary_data.append(
-                                    (history_element[0].last_changed_date_time, 
-                                    User.objects.get(id=int(history_element[0].history_user_id)), 
-                                    changes_list))
-        except:
-            pass
-        
+
+        # If more than one history obj, create pairs of history objs
+        if obj.history.count() > 1:
+
+            for newer_hist_obj, older_hist_obj in pairwise(obj.history.all()):
+
+                # Get differences between history obj pairs and add them to a list
+                delta = newer_hist_obj.diff_against(older_hist_obj)
+
+                if delta and getattr(delta, 'changes', False):
+
+                    changes_list = []
+
+                    # Do not show created/changed date/time or approval by PI fields, and png/gbk map fields
+                    for change in [c for c in delta.changes if not c.field.endswith(("time", "_pi", "map_png", "map_gbk", '_user', '_autocomplete'))]:
+
+                        field = model._meta.get_field(change.field)
+                        field_name = field.verbose_name
+                        field_type = field.get_internal_type()
+
+                        if field_type == 'FileField':
+                            if change.field == 'map':
+                                field_name = field_name.replace(' (.dna)', '')
+                            change_old = os.path.basename(change.old). \
+                                replace('.dna', '') if change.old else 'None'
+                            change_new = os.path.basename(change.new). \
+                                replace('.dna', '') if change.new else 'None'
+                        elif field_type == 'ForeignKey':
+                            field_model = field.remote_field.model
+                            change_old = str(field_model.objects. \
+                                get(id=change.old)) if change.old else 'None'
+                            change_new = str(field_model.objects. \
+                                get(id=change.new)) if change.new else 'None'
+                        elif field_type == 'ArrayField':
+                            array_field_model = array_fields[change.field]
+                            change_old = ', '.join(map(str, array_field_model.objects. \
+                                filter(id__in=change.old))) if change.old else 'None'
+                            change_new = ', '.join(map(str, array_field_model.objects. \
+                                filter(id__in=change.new))) if change.new else 'None'
+                        else:
+                            change_old = change.old if change.old else 'None'
+                            change_new = change.new if change.new else 'None'
+
+                        changes_list.append(
+                            (capfirst(field_name), change_old, change_new))
+
+                    if changes_list:
+                        history_summary_data.append(
+                            (newer_hist_obj.last_changed_date_time,
+                             User.objects.get(
+                                 id=int(newer_hist_obj.history_user_id)),
+                             changes_list))
+
         context = self.admin_site.each_context(request)
+
+        mail_admins('jdjdj', str(context))
         context.update({
             'title': _('Change history: %s') % force_text(obj),
             'action_list': action_list,
@@ -193,9 +216,8 @@ class SimpleHistoryWithSummaryAdmin(SimpleHistoryAdmin):
         })
         context.update(extra_context or {})
         extra_kwargs = {}
-        
-        return render(request, self.object_history_template, context,
-                      **extra_kwargs)
+
+        return render(request, self.object_history_template, context, **extra_kwargs)
 
 class CustomUserManage(UserManage):
     
@@ -811,22 +833,21 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
 
         obj = SaCerevisiaeStrain.objects.get(pk=form.instance.id)
         
-        integrated_plasmids = obj.integrated_plasmids.all().order_by('id')
-        cassette_plasmids = obj.cassette_plasmids.all().order_by('id')
-        episomal_plasmids = obj.episomal_plasmids.all().order_by('id')
+        integrated_plasmids = obj.integrated_plasmids.order_by('id').distinct('id')
+        cassette_plasmids = obj.cassette_plasmids.order_by('id').distinct('id')
+        episomal_plasmids = obj.episomal_plasmids.order_by('id').distinct('id')
 
-        obj.history_integrated_plasmids = str(tuple(integrated_plasmids.values_list('id', flat=True))).replace(',)', ')') if integrated_plasmids else ""
-        obj.history_cassette_plasmids = str(tuple(cassette_plasmids.values_list('id', flat=True))).replace(',)', ')') if cassette_plasmids else ""
-        obj.history_episomal_plasmids = str(tuple(episomal_plasmids.values_list('id', flat=True))).replace(',)', ')') if episomal_plasmids else ""
+        obj.history_integrated_plasmids = list(integrated_plasmids.values_list('id', flat=True)) if integrated_plasmids.exists() else []
+        obj.history_cassette_plasmids = list(cassette_plasmids.values_list('id', flat=True)) if cassette_plasmids.exists() else []
+        obj.history_episomal_plasmids = list(episomal_plasmids.values_list('id', flat=True)) if episomal_plasmids.exists() else []
 
         plasmid_id_list = integrated_plasmids | cassette_plasmids | episomal_plasmids.filter(sacerevisiaestrainepisomalplasmid__present_in_stocked_strain=True) # Merge querysets
         if plasmid_id_list:
-            plasmid_id_list = tuple(plasmid_id_list.distinct().order_by('id').values_list('id', flat=True))
-            obj.history_all_plasmids_in_stocked_strain = str(plasmid_id_list).replace(',)', ')')
+            obj.history_all_plasmids_in_stocked_strain = list(plasmid_id_list.order_by('id').distinct('id').values_list('id', flat=True))
 
-        obj.history_formz_projects = str(tuple(obj.formz_projects.all().order_by('short_title_english').values_list('short_title_english', flat=True))).replace(',)', ')') if obj.formz_projects.all() else ""
-        obj.history_formz_gentech_methods = str(tuple(obj.formz_gentech_methods.all().order_by('english_name').values_list('english_name', flat=True))).replace(',)', ')') if obj.formz_gentech_methods.all() else ""
-        obj.history_formz_elements = str(tuple(obj.formz_elements.all().order_by('name').values_list('name', flat=True))).replace(',)', ')') if obj.formz_elements.all() else ""
+        obj.history_formz_projects = list(obj.formz_projects.order_by('id').distinct('id').values_list('id', flat=True).distinct()) if obj.formz_projects.exists() else []
+        obj.history_formz_gentech_methods = list(obj.formz_gentech_methods.order_by('id').distinct('id').values_list('id', flat=True).distinct()) if obj.formz_gentech_methods.exists() else []
+        obj.history_formz_elements = list(obj.formz_elements.order_by('id').distinct('id').values_list('id', flat=True).distinct()) if obj.formz_elements.exists() else []
 
         obj.save_without_historical_record()
 
@@ -1411,10 +1432,10 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
         # Keep a record of the IDs of linked M2M fields in the main strain record
         # Not pretty, but it works
 
-        obj.history_formz_projects = str(tuple(obj.formz_projects.all().order_by('short_title_english').values_list('short_title_english', flat=True))).replace(',)', ')') if obj.formz_projects.all() else ""
-        obj.history_formz_elements = str(tuple(obj.formz_elements.all().order_by('name').values_list('name', flat=True))).replace(',)', ')') if obj.formz_elements.all() else ""
-        obj.history_formz_ecoli_strains = str(tuple(obj.formz_ecoli_strains.all().order_by('id').values_list('id', flat=True))).replace(',)', ')') if obj.formz_ecoli_strains.all() else ""
-        obj.history_formz_gentech_methods = str(tuple(obj.formz_gentech_methods.all().order_by('english_name').values_list('english_name', flat=True))).replace(',)', ')') if obj.formz_gentech_methods.all() else ""
+        obj.history_formz_projects = list(obj.formz_projects.order_by('id').distinct('id').values_list('id', flat=True)) if obj.formz_projects.exists() else []
+        obj.history_formz_elements = list(obj.formz_elements.order_by('id').distinct('id').values_list('id', flat=True)) if obj.formz_elements.exists() else []
+        obj.history_formz_ecoli_strains = list(obj.formz_ecoli_strains.order_by('id').distinct('id').values_list('id', flat=True)) if obj.formz_ecoli_strains.exists() else []
+        obj.history_formz_gentech_methods = list(obj.formz_gentech_methods.order_by('id').distinct('id').values_list('id', flat=True)) if obj.formz_gentech_methods.exists() else []
 
         # For new records without map preview, delete first history record, which contains the unformatted map name, and change 
         # the newer history record's history_type from changed (~) to created (+). This gets rid of a duplicate
@@ -2403,22 +2424,21 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admi
 
         obj = ScPombeStrain.objects.get(pk=form.instance.id)
         
-        integrated_plasmids = obj.integrated_plasmids.all().order_by('id')
-        cassette_plasmids = obj.cassette_plasmids.all().order_by('id')
-        episomal_plasmids = obj.episomal_plasmids.all().order_by('id')
+        integrated_plasmids = obj.integrated_plasmids.order_by('id').distinct('id')
+        cassette_plasmids = obj.cassette_plasmids.order_by('id').distinct('id')
+        episomal_plasmids = obj.episomal_plasmids.order_by('id').distinct('id')
 
-        obj.history_integrated_plasmids = str(tuple(integrated_plasmids.values_list('id', flat=True))).replace(',)', ')') if integrated_plasmids else ""
-        obj.history_cassette_plasmids = str(tuple(cassette_plasmids.values_list('id', flat=True))).replace(',)', ')') if cassette_plasmids else ""
-        obj.history_episomal_plasmids = str(tuple(episomal_plasmids.values_list('id', flat=True))).replace(',)', ')') if episomal_plasmids else ""
+        obj.history_integrated_plasmids = list(integrated_plasmids.values_list('id', flat=True)) if integrated_plasmids.exists() else []
+        obj.history_cassette_plasmids = list(cassette_plasmids.values_list('id', flat=True)) if cassette_plasmids.exists() else []
+        obj.history_episomal_plasmids = list(episomal_plasmids.values_list('id', flat=True)) if episomal_plasmids.exists() else []
 
-        plasmid_id_list = integrated_plasmids | cassette_plasmids | episomal_plasmids.filter(scpombestrainepisomalplasmid__present_in_stocked_strain=True) # Merge querysets
+        plasmid_id_list = integrated_plasmids | cassette_plasmids | episomal_plasmids.filter(sacerevisiaestrainepisomalplasmid__present_in_stocked_strain=True) # Merge querysets
         if plasmid_id_list:
-            plasmid_id_list = tuple(plasmid_id_list.distinct().order_by('id').values_list('id', flat=True))
-            obj.history_all_plasmids_in_stocked_strain = str(plasmid_id_list).replace(',)', ')')
+            obj.history_all_plasmids_in_stocked_strain = list(plasmid_id_list.order_by('id').distinct('id').values_list('id', flat=True))
 
-        obj.history_formz_projects = str(tuple(obj.formz_projects.all().order_by('short_title_english').values_list('short_title_english', flat=True))).replace(',)', ')') if obj.formz_projects.all() else ""
-        obj.history_formz_gentech_methods = str(tuple(obj.formz_gentech_methods.all().order_by('english_name').values_list('english_name', flat=True))).replace(',)', ')') if obj.formz_gentech_methods.all() else ""
-        obj.history_formz_elements = str(tuple(obj.formz_elements.all().order_by('name').values_list('name', flat=True))).replace(',)', ')') if obj.formz_elements.all() else ""
+        obj.history_formz_projects = list(obj.formz_projects.order_by('id').distinct('id').values_list('id', flat=True).distinct()) if obj.formz_projects.exists() else []
+        obj.history_formz_gentech_methods = list(obj.formz_gentech_methods.order_by('id').distinct('id').values_list('id', flat=True).distinct()) if obj.formz_gentech_methods.exists() else []
+        obj.history_formz_elements = list(obj.formz_elements.order_by('id').distinct('id').values_list('id', flat=True).distinct()) if obj.formz_elements.exists() else []
 
         obj.save_without_historical_record()
 
@@ -2809,8 +2829,8 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.
 
         obj = EColiStrain.objects.get(pk=form.instance.id)
 
-        obj.history_formz_projects = str(tuple(obj.formz_projects.all().order_by('short_title_english').values_list('short_title_english', flat=True))).replace(',)', ')') if obj.formz_projects.all() else ""
-        obj.history_formz_elements = str(tuple(obj.formz_elements.all().order_by('name').values_list('name', flat=True))).replace(',)', ')') if obj.formz_elements.all() else ""
+        obj.history_formz_projects = list(obj.formz_projects.order_by('id').distinct('id').values_list('id', flat=True)) if obj.formz_projects.exists() else []
+        obj.history_formz_elements = list(obj.formz_elements.order_by('id').distinct('id').values_list('id', flat=True)) if obj.formz_elements.exists() else []
         obj.save_without_historical_record()
 
         history_obj = obj.history.latest()
@@ -3120,17 +3140,14 @@ class CellLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGua
         # Not pretty, but it works
 
         obj = CellLine.objects.get(pk=form.instance.id)
-        
-        integrated_plasmids = obj.integrated_plasmids.all().order_by('id')
-        episomal_plasmids = obj.episomal_plasmids.all().order_by('id')
 
-        obj.history_integrated_plasmids = str(tuple(integrated_plasmids.values_list('id', flat=True))).replace(',)', ')') if integrated_plasmids else ""
-        obj.history_episomal_plasmids = str(tuple(episomal_plasmids.values_list('id', flat=True))).replace(',)', ')') if episomal_plasmids else ""
+        obj.history_integrated_plasmids = list(obj.integrated_plasmids.order_by('id').distinct('id').values_list('id', flat=True)) if obj.integrated_plasmids.exists() else []
+        obj.history_episomal_plasmids = list(obj.episomal_plasmids.order_by('id').distinct('id').values_list('id', flat=True)) if obj.episomal_plasmids.exists() else []
 
-        obj.history_formz_projects = str(tuple(obj.formz_projects.all().order_by('short_title_english').values_list('short_title_english', flat=True))).replace(',)', ')') if obj.formz_projects.all() else ""
-        obj.history_formz_gentech_methods = str(tuple(obj.formz_gentech_methods.all().order_by('english_name').values_list('english_name', flat=True))).replace(',)', ')') if obj.formz_gentech_methods.all() else ""
-        obj.history_formz_elements = str(tuple(obj.formz_elements.all().order_by('name').values_list('name', flat=True))).replace(',)', ')') if obj.formz_elements.all() else ""
-        obj.history_documents = str(tuple(obj.celllinedoc_set.all().order_by('id').values_list('id', flat=True))).replace(',)', ')') if obj.celllinedoc_set.all() else ""
+        obj.history_formz_projects = list(obj.formz_projects.distinct('id').order_by('id').values_list('id', flat=True)) if obj.formz_projects.exists() else []
+        obj.history_formz_gentech_methods = list(obj.formz_gentech_methods.distinct('id').order_by('id').values_list('id', flat=True)) if obj.formz_gentech_methods.exists() else []
+        obj.history_formz_elements = list(obj.formz_elements.distinct('id').order_by('id').values_list('id', flat=True)) if obj.formz_elements.exists() else []
+        obj.history_documents = list(obj.celllinedoc_set.order_by('id').distinct('id').values_list('id', flat=True)) if obj.celllinedoc_set.exists() else []
 
         obj.save_without_historical_record()
 

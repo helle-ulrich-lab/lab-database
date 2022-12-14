@@ -171,9 +171,9 @@ class SimpleHistoryWithSummaryAdmin(SimpleHistoryAdmin):
                         if field_type == 'FileField':
                             if change.field == 'map':
                                 field_name = field_name.replace(' (.dna)', '')
-                            change_old = os.path.basename(change.old). \
+                            change_old = os.path.basename(change.old.path). \
                                 replace('.dna', '') if change.old else 'None'
-                            change_new = os.path.basename(change.new). \
+                            change_new = os.path.basename(change.new.path). \
                                 replace('.dna', '') if change.new else 'None'
                         elif field_type == 'ForeignKey':
                             field_model = field.remote_field.model
@@ -203,7 +203,6 @@ class SimpleHistoryWithSummaryAdmin(SimpleHistoryAdmin):
 
         context = self.admin_site.each_context(request)
 
-        mail_admins('jdjdj', str(context))
         context.update({
             'title': _('Change history: %s') % force_text(obj),
             'action_list': action_list,

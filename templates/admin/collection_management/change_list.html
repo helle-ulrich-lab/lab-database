@@ -16,11 +16,18 @@
       #changelist table thead th:first-child {width: inherit}
     </style>
   {% endif %}
+  <link rel="stylesheet" type="text/css" href="{% static "admin/css/vendor/magnific-popup.css" %}">
+  <link rel="stylesheet" type="text/css" href="{% static "admin/css/custom_style_magnific-popup.css" %}">
 {% endblock %}
 
 {% block extrahead %}
 {{ block.super }}
 {{ media.js }}
+<style>
+  .magnific-id{
+    font-weight: 600;
+  }
+</style>
 {% endblock %}
 
 {% block bodyclass %}{{ block.super }} app-{{ opts.app_label }} model-{{ opts.model_name }} change-list{% endblock %}
@@ -91,6 +98,8 @@
 {% block footer %}
   <div id="footer"></div>
   <script type="text/javascript" src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
+  <script type="text/javascript" src="{% static 'admin/js/vendor/jquery.magnific-popup.min.js' %}"></script>
+  <script type="text/javascript" src="{% static 'admin/js/admin/MagnificPopUpId.js' %}"></script>
   <script type="text/javascript">
     
     $(document).ready(function() {

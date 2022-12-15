@@ -23,6 +23,11 @@
 {% block extrahead %}
 {{ block.super }}
 {{ media.js }}
+<style>
+  .magnific-id{
+    font-weight: 600;
+  }
+</style>
 {% endblock %}
 
 {% block bodyclass %}{{ block.super }} app-{{ opts.app_label }} model-{{ opts.model_name }} change-list{% endblock %}
@@ -89,6 +94,7 @@
     const MagnificiFrameClassIds = ['magnific-popup-iframe-pdflink'];
   </script>
   <script type="text/javascript" src="{% static 'admin/js/admin/MagnificPopUpiFrame.js' %}"></script>
+  <script type="text/javascript" src="{% static 'admin/js/admin/MagnificPopUpId.js' %}"></script>
   <script type="text/javascript">
     
     $(document).ready(function() {

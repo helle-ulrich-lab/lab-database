@@ -29,7 +29,7 @@
 <div id="navigation-floater">
     <a id="navigation-close" href="{% url opts|admin_urlname:'changelist' %}">🞭</a>
     {% if original.next %} <a id="navigation-next" href="{% url opts|admin_urlname:'change' original.next.id %}"
-        title="{{original.next}}">►</a> {% endif %}
+        title="{{original.next}}">⯈</a> {% endif %}
     {% if original.previous %} <a id="navigation-previous"
-        href="{% url opts|admin_urlname:'change' original.previous.id %}" title="{{original.previous}}">◀</a> {% endif %}
+        href="{% url opts|admin_urlname:'change' original.previous.id %}" title="{{original.previous}}">⯇</a> {% endif %}
 </div>

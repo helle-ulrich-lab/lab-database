@@ -1,8 +1,14 @@
 $(document).ready(function () {
 
     // Taken from https://stackoverflow.com/questions/34114819/how-load-on-double-click-instead-of-click-for-magnific-popup
+    // and https://stackoverflow.com/questions/5471291/javascript-with-jquery-click-and-double-click-on-same-element-different-effect
 
-    let magnific = $('.magnific-id').magnificPopup({
+    // Get relevant fields and sort them by ascending order of id
+    let idFields = $('.field-id').find('a').sort((a, b) => {
+        return a.innerText - b.innerText;
+    });
+
+    let magnific = idFields.magnificPopup({
         type: 'iframe',
 
         iframe: {
@@ -32,10 +38,31 @@ $(document).ready(function () {
     // remove click handler of magnific
     magnific.off('click');
 
-    // add double click handler and call the `open` function of magnific
-    magnific.on('contextmenu', function (e) {
+    magnific.on('click', function (e){
+        
         e.preventDefault();
-        magnific.magnificPopup('open')
-    });
+        
+        var $this = $(this);
+        
+        if ($this.hasClass('clicked')) {
+            $this.removeClass('clicked');
+            // Action for double click
+            magnific.magnificPopup('open', $.inArray(e.target, idFields));
+
+        } else {
+
+            $this.addClass('clicked');
+            setTimeout(function () {
+                if ($this.hasClass('clicked')) {
+                    $this.removeClass('clicked');
+                    // Action for single click
+                    window.location.href = e.target.href;
+                }
+            }, 300);
+
+        }
+
+
+    })
 
 })

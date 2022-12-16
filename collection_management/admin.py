@@ -772,8 +772,8 @@ class SaCerevisiaeStrainEpisomalPlasmidInline(admin.TabularInline):
 
 class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin, Approval, AdminChangeFormWithNavigation):
     
-    list_display = ('id_magnific', 'name', 'mating_type', 'background', 'created_by', 'approval')
-    list_display_links = None
+    list_display = ('id', 'name', 'mating_type', 'background', 'created_by', 'approval')
+    list_display_links = ('id',)
     list_per_page = 25
     djangoql_schema = SaCerevisiaeStrainQLSchema
     djangoql_completion_enabled_by_default = False
@@ -1084,14 +1084,6 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
         
         return super(SaCerevisiaeStrainPage,self).response_change(request,obj)
 
-    def id_magnific(self, instance):
-        url = reverse(f'admin:{self.model._meta.app_label}_{self.model._meta.model_name}_change',
-                        args=(quote(instance.pk),),
-                        current_app=self.admin_site.name,
-                        )
-        return mark_safe(f'<a class="field-id magnific-id" href="{url}">{instance.pk}</a>')
-    id_magnific.short_description = 'ID'
-    id_magnific.admin_order_field = 'id'
 
 #################################################
 #                 PLASMID PAGES                 #
@@ -1219,8 +1211,8 @@ class PlasmidForm(forms.ModelForm):
 
 class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin, Approval, AdminChangeFormWithNavigation):
     
-    list_display = ('id_magnific', 'name', 'selection', 'get_plasmidmap_short_name', 'created_by', 'approval')
-    list_display_links = None
+    list_display = ('id', 'name', 'selection', 'get_plasmidmap_short_name', 'created_by', 'approval')
+    list_display_links = ('id',)
     list_per_page = 25
     formfield_overrides = {CharField: {'widget': TextInput(attrs={'size':'93'})},} # Make TextInput fields wider
     djangoql_schema = PlasmidQLSchema
@@ -1980,14 +1972,6 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
                         fail_silently=True)
             raise Exception
 
-    def id_magnific(self, instance):
-        url = reverse(f'admin:{self.model._meta.app_label}_{self.model._meta.model_name}_change',
-                        args=(quote(instance.pk),),
-                        current_app=self.admin_site.name,
-                        )
-        return mark_safe(f'<a class="field-id magnific-id" href="{url}">{instance.pk}</a>')
-    id_magnific.short_description = 'ID'
-    id_magnific.admin_order_field = 'id'
 
 #################################################
 #                 OLIGO PAGES                   #
@@ -2050,8 +2034,8 @@ def export_oligo(modeladmin, request, queryset):
 export_oligo.short_description = "Export selected oligos"
 
 class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Approval, AdminChangeFormWithNavigation):
-    list_display = ('id_magnific', 'name','get_oligo_short_sequence', 'restriction_site','created_by', 'approval')
-    list_display_links = None
+    list_display = ('id', 'name','get_oligo_short_sequence', 'restriction_site','created_by', 'approval')
+    list_display_links = ('id',)
     list_per_page = 25
     formfield_overrides = {
     CharField: {'widget': TextInput(attrs={'size':'93'})},} # Make TextInput fields wider
@@ -2226,14 +2210,6 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Approval, Ad
         
         return super(OligoPage,self).response_change(request,obj)
 
-    def id_magnific(self, instance):
-        url = reverse(f'admin:{self.model._meta.app_label}_{self.model._meta.model_name}_change',
-                        args=(quote(instance.pk),),
-                        current_app=self.admin_site.name,
-                        )
-        return mark_safe(f'<a class="field-id magnific-id" href="{url}">{instance.pk}</a>')
-    id_magnific.short_description = 'ID'
-    id_magnific.admin_order_field = 'id'
 
 #################################################
 #            SC. POMBE STRAIN PAGES             #
@@ -2372,8 +2348,8 @@ class ScPombeStrainEpisomalPlasmidInline(admin.TabularInline):
         return super(ScPombeStrainEpisomalPlasmidInline, self).get_queryset(request)
 
 class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Approval, AdminChangeFormWithNavigation):
-    list_display = ('id_magnific', 'name', 'auxotrophic_marker', 'mating_type', 'approval',)
-    list_display_links = None
+    list_display = ('id', 'name', 'auxotrophic_marker', 'mating_type', 'approval',)
+    list_display_links = ('id',)
     list_per_page = 25
     formfield_overrides = {CharField: {'widget': TextInput(attrs={'size':'93'})},}
     djangoql_schema = ScPombeStrainQLSchema
@@ -2628,14 +2604,6 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Appr
         
         return super(ScPombeStrainPage,self).response_change(request,obj)
 
-    def id_magnific(self, instance):
-        url = reverse(f'admin:{self.model._meta.app_label}_{self.model._meta.model_name}_change',
-                        args=(quote(instance.pk),),
-                        current_app=self.admin_site.name,
-                        )
-        return mark_safe(f'<a class="field-id magnific-id" href="{url}">{instance.pk}</a>')
-    id_magnific.short_description = 'ID'
-    id_magnific.admin_order_field = 'id'
 
 #################################################
 #              E. COLI STRAIN PAGES             #
@@ -2698,8 +2666,8 @@ def export_ecolistrain(modeladmin, request, queryset):
 export_ecolistrain.short_description = "Export selected strains"
 
 class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Approval, AdminChangeFormWithNavigation):
-    list_display = ('id_magnific', 'name', 'resistance', 'us_e','purpose', 'approval')
-    list_display_links = None
+    list_display = ('id', 'name', 'resistance', 'us_e','purpose', 'approval')
+    list_display_links = ('id',)
     list_per_page = 25
     formfield_overrides = {CharField: {'widget': TextInput(attrs={'size':'93'})},}
     djangoql_schema = EColiStrainQLSchema
@@ -2907,14 +2875,6 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Approv
         history_obj.history_formz_elements = obj.history_formz_elements
         history_obj.save()
 
-    def id_magnific(self, instance):
-        url = reverse(f'admin:{self.model._meta.app_label}_{self.model._meta.model_name}_change',
-                        args=(quote(instance.pk),),
-                        current_app=self.admin_site.name,
-                        )
-        return mark_safe(f'<a class="field-id magnific-id" href="{url}">{instance.pk}</a>')
-    id_magnific.short_description = 'ID'
-    id_magnific.admin_order_field = 'id'
 
 #################################################
 #               CELL LINE DOC                   #
@@ -3114,8 +3074,8 @@ class CellLineEpisomalPlasmidInline(admin.TabularInline):
 
 class CellLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin, Approval, AdminChangeFormWithNavigation):
     
-    list_display = ('id_magnific', 'name', 'box_name', 'created_by', 'approval')
-    list_display_links = None
+    list_display = ('id', 'name', 'box_name', 'created_by', 'approval')
+    list_display_links = ('id',)
     list_per_page = 25
     formfield_overrides = {CharField: {'widget': TextInput(attrs={'size':'93'})},}
     djangoql_schema = CellLineQLSchema
@@ -3392,14 +3352,6 @@ class CellLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGua
 
         return super(CellLinePage, self).formfield_for_foreignkey(db_field, request, **kwargs)
 
-    def id_magnific(self, instance):
-        url = reverse(f'admin:{self.model._meta.app_label}_{self.model._meta.model_name}_change',
-                        args=(quote(instance.pk),),
-                        current_app=self.admin_site.name,
-                        )
-        return mark_safe(f'<a class="field-id magnific-id" href="{url}">{instance.pk}</a>')
-    id_magnific.short_description = 'ID'
-    id_magnific.admin_order_field = 'id'
 
 #################################################
 #                ANTIBODY PAGES                 #
@@ -3451,8 +3403,8 @@ export_antibody.short_description = "Export selected antibodies"
 
 class AntibodyPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeFormWithNavigation):
     
-    list_display = ('id_magnific', 'name', 'catalogue_number', 'received_from', 'species_isotype', 'clone', 'l_ocation', 'get_sheet_short_name', 'availability',)
-    list_display_links = None
+    list_display = ('id', 'name', 'catalogue_number', 'received_from', 'species_isotype', 'clone', 'l_ocation', 'get_sheet_short_name', 'availability',)
+    list_display_links = ('id',)
     list_per_page = 25
     formfield_overrides = {CharField: {'widget': TextInput(attrs={'size':'93'})},}
     djangoql_schema = AntibodyQLSchema
@@ -3551,12 +3503,3 @@ class AntibodyPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChan
         else:
             return ''
     get_sheet_short_name.short_description = 'Info Sheet'
-
-    def id_magnific(self, instance):
-        url = reverse(f'admin:{self.model._meta.app_label}_{self.model._meta.model_name}_change',
-                        args=(quote(instance.pk),),
-                        current_app=self.admin_site.name,
-                        )
-        return mark_safe(f'<a class="field-id magnific-id" href="{url}">{instance.pk}</a>')
-    id_magnific.short_description = 'ID'
-    id_magnific.admin_order_field = 'id'

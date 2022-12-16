@@ -13,6 +13,7 @@ from django import forms
 from django.forms import TextInput
 from django.http import HttpResponseRedirect
 from django.http import HttpResponse
+from django.http import JsonResponse
 from django_project.settings import MEDIA_ROOT
 from django_project.settings import BASE_DIR
 from django_project.private_settings import LAB_ABBREVIATION_FOR_FILES
@@ -29,6 +30,7 @@ from django.utils.encoding import force_text
 from django.utils.text import capfirst
 from django.utils import timezone
 from django.db.models import Q
+from django.conf.urls import url
 
 from django.contrib.admin.options import IS_POPUP_VAR
 from django.contrib.admin.options import TO_FIELD_VAR
@@ -96,6 +98,39 @@ class Approval():
             return instance.created_approval_by_pi
     approval.boolean = True
     approval.short_description = "Approved"
+
+
+class AdminChangeFormWithNavigation(admin.ModelAdmin):
+    
+    def get_urls(self):
+        """
+        Add navigation url
+        """
+
+        urls = super(AdminChangeFormWithNavigation, self).get_urls()
+
+        urls = [url(r'^(?P<object_id>.+)/navigation/$', view=self.navigation)] + urls
+        
+        return urls
+
+    def navigation(self, request, *args, **kwargs):
+
+        """Return previous or next record, if available"""
+
+        direction = request.GET.get('direction', None)
+        obj_redirect_id = None
+        if direction:
+            obj_id = int(kwargs['object_id'])
+            try:
+                if direction.endswith('next'):
+                    obj_redirect_id = self.model.objects.filter(id__gt=obj_id).order_by('id').first().id
+                else:
+                    obj_redirect_id = self.model.objects.filter(id__lt=obj_id).order_by('-id').first().id
+            except: 
+                    pass
+                
+        return JsonResponse({'id': obj_redirect_id})
+
 
 class SimpleHistoryWithSummaryAdmin(SimpleHistoryAdmin):
 
@@ -254,8 +289,6 @@ class CustomGuardedModelAdmin(GuardedModelAdmin):
         """
         Extends standard guardian admin model urls with delete url
         """
-        
-        from django.conf.urls import url
         
         urls = super(CustomGuardedModelAdmin, self).get_urls()
 
@@ -737,7 +770,7 @@ class SaCerevisiaeStrainEpisomalPlasmidInline(admin.TabularInline):
             self.classes = []
         return super(SaCerevisiaeStrainEpisomalPlasmidInline, self).get_queryset(request)
 
-class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin, Approval):
+class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin, Approval, AdminChangeFormWithNavigation):
     
     list_display = ('id_magnific', 'name', 'mating_type', 'background', 'created_by', 'approval')
     list_display_links = None
@@ -1184,7 +1217,7 @@ class PlasmidForm(forms.ModelForm):
 
         return self.cleaned_data
 
-class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin, Approval):
+class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin, Approval, AdminChangeFormWithNavigation):
     
     list_display = ('id_magnific', 'name', 'selection', 'get_plasmidmap_short_name', 'created_by', 'approval')
     list_display_links = None
@@ -2016,7 +2049,7 @@ def export_oligo(modeladmin, request, queryset):
     return response
 export_oligo.short_description = "Export selected oligos"
 
-class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelAdmin, Approval):
+class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Approval, AdminChangeFormWithNavigation):
     list_display = ('id_magnific', 'name','get_oligo_short_sequence', 'restriction_site','created_by', 'approval')
     list_display_links = None
     list_per_page = 25
@@ -2338,7 +2371,7 @@ class ScPombeStrainEpisomalPlasmidInline(admin.TabularInline):
             self.classes = []
         return super(ScPombeStrainEpisomalPlasmidInline, self).get_queryset(request)
 
-class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelAdmin, Approval):
+class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Approval, AdminChangeFormWithNavigation):
     list_display = ('id_magnific', 'name', 'auxotrophic_marker', 'mating_type', 'approval',)
     list_display_links = None
     list_per_page = 25
@@ -2664,7 +2697,7 @@ def export_ecolistrain(modeladmin, request, queryset):
     return response
 export_ecolistrain.short_description = "Export selected strains"
 
-class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelAdmin, Approval):
+class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Approval, AdminChangeFormWithNavigation):
     list_display = ('id_magnific', 'name', 'resistance', 'us_e','purpose', 'approval')
     list_display_links = None
     list_per_page = 25
@@ -3079,7 +3112,7 @@ class CellLineEpisomalPlasmidInline(admin.TabularInline):
             self.classes = []
         return super(CellLineEpisomalPlasmidInline, self).get_queryset(request)
 
-class CellLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin, Approval):
+class CellLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin, Approval, AdminChangeFormWithNavigation):
     
     list_display = ('id_magnific', 'name', 'box_name', 'created_by', 'approval')
     list_display_links = None
@@ -3416,7 +3449,7 @@ def export_antibody(modeladmin, request, queryset):
     return response
 export_antibody.short_description = "Export selected antibodies"
 
-class AntibodyPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelAdmin):
+class AntibodyPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeFormWithNavigation):
     
     list_display = ('id_magnific', 'name', 'catalogue_number', 'received_from', 'species_isotype', 'clone', 'l_ocation', 'get_sheet_short_name', 'availability',)
     list_display_links = None

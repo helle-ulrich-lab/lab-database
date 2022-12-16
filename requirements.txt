@@ -2,6 +2,7 @@ asgiref==3.4.1
 astroid==2.3.3
 attrs==21.2.0
 beautifulsoup4==4.8.1
+biopython==1.80
 bleach==5.0.1
 certifi==2019.11.28
 cffi==1.15.0

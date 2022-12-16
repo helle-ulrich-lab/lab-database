@@ -20,7 +20,7 @@ $(document).ready(function () {
 
         gallery: {
             enabled: true,
-            preload: [0, 2],
+            preload: 0,
             navigateByImgClick: true,
             arrowMarkup: '<button title="%title%" type="button" class="mfp-arrow mfp-arrow-%dir%"></button>',
             tPrev: 'Previous (Left arrow key)',

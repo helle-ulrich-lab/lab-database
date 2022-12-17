@@ -3,6 +3,7 @@
 #################################################
 
 from django.db import models
+from django.contrib.postgres.fields import ArrayField
 from django.contrib.auth.models import User
 from django.utils.encoding import force_text
 from django.contrib.contenttypes.fields import GenericRelation
@@ -175,10 +176,8 @@ class Order(models.Model, SaveWithoutHistoricalRecord):
     ghs_pictogram_old = models.CharField("GHS pictogram", max_length=255, blank=True, validators=[validate_absence_airquotes])
     ghs_symbols = models.ManyToManyField('GhsSymbol', verbose_name ='GHS symbols', related_name='order_ghs_symbols', blank=True)
     signal_words = models.ManyToManyField('SignalWord', verbose_name ='signal words', related_name='order_signal_words', blank=True)
-    history_ghs_symbols = models.TextField("GHS symbols", blank=True)
-    history_signal_words = models.TextField("signal words", blank=True)
-    ghs_symbols_autocomplete = models.TextField(default='')
-    signal_words_autocomplete = models.TextField(default='')
+    history_ghs_symbols = ArrayField(models.PositiveIntegerField(), verbose_name="GHS symbols", blank=True)
+    history_signal_words = ArrayField(models.PositiveIntegerField(), verbose_name="signal words", blank=True)
     msds_form = models.ForeignKey(MsdsForm, on_delete=models.PROTECT, verbose_name='MSDS form', blank=True, null=True)
     hazard_level_pregnancy = models.CharField("Hazard level for pregnancy", max_length=255, choices=HAZARD_LEVEL_PREGNANCY_CHOICES, default='none', blank=True)
     

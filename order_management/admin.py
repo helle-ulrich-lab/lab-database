@@ -112,8 +112,8 @@ class OrderAdmin(admin.AdminSite):
         first_export_field = "supplier_part_no" if query_field_name == "part_description" else "part_description"
 
         export_fields =  [first_export_field, "supplier",  "location_id", "msds_form_id", 
-                          "price", "cas_number", "ghs_symbols_autocomplete",
-                          "signal_words_autocomplete", "hazard_level_pregnancy"]
+                          "price", "cas_number", "history_ghs_symbols",
+                          "history_signal_words", "hazard_level_pregnancy"]
 
         # Get possible hits
         orders = Order.objects.filter(**{'{}__icontains'.format(query_field_name): search_query}) \
@@ -131,7 +131,7 @@ class OrderAdmin(admin.AdminSite):
             # Create label:data pairs using part_description or supplier_part_no as values
             # only up to 10 orders, for the data entry create a dictionary of relevant fields
             # in the process clean up the names of relevant field, i.e. those that contain
-            # _id and _autocomplete
+            # _id and history_
             part_description_lower = order.part_description.lower()
             
             if part_description_lower not in prod_names:
@@ -141,7 +141,7 @@ class OrderAdmin(admin.AdminSite):
                 prod_names.append(part_description_lower)
                 order_dict = order.__dict__
                 orders_for_autocomplete.append({"label": getattr(order, query_field_name), 
-                                                "data": {f.replace("_id", "").replace("_autocomplete", ""):
+                                                "data": {f.replace("_id", "").replace("history_", ""):
                                                          order_dict[f]
                                                          for f in export_fields}
                                                 })
@@ -280,16 +280,14 @@ def mass_update(modeladmin, request, queryset):
                                 for e in queryset:
                                     e.ghs_symbols.clear()
                                     e.ghs_symbols.add(*value)
-                                history_ghs_symbols = str(tuple(value.order_by('code').values_list('code', flat=True))).replace(',)', ')')
-                                ghs_symbols_autocomplete = str(tuple(value.order_by('id').values_list('id', flat=True))).replace(',)', ')').replace(" ", "")[1:-1]
-                                queryset.update(history_ghs_symbols=history_ghs_symbols, ghs_symbols_autocomplete=ghs_symbols_autocomplete)
+                                history_ghs_symbols = value.order_by('id').distinct('id').values_list('id', flat=True)
+                                queryset.update(history_ghs_symbols=history_ghs_symbols)
                             else:
                                 for e in queryset:
                                     e.signal_words.clear()
                                     e.signal_words.add(*value)
-                                history_signal_words = str(tuple(value.order_by('signal_word').values_list('signal_word', flat=True))).replace(',)', ')')
-                                signal_words_autocomplete = str(tuple(value.order_by('id').values_list('id', flat=True))).replace(',)', ')').replace(" ", "")[1:-1]
-                                queryset.update(history_signal_words=history_signal_words, signal_words_autocomplete=signal_words_autocomplete)
+                                history_signal_words = value.order_by('id').distinct('id').values_list('id', flat=True)
+                                queryset.update(history_signal_words=history_signal_words)
 
                             success_message = True
                         else:
@@ -1006,10 +1004,8 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
         # Keep a record of the IDs of linked M2M fields in the main order record
         # Not pretty, but it works
 
-        obj.history_ghs_symbols = str(tuple(obj.ghs_symbols.all().order_by('code').values_list('code', flat=True))).replace(',)', ')') if obj.ghs_symbols.all() else ""
-        obj.history_signal_words = str(tuple(obj.signal_words.all().order_by('signal_word').values_list('signal_word', flat=True))).replace(',)', ')') if obj.signal_words.all() else ""
-        obj.ghs_symbols_autocomplete = str(tuple(obj.ghs_symbols.all().order_by('id').values_list('id', flat=True))).replace(',)', ')').replace(" ", "")[1:-1] if obj.ghs_symbols.all() else ""
-        obj.signal_words_autocomplete = str(tuple(obj.signal_words.all().order_by('id').values_list('id', flat=True))).replace(',)', ')').replace(" ", "")[1:-1] if obj.signal_words.all() else ""
+        obj.history_ghs_symbols = list(obj.ghs_symbols.order_by('id').distinct('id').values_list('id', flat=True)) if obj.ghs_symbols.exists() else []
+        obj.history_signal_words = list(obj.signal_words.order_by('id').distinct('id').values_list('id', flat=True)) if obj.signal_words.exists() else []
 
         obj.save()
 
@@ -1017,8 +1013,6 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
         history_obj = obj.history.latest()
         history_obj.history_ghs_symbols = obj.history_ghs_symbols
         history_obj.history_signal_words = obj.history_signal_words
-        history_obj.ghs_symbols_autocomplete = obj.ghs_symbols_autocomplete
-        history_obj.signal_words_autocomplete = obj.signal_words_autocomplete
 
         history_obj.save()
 
@@ -1262,6 +1256,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
                 kwargs["queryset"] = Location.objects.exclude(status=True).order_by('name')
 
         return super(OrderPage, self).formfield_for_foreignkey(db_field, request, **kwargs)
+        
 
 #################################################
 #                MSDS FORM PAGES                #

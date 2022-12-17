@@ -878,9 +878,9 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
         if plasmid_id_list:
             obj.history_all_plasmids_in_stocked_strain = list(plasmid_id_list.order_by('id').distinct('id').values_list('id', flat=True))
 
-        obj.history_formz_projects = list(obj.formz_projects.order_by('id').distinct('id').values_list('id', flat=True).distinct()) if obj.formz_projects.exists() else []
-        obj.history_formz_gentech_methods = list(obj.formz_gentech_methods.order_by('id').distinct('id').values_list('id', flat=True).distinct()) if obj.formz_gentech_methods.exists() else []
-        obj.history_formz_elements = list(obj.formz_elements.order_by('id').distinct('id').values_list('id', flat=True).distinct()) if obj.formz_elements.exists() else []
+        obj.history_formz_projects = list(obj.formz_projects.order_by('id').distinct('id').values_list('id', flat=True)) if obj.formz_projects.exists() else []
+        obj.history_formz_gentech_methods = list(obj.formz_gentech_methods.order_by('id').distinct('id').values_list('id', flat=True)) if obj.formz_gentech_methods.exists() else []
+        obj.history_formz_elements = list(obj.formz_elements.order_by('id').distinct('id').values_list('id', flat=True)) if obj.formz_elements.exists() else []
 
         obj.save_without_historical_record()
 
@@ -2472,9 +2472,9 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Appr
         if plasmid_id_list:
             obj.history_all_plasmids_in_stocked_strain = list(plasmid_id_list.order_by('id').distinct('id').values_list('id', flat=True))
 
-        obj.history_formz_projects = list(obj.formz_projects.order_by('id').distinct('id').values_list('id', flat=True).distinct()) if obj.formz_projects.exists() else []
-        obj.history_formz_gentech_methods = list(obj.formz_gentech_methods.order_by('id').distinct('id').values_list('id', flat=True).distinct()) if obj.formz_gentech_methods.exists() else []
-        obj.history_formz_elements = list(obj.formz_elements.order_by('id').distinct('id').values_list('id', flat=True).distinct()) if obj.formz_elements.exists() else []
+        obj.history_formz_projects = list(obj.formz_projects.order_by('id').distinct('id').values_list('id', flat=True)) if obj.formz_projects.exists() else []
+        obj.history_formz_gentech_methods = list(obj.formz_gentech_methods.order_by('id').distinct('id').values_list('id', flat=True)) if obj.formz_gentech_methods.exists() else []
+        obj.history_formz_elements = list(obj.formz_elements.order_by('id').distinct('id').values_list('id', flat=True)) if obj.formz_elements.exists() else []
 
         obj.save_without_historical_record()
 

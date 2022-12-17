@@ -2,7 +2,8 @@
   font-display: block;
   font-family: "bootstrap-icons";
   src: url("../../fonts/bootstrap-icons.woff2") format("woff2"),
-url("../../fonts/bootstrap-icons.woff") format("woff");
+       url("../../fonts/bootstrap-icons.woff") format("woff");
+  unicode-range: U+F147, U+F525, U+F137, U+F12E, U+F584;
 }
 
 .bi::before,
@@ -20,7 +21,14 @@ url("../../fonts/bootstrap-icons.woff") format("woff");
   -moz-osx-font-smoothing: grayscale;
 }
 
-.bi-123::before { content: "\f67f"; }
+.bi-save::before { content: "\f525"; }
+.bi-arrow-up-square::before { content: "\f147"; }
+.bi-arrow-right-square::before { content: "\f137"; }
+.bi-arrow-left-square::before { content: "\f12e"; }
+.bi-square::before { content: "\f584"; }
+
+
+/* .bi-123::before { content: "\f67f"; }
 .bi-alarm-fill::before { content: "\f101"; }
 .bi-alarm::before { content: "\f102"; }
 .bi-align-bottom::before { content: "\f103"; }
@@ -66,7 +74,6 @@ url("../../fonts/bootstrap-icons.woff") format("woff");
 .bi-arrow-left-right::before { content: "\f12b"; }
 .bi-arrow-left-short::before { content: "\f12c"; }
 .bi-arrow-left-square-fill::before { content: "\f12d"; }
-.bi-arrow-left-square::before { content: "\f12e"; }
 .bi-arrow-left::before { content: "\f12f"; }
 .bi-arrow-repeat::before { content: "\f130"; }
 .bi-arrow-return-left::before { content: "\f131"; }
@@ -75,7 +82,6 @@ url("../../fonts/bootstrap-icons.woff") format("woff");
 .bi-arrow-right-circle::before { content: "\f134"; }
 .bi-arrow-right-short::before { content: "\f135"; }
 .bi-arrow-right-square-fill::before { content: "\f136"; }
-.bi-arrow-right-square::before { content: "\f137"; }
 .bi-arrow-right::before { content: "\f138"; }
 .bi-arrow-up-circle-fill::before { content: "\f139"; }
 .bi-arrow-up-circle::before { content: "\f13a"; }
@@ -91,7 +97,6 @@ url("../../fonts/bootstrap-icons.woff") format("woff");
 .bi-arrow-up-right::before { content: "\f144"; }
 .bi-arrow-up-short::before { content: "\f145"; }
 .bi-arrow-up-square-fill::before { content: "\f146"; }
-.bi-arrow-up-square::before { content: "\f147"; }
 .bi-arrow-up::before { content: "\f148"; }
 .bi-arrows-angle-contract::before { content: "\f149"; }
 .bi-arrows-angle-expand::before { content: "\f14a"; }
@@ -1081,7 +1086,6 @@ url("../../fonts/bootstrap-icons.woff") format("woff");
 .bi-rss::before { content: "\f522"; }
 .bi-rulers::before { content: "\f523"; }
 .bi-save-fill::before { content: "\f524"; }
-.bi-save::before { content: "\f525"; }
 .bi-save2-fill::before { content: "\f526"; }
 .bi-save2::before { content: "\f527"; }
 .bi-scissors::before { content: "\f528"; }
@@ -1176,7 +1180,6 @@ url("../../fonts/bootstrap-icons.woff") format("woff");
 .bi-spellcheck::before { content: "\f581"; }
 .bi-square-fill::before { content: "\f582"; }
 .bi-square-half::before { content: "\f583"; }
-.bi-square::before { content: "\f584"; }
 .bi-stack::before { content: "\f585"; }
 .bi-star-fill::before { content: "\f586"; }
 .bi-star-half::before { content: "\f587"; }
@@ -2015,4 +2018,4 @@ url("../../fonts/bootstrap-icons.woff") format("woff");
 .bi-person-vcard::before { content: "\f8c9"; }
 .bi-sina-weibo::before { content: "\f8ca"; }
 .bi-tencent-qq::before { content: "\f8cb"; }
-.bi-wikipedia::before { content: "\f8cc"; }
+.bi-wikipedia::before { content: "\f8cc"; } */

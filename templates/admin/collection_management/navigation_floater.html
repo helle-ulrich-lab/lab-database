@@ -38,10 +38,10 @@
 </style>
 
 <div id="navigation-floater">
-    <i class="bi-arrow-up-square" id="navigation-close" onclick="location.href='{% url opts|admin_urlname:'changelist' %}'" title="Close"></i>
-    <i class="bi-save" id="navigation-save" {% if show_save or show_save_and_add_another %} onclick='document.getElementsByName("_save")[0].click();'{% else %}style='pointer-events:none;opacity: 0.3;' {% endif %} title="Save"></i>
-    <i class="bi-arrow-right-square"id="navigation-next" onclick="whichRecord(event);" title="Next"></i>
-    <i class="bi-arrow-left-square" id="navigation-previous" onclick="whichRecord(event);" title="Previous"></i>
+    <i class="bi bi-arrow-up-square" id="navigation-close" onclick="location.href='{% url opts|admin_urlname:'changelist' %}'" title="Close"></i>
+    <i class="bi bi-save" id="navigation-save" {% if show_save or show_save_and_add_another %} onclick='document.getElementsByName("_save")[0].click();'{% else %}style='pointer-events:none;opacity: 0.3;' {% endif %} title="Save"></i>
+    <i class="bi bi-arrow-right-square"id="navigation-next" onclick="whichRecord(event);" title="Next"></i>
+    <i class="bi bi-arrow-left-square" id="navigation-previous" onclick="whichRecord(event);" title="Previous"></i>
     
 </div>
 

@@ -1256,7 +1256,13 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
                 kwargs["queryset"] = Location.objects.exclude(status=True).order_by('name')
 
         return super(OrderPage, self).formfield_for_foreignkey(db_field, request, **kwargs)
-        
+
+    def get_history_array_fields(self):
+
+        return {**super(OrderPage, self).get_history_array_fields(),
+                'history_ghs_symbols': GhsSymbol,
+                'history_signal_words': SignalWord,
+                }
 
 #################################################
 #                MSDS FORM PAGES                #

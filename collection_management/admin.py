@@ -136,6 +136,9 @@ class SimpleHistoryWithSummaryAdmin(SimpleHistoryAdmin):
 
     object_history_template = "admin/object_history_with_change_summary.html"
 
+    def get_history_array_fields(self):
+        return {}
+
     def history_view(self, request, object_id, extra_context=None):
         """The 'history' admin view for this model."""
 
@@ -168,17 +171,7 @@ class SimpleHistoryWithSummaryAdmin(SimpleHistoryAdmin):
             except action_list.model.DoesNotExist:
                 raise Http404
 
-        array_fields = {
-            'history_integrated_plasmids': Plasmid,
-            'history_cassette_plasmids': Plasmid,
-            'history_episomal_plasmids': Plasmid,
-            'history_all_plasmids_in_stocked_strain': Plasmid,
-            'history_formz_projects': FormZProject,
-            'history_formz_gentech_methods': GenTechMethod,
-            'history_formz_elements': FormZBaseElement,
-            'history_formz_ecoli_strains': FormZBaseElement,
-            'history_documents': CellLineDoc
-        }
+        array_fields = self.get_history_array_fields()
 
         ignore_fields = ("time", "_pi", "map_png", "map_gbk", '_user', '_autocomplete')
 
@@ -1083,6 +1076,18 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
             return HttpResponseRedirect(reverse("admin:record_approval_recordtobeapproved_change", args=(obj.approval.latest('created_date_time').id,)))
         
         return super(SaCerevisiaeStrainPage,self).response_change(request,obj)
+    
+    def get_history_array_fields(self):
+
+        return {**super(SaCerevisiaeStrainPage, self).get_history_array_fields(),
+                'history_integrated_plasmids': Plasmid,
+                'history_cassette_plasmids': Plasmid,
+                'history_episomal_plasmids': Plasmid,
+                'history_all_plasmids_in_stocked_strain': Plasmid,
+                'history_formz_projects': FormZProject,
+                'history_formz_gentech_methods': GenTechMethod,
+                'history_formz_elements': FormZBaseElement,
+                }
 
 
 #################################################
@@ -1972,6 +1977,15 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
                         fail_silently=True)
             raise Exception
 
+    def get_history_array_fields(self):
+
+        return {**super(PlasmidPage, self).get_history_array_fields(),
+                'history_formz_projects': FormZProject,
+                'history_formz_gentech_methods': GenTechMethod,
+                'history_formz_elements': FormZBaseElement,
+                'history_formz_ecoli_strains': FormZBaseElement,
+                }
+
 
 #################################################
 #                 OLIGO PAGES                   #
@@ -2604,6 +2618,18 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Appr
         
         return super(ScPombeStrainPage,self).response_change(request,obj)
 
+    def get_history_array_fields(self):
+
+        return {**super(ScPombeStrainPage, self).get_history_array_fields(),
+                'history_integrated_plasmids': Plasmid,
+                'history_cassette_plasmids': Plasmid,
+                'history_episomal_plasmids': Plasmid,
+                'history_all_plasmids_in_stocked_strain': Plasmid,
+                'history_formz_projects': FormZProject,
+                'history_formz_gentech_methods': GenTechMethod,
+                'history_formz_elements': FormZBaseElement,
+                }
+
 
 #################################################
 #              E. COLI STRAIN PAGES             #
@@ -2874,6 +2900,14 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Approv
         history_obj.history_formz_projects = obj.history_formz_projects
         history_obj.history_formz_elements = obj.history_formz_elements
         history_obj.save()
+
+    def get_history_array_fields(self):
+
+        return {**super(EColiStrainPage, self).get_history_array_fields(),
+                'history_formz_projects': FormZProject,
+                'history_formz_gentech_methods': GenTechMethod,
+                'history_formz_elements': FormZBaseElement,
+                }
 
 
 #################################################
@@ -3351,6 +3385,17 @@ class CellLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGua
                 kwargs["queryset"] = Species.objects.filter(show_in_cell_line_collection=True)
 
         return super(CellLinePage, self).formfield_for_foreignkey(db_field, request, **kwargs)
+
+    def get_history_array_fields(self):
+
+        return {**super(CellLinePage, self).get_history_array_fields(),
+                'history_integrated_plasmids': Plasmid,
+                'history_episomal_plasmids': Plasmid,
+                'history_formz_projects': FormZProject,
+                'history_formz_gentech_methods': GenTechMethod,
+                'history_formz_elements': FormZBaseElement,
+                'history_document': CellLineDoc
+                }
 
 
 #################################################

@@ -276,19 +276,12 @@ def mass_update(modeladmin, request, queryset):
                 for field_name, value in list(form.cleaned_data.items()):
                     if isinstance(form.fields[field_name], ModelMultipleChoiceField):
                         if field_name == 'ghs_symbols' or field_name == 'signal_words':
-                            if field_name == 'ghs_symbols':
-                                for e in queryset:
-                                    e.ghs_symbols.clear()
-                                    e.ghs_symbols.add(*value)
-                                history_ghs_symbols = value.order_by('id').distinct('id').values_list('id', flat=True)
-                                queryset.update(history_ghs_symbols=history_ghs_symbols)
-                            else:
-                                for e in queryset:
-                                    e.signal_words.clear()
-                                    e.signal_words.add(*value)
-                                history_signal_words = value.order_by('id').distinct('id').values_list('id', flat=True)
-                                queryset.update(history_signal_words=history_signal_words)
-
+                            for e in queryset:
+                                field = getattr(e, field_name)
+                                field.clear()
+                                field.add(*value)
+                            history_ids = list(value.order_by('id').distinct('id').values_list('id', flat=True))
+                            queryset.update(**{f'history_{field_name}': history_ids})
                             success_message = True
                         else:
                             messages.error(request, "Unable to mass update ManyToManyField without 'validate'")

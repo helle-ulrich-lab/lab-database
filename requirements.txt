@@ -4,7 +4,7 @@ attrs==21.2.0
 beautifulsoup4==4.8.1
 biopython==1.80
 bleach==5.0.1
-certifi==2019.11.28
+certifi==2022.12.7
 cffi==1.15.0
 chardet==3.0.4
 cryptography==37.0.2

@@ -110,13 +110,13 @@ class SaCerevisiaeStrain (models.Model, SaveWithoutHistoricalRecord):
     destroyed_date = models.DateField("destroyed", blank=True, null=True)
 
     # Fields to keep a record of M2M field values (only IDs!) in the main strain record
-    history_integrated_plasmids = ArrayField(models.PositiveIntegerField(), verbose_name="integrated plasmid", blank=True)
-    history_cassette_plasmids =ArrayField(models.PositiveIntegerField(), verbose_name="cassette plasmids", blank=True)
-    history_episomal_plasmids = ArrayField(models.PositiveIntegerField(), verbose_name="episomal plasmids", blank=True)
-    history_all_plasmids_in_stocked_strain = ArrayField(models.PositiveIntegerField(), verbose_name="all plasmids in stocked strain", blank=True) # Integrated, cassete and episomal (only if present in -80 stock)
-    history_formz_projects =ArrayField(models.PositiveIntegerField(), verbose_name="formZ projects", blank=True)
-    history_formz_gentech_methods = ArrayField(models.PositiveIntegerField(), verbose_name="genTech methods", blank=True)
-    history_formz_elements = ArrayField(models.PositiveIntegerField(), verbose_name="formz elements", blank=True)
+    history_integrated_plasmids = ArrayField(models.PositiveIntegerField(), verbose_name="integrated plasmid", blank=True, null=True)
+    history_cassette_plasmids =ArrayField(models.PositiveIntegerField(), verbose_name="cassette plasmids", blank=True, null=True)
+    history_episomal_plasmids = ArrayField(models.PositiveIntegerField(), verbose_name="episomal plasmids", blank=True, null=True)
+    history_all_plasmids_in_stocked_strain = ArrayField(models.PositiveIntegerField(), verbose_name="all plasmids in stocked strain", blank=True, null=True) # Integrated, cassete and episomal (only if present in -80 stock)
+    history_formz_projects =ArrayField(models.PositiveIntegerField(), verbose_name="formZ projects", blank=True, null=True)
+    history_formz_gentech_methods = ArrayField(models.PositiveIntegerField(), verbose_name="genTech methods", blank=True, null=True)
+    history_formz_elements = ArrayField(models.PositiveIntegerField(), verbose_name="formz elements", blank=True, null=True)
 
     class Meta:
         verbose_name = 'strain - Sa. cerevisiae'
@@ -244,10 +244,10 @@ class Plasmid (models.Model, SaveWithoutHistoricalRecord):
 
     # Fields to keep a record of M2M field values in the main plasmid record: IDs for formz_projects
     # and names for formz_elements
-    history_formz_projects = ArrayField(models.PositiveIntegerField(), verbose_name="formZ projects", blank=True)
-    history_formz_elements = ArrayField(models.PositiveIntegerField(), verbose_name="formz elements", blank=True)
-    history_formz_gentech_methods = ArrayField(models.PositiveIntegerField(), verbose_name="genTech methods", blank=True)
-    history_formz_ecoli_strains = ArrayField(models.PositiveIntegerField(), verbose_name="e. coli strains", blank=True)
+    history_formz_projects = ArrayField(models.PositiveIntegerField(), verbose_name="formZ projects", blank=True, null=True)
+    history_formz_elements = ArrayField(models.PositiveIntegerField(), verbose_name="formz elements", blank=True, null=True)
+    history_formz_gentech_methods = ArrayField(models.PositiveIntegerField(), verbose_name="genTech methods", blank=True, null=True)
+    history_formz_ecoli_strains = ArrayField(models.PositiveIntegerField(), verbose_name="e. coli strains", blank=True, null=True)
     
     class Meta:
         verbose_name = 'plasmid'
@@ -452,13 +452,13 @@ class ScPombeStrain (models.Model, SaveWithoutHistoricalRecord):
     destroyed_date = models.DateField("destroyed", blank=True, null=True)
 
     # Fields to keep a record of M2M field values (only IDs!) in the main strain record
-    history_integrated_plasmids = ArrayField(models.PositiveIntegerField(), verbose_name="integrated plasmid", blank=True)
-    history_cassette_plasmids =ArrayField(models.PositiveIntegerField(), verbose_name="cassette plasmids", blank=True)
-    history_episomal_plasmids = ArrayField(models.PositiveIntegerField(), verbose_name="episomal plasmids", blank=True)
-    history_all_plasmids_in_stocked_strain = ArrayField(models.PositiveIntegerField(), verbose_name="all plasmids in stocked strain", blank=True) # Integrated, cassete and episomal (only if present in -80 stock)
-    history_formz_projects =ArrayField(models.PositiveIntegerField(), verbose_name="formZ projects", blank=True)
-    history_formz_gentech_methods = ArrayField(models.PositiveIntegerField(), verbose_name="genTech methods", blank=True)
-    history_formz_elements = ArrayField(models.PositiveIntegerField(), verbose_name="formz elements", blank=True)
+    history_integrated_plasmids = ArrayField(models.PositiveIntegerField(), verbose_name="integrated plasmid", blank=True, null=True)
+    history_cassette_plasmids =ArrayField(models.PositiveIntegerField(), verbose_name="cassette plasmids", blank=True, null=True)
+    history_episomal_plasmids = ArrayField(models.PositiveIntegerField(), verbose_name="episomal plasmids", blank=True, null=True)
+    history_all_plasmids_in_stocked_strain = ArrayField(models.PositiveIntegerField(), verbose_name="all plasmids in stocked strain", blank=True, null=True) # Integrated, cassete and episomal (only if present in -80 stock)
+    history_formz_projects =ArrayField(models.PositiveIntegerField(), verbose_name="formZ projects", blank=True, null=True)
+    history_formz_gentech_methods = ArrayField(models.PositiveIntegerField(), verbose_name="genTech methods", blank=True, null=True)
+    history_formz_elements = ArrayField(models.PositiveIntegerField(), verbose_name="formz elements", blank=True, null=True)
     
     class Meta:
         verbose_name = 'strain - Sc. pombe'
@@ -579,9 +579,9 @@ class EColiStrain (models.Model, SaveWithoutHistoricalRecord):
                                             '<a href="/formz/formzbaseelement/" target="_blank">View all/Change</a>')
     destroyed_date = models.DateField("destroyed", blank=True, null=True)
 
-    history_formz_projects = ArrayField(models.PositiveIntegerField(), verbose_name="formZ projects", blank=True)
-    history_formz_gentech_methods = ArrayField(models.PositiveIntegerField(), verbose_name="genTech methods", blank=True)
-    history_formz_elements = ArrayField(models.PositiveIntegerField(), verbose_name="formz elements", blank=True)
+    history_formz_projects = ArrayField(models.PositiveIntegerField(), verbose_name="formZ projects", blank=True, null=True)
+    history_formz_gentech_methods = ArrayField(models.PositiveIntegerField(), verbose_name="genTech methods", blank=True, null=True)
+    history_formz_elements = ArrayField(models.PositiveIntegerField(), verbose_name="formz elements", blank=True, null=True)
 
     class Meta:
         verbose_name = 'strain - E. coli'
@@ -660,12 +660,12 @@ class CellLine (models.Model, SaveWithoutHistoricalRecord):
     destroyed_date = models.DateField("destroyed", blank=True, null=True)
 
     # Fields to keep a record of M2M field values (only IDs!) in the main strain record
-    history_integrated_plasmids = ArrayField(models.PositiveIntegerField(), verbose_name="integrated plasmid", blank=True)
-    history_episomal_plasmids = ArrayField(models.PositiveIntegerField(), verbose_name="episomal plasmids", blank=True)
-    history_formz_projects =ArrayField(models.PositiveIntegerField(), verbose_name="formZ projects", blank=True)
-    history_formz_gentech_methods = ArrayField(models.PositiveIntegerField(), verbose_name="genTech methods", blank=True)
-    history_formz_elements = ArrayField(models.PositiveIntegerField(), verbose_name="formz elements", blank=True)
-    history_documents = ArrayField(models.PositiveIntegerField(), verbose_name="documents", blank=True)
+    history_integrated_plasmids = ArrayField(models.PositiveIntegerField(), verbose_name="integrated plasmid", blank=True, null=True)
+    history_episomal_plasmids = ArrayField(models.PositiveIntegerField(), verbose_name="episomal plasmids", blank=True, null=True)
+    history_formz_projects =ArrayField(models.PositiveIntegerField(), verbose_name="formZ projects", blank=True, null=True)
+    history_formz_gentech_methods = ArrayField(models.PositiveIntegerField(), verbose_name="genTech methods", blank=True, null=True)
+    history_formz_elements = ArrayField(models.PositiveIntegerField(), verbose_name="formz elements", blank=True, null=True)
+    history_documents = ArrayField(models.PositiveIntegerField(), verbose_name="documents", blank=True, null=True)
     
     class Meta:
         verbose_name = 'cell line'

@@ -27,7 +27,7 @@
 &rsaquo; {% if add %}{% blocktrans with name=opts.verbose_name %}Add {{ name }}{% endblocktrans %}{% else %}{{ original|truncatewords:"18" }}{% endif %}
 </div>
 
-{% if not add %}
+{% if not add and original.id%}
 {% include "admin/collection_management/navigation_floater.html" %}
 {% endif %}
 

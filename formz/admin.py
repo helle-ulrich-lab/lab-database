@@ -233,18 +233,6 @@ class FormZProjectPage(admin.ModelAdmin):
     search_fields = ['id', 'short_title']
     autocomplete_fields = ['project_leader'] 
 
-    def get_readonly_fields(self, request, obj=None):
-        '''Override default get_readonly_fields to define user-specific read-only fields
-        If a user is not a superuser, lab manager or the user who created a record
-        return all fields as read-only
-        'created_date_time' and 'last_changed_date_time' fields must always be read-only
-        because their set by Django itself'''
-        
-        if obj:
-            return ['short_title_english', 'short_title']
-        else:
-            return []
-
     def add_view(self,request,extra_context=None):
             
             # Do not show any inlines in add_view

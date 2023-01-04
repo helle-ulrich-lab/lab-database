@@ -225,13 +225,29 @@ class FormZUsersInline(admin.TabularInline):
         
         return super(FormZUsersInline, self).formfield_for_foreignkey(db_field, request, **kwargs)
 
+
+class FormZProjectForm(forms.ModelForm):
+
+    def clean(self):
+
+        # For main S2 projects, check whether any information has been added to
+        # genetic_work_classification 
+        if self.cleaned_data.get('safety_level', 0) == 2:
+            if not self.cleaned_data.get('parent_project'):
+                if not self.cleaned_data.get('genetic_work_classification'):
+                    raise forms.ValidationError({'genetic_work_classification': 
+                                                 ["For S2 projects, the classification of genetic work must be provided.",]})
+
+        return self.cleaned_data
+
 class FormZProjectPage(admin.ModelAdmin):
     
     list_display = ('title', 'short_title_english', 'main_project','model_search_link')
     list_display_links = ('title', )
     list_per_page = 25
     search_fields = ['id', 'short_title']
-    autocomplete_fields = ['project_leader'] 
+    autocomplete_fields = ['project_leader', 'deputy_project_leader']
+    form = FormZProjectForm
 
     def add_view(self,request,extra_context=None):
             
@@ -253,9 +269,10 @@ class FormZProjectPage(admin.ModelAdmin):
                 else:
                     self.inlines = []
 
-        self.fields = ('title', 'short_title', 'short_title_english', 'parent_project', 'safety_level', 'project_leader', 'objectives',
-                       'description', 'donor_organims', 'potential_risk_nuc_acid', 'vectors', 'recipient_organisms', 'generated_gmo', 
-                       'hazard_activity', 'hazards_employee', 'beginning_work_date', 'end_work_date',)
+        self.fields = ('title', 'short_title', 'short_title_english', 'parent_project', 'safety_level', 'project_leader', 
+                       'deputy_project_leader', 'objectives', 'description', 'donor_organims', 'potential_risk_nuc_acid', 
+                       'vectors', 'recipient_organisms', 'generated_gmo', 'hazard_activity', 'hazards_employee', 
+                       'beginning_work_date', 'end_work_date', 'genetic_work_classification')
         return super(FormZProjectPage,self).change_view(request,object_id)
 
     def model_search_link(self, instance):

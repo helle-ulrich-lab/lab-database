@@ -59,7 +59,8 @@ class FormZProject (models.Model):
     parent_project = models.ForeignKey('self', verbose_name = 'parent project', on_delete=models.PROTECT, blank=True, null=True)
 
     safety_level = models.PositiveSmallIntegerField('safety level', help_text='<i>Sicherheitsstufe</i>', choices=((1,1), (2,2)), blank=False, null=True)
-    project_leader = models.ManyToManyField(User, verbose_name = 'project leaders', help_text='<i>Projektleiter</i>', blank=False)
+    project_leader = models.ManyToManyField(User, verbose_name = 'project leaders', related_name='formz_project_leader' , help_text='<i>Projektleiter</i>', blank=False)
+    deputy_project_leader = models.ManyToManyField(User, verbose_name = 'deputy project leaders', related_name='formz_deputy_project_leader', help_text='<i>Stellvertretende Projektleiter</i>', blank=True)
     objectives = models.CharField("objectives of strategy", help_text='<i>Zielsetzung</i>', max_length=255, blank=True)
     description = models.TextField("Description of strategy/performance", help_text= 'Techniques, organisms, plasmids, etc. <i>Beschreibung der Durchführung</i>', blank=True)
     donor_organims = models.CharField("donor organisms", help_text='Used organisms, their risk group and safety-relevant properties. '
@@ -77,6 +78,8 @@ class FormZProject (models.Model):
 
     beginning_work_date = models.DateField("beginning of work", help_text='<i>Beginn der Arbeiten</i>', blank=False, null=True)
     end_work_date = models.DateField("end of work", help_text='<i>Ende der Arbeiten</i>', blank=True, null=True)
+
+    genetic_work_classification = models.CharField("classification of genetic work", help_text = '<i>Einstufung der gentechnischen Arbeiten</i>', max_length=255, blank=True)
 
     users = models.ManyToManyField(User, related_name='formz_project_users', blank=True, through='FormZUsers')
 

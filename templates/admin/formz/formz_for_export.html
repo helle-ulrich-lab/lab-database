@@ -60,22 +60,22 @@
     <div><span style='font-weight: bold'>Projekt/e:</span>
         {% if object.formz_projects.all|length == 1 %}
             {% for project in object.formz_projects.all %}
-                {{project.title}}
+                {{project.title}}{% if project.genetic_work_classification %} - Einstufung der gentechnischen S2-Arbeiten: {{project.genetic_work_classification}}{% endif %}
                 {% if project.parent_project%}
-                    (Hauptprojekt: {{project.parent_project.title}})
+                    (Hauptprojekt: {{project.parent_project.title}}{% if project.parent_project.genetic_work_classification %} - Einstufung der gentechnischen S2-Arbeiten: {{project.parent_project.genetic_work_classification}}{% endif %})
                 {% endif %}
             {% endfor %}
         {% else %}
             {% for project in object.formz_projects.all %}
                 {% if forloop.last %}
-                    {{project.title}}
+                    {{project.title}}{% if project.genetic_work_classification %} - Einstufung der gentechnischen S2-Arbeiten: {{project.genetic_work_classification}}{% endif %}
                     {% if project.parent_project%}
-                        (Hauptprojekt: {{project.parent_project.title}})
+                        (Hauptprojekt: {{project.parent_project.title}}{% if project.parent_project.genetic_work_classification %} - Einstufung der gentechnischen S2-Arbeiten: {{project.parent_project.genetic_work_classification}}{% endif %})
                     {% endif %}
                 {% else %}
-                    {{project.title}}
+                    {{project.title}}{% if project.genetic_work_classification %} - Einstufung der gentechnischen S2-Arbeiten: {{project.genetic_work_classification}}{% endif %}
                     {% if project.parent_project%}
-                        (Hauptprojekt: {{project.parent_project.title}}),
+                        (Hauptprojekt: {{project.parent_project.title}}{% if project.parent_project.genetic_work_classification %} - Einstufung der gentechnischen S2-Arbeiten: {{project.parent_project.genetic_work_classification}}{% endif %}),
                     {% else %}
                     ,
                     {% endif %}

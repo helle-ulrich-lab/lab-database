@@ -118,21 +118,25 @@
             {% if object.formz_projects.all|length == 1 %}
                 {% for project in object.formz_projects.all %}
                     <a class='magnific-popup-iframe-formzproject' href="{% url 'admin:formz_formzproject_change' project.id %}?_to_field=id&_popup=1" target="_blank">{{project.short_title}}</a>
+                    {% if project.genetic_work_classification %} - Einstufung der gentechnischen S2-Arbeiten: {{project.genetic_work_classification}}{% endif %}
                     {% if project.parent_project%}
-                        (Hauptprojekt: <a class='magnific-popup-iframe-formzproject-parent' href="{% url 'admin:formz_formzproject_change' project.parent_project.id %}?_to_field=id&_popup=1" target="_blank">{{project.parent_project.short_title}}</a>)
+                        (Hauptprojekt: <a class='magnific-popup-iframe-formzproject-parent' href="{% url 'admin:formz_formzproject_change' project.parent_project.id %}?_to_field=id&_popup=1" target="_blank">{{project.parent_project.short_title}}</a>
+                        {% if project.parent_project.genetic_work_classification %} - Einstufung der gentechnischen S2-Arbeiten: {{project.parent_project.genetic_work_classification}}{% endif %})
                     {% endif %}
                 {% endfor %}
             {% else %}
                 {% for project in object.formz_projects.all %}
                     {% if forloop.last %}
                         <a class='magnific-popup-iframe-formzproject' href="{% url 'admin:formz_formzproject_change' project.id %}?_to_field=id&_popup=1" target="_blank">{{project.short_title}}</a>
+                        {% if project.genetic_work_classification %} - Einstufung der gentechnischen S2-Arbeiten: {{project.genetic_work_classification}}{% endif %}
                         {% if project.parent_project%}
-                            (Hauptprojekt: <a class='magnific-popup-iframe-formzproject-parent' href="{% url 'admin:formz_formzproject_change' project.parent_project.id %}?_to_field=id&_popup=1" target="_blank">{{project.parent_project.short_title}}</a>)
+                            (Hauptprojekt: <a class='magnific-popup-iframe-formzproject-parent' href="{% url 'admin:formz_formzproject_change' project.parent_project.id %}?_to_field=id&_popup=1" target="_blank">{{project.parent_project.short_title}}</a>{% if project.parent_project.genetic_work_classification %} - Einstufung der gentechnischen S2-Arbeiten: {{project.parent_project.genetic_work_classification}}{% endif %})
                         {% endif %}
                     {% else %}
                         <a href="{% url 'admin:formz_formzproject_change' project.id %}">{{project.short_title}}</a>
+                        {% if project.genetic_work_classification %} - Einstufung der gentechnischen S2-Arbeiten: {{project.genetic_work_classification}}{% endif %}
                         {% if project.parent_project%}
-                            (Hauptprojekt: <a class='magnific-popup-iframe-formzproject-parent' href="{% url 'admin:formz_formzproject_change' project.parent_project.id %}?_to_field=id&_popup=1" target="_blank">{{project.parent_project.short_title}}</a>),
+                            (Hauptprojekt: <a class='magnific-popup-iframe-formzproject-parent' href="{% url 'admin:formz_formzproject_change' project.parent_project.id %}?_to_field=id&_popup=1" target="_blank">{{project.parent_project.short_title}}</a>{% if project.parent_project.genetic_work_classification %} - Einstufung der gentechnischen S2-Arbeiten: {{project.parent_project.genetic_work_classification}}{% endif %}),
                         {% else %}
                         ,
                         {% endif %}

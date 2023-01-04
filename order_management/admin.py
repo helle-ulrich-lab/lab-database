@@ -1237,7 +1237,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
 
             if db_field.name == 'created_by':
                 if request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user.groups.filter(name='Order manager').exists():
-                    kwargs["queryset"] = User.objects.exclude(id__in=[1, 20, 36]).order_by('last_name')
+                    kwargs["queryset"] = User.objects.exclude(username__in=['admin', 'guest', 'AnonymousUser']).order_by('last_name')
                 kwargs['initial'] = request.user.id
 
             # Sort cost_unit and locations fields by name

@@ -221,7 +221,7 @@ class FormZUsersInline(admin.TabularInline):
         # Exclude certain users from the 'User' field
 
         if db_field.name == 'user':
-            kwargs["queryset"] = User.objects.exclude(id__in=[1, 20, 36]).order_by('last_name')
+            kwargs["queryset"] = User.objects.exclude(username__in=['admin', 'guest', 'AnonymousUser']).order_by('last_name')
         
         return super(FormZUsersInline, self).formfield_for_foreignkey(db_field, request, **kwargs)
 

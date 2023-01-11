@@ -91,9 +91,17 @@ class LabUserAdmin(BaseUserAdmin):
                     'fields': ('is_active', 'is_superuser', 'groups', 'user_permissions'),
                 })
                 )
-        else:
+        elif request.user.has_perm('auth.change_user'):
             self.fieldsets = (
                 (None, {'fields': ('username', 'password')}),
+                (_('Personal info'), {'fields': ('first_name', 'last_name', 'email')}),
+                (_('Permissions'), {
+                    'fields': ('is_active', 'groups',),
+                })
+                )
+        else:
+            self.fieldsets = (
+                (None, {'fields': ('username',)}),
                 (_('Personal info'), {'fields': ('first_name', 'last_name', 'email')}),
                 (_('Permissions'), {
                     'fields': ('is_active', 'groups',),

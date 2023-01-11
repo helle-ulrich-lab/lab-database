@@ -1000,7 +1000,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
         obj.history_ghs_symbols = list(obj.ghs_symbols.order_by('id').distinct('id').values_list('id', flat=True)) if obj.ghs_symbols.exists() else []
         obj.history_signal_words = list(obj.signal_words.order_by('id').distinct('id').values_list('id', flat=True)) if obj.signal_words.exists() else []
 
-        obj.save()
+        obj.save_without_historical_record()
 
         # Keep a record of the IDs of linked M2M fields in the latest history order record
         history_obj = obj.history.latest()

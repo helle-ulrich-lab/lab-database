@@ -7,7 +7,7 @@ db_backup/**
 static/admin/css/base.css
 private_settings.py
 others/**
-.vscode/**
+.vscode/
 others
 .vscode/settings.json
 

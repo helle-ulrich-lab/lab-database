@@ -992,22 +992,24 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
         
         super(OrderPage, self).save_related(request, form, formsets, change)
 
-        obj = Order.objects.get(pk=form.instance.id)
+        if form.instance.status != 'cancelled':
 
-        # Keep a record of the IDs of linked M2M fields in the main order record
-        # Not pretty, but it works
+            obj = Order.objects.get(pk=form.instance.id)
 
-        obj.history_ghs_symbols = list(obj.ghs_symbols.order_by('id').distinct('id').values_list('id', flat=True)) if obj.ghs_symbols.exists() else []
-        obj.history_signal_words = list(obj.signal_words.order_by('id').distinct('id').values_list('id', flat=True)) if obj.signal_words.exists() else []
+            # Keep a record of the IDs of linked M2M fields in the main order record
+            # Not pretty, but it works
 
-        obj.save_without_historical_record()
+            obj.history_ghs_symbols = list(obj.ghs_symbols.order_by('id').distinct('id').values_list('id', flat=True)) if obj.ghs_symbols.exists() else []
+            obj.history_signal_words = list(obj.signal_words.order_by('id').distinct('id').values_list('id', flat=True)) if obj.signal_words.exists() else []
 
-        # Keep a record of the IDs of linked M2M fields in the latest history order record
-        history_obj = obj.history.latest()
-        history_obj.history_ghs_symbols = obj.history_ghs_symbols
-        history_obj.history_signal_words = obj.history_signal_words
+            obj.save_without_historical_record()
 
-        history_obj.save()
+            # Keep a record of the IDs of linked M2M fields in the latest history order record
+            history_obj = obj.history.latest()
+            history_obj.history_ghs_symbols = obj.history_ghs_symbols
+            history_obj.history_signal_words = obj.history_signal_words
+
+            history_obj.save()
 
     def get_queryset(self, request):
         

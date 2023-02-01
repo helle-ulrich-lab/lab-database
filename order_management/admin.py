@@ -1263,11 +1263,11 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
 #                MSDS FORM PAGES                #
 #################################################
 
-class SearchFieldOptMsdsName(StrField):
+class SearchFieldOptMsdsLabel(StrField):
     """Create a list of unique cost units for search"""
 
     model = MsdsForm
-    name = 'name'
+    name = 'label'
     suggest_options = True
 
     def get_options(self, search):
@@ -1278,6 +1278,9 @@ class SearchFieldOptMsdsName(StrField):
             records = self.model.objects.filter(label__icontains=search).distinct().order_by('label')[:10]
             return [r.file_name_description for r in records]
 
+    def get_lookup_value(self, value):
+        return value.replace(" ", "_")
+
 class MsdsFormQLSchema(DjangoQLSchema):
     '''Customize search functionality'''
     
@@ -1285,7 +1288,7 @@ class MsdsFormQLSchema(DjangoQLSchema):
         ''' Define fields that can be searched'''
         
         if model == MsdsForm:
-            return ['id', SearchFieldOptMsdsName()]
+            return ['id', SearchFieldOptMsdsLabel()]
         return super(MsdsFormQLSchema, self).get_fields(model)
 
 class MsdsFormForm(forms.ModelForm):

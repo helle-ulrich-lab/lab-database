@@ -1267,7 +1267,7 @@ class SearchFieldOptMsdsLabel(StrField):
     """Create a list of unique cost units for search"""
 
     model = MsdsForm
-    name = 'label'
+    name = 'file_name'
     suggest_options = True
 
     def get_options(self, search):
@@ -1280,6 +1280,9 @@ class SearchFieldOptMsdsLabel(StrField):
 
     def get_lookup_value(self, value):
         return value.replace(" ", "_")
+
+    def get_lookup_name(self):
+        return 'label'
 
 class MsdsFormQLSchema(DjangoQLSchema):
     '''Customize search functionality'''

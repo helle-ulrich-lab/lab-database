@@ -1271,7 +1271,12 @@ class SearchFieldOptMsdsName(StrField):
     suggest_options = True
 
     def get_options(self, search):
-        return self.model.objects.all().distinct()
+
+        if len(search) < 3:
+            return ["Type 3 or more characters to see suggestions"]
+        else:
+            records = self.model.objects.filter(label__icontains=search).distinct().order_by('label')[:10]
+            return [r.file_name_description for r in records]
 
 class MsdsFormQLSchema(DjangoQLSchema):
     '''Customize search functionality'''

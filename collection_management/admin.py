@@ -950,7 +950,7 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
             obj = SaCerevisiaeStrain.objects.get(pk=object_id)
             
             if obj.history_all_plasmids_in_stocked_strain:
-                extra_context['plasmid_id_list'] = obj.history_all_plasmids_in_stocked_strain
+                extra_context['plasmid_id_list'] = tuple(obj.history_all_plasmids_in_stocked_strain)
         
             if request.user == obj.created_by or request.user.groups.filter(name='Lab manager').exists() or \
                 request.user.labuser.is_principal_investigator or obj.created_by.labuser.is_principal_investigator or \
@@ -2541,7 +2541,7 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Appr
             obj = ScPombeStrain.objects.get(pk=object_id)
             
             if obj.history_all_plasmids_in_stocked_strain:
-                extra_context['plasmid_id_list'] = obj.history_all_plasmids_in_stocked_strain
+                extra_context['plasmid_id_list'] = tuple(obj.history_all_plasmids_in_stocked_strain)
             
             if request.user == obj.created_by or request.user.groups.filter(name='Lab manager').exists() or \
                 request.user.is_superuser or request.user.labuser.is_principal_investigator:
@@ -3261,7 +3261,7 @@ class CellLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGua
             obj = CellLine.objects.get(pk=object_id)
             
             if obj.history_integrated_plasmids:
-                extra_context['plasmid_id_list'] = obj.history_integrated_plasmids
+                extra_context['plasmid_id_list'] = tuple(obj.history_integrated_plasmids)
         
             if request.user == obj.created_by or request.user.groups.filter(name='Lab manager').exists() or \
                 request.user.labuser.is_principal_investigator or request.user.is_superuser or \

@@ -68,3 +68,34 @@ $(document).ready(function() {
     if (png_url !== undefined) png_url.classList.add("magnific-popup-img-plasmidmap");
 
 });
+
+// Download plasmid map with imported oligos
+
+function downloadMapWithImportedOligos(event) {
+
+    $.ajax({
+
+        url: event.srcElement.attributes.download_url.value,
+        cache: false,
+        xhrFields: {
+            responseType: 'blob'
+        },
+
+        beforeSend: function (html) {
+            ShowLoading();
+        },
+
+        success: function (data, textStatus, jqXHR) {
+            var a = document.createElement('a');
+            var url = window.URL.createObjectURL(data);
+            a.href = url;
+            a.download = decodeURI(jqXHR.getResponseHeader('Content-Disposition').match(/filename\*=utf-8''(.*)/)[1]);
+            document.body.append(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+            $('.spinner-loader').remove();
+        }
+    }
+    );
+}

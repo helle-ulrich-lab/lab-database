@@ -12,6 +12,7 @@
 <link rel="stylesheet" type="text/css" href="{% static "admin/css/vendor/magnific-popup.css" %}">
 <link rel="stylesheet" type="text/css" href="{% static "admin/css/custom_style_magnific-popup.css" %}">
 <link rel="stylesheet" type="text/css" href="{% static "admin/css/spinner_loader.css" %}">
+<link rel="stylesheet" type="text/css" href="{% static "admin/css/collection_management_plasmid_change_form.css" %}">
 {% endblock %}
 
 {% block coltype %}colM{% endblock %}
@@ -56,8 +57,18 @@
  
     {% if show_formz %}
       <li>
-        <a href="{% url "admin:app_list" app_label %}/{{opts.model_name}}/{{object_id}}/formz">{% trans "FormZ" %}</a>
+        <a href="{% url "admin:app_list" app_label %}{{opts.model_name}}/{{object_id}}/formz">{% trans "FormZ" %}</a>
       </li>
+    {% endif %}
+
+    {% if original.map %}
+    <li>
+      <div class="find-oligo">
+        <div>{% trans "Find Oligos" %}</div>
+        <a title='Download result as .dna file' style="pointer-events: all;" onclick="downloadMapWithImportedOligos(event)" download_url="{% url "admin:app_list" app_label %}{{opts.model_name}}/{{object_id}}/find_oligos/?file_format=dna">🠇</a>
+        <a title='View result in OVE' style='margin-left:5px' class="magnific-popup-iframe-findoligos" href="{{original.get_ove_url_find_oligos_map_gbk}}">⊙</a>
+      </div>
+    </li>
     {% endif %}
 
     {% if has_absolute_url %}<li><a href="{{ absolute_url }}" class="viewsitelink">{% trans "View on site" %}</a></li>{% endif %}
@@ -110,7 +121,7 @@
     <script type="text/javascript" src="{% static 'admin/js/admin/plasmid_change_form.js' %}"></script>
     <script type="text/javascript" src="{% static 'admin/js/vendor/jquery.magnific-popup.min.js' %}"></script>
     <script type="text/javascript">
-      const MagnificiFrameClassIds = ['magnific-popup-iframe-plasmidmap'];
+      const MagnificiFrameClassIds = ['magnific-popup-iframe-plasmidmap', "magnific-popup-iframe-findoligos"];
       const MagnificImgClassIds = ['magnific-popup-img-plasmidmap'];
       {% if original.map %} const oveUrls = {map: "{{original.get_ove_url_map}}"}; {% else %} const oveUrls = {}; {% endif %}
       {% if original.map_gbk %} oveUrls['map_gbk'] = "{{original.get_ove_url_map_gbk}}"; {% endif %}

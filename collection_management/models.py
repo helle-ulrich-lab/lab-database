@@ -359,7 +359,9 @@ class Plasmid (models.Model, SaveWithoutHistoricalRecord):
 
         """Returns the url to view the a SnapGene file in OVE"""
 
-        params = {'file_name': self.map.url, 'title': f'p{LAB_ABBREVIATION_FOR_FILES}{self.__str__()}'}
+        params = {'file_name': self.map.url,
+                  'title': f'p{LAB_ABBREVIATION_FOR_FILES}{self.__str__()}',
+                  'file_format': 'dna'}
 
         return f'{OVE_URL}?{urlencode(params)}'
 
@@ -367,7 +369,21 @@ class Plasmid (models.Model, SaveWithoutHistoricalRecord):
 
         """Returns the url to view the a gbk file in OVE"""
 
-        params = {'file_name': self.map_gbk.url, 'title': f'p{LAB_ABBREVIATION_FOR_FILES}{self.__str__()}'}
+        params = {'file_name': self.map_gbk.url,
+                  'title': f'p{LAB_ABBREVIATION_FOR_FILES}{self.__str__()}',
+                  'file_format': 'gbk'}
+
+        return f'{OVE_URL}?{urlencode(params)}'
+
+    def get_ove_url_find_oligos_map_gbk(self):
+
+        """Returns the url to import all oligos into the plasmid map 
+           and view it in OVE"""
+
+        params = {'file_name': f'/{self._meta.app_label}/{self._meta.model_name}/{self.pk}/find_oligos/',
+                  'title': f'p{LAB_ABBREVIATION_FOR_FILES}{self.__str__()} (imported oligos)',
+                  'file_format': 'gbk',
+                  'show_oligos': 'true'}
 
         return f'{OVE_URL}?{urlencode(params)}'
 

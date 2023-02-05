@@ -12,7 +12,7 @@ from django.utils.translation import ugettext as _
 from django import forms
 from django.forms import TextInput
 from django.http import HttpResponseRedirect
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseNotFound
 from django.http import JsonResponse
 from django_project.settings import MEDIA_ROOT
 from django_project.settings import BASE_DIR
@@ -31,6 +31,7 @@ from django.utils.text import capfirst
 from django.utils import timezone
 from django.db.models import Q
 from django.conf.urls import url
+from django.core.serializers.json import Serializer as JsonSerializer
 
 from django.contrib.admin.options import IS_POPUP_VAR
 from django.contrib.admin.options import TO_FIELD_VAR
@@ -82,6 +83,8 @@ from formz.models import GenTechMethod
 import xlrd
 import csv
 from functools import reduce
+from uuid import uuid4
+import urllib.parse
 
 #################################################
 #                CUSTOM CLASSES                 #
@@ -131,6 +134,125 @@ class AdminChangeFormWithNavigation(admin.ModelAdmin):
                 
         return JsonResponse({'id': obj_redirect_id})
 
+class AdminOligosInPlasmid(admin.ModelAdmin):
+    
+    def get_urls(self):
+        """
+        Add navigation url
+        """
+
+        urls = super(AdminOligosInPlasmid, self).get_urls()
+
+        urls = [url(r'^(?P<object_id>.+)/find_oligos/$', view=self.find_oligos)] + urls
+        
+        return urls
+
+    def find_oligos(self, request, attempt_number=3, messages=[], *args, **kwargs):
+
+        """ Given a path to a snapgene plasmid map, use snapegene server
+        to detect common features and create map preview as png
+        and gbk"""
+
+        class OligoSnapGeneSerializer(JsonSerializer):
+
+            name_prefix = f'o{LAB_ABBREVIATION_FOR_FILES}'
+
+            def get_dump_object(self, obj):
+                o = self._current or {}
+                o.update({'Name': f'! {self.name_prefix}{obj.pk}'})
+                o.update({'Sequence': obj.sequence})
+                o.update({'Notes': ''})
+                return o
+
+        file_format = request.GET.get('file_format', 'gbk')
+
+        if attempt_number > 0:
+            try:
+                # Connect to SnapGene server
+                config = Config()
+                server_ports = config.get_server_ports()
+                for port in server_ports.values():
+                    try:
+                        client = Client(port, zmq.Context())
+                    except:
+                        continue
+                    else:
+                        break
+
+                # Create paths for temp files
+                temp_dir_path = os.path.join(BASE_DIR, "uploads/temp")
+                oligos_json_path = os.path.join(temp_dir_path, str(uuid4()))
+                dna_temp_path = os.path.join(temp_dir_path, str(uuid4()))
+                gbk_temp_path = os.path.join(temp_dir_path, f'{str(uuid4())}.gb')
+
+                # Write oligos to file
+                oligos = Oligo.objects.exclude(sequence__regex=r'[BDEFHIJKLMNOPQRSUVWXYZ*/0123456789].*$') # Only oligos with ATCG in them
+                if not oligos.exists():
+                    return HttpResponseNotFound
+                oligo_serializer = OligoSnapGeneSerializer()
+                with open(oligos_json_path, "w") as fhandle:
+                    oligo_serializer.serialize(oligos, fields=('Name','Sequence', 'Notes'), stream=fhandle)
+                
+                # Find oligos in plasmid map and convert result to gbk
+                plasmid = self.model.objects.get(id=kwargs['object_id'])
+                argument = {"request":"importPrimersFromList", "inputFile": plasmid.map.path, 
+                            "inputPrimersFile": oligos_json_path, "outputFile": dna_temp_path}
+                r = client.requestResponse(argument, 60000)
+                r_code = r.get('code', 1)
+                if r_code > 0:
+                    error_message = 'importPrimersFromList - error ' + r_code
+                    if error_message not in messages: messages.append(error_message)
+                    client.close()
+                    raise Exception
+                
+                # If user wants to download file, then do so
+                if file_format == 'dna':
+                    client.close()
+                    # Get processed .dna map and delete temp files
+                    with open(dna_temp_path, 'rb') as fhandle:
+                        file_data = fhandle.read()
+
+                    os.unlink(oligos_json_path)
+                    os.unlink(dna_temp_path)
+
+                    # Send response
+                    response = HttpResponse(file_data, content_type='application/octet-stream')
+                    file_name = f"p{LAB_ABBREVIATION_FOR_FILES}{plasmid.id} - {plasmid.name} (imported oligos).dna"
+                    response['Content-Disposition'] = f"attachment; filename*=utf-8''{urllib.parse.quote(file_name)}"
+                    return response
+
+                argument = {"request":"exportDNAFile", "inputFile": dna_temp_path,
+                            "outputFile": gbk_temp_path, "exportFilter": "biosequence.gb"}
+                r = client.requestResponse(argument, 10000)
+                r_code = r.get('code', 1)
+                if r_code > 0:
+                    error_message = 'exportDNAFile - error ' + r_code
+                    if error_message not in messages: messages.append(error_message)
+                    client.close()
+                    raise Exception
+
+                client.close()
+
+                # Get processed .gbk map and delete temp files
+                with open(gbk_temp_path, 'r') as fhandle:
+                    file_data = fhandle.read()
+
+                os.unlink(oligos_json_path)
+                os.unlink(dna_temp_path)
+                os.unlink(gbk_temp_path)
+
+                # Send response
+                response = HttpResponse(file_data, content_type='text/plain')
+                response['Content-Disposition'] = 'attachment; filename="map_with_imported_oligos.gbk"'
+                return response
+            
+            except:
+                self.find_oligos(request, attempt_number - 1, messages, *args, **kwargs)
+        else:
+            mail_admins("Error finding oligos in plasmid",
+                        "There was an error with finding oligos in plasmid {} with snapgene server.\n\nErrors: {}.".format(kwargs['object_id'], str(messages)), 
+                        fail_silently=True)
+            raise Exception
 
 class SimpleHistoryWithSummaryAdmin(SimpleHistoryAdmin):
 
@@ -1214,7 +1336,7 @@ class PlasmidForm(forms.ModelForm):
 
         return self.cleaned_data
 
-class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin, Approval, AdminChangeFormWithNavigation):
+class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin, Approval, AdminChangeFormWithNavigation, AdminOligosInPlasmid):
     
     list_display = ('id', 'name', 'selection', 'get_plasmidmap_short_name', 'created_by', 'approval')
     list_display_links = ('id',)

@@ -7,7 +7,7 @@ $(document).ready(function () {
             type: 'iframe',
 
             iframe: {
-                markup: '<div class="mfp-iframe-scaler">' +
+                markup: '<div class="mfp-iframe-scaler mfp-loader">' + 
                         '<div class="mfp-close"></div>' +
                         '<iframe class="mfp-iframe" frameborder="0" allowfullscreen></iframe>' +
                         '</div>'

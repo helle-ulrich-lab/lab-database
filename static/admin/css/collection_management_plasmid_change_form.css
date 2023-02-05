@@ -1,0 +1,37 @@
+.find-oligo {
+    background: var(--object-tools-bg);
+    color: var(--object-tools-fg);
+    font-weight: 400;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-radius: 15px;
+    padding: 3px 5px 3px 12px;
+}
+
+@media (max-width: 767px) {
+
+    .find-oligo {
+        margin-left: 15px
+    }
+
+}
+
+.find-oligo * {
+    display: inline-block;
+}
+
+
+.find-oligo a {
+    float: right !important;
+    padding: 0px 4px !important;
+    margin: 0px 2px;
+}
+
+.find-oligo a:focus, a:hover, a:visited {
+    color: var(--object-tools-fg);
+}
+
+.find-oligo a:hover {
+    cursor: pointer;
+}

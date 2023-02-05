@@ -1,5 +1,5 @@
-  .mfp-iframe-scaler iframe {
-    background: url("{% static "/admin/img/spinner.svg" %}") no-repeat scroll center center #ffffff !important;
+  .mfp-loader iframe {
+    background: url('/static/admin/img/spinner.svg') no-repeat scroll center center var(--body-bg) !important;
     }
 
   .mfp-iframe-holder .mfp-content {

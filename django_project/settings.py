@@ -36,7 +36,7 @@ INSTALLED_APPS = [
     'import_export',
     'collection_management',
     'lab_user',
-    'order_management',
+    'ordering',
     'guardian',
     'django.contrib.sites.apps.SitesConfig',
     'django.contrib.humanize.apps.HumanizeConfig',

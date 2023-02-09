@@ -58,7 +58,7 @@ from .models import GeneralSetting
 #            CUSTOM ADMINS IMPORTS              #
 #################################################
 
-from order_management.admin import OrderAdmin
+from ordering.admin import OrderAdmin
 from formz.admin import FormZAdmin
 
 #################################################
@@ -321,24 +321,24 @@ my_admin_site.register(Antibody, AntibodyPage)
 #             ORDER MANAGEMENT PAGES            #
 #################################################
 
-from order_management.models import CostUnit
-from order_management.models import Location
-from order_management.models import Order
-from order_management.models import OrderExtraDoc
-from order_management.models import MsdsForm
-from order_management.models import GhsSymbol
-from order_management.models import SignalWord
+from ordering.models import CostUnit
+from ordering.models import Location
+from ordering.models import Order
+from ordering.models import OrderExtraDoc
+from ordering.models import MsdsForm
+from ordering.models import GhsSymbol
+from ordering.models import SignalWord
 
-from order_management.admin import SearchFieldOptLocation, SearchFieldOptCostUnit, SearchFieldOptSupplier, SearchFieldOptPartDescription, OrderQLSchema
-from order_management.admin import OrderExtraDocInline
-from order_management.admin import AddOrderExtraDocInline
-from order_management.admin import CostUnitPage
-from order_management.admin import LocationPage
-from order_management.admin import OrderPage
-from order_management.admin import MsdsFormPage
-from order_management.admin import OrderExtraDocPage
-from order_management.admin import GhsSymbolPage
-from order_management.admin import SignalWordPage
+from ordering.admin import SearchFieldOptLocation, SearchFieldOptCostUnit, SearchFieldOptSupplier, SearchFieldOptPartDescription, OrderQLSchema
+from ordering.admin import OrderExtraDocInline
+from ordering.admin import AddOrderExtraDocInline
+from ordering.admin import CostUnitPage
+from ordering.admin import LocationPage
+from ordering.admin import OrderPage
+from ordering.admin import MsdsFormPage
+from ordering.admin import OrderExtraDocPage
+from ordering.admin import GhsSymbolPage
+from ordering.admin import SignalWordPage
 
 my_admin_site.register(Order, OrderPage)
 my_admin_site.register(CostUnit, CostUnitPage)

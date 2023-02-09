@@ -67,7 +67,7 @@ from collection_management.models import ScPombeStrain
 from collection_management.models import EColiStrain
 from collection_management.models import CellLine
 from collection_management.models import Antibody
-from order_management.models import Order
+from ordering.models import Order
 
 from collection_management.models import HistoricalPlasmid
 from collection_management.models import HistoricalSaCerevisiaeStrain
@@ -76,7 +76,7 @@ from collection_management.models import HistoricalScPombeStrain
 from collection_management.models import HistoricalEColiStrain
 from collection_management.models import HistoricalCellLine
 from collection_management.models import HistoricalAntibody
-from order_management.models import HistoricalOrder
+from ordering.models import HistoricalOrder
 
 from datetime import timedelta
 from django.utils import timezone

@@ -8,7 +8,7 @@ from django.utils.safestring import mark_safe
 from django.urls import reverse
 from django.utils.text import capfirst
 
-from order_management.models import Order
+from ordering.models import Order
 from .models import RecordToBeApproved
 from django.contrib.contenttypes.models import ContentType
 
@@ -63,7 +63,7 @@ def approve_records(modeladmin, request, queryset):
             messages.error(request, 'You are not allowed to approve oligos')
     
     #Orders
-    order_approval_records = queryset.filter(content_type__app_label='order_management')
+    order_approval_records = queryset.filter(content_type__app_label='ordering')
     if order_approval_records:
         if request.user.labuser.is_principal_investigator:
             model = order_approval_records[0].content_object._meta.model
@@ -130,7 +130,7 @@ def approve_all_new_orders(modeladmin, request, queryset):
         orders = Order.objects.filter(created_approval_by_pi=False)
         if orders.exists():
             orders.update(created_approval_by_pi=True)
-            RecordToBeApproved.objects.filter(content_type__app_label='order_management').delete()
+            RecordToBeApproved.objects.filter(content_type__app_label='ordering').delete()
             messages.success(request, 'New orders have been approved')
         else:
             messages.warning(request, 'No new orders to approve')

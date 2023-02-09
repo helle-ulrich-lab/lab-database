@@ -25,8 +25,8 @@ from collection_management.admin import CellLineExportResource
 from collection_management.models import Antibody
 from collection_management.admin import AntibodyExportResource
 
-from order_management.models import Order
-from order_management.admin import OrderExportResource
+from ordering.models import Order
+from ordering.admin import OrderExportResource
 
 from django_project.settings import BASE_DIR
 from django_project.private_settings import DB_NAME 

@@ -2,7 +2,7 @@ from django.apps import AppConfig
 from django.db.models.signals import post_save
 
 class UserManagementConfig(AppConfig):
-    name = 'user_management'
+    name = 'lab_user'
 
     def ready(self):
         from .signals import create_labuser

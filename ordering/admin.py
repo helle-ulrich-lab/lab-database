@@ -43,7 +43,7 @@ from ordering.models import GhsSymbol
 
 from django_project.settings import TIME_ZONE
 from django_project.private_settings import SITE_TITLE, SERVER_EMAIL_ADDRESS, ALLOWED_HOSTS
-from my_admin.models import GeneralSetting
+from common.models import GeneralSetting
 
 #################################################
 #     DJANGO ADDED FUNCTIONALITIES IMPORTS      #

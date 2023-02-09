@@ -6,7 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('my_admin', '0004_generalsetting_ms_teams_webhook'),
+        ('common', '0004_generalsetting_ms_teams_webhook'),
     ]
 
     operations = [

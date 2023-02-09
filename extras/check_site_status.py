@@ -5,7 +5,7 @@ from django.core.mail import mail_admins
 from django_project.private_settings import SITE_TITLE
 from django_project.private_settings import ALLOWED_HOSTS
 
-from my_admin.models import GeneralSetting
+from common.models import GeneralSetting
 
 warnings.filterwarnings("ignore") # Suppress all warnings, including the InsecureRequestWarning caused by verify=False below
 

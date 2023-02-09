@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('my_admin', '0002_remove_generalsetting_site_admin_email_address'),
+        ('common', '0002_remove_generalsetting_site_admin_email_address'),
     ]
 
     operations = [

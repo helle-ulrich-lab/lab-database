@@ -26,7 +26,7 @@ from django.urls import path
 from wiki.urls import get_pattern as get_wiki_pattern
 from django_project.private_settings import ALLOW_OIDC
 
-from my_admin.admin import my_admin_site
+from common.admin import main_admin_site
 
 # Apply a decorator to every urlpattern and URLconf module returned by
 # Django's include() method. From https://djangosnippets.org/snippets/2532/
@@ -140,7 +140,7 @@ urlpatterns = [
     path('notifications/', include('django_nyt.urls')),
     path('wiki/', decorated_includes(wiki_check_login_guest, get_wiki_pattern())),
     path('password_change/', check_guest(auth_views.PasswordChangeView.as_view(success_url=reverse_lazy('admin:password_change_done')))),
-    path('', my_admin_site.urls),
+    path('', main_admin_site.urls),
     ]
 
 if ALLOW_OIDC:

@@ -256,10 +256,10 @@ class MyAdminSite(OrderAdmin, FormZAdmin, admin.AdminSite):
         return response
 
 # Instantiate custom admin site 
-my_admin_site = MyAdminSite()
+main_admin_site = MyAdminSite()
 
 # Disable delete selected action
-my_admin_site.disable_action('delete_selected')
+main_admin_site.disable_action('delete_selected')
 
 #################################################
 #              GENERAL SETTINGS                 #
@@ -284,7 +284,7 @@ class GeneralSettingPage(admin.ModelAdmin):
         else:
             return super(GeneralSettingPage,self).add_view(request, form_url='', extra_context=None)
 
-my_admin_site.register(GeneralSetting, GeneralSettingPage)
+main_admin_site.register(GeneralSetting, GeneralSettingPage)
 
 #################################################
 #          COLLECTION MANAGEMENT PAGES          #
@@ -308,14 +308,14 @@ from collection_management.admin import CellLinePage
 from collection_management.admin import CellLineDocPage
 from collection_management.admin import AntibodyPage
 
-my_admin_site.register(SaCerevisiaeStrain, SaCerevisiaeStrainPage)
-my_admin_site.register(Plasmid, PlasmidPage)
-my_admin_site.register(Oligo, OligoPage)
-my_admin_site.register(ScPombeStrain, ScPombeStrainPage)
-my_admin_site.register(EColiStrain, EColiStrainPage)
-my_admin_site.register(CellLineDoc, CellLineDocPage)
-my_admin_site.register(CellLine, CellLinePage)
-my_admin_site.register(Antibody, AntibodyPage)
+main_admin_site.register(SaCerevisiaeStrain, SaCerevisiaeStrainPage)
+main_admin_site.register(Plasmid, PlasmidPage)
+main_admin_site.register(Oligo, OligoPage)
+main_admin_site.register(ScPombeStrain, ScPombeStrainPage)
+main_admin_site.register(EColiStrain, EColiStrainPage)
+main_admin_site.register(CellLineDoc, CellLineDocPage)
+main_admin_site.register(CellLine, CellLinePage)
+main_admin_site.register(Antibody, AntibodyPage)
 
 #################################################
 #             ORDER MANAGEMENT PAGES            #
@@ -340,27 +340,27 @@ from ordering.admin import OrderExtraDocPage
 from ordering.admin import GhsSymbolPage
 from ordering.admin import SignalWordPage
 
-my_admin_site.register(Order, OrderPage)
-my_admin_site.register(CostUnit, CostUnitPage)
-my_admin_site.register(Location, LocationPage)
-my_admin_site.register(MsdsForm, MsdsFormPage)
-my_admin_site.register(OrderExtraDoc, OrderExtraDocPage)
-my_admin_site.register(GhsSymbol, GhsSymbolPage)
-my_admin_site.register(SignalWord, SignalWordPage)
+main_admin_site.register(Order, OrderPage)
+main_admin_site.register(CostUnit, CostUnitPage)
+main_admin_site.register(Location, LocationPage)
+main_admin_site.register(MsdsForm, MsdsFormPage)
+main_admin_site.register(OrderExtraDoc, OrderExtraDocPage)
+main_admin_site.register(GhsSymbol, GhsSymbolPage)
+main_admin_site.register(SignalWord, SignalWordPage)
 
 #################################################
 #            CUSTOM USER/GROUP PAGES            #
 #################################################
 
-my_admin_site.register(Group, GroupAdmin)
-my_admin_site.register(User, UserAdmin)
+main_admin_site.register(Group, GroupAdmin)
+main_admin_site.register(User, UserAdmin)
 
 from lab_user.models import LabUser
 
 from lab_user.admin import LabUserAdmin
 
-my_admin_site.unregister(User)
-my_admin_site.register(User, LabUserAdmin)
+main_admin_site.unregister(User)
+main_admin_site.register(User, LabUserAdmin)
 
 #################################################
 #               BACKGROUND TASKS                #
@@ -372,8 +372,8 @@ from background_task.models import CompletedTask
 from background_task.admin import TaskAdmin
 from background_task.admin import CompletedTaskAdmin
 
-my_admin_site.register(Task, TaskAdmin)
-my_admin_site.register(CompletedTask, CompletedTaskAdmin)
+main_admin_site.register(Task, TaskAdmin)
+main_admin_site.register(CompletedTask, CompletedTaskAdmin)
 
 #################################################
 #                  FORMBLATT Z                  #
@@ -401,17 +401,17 @@ from formz.admin import ZkbsCellLinePage
 from formz.admin import FormZStorageLocationPage
 from formz.admin import SpeciesPage
 
-my_admin_site.register(NucleicAcidPurity, NucleicAcidPurityPage)
-my_admin_site.register(NucleicAcidRisk, NucleicAcidRiskPage)
-my_admin_site.register(GenTechMethod, GenTechMethodPage)
-my_admin_site.register(FormZProject, FormZProjectPage)
-my_admin_site.register(FormZBaseElement, FormZBaseElementPage)
-my_admin_site.register(FormZHeader, FormZHeaderPage)
-my_admin_site.register(ZkbsPlasmid, ZkbsPlasmidPage)
-my_admin_site.register(ZkbsOncogene, ZkbsOncogenePage)
-my_admin_site.register(ZkbsCellLine, ZkbsCellLinePage)
-my_admin_site.register(FormZStorageLocation, FormZStorageLocationPage)
-my_admin_site.register(Species, SpeciesPage)
+main_admin_site.register(NucleicAcidPurity, NucleicAcidPurityPage)
+main_admin_site.register(NucleicAcidRisk, NucleicAcidRiskPage)
+main_admin_site.register(GenTechMethod, GenTechMethodPage)
+main_admin_site.register(FormZProject, FormZProjectPage)
+main_admin_site.register(FormZBaseElement, FormZBaseElementPage)
+main_admin_site.register(FormZHeader, FormZHeaderPage)
+main_admin_site.register(ZkbsPlasmid, ZkbsPlasmidPage)
+main_admin_site.register(ZkbsOncogene, ZkbsOncogenePage)
+main_admin_site.register(ZkbsCellLine, ZkbsCellLinePage)
+main_admin_site.register(FormZStorageLocation, FormZStorageLocationPage)
+main_admin_site.register(Species, SpeciesPage)
 
 #################################################
 #               RECORD APPROVAL                 #
@@ -420,4 +420,4 @@ my_admin_site.register(Species, SpeciesPage)
 from record_approval.models import RecordToBeApproved
 from record_approval.admin import RecordToBeApprovedPage
 
-my_admin_site.register(RecordToBeApproved, RecordToBeApprovedPage)
+main_admin_site.register(RecordToBeApproved, RecordToBeApprovedPage)

@@ -52,7 +52,7 @@ INSTALLED_APPS = [
     'background_task',
     'formz',
     'record_approval',
-    'my_admin',
+    'common',
     'mozilla_django_oidc',
     ]
 

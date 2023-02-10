@@ -35,7 +35,7 @@ INSTALLED_APPS = [
     'simple_history',
     'import_export',
     'collection_management',
-    'lab_user',
+    'extend_user',
     'ordering',
     'guardian',
     'django.contrib.sites.apps.SitesConfig',
@@ -266,7 +266,7 @@ WIKI_MARKDOWN_HTML_WHITELIST = ['a', 'abbr', 'acronym', 'b', 'blockquote', 'code
 LOGIN_REDIRECT_URL = "/login/"
 LOGOUT_REDIRECT_URL = "/logout/"
 if ALLOW_OIDC:
-    AUTHENTICATION_BACKENDS = ['lab_user.oidc.MyOIDCAB'] + AUTHENTICATION_BACKENDS
+    AUTHENTICATION_BACKENDS = ['extend_user.oidc.MyOIDCAB'] + AUTHENTICATION_BACKENDS
     MIDDLEWARE += ['mozilla_django_oidc.middleware.SessionRefresh']
 OIDC_RENEW_ID_TOKEN_EXPIRY_SECONDS = 86400 # 24 h
 

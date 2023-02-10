@@ -355,9 +355,9 @@ main_admin_site.register(SignalWord, SignalWordPage)
 main_admin_site.register(Group, GroupAdmin)
 main_admin_site.register(User, UserAdmin)
 
-from lab_user.models import LabUser
+from extend_user.models import LabUser
 
-from lab_user.admin import LabUserAdmin
+from extend_user.admin import LabUserAdmin
 
 main_admin_site.unregister(User)
 main_admin_site.register(User, LabUserAdmin)

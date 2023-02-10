@@ -52,10 +52,10 @@ from common.models import GeneralSetting
 # DjangoQL
 from djangoql.admin import DjangoQLSearchMixin
 from djangoql.schema import DjangoQLSchema, StrField, BoolField
-from collection_management.admin import SearchFieldOptUsername, SearchFieldOptLastname
+from collection.admin import SearchFieldOptUsername, SearchFieldOptLastname
 
 # django-simple-history
-from collection_management.admin import SimpleHistoryWithSummaryAdmin
+from collection.admin import SimpleHistoryWithSummaryAdmin
 
 # django-import-export
 from import_export import resources

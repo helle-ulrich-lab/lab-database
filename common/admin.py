@@ -158,7 +158,7 @@ class MyAdminSite(OrderAdmin, FormZAdmin, admin.AdminSite):
                 file_name, file_ext = os.path.splitext(url_path_split[-1]) 
 
                 # Generate name for download file
-                if app_name == 'collection_management':
+                if app_name == 'collection':
 
                     # Get object 
                     file_prefix = file_name.split('_')[0]
@@ -290,23 +290,23 @@ main_admin_site.register(GeneralSetting, GeneralSettingPage)
 #          COLLECTION MANAGEMENT PAGES          #
 #################################################
 
-from collection_management.models import SaCerevisiaeStrain
-from collection_management.models import Plasmid
-from collection_management.models import Oligo
-from collection_management.models import ScPombeStrain
-from collection_management.models import EColiStrain
-from collection_management.models import CellLine
-from collection_management.models import CellLineDoc
-from collection_management.models import Antibody
+from collection.models import SaCerevisiaeStrain
+from collection.models import Plasmid
+from collection.models import Oligo
+from collection.models import ScPombeStrain
+from collection.models import EColiStrain
+from collection.models import CellLine
+from collection.models import CellLineDoc
+from collection.models import Antibody
 
-from collection_management.admin import SaCerevisiaeStrainPage
-from collection_management.admin import PlasmidPage
-from collection_management.admin import OligoPage
-from collection_management.admin import ScPombeStrainPage
-from collection_management.admin import EColiStrainPage
-from collection_management.admin import CellLinePage
-from collection_management.admin import CellLineDocPage
-from collection_management.admin import AntibodyPage
+from collection.admin import SaCerevisiaeStrainPage
+from collection.admin import PlasmidPage
+from collection.admin import OligoPage
+from collection.admin import ScPombeStrainPage
+from collection.admin import EColiStrainPage
+from collection.admin import CellLinePage
+from collection.admin import CellLineDocPage
+from collection.admin import AntibodyPage
 
 main_admin_site.register(SaCerevisiaeStrain, SaCerevisiaeStrainPage)
 main_admin_site.register(Plasmid, PlasmidPage)

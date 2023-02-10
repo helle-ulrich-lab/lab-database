@@ -87,16 +87,16 @@
         {% if object.formz_ecoli_strains %}
             {% if object.formz_ecoli_strains.all|length == 1 %}
                     {% for ecoli in object.formz_ecoli_strains.all %}
-                        (Stamm: <a class='magnific-popup-iframe-ecolistrain' href="{% url 'admin:collection_management_ecolistrain_change' ecoli.id %}?_to_field=id&_popup=1" target="_blank">{{ecoli.name}}</a> - Hintergrund {{ecoli.background}}; Risikogruppe: {{ecoli.formz_risk_group}})
+                        (Stamm: <a class='magnific-popup-iframe-ecolistrain' href="{% url 'admin:collection_ecolistrain_change' ecoli.id %}?_to_field=id&_popup=1" target="_blank">{{ecoli.name}}</a> - Hintergrund {{ecoli.background}}; Risikogruppe: {{ecoli.formz_risk_group}})
                     {% endfor %}
                 {% else %}
                     {% for ecoli in object.formz_ecoli_strains.all %}
                         {% if forloop.first %}
-                            (Stamm: <a class='magnific-popup-iframe-ecolistrain' href="{% url 'admin:collection_management_ecolistrain_change' ecoli.id %}?_to_field=id&_popup=1" target="_blank">{{ecoli.name}}</a> - Hintergrund {{ecoli.background}},
+                            (Stamm: <a class='magnific-popup-iframe-ecolistrain' href="{% url 'admin:collection_ecolistrain_change' ecoli.id %}?_to_field=id&_popup=1" target="_blank">{{ecoli.name}}</a> - Hintergrund {{ecoli.background}},
                         {% elif forloop.last %}
-                            <a class='magnific-popup-iframe-ecolistrain' href="{% url 'admin:collection_management_ecolistrain_change' ecoli.id %}?_to_field=id&_popup=1" target="_blank">{{ecoli.name}}</a> - Hintergrund {{ecoli.background}}; Risikogruppe: {{ecoli.formz_risk_group}})
+                            <a class='magnific-popup-iframe-ecolistrain' href="{% url 'admin:collection_ecolistrain_change' ecoli.id %}?_to_field=id&_popup=1" target="_blank">{{ecoli.name}}</a> - Hintergrund {{ecoli.background}}; Risikogruppe: {{ecoli.formz_risk_group}})
                         {% else %}
-                            <a class='magnific-popup-iframe-ecolistrain' href="{% url 'admin:collection_management_ecolistrain_change' ecoli.id %}?_to_field=id&_popup=1" target="_blank">{{ecoli.name}}</a> - Hintergrund {{ecoli.background}},
+                            <a class='magnific-popup-iframe-ecolistrain' href="{% url 'admin:collection_ecolistrain_change' ecoli.id %}?_to_field=id&_popup=1" target="_blank">{{ecoli.name}}</a> - Hintergrund {{ecoli.background}},
                         {% endif %}
                     {% endfor %}
             {% endif %}
@@ -196,7 +196,7 @@
             <ul>
             {% for plasmid in object.instock_plasmids %}
                 <li>
-                    <a class="magnific-popup-iframe-plasmid" href="{% url 'admin:collection_management_plasmid_change' plasmid.id %}?_to_field=id&_popup=1" target="_blank">Plasmid #{{plasmid}}</a>
+                    <a class="magnific-popup-iframe-plasmid" href="{% url 'admin:collection_plasmid_change' plasmid.id %}?_to_field=id&_popup=1" target="_blank">Plasmid #{{plasmid}}</a>
                     {% if plasmid.map %}
                         (<a style='text-transform: none' href="{{plasmid.map_gbk.url}}">.gbk<a class="magnific-popup-iframe-plasmid-map" href={{plasmid.get_ove_url_map_gbk}}>⊙</a>,
                         <a  class="magnific-popup-img-plasmid-map" style='text-transform: none' href="{{plasmid.map_png.url}}">.png</a>)
@@ -314,7 +314,7 @@
                     <thead>
                         <tr>
                             <th colspan="5" scope="col" class="column-plasmid">
-                                <a class="magnific-popup-iframe-transient-episomal-plasmid" href="{% url 'admin:collection_management_plasmid_change' plasmid.plasmid.id %}?_to_field=id&_popup=1" target="_blank">Plasmid #{{plasmid.plasmid}}</a>
+                                <a class="magnific-popup-iframe-transient-episomal-plasmid" href="{% url 'admin:collection_plasmid_change' plasmid.plasmid.id %}?_to_field=id&_popup=1" target="_blank">Plasmid #{{plasmid.plasmid}}</a>
                                 <span style="text-transform: none">
                                 {% if plasmid.plasmid.map %}
                                        (<a href="{{plasmid.plasmid.map_gbk.url}}">.gbk</a><a class="magnific-popup-iframe-transient-episomal-plasmid-map" href={{plasmid.plasmid.get_ove_url_map_gbk}}>⊙</a>,
@@ -449,7 +449,7 @@
                         <thead>
                             <tr>
                                 <th  colspan="5" scope="col" class="column-plasmid">
-                                    <a class="magnific-popup-iframe-s2-plasmid" href="{% url 'admin:collection_management_plasmid_change' plasmid.plasmid.id %}?_to_field=id&_popup=1" target="_blank">Plasmid #{{plasmid.plasmid}}</a>
+                                    <a class="magnific-popup-iframe-s2-plasmid" href="{% url 'admin:collection_plasmid_change' plasmid.plasmid.id %}?_to_field=id&_popup=1" target="_blank">Plasmid #{{plasmid.plasmid}}</a>
                                     <span style="text-transform: none">
                                         {% if plasmid.plasmid.map %}
                                         (<a href="{{plasmid.plasmid.map_gbk.url}}">.gbk</a><a class="magnific-popup-iframe-s2-plasmid-map" href={{plasmid.plasmid.get_ove_url_map_gbk}}>⊙</a>,

@@ -467,7 +467,7 @@ class FormZStorageLocationPage(admin.ModelAdmin):
             request.resolver_match.args[0]
         except:
             
-            # Include only relevant models from collection_management app
+            # Include only relevant models from collection app
 
             if db_field.name == 'collection_model':
                 kwargs["queryset"] = ContentType.objects.filter(model__contains='strain').exclude(model__contains='historical').exclude(model__contains='plasmid').exclude(model__contains='summary') | \

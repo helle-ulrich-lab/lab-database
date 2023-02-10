@@ -25,7 +25,7 @@ def approve_records(modeladmin, request, queryset):
     warning_message = False
     
     # Collection records, except oligo
-    collections_approval_records = queryset.filter(content_type__app_label='collection_management')
+    collections_approval_records = queryset.filter(content_type__app_label='collection')
 
     for approval_record in collections_approval_records.exclude(content_type__model='oligo'):
         obj = approval_record.content_object
@@ -86,7 +86,7 @@ approve_records.short_description = "Approve records"
 def notify_user_edits_required(modeladmin, request, queryset):
     """Notify a user that a collection record must be edited"""
 
-    queryset = queryset.filter(content_type__app_label='collection_management')
+    queryset = queryset.filter(content_type__app_label='collection')
 
     if queryset.filter(message=''):
         messages.error(request, 'Some of the records you have selected do not have a message. Please add a message to them, and try again')
@@ -319,7 +319,7 @@ class RecordToBeApprovedPage(admin.ModelAdmin):
         if request.user.labuser.is_principal_investigator or request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists():
             return qs
         elif request.user.groups.filter(name='Approval manager').exists():
-            qs = qs.filter(content_type__app_label='collection_management').exclude(content_type__model='oligo')
+            qs = qs.filter(content_type__app_label='collection').exclude(content_type__model='oligo')
             approval_record_ids = []
             for approval_record in qs:
                 obj = approval_record.content_object

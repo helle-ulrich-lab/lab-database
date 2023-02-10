@@ -4,26 +4,26 @@ from subprocess import check_output
 from datetime import datetime
 import pathlib
 
-from collection_management.models import SaCerevisiaeStrain
-from collection_management.admin import SaCerevisiaeStrainExportResource
+from collection.models import SaCerevisiaeStrain
+from collection.admin import SaCerevisiaeStrainExportResource
 
-from collection_management.models import Plasmid
-from collection_management.admin import PlasmidExportResource
+from collection.models import Plasmid
+from collection.admin import PlasmidExportResource
 
-from collection_management.models import Oligo
-from collection_management.admin import OligoExportResource
+from collection.models import Oligo
+from collection.admin import OligoExportResource
 
-from collection_management.models import ScPombeStrain
-from collection_management.admin import ScPombeStrainExportResource
+from collection.models import ScPombeStrain
+from collection.admin import ScPombeStrainExportResource
 
-from collection_management.models import EColiStrain
-from collection_management.admin import EColiStrainExportResource
+from collection.models import EColiStrain
+from collection.admin import EColiStrainExportResource
 
-from collection_management.models import CellLine
-from collection_management.admin import CellLineExportResource
+from collection.models import CellLine
+from collection.admin import CellLineExportResource
 
-from collection_management.models import Antibody
-from collection_management.admin import AntibodyExportResource
+from collection.models import Antibody
+from collection.admin import AntibodyExportResource
 
 from ordering.models import Order
 from ordering.admin import OrderExportResource

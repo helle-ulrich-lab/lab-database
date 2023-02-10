@@ -34,7 +34,7 @@ INSTALLED_APPS = [
     'djangoql',
     'simple_history',
     'import_export',
-    'collection_management',
+    'collection',
     'extend_user',
     'ordering',
     'guardian',

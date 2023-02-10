@@ -1,4 +1,4 @@
-// For /templates/admin/collection_management/plasmid/change_form.html
+// For /templates/admin/collection/plasmid/change_form.html
 
 $(window).on('load', function() {
 

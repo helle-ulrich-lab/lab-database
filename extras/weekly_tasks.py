@@ -4,7 +4,7 @@ from django_project.private_settings import ALLOWED_HOSTS
 from django_project.private_settings import SITE_TITLE
 from django_project.private_settings import SERVER_EMAIL_ADDRESS
 from django.urls import reverse
-from record_approval.models import RecordToBeApproved
+from approval.models import RecordToBeApproved
 
 def get_formz_project_leader_emails(qs):
 
@@ -35,7 +35,7 @@ RECORDS_TO_BE_APPROVED = RecordToBeApproved.objects.all()
 if RECORDS_TO_BE_APPROVED.exists(): # Check if there are records to be be approved at all
 
     PROJECT_LEADER_EMAILS = get_formz_project_leader_emails(RECORDS_TO_BE_APPROVED)
-    RECORD_APPROVAL_URL = reverse("admin:record_approval_recordtobeapproved_changelist")
+    APPROVAL_URL = reverse("admin:approval_recordtobeapproved_changelist")
     EMAIL_MESSAGE_TXT = inspect.cleandoc("""Hello there,
 
     There are records that need your approval.
@@ -44,7 +44,7 @@ if RECORDS_TO_BE_APPROVED.exists(): # Check if there are records to be be approv
 
     Best wishes,
     The {}
-    """.format(ALLOWED_HOSTS[0], RECORD_APPROVAL_URL, SITE_TITLE))
+    """.format(ALLOWED_HOSTS[0], APPROVAL_URL, SITE_TITLE))
 
     send_mail(
         "{} weekly notification".format(SITE_TITLE),

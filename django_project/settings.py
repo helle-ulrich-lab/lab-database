@@ -51,7 +51,7 @@ INSTALLED_APPS = [
     'wiki.plugins.macros.apps.MacrosConfig',
     'background_task',
     'formz',
-    'record_approval',
+    'approval',
     'common',
     'mozilla_django_oidc',
     ]

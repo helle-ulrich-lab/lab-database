@@ -17,7 +17,7 @@ from formz.models import ZkbsCellLine
 from formz.models import GenTechMethod
 from formz.models import Species
 
-from record_approval.models import RecordToBeApproved
+from approval.models import RecordToBeApproved
 from django_project.private_settings import LAB_ABBREVIATION_FOR_FILES
 from django_project.settings import OVE_URL
 

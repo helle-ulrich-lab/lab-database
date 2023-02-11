@@ -1195,7 +1195,7 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
                 _('The {name} "{obj}" was disapproved.'),
                 **msg_dict)
             self.message_user(request, msg, messages.SUCCESS)
-            return HttpResponseRedirect(reverse("admin:record_approval_recordtobeapproved_change", args=(obj.approval.latest('created_date_time').id,)))
+            return HttpResponseRedirect(reverse("admin:approval_recordtobeapproved_change", args=(obj.approval.latest('created_date_time').id,)))
         
         return super(SaCerevisiaeStrainPage,self).response_change(request,obj)
     
@@ -1734,7 +1734,7 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
                 **msg_dict
             )
             self.message_user(request, msg, messages.SUCCESS)
-            return HttpResponseRedirect(reverse("admin:record_approval_recordtobeapproved_change", args=(obj.approval.latest('created_date_time').id,)))
+            return HttpResponseRedirect(reverse("admin:approval_recordtobeapproved_change", args=(obj.approval.latest('created_date_time').id,)))
 
         if "_continue" in request.POST or self.redirect_to_obj_page: # Check if obj has unidentified FormZ Elements:
             msg = format_html(
@@ -2342,7 +2342,7 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Approval, Ad
                 _('The {name} "{obj}" was disapproved.'),
                 **msg_dict)
             self.message_user(request, msg, messages.SUCCESS)
-            return HttpResponseRedirect(reverse("admin:record_approval_recordtobeapproved_change", args=(obj.approval.latest('created_date_time').id,)))
+            return HttpResponseRedirect(reverse("admin:approval_recordtobeapproved_change", args=(obj.approval.latest('created_date_time').id,)))
         
         return super(OligoPage,self).response_change(request,obj)
 
@@ -2736,7 +2736,7 @@ class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Appr
                 _('The {name} "{obj}" was disapproved.'),
                 **msg_dict)
             self.message_user(request, msg, messages.SUCCESS)
-            return HttpResponseRedirect(reverse("admin:record_approval_recordtobeapproved_change", args=(obj.approval.latest('created_date_time').id,)))
+            return HttpResponseRedirect(reverse("admin:approval_recordtobeapproved_change", args=(obj.approval.latest('created_date_time').id,)))
         
         return super(ScPombeStrainPage,self).response_change(request,obj)
 
@@ -3001,7 +3001,7 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Approv
                 _('The {name} "{obj}" was disapproved.'),
                 **msg_dict)
             self.message_user(request, msg, messages.SUCCESS)
-            return HttpResponseRedirect(reverse("admin:record_approval_recordtobeapproved_change", args=(obj.approval.latest('created_date_time').id,)))
+            return HttpResponseRedirect(reverse("admin:approval_recordtobeapproved_change", args=(obj.approval.latest('created_date_time').id,)))
         
         return super(EColiStrainPage,self).response_change(request,obj)
 
@@ -3491,7 +3491,7 @@ class CellLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGua
                 _('The {name} "{obj}" was disapproved.'),
                 **msg_dict)
             self.message_user(request, msg, messages.SUCCESS)
-            return HttpResponseRedirect(reverse("admin:record_approval_recordtobeapproved_change", args=(obj.approval.latest('created_date_time').id,)))
+            return HttpResponseRedirect(reverse("admin:approval_recordtobeapproved_change", args=(obj.approval.latest('created_date_time').id,)))
         
         return super(CellLinePage,self).response_change(request,obj)
     

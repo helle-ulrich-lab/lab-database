@@ -417,7 +417,7 @@ main_admin_site.register(Species, SpeciesPage)
 #               RECORD APPROVAL                 #
 #################################################
 
-from record_approval.models import RecordToBeApproved
-from record_approval.admin import RecordToBeApprovedPage
+from approval.models import RecordToBeApproved
+from approval.admin import RecordToBeApprovedPage
 
 main_admin_site.register(RecordToBeApproved, RecordToBeApprovedPage)

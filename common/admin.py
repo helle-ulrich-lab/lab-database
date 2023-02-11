@@ -21,7 +21,7 @@ from django.core.files.storage import default_storage
 #          DJANGO PROJECT SETTINGS              #
 #################################################
 
-from django_project.private_settings import SITE_TITLE
+from config.private_settings import SITE_TITLE
 
 #################################################
 #        ADDED FUNCTIONALITIES IMPORTS          #

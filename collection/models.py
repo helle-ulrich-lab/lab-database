@@ -18,8 +18,8 @@ from formz.models import GenTechMethod
 from formz.models import Species
 
 from approval.models import RecordToBeApproved
-from django_project.private_settings import LAB_ABBREVIATION_FOR_FILES
-from django_project.settings import OVE_URL
+from config.private_settings import LAB_ABBREVIATION_FOR_FILES
+from config.settings import OVE_URL
 
 #################################################
 #        ADDED FUNCTIONALITIES IMPORTS          #

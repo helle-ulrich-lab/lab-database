@@ -12,8 +12,8 @@ from ordering.models import Order
 from .models import RecordToBeApproved
 from django.contrib.contenttypes.models import ContentType
 
-from django_project.private_settings import SITE_TITLE
-from django_project.private_settings import SERVER_EMAIL_ADDRESS
+from config.private_settings import SITE_TITLE
+from config.private_settings import SERVER_EMAIL_ADDRESS
 
 from django.utils import timezone
 

@@ -17,7 +17,7 @@ from simple_history.models import HistoricalRecords
 import os
 import time
 from approval.models import RecordToBeApproved
-from django_project.private_settings import LAB_ABBREVIATION_FOR_FILES
+from config.private_settings import LAB_ABBREVIATION_FOR_FILES
 from os.path import basename
 
 #################################################

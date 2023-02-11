@@ -1,4 +1,4 @@
-"""django_project URL Configuration
+"""config URL Configuration
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/1.11/topics/http/urls/
@@ -24,7 +24,7 @@ from django.urls import reverse_lazy
 from django.urls import path
 
 from wiki.urls import get_pattern as get_wiki_pattern
-from django_project.private_settings import ALLOW_OIDC
+from config.private_settings import ALLOW_OIDC
 
 from common.admin import main_admin_site
 

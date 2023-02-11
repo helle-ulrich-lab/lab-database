@@ -2,8 +2,8 @@ import requests
 import time
 import warnings
 from django.core.mail import mail_admins
-from django_project.private_settings import SITE_TITLE
-from django_project.private_settings import ALLOWED_HOSTS
+from config.private_settings import SITE_TITLE
+from config.private_settings import ALLOWED_HOSTS
 
 from common.models import GeneralSetting
 

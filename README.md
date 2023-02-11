@@ -7,10 +7,10 @@ If you want to use this app as is, you will need to
 
 * Set up a SnapGene server (free for academic use, see <https://www.snapgene.com/academics/snapgene-server/>)
 * Set up a [plasmid viewer](https://github.com/helle-ulrich-lab/ove-plasmid-viewer) based on [TeselaGen's openVectorEditor](https://github.com/TeselaGen/openVectorEditor)
-* Include a file called private_settings.py in the django_project folder that contains the following variables (amend as appropriate!)
+* Include a file called private_settings.py in the config folder that contains the following variables (amend as appropriate!)
 
 ```python
-# /django_project/private_settings.py
+# /config/private_settings.py
 # Django settings
 
 SECRET_KEY = 'secret_key'

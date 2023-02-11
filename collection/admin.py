@@ -14,9 +14,9 @@ from django.forms import TextInput
 from django.http import HttpResponseRedirect
 from django.http import HttpResponse, HttpResponseNotFound
 from django.http import JsonResponse
-from django_project.settings import MEDIA_ROOT
-from django_project.settings import BASE_DIR
-from django_project.private_settings import LAB_ABBREVIATION_FOR_FILES
+from config.settings import MEDIA_ROOT
+from config.settings import BASE_DIR
+from config.private_settings import LAB_ABBREVIATION_FOR_FILES
 from django.contrib.auth.models import User
 from django.utils.safestring import mark_safe
 from django.contrib.admin.utils import quote

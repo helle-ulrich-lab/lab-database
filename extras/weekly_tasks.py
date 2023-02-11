@@ -1,8 +1,8 @@
 import inspect
 from django.core.mail import send_mail
-from django_project.private_settings import ALLOWED_HOSTS
-from django_project.private_settings import SITE_TITLE
-from django_project.private_settings import SERVER_EMAIL_ADDRESS
+from config.private_settings import ALLOWED_HOSTS
+from config.private_settings import SITE_TITLE
+from config.private_settings import SERVER_EMAIL_ADDRESS
 from django.urls import reverse
 from approval.models import RecordToBeApproved
 

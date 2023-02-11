@@ -28,10 +28,10 @@ from collection.admin import AntibodyExportResource
 from ordering.models import Order
 from ordering.admin import OrderExportResource
 
-from django_project.settings import BASE_DIR
-from django_project.private_settings import DB_NAME 
-from django_project.private_settings import DB_USER
-from django_project.private_settings import DB_PASSWORD
+from config.settings import BASE_DIR
+from config.private_settings import DB_NAME 
+from config.private_settings import DB_USER
+from config.private_settings import DB_PASSWORD
 
 from wiki.models.article import ArticleRevision
 
@@ -54,7 +54,7 @@ def export_db_table_as_xlsx(model,export_resource):
                 wr.writerow(row_values)
     
     import os
-    from django_project.settings import BASE_DIR
+    from config.settings import BASE_DIR
 
     file_name = os.path.join(
         BASE_DIR,
@@ -68,7 +68,7 @@ def export_db_table_as_xlsx(model,export_resource):
 def save_wiki_article_as_md(article_id):
     from wiki.models.article import ArticleRevision
     from os.path import join
-    from django_project.settings import BASE_DIR
+    from config.settings import BASE_DIR
 
     obj = ArticleRevision.objects.filter(article_id=article_id).latest('id')
     file_name = ''.join(obj.title.title().split()) + '.md'

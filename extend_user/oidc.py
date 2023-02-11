@@ -1,7 +1,7 @@
 from mozilla_django_oidc.auth import OIDCAuthenticationBackend
 from django.contrib.auth.models import Group
-from django_project.private_settings import OIDC_ALLOWED_GROUPS, SITE_TITLE, SITE_ADMIN_EMAIL_ADDRESSES
-from django_project.settings import ALLOWED_HOSTS
+from config.private_settings import OIDC_ALLOWED_GROUPS, SITE_TITLE, SITE_ADMIN_EMAIL_ADDRESSES
+from config.settings import ALLOWED_HOSTS
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.urls import reverse

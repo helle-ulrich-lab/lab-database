@@ -21,8 +21,8 @@ from django.utils import timezone
 from django.utils.encoding import smart_str
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
-from django_project.private_settings import LAB_ABBREVIATION_FOR_FILES
-from django_project.settings import MEDIA_ROOT
+from config.private_settings import LAB_ABBREVIATION_FOR_FILES
+from config.settings import MEDIA_ROOT
 
 #################################################
 #                DJANGO MODELS                  #
@@ -41,8 +41,8 @@ from ordering.models import GhsSymbol
 #          DJANGO PROJECT SETTINGS              #
 #################################################
 
-from django_project.settings import TIME_ZONE
-from django_project.private_settings import SITE_TITLE, SERVER_EMAIL_ADDRESS, ALLOWED_HOSTS
+from config.settings import TIME_ZONE
+from config.private_settings import SITE_TITLE, SERVER_EMAIL_ADDRESS, ALLOWED_HOSTS
 from common.models import GeneralSetting
 
 #################################################

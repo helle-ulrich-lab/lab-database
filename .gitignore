@@ -1,15 +1,12 @@
 # Project-specific
-uploads/**
-config/**
-logs/**
-temp/**
-db_backup/**
-static/admin/css/base.css
+uploads/
+logs/
+temp/
+db_backup/
 private_settings.py
-others/**
+others/
 .vscode/
 others
-.vscode/settings.json
 staticfiles/
 
 # Byte-compiled / optimized / DLL files

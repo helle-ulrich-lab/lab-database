@@ -1,0 +1,6 @@
+-r base.in
+
+autopep8==2.0.1
+ipykernel==6.19.2
+ipython==8.7.0
+pylint

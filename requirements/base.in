@@ -1,0 +1,23 @@
+# Python 3.8.13
+# uWSGI==2.0.19.1
+
+# To install/update packages install pip-compile-multi
+# pip install pip-compile-multi
+# And then run the following from the project's root
+# pip-compile-multi --no-upgrade -d requirements/ -i in -o txt
+
+beautifulsoup4==4.8.1
+Django==3.2.15
+django-adminactions==1.9
+django-background-tasks==1.2.5
+django-guardian==2.4.0
+django-import-export==2.7.1
+djangoql==0.17.1
+django-simple-history==3.0.0
+lxml==4.4.1
+mozilla-django-oidc==2.0.0
+openpyxl==3.0.1
+psycopg2
+git+https://github.com/django-wiki/django-wiki.git # Temporary solution until patch is released
+xlrd==1.1.0
+zmq==0.0.0

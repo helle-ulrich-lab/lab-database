@@ -5,49 +5,126 @@
 #
 #    pip-compile-multi
 #
--r base.txt
+asgiref==3.6.0
+    # via django
 astroid==2.14.1
     # via pylint
 asttokens==2.2.1
     # via stack-data
 autopep8==2.0.1
-    # via -r requirements/dev.in
+    # via -r dev.in
 backcall==0.2.0
     # via ipython
+beautifulsoup4==4.8.1
+    # via -r base.in
+bleach[css]==6.0.0
+    # via wiki
+certifi==2022.12.7
+    # via requests
+cffi==1.15.1
+    # via cryptography
+charset-normalizer==3.0.1
+    # via requests
 comm==0.1.2
     # via ipykernel
+cryptography==39.0.1
+    # via
+    #   josepy
+    #   mozilla-django-oidc
+    #   pyopenssl
 debugpy==1.6.6
     # via ipykernel
 decorator==5.1.1
     # via ipython
+defusedxml==0.7.1
+    # via odfpy
+diff-match-patch==20200713
+    # via django-import-export
 dill==0.3.6
     # via pylint
+django==3.2.15
+    # via
+    #   -r base.in
+    #   django-classy-tags
+    #   django-guardian
+    #   django-import-export
+    #   django-js-asset
+    #   django-nyt
+    #   django-sekizai
+    #   mozilla-django-oidc
+    #   wiki
+django-adminactions==1.9
+    # via -r base.in
+django-background-tasks==1.2.5
+    # via -r base.in
+django-classy-tags==4.0.0
+    # via django-sekizai
+django-compat==1.0.15
+    # via django-background-tasks
+django-guardian==2.4.0
+    # via -r base.in
+django-import-export==2.7.1
+    # via -r base.in
+django-js-asset==2.0.0
+    # via django-mptt
+django-mptt==0.13.4
+    # via wiki
+django-nyt==1.2.4
+    # via wiki
+django-sekizai==4.0.0
+    # via wiki
+django-simple-history==3.0.0
+    # via -r base.in
+djangoql==0.17.1
+    # via -r base.in
+et-xmlfile==1.1.0
+    # via openpyxl
 executing==1.2.0
     # via stack-data
+idna==3.4
+    # via requests
 ipykernel==6.19.2
-    # via -r requirements/dev.in
-ipython==8.7.0
+    # via -r dev.in
+ipython==8.10.0
     # via
-    #   -r requirements/dev.in
+    #   -r dev.in
     #   ipykernel
 isort==5.12.0
     # via pylint
+jdcal==1.4.1
+    # via openpyxl
 jedi==0.18.2
     # via ipython
+josepy==1.13.0
+    # via mozilla-django-oidc
 jupyter-client==8.0.2
     # via ipykernel
 jupyter-core==5.2.0
     # via jupyter-client
 lazy-object-proxy==1.9.0
     # via astroid
+lxml==4.4.1
+    # via -r base.in
+markdown==3.3.7
+    # via wiki
+markuppy==1.14
+    # via tablib
 matplotlib-inline==0.1.6
     # via
     #   ipykernel
     #   ipython
 mccabe==0.7.0
     # via pylint
+mozilla-django-oidc==2.0.0
+    # via -r base.in
 nest-asyncio==1.5.6
     # via ipykernel
+odfpy==1.4.1
+    # via tablib
+openpyxl==3.0.1
+    # via
+    #   -r base.in
+    #   tablib
 packaging==23.0
     # via ipykernel
 parso==0.8.3
@@ -56,32 +133,68 @@ pexpect==4.8.0
     # via ipython
 pickleshare==0.7.5
     # via ipython
+pillow==9.4.0
+    # via wiki
 platformdirs==3.0.0
     # via
     #   jupyter-core
     #   pylint
+ply==3.11
+    # via djangoql
 prompt-toolkit==3.0.36
     # via ipython
 psutil==5.9.4
     # via ipykernel
+psycopg2==2.9.5
+    # via -r base.in
 ptyprocess==0.7.0
     # via pexpect
 pure-eval==0.2.2
     # via stack-data
 pycodestyle==2.10.0
     # via autopep8
+pycparser==2.21
+    # via cffi
 pygments==2.14.0
     # via ipython
 pylint==2.16.1
-    # via -r requirements/dev.in
+    # via -r dev.in
+pyopenssl==23.0.0
+    # via josepy
 python-dateutil==2.8.2
     # via jupyter-client
+pytz==2022.7.1
+    # via
+    #   django
+    #   django-adminactions
+pyyaml==6.0
+    # via tablib
+pyzmq==25.0.0
+    # via
+    #   ipykernel
+    #   jupyter-client
+    #   zmq
+requests==2.28.2
+    # via mozilla-django-oidc
+six==1.16.0
+    # via
+    #   asttokens
+    #   bleach
+    #   django-background-tasks
+    #   django-compat
+    #   python-dateutil
+sorl-thumbnail==12.9.0
+    # via wiki
+soupsieve==2.3.2.post1
+    # via beautifulsoup4
+sqlparse==0.4.3
+    # via django
 stack-data==0.6.2
     # via ipython
-tomli==2.0.1
-    # via
-    #   autopep8
-    #   pylint
+tablib[html,ods,xls,xlsx,yaml]==3.3.0
+    # via django-import-export
+tinycss2==1.1.1
+    # via bleach
 tomlkit==0.11.6
     # via pylint
 tornado==6.2
@@ -96,14 +209,29 @@ traitlets==5.9.0
     #   jupyter-client
     #   jupyter-core
     #   matplotlib-inline
-typing-extensions==4.4.0
-    # via
-    #   astroid
-    #   pylint
+urllib3==1.26.14
+    # via requests
 wcwidth==0.2.6
     # via prompt-toolkit
+webencodings==0.5.1
+    # via
+    #   bleach
+    #   tinycss2
+wiki @ git+https://github.com/django-wiki/django-wiki.git
+    # via -r base.in
 wrapt==1.14.1
     # via astroid
+xlrd==1.1.0
+    # via
+    #   -r base.in
+    #   django-adminactions
+    #   tablib
+xlwt==1.3.0
+    # via
+    #   django-adminactions
+    #   tablib
+zmq==0.0.0
+    # via -r base.in
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools

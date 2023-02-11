@@ -14,7 +14,7 @@ django-guardian==2.4.0
 django-import-export==2.7.1
 djangoql==0.17.1
 django-simple-history==3.0.0
-lxml==4.4.1
+lxml==4.9.1
 mozilla-django-oidc==2.0.0
 openpyxl==3.0.1
 psycopg2

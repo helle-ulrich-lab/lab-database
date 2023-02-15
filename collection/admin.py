@@ -386,6 +386,15 @@ class CustomUserManage(UserManage):
     except:
         pass
 
+class SortAutocompleteResultsId(admin.ModelAdmin):
+
+    def get_ordering(self, request):
+        # Force sorting of autocompletion results to be by ascending id
+        if request.path_info == '/autocomplete/':
+            return ['id']
+        else:
+            return super(SortAutocompleteResultsId, self).get_ordering(request)
+
 @background(schedule=86400) # Run 24 h after it is called, as "background" process
 def delete_obj_perm_after_24h(perm, user_id, obj_id, app_label, model_name):
     """ Delete object permession after 24 h"""
@@ -885,7 +894,7 @@ class SaCerevisiaeStrainEpisomalPlasmidInline(admin.TabularInline):
             self.classes = []
         return super(SaCerevisiaeStrainEpisomalPlasmidInline, self).get_queryset(request)
 
-class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin, Approval, AdminChangeFormWithNavigation):
+class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin, Approval, AdminChangeFormWithNavigation, SortAutocompleteResultsId):
     
     list_display = ('id', 'name', 'mating_type', 'background', 'created_by', 'approval')
     list_display_links = ('id',)
@@ -1336,7 +1345,7 @@ class PlasmidForm(forms.ModelForm):
 
         return self.cleaned_data
 
-class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin, Approval, AdminChangeFormWithNavigation, AdminOligosInPlasmid):
+class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin, Approval, AdminChangeFormWithNavigation, AdminOligosInPlasmid, SortAutocompleteResultsId):
     
     list_display = ('id', 'name', 'selection', 'get_plasmidmap_short_name', 'created_by', 'approval')
     list_display_links = ('id',)
@@ -2483,7 +2492,7 @@ class ScPombeStrainEpisomalPlasmidInline(admin.TabularInline):
             self.classes = []
         return super(ScPombeStrainEpisomalPlasmidInline, self).get_queryset(request)
 
-class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Approval, AdminChangeFormWithNavigation):
+class ScPombeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Approval, AdminChangeFormWithNavigation, SortAutocompleteResultsId):
     list_display = ('id', 'name', 'auxotrophic_marker', 'mating_type', 'approval',)
     list_display_links = ('id',)
     list_per_page = 25
@@ -3228,7 +3237,7 @@ class CellLineEpisomalPlasmidInline(admin.TabularInline):
             self.classes = []
         return super(CellLineEpisomalPlasmidInline, self).get_queryset(request)
 
-class CellLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin, Approval, AdminChangeFormWithNavigation):
+class CellLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin, Approval, AdminChangeFormWithNavigation, SortAutocompleteResultsId):
     
     list_display = ('id', 'name', 'box_name', 'created_by', 'approval')
     list_display_links = ('id',)

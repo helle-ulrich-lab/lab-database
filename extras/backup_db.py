@@ -61,7 +61,7 @@ def export_db_table_as_xlsx(model,export_resource):
         "db_backup/excel_tables/",
         "{}.xlsx".format(model.__name__))
     with open(file_name, "wb") as out_handle:
-        out_data = export_resource().export(model.objects.all()).xlsx
+        out_data = export_resource().export(model.objects.all().order_by('-id')).xlsx
         out_handle.write(out_data)
     convert_xlsx_to_tsv(file_name)
 

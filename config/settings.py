@@ -246,7 +246,11 @@ LOGGING = {
         'dblogfile': {
             'level': 'DEBUG',
             'handlers': ['dblogfile'],
-        }
+        },
+        'mozilla_django_oidc': {
+            'level': 'DEBUG',
+            'handlers': ['logfile'],
+        },
     }
 }
 

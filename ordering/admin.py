@@ -65,6 +65,10 @@ from import_export.fields import Field
 from adminactions.mass_update import MassUpdateForm, get_permission_codename,\
     ActionInterrupted, adminaction_requested, adminaction_start, adminaction_end
 
+# Functions for navigation floater
+
+from collection.admin import AdminChangeFormWithNavigation
+
 #################################################
 #                OTHER IMPORTS                  #
 #################################################
@@ -788,7 +792,7 @@ class OrderForm(forms.ModelForm):
         
         return self.cleaned_data
 
-class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelAdmin):
+class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeFormWithNavigation):
     
     list_display = ('custom_internal_order_no', 'item_description', 'supplier_and_part_no', 'quantity', 'trimmed_comment' ,'location', 'msds_link', 'coloured_status', "created_by")
     list_display_links = ('custom_internal_order_no', )

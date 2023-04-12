@@ -4,7 +4,7 @@ $(document).ready(function () {
     // and https://stackoverflow.com/questions/5471291/javascript-with-jquery-click-and-double-click-on-same-element-different-effect
 
     // Get relevant fields and sort them by ascending order of id
-    let idFields = $('.field-id').find('a').sort((a, b) => {
+    let idFields = $('.field-id, .field-custom_internal_order_no').find('a').sort((a, b) => {
         return a.innerText - b.innerText;
     });
 

@@ -1222,7 +1222,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
         '''Custom internal order no field for changelist_view'''
 
         if str(instance.internal_order_no).startswith(str(instance.id)):
-            return mark_safe('<span style="white-space: nowrap;">{}</span>'.format(instance.internal_order_no))
+            return instance.internal_order_no
         else:
             return str(instance.id)
     

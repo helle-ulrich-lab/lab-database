@@ -24,6 +24,11 @@
 {% block extrahead %}
 {{ block.super }}
 {{ media.js }}
+<style>
+    .field-custom_internal_order_no a {
+    white-space: nowrap;
+  }
+</style>
 {% endblock %}
 
 {% block bodyclass %}{{ block.super }} app-{{ opts.app_label }} model-{{ opts.model_name }} change-list{% endblock %}
@@ -105,5 +110,6 @@
 </script>
 <script type="text/javascript" src="{% static 'admin/js/admin/MagnificPopUpiFrame.js' %}"></script>
 <script type="text/javascript" src="{% static 'admin/js/admin/ordering_order_change_list.js' %}"></script>
+<script type="text/javascript" src="{% static 'admin/js/admin/MagnificPopUpId.js' %}"></script>
 {% endblock %}
 {% endblock %}

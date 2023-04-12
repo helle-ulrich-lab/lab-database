@@ -1204,7 +1204,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelA
 
         comment = instance.comment
         if comment: 
-            return comment[:65] + "..." if len(comment) > 65 else comment
+            return mark_safe(f'<span title="{comment}">{comment[:65].strip()}...</span>') if len(comment) > 65 else comment
         else:
             None
     trimmed_comment.short_description = 'Comments'

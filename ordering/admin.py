@@ -996,7 +996,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeF
         
         super(OrderPage, self).save_related(request, form, formsets, change)
 
-        if form.instance.status != 'cancelled':
+        if form.instance.status not in ["used up", 'cancelled']:
 
             obj = Order.objects.get(pk=form.instance.id)
 

@@ -1,6 +1,6 @@
 from mozilla_django_oidc.auth import OIDCAuthenticationBackend
 from django.contrib.auth.models import Group
-from config.private_settings import OIDC_ALLOWED_GROUPS, SITE_TITLE, SITE_ADMIN_EMAIL_ADDRESSES
+from config.private_settings import OIDC_ALLOWED_GROUPS, SITE_TITLE, SITE_ADMIN_EMAIL_ADDRESSES, OIDC_UPN_FIELD_NAME
 from config.settings import ALLOWED_HOSTS
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
@@ -26,7 +26,7 @@ class MyOIDCAB(OIDCAuthenticationBackend):
     
     def filter_users_by_claims(self, claims):
 
-        zdv_upn = claims.get('zdv_upn')
+        upn = claims.get(OIDC_UPN_FIELD_NAME)
         sub = claims.get('sub')
 
         # If a unique identifier (= sub) is available use it to try getting the User
@@ -36,10 +36,10 @@ class MyOIDCAB(OIDCAuthenticationBackend):
             if users:
                 return users
 
-        # Otherwise try with zdv_upn
-        if zdv_upn:
+        # Otherwise try with upn
+        if upn:
             try:
-                users = self.UserModel.objects.filter(username=zdv_upn.split('@')[0].lower())
+                users = self.UserModel.objects.filter(username=upn.split('@')[0].lower())
                 if len(users) == 0:
                     raise Exception
                 return users
@@ -141,10 +141,10 @@ class MyOIDCAB(OIDCAuthenticationBackend):
     def get_username(self, claims):
         """Generate username based on claims."""
         
-        # Get username from zdv_upn => 'username@Uni-Mainz.De', default to regular
-        # behaviour when zdv_upn is not available
-        zdv_upn = claims.get('zdv_upn')
-        username = zdv_upn.split('@')[0].lower()
+        # Get username from upn => e.g. 'username@Uni-Mainz.De', default to regular
+        # behaviour when upn is not available
+        upn = claims.get(OIDC_UPN_FIELD_NAME)
+        username = upn.split('@')[0].lower()
         if username:
             return username
         

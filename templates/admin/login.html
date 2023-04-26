@@ -3,6 +3,8 @@
 
 {% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static "admin/css/login.css" %}">
 <link rel="stylesheet" href="{% static "admin/css/separator.css" %}">
+<link rel="stylesheet" href="{% static "admin/css/auth_login.css" %}">
+<script type="text/javascript" src="{% static 'admin/js/admin/auth_login.js' %}"></script>
 {{ form.media }}
 {% endblock %}
 
@@ -52,10 +54,10 @@
   <input type="button" onclick='window.location.href="{{oidc_login_url}}";' value="Log in with{% if oidc_provider_name %} your {{oidc_provider_name}} account {% else %} OpenID {% endif %}"/>
   </div>
 </form>
-<div class="separator">or use your personal account below</div>
+<button class="collapsible">Log in with your personal account</button>
 {% endif %}
 
-<form action="{{ app_path }}" method="post" id="login-form">{% csrf_token %}
+<form action="{{ app_path }}" method="post" id="login-form" {% if oidc_login_url %} class="local-login" {% endif %}>{% csrf_token %}
   <div class="form-row">
     {{ form.username.errors }}
     {{ form.username.label_tag }} {{ form.username }}

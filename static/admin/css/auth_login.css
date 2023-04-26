@@ -1,0 +1,38 @@
+.collapsible {
+    cursor: pointer;
+    background: var(--close-button-bg);
+    display: block;
+    margin: 1em auto;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    color: var(--button-fg);
+    cursor: pointer;
+    font-size: 0.65em;
+    transition: background 0.15s;
+}
+
+.active,
+.collapsible:hover {
+    background-color: var(--close-button-hover-bg);
+}
+
+.active:hover {
+    background-color: var(--close-button-bg);
+}
+
+.collapsible:after {
+    content: '\002B';
+    color: white;
+    font-weight: bold;
+    float: right;
+    margin-left: 5px;
+}
+
+.active:after {
+    content: "\2212";
+}
+
+.local-login {
+    display: none;
+}

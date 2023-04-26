@@ -99,6 +99,8 @@ class MyOIDCAB(OIDCAuthenticationBackend):
                                                   )
         # Activate user, by default is_active is set to False via a signal
         user.is_active = True
+        # Do not allow user to reset password
+        user.set_unusable_password()
         user.save()
 
         labuser = user.labuser

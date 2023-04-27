@@ -23,6 +23,8 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
 from config.private_settings import LAB_ABBREVIATION_FOR_FILES
 from config.settings import MEDIA_ROOT
+from django.template.loader import render_to_string
+from django.urls import reverse
 
 #################################################
 #                DJANGO MODELS                  #
@@ -863,48 +865,20 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeF
 
                 general_setting = GeneralSetting.objects.all().first()
                 post_message_status_code = 0
+                current_site = ALLOWED_HOSTS[0]
+                order_change_url = f'{request.scheme + "://" if request.scheme else ""}{current_site}{reverse("admin:ordering_order_change", args=(obj.id,))}'
 
                 if general_setting.ms_teams_webhook:
 
                     try:
-                    
-                        message_card = {
-                                        "@context": "https://schema.org/extensions",
-                                        "@type": "MessageCard",
-                                        "text": "A new urgent order has been submited",
-                                        "potentialAction": [
-                                            {
-                                                "@type": "OpenUri",
-                                                "name": "View order",
-                                                "targets": [
-                                                    {
-                                                        "os": "default",
-                                                        "uri": "https://{}/ordering/order/{}/change/".format(ALLOWED_HOSTS[0], obj.id)
-                                                    }
-                                                ]
-                                            }
-                                        ],
-                                        "sections": [
-                                            {
-                                                "facts": [
-                                                    {
-                                                        "name": "Created By:",
-                                                        "value": "{} {}".format(request.user.first_name, request.user.last_name)
-                                                    },
-                                                    {
-                                                        "name": "Item:",
-                                                        "value": "{} {} - {}".format(obj.supplier, obj.supplier_part_no, obj.part_description)
-                                                    },
-                                                    {
-                                                        "name": "On/at:",
-                                                        "value": datetime.datetime.strftime(timezone.localtime(obj.created_date_time, pytz.timezone(TIME_ZONE)), '%d.%m.%Y %H:%m')
-                                                    }
-                                                ]
-                                            }
-                                        ],
-                                        "title": "New urgent order"
-                                    }
-
+                        
+                        message_card = render_to_string("admin/ordering/order/urgent_order_msteam_card.json",
+                                                        {"item": f"{obj.supplier} {obj.supplier_part_no} - {obj.part_description}",
+                                                        "created_by": f"{request.user.first_name} {request.user.last_name}",
+                                                        "created_date_time": datetime.datetime.strftime(timezone.localtime(obj.created_date_time, pytz.timezone(TIME_ZONE)), '%d.%m.%Y %H:%m'),
+                                                        "order_change_url": order_change_url}
+                                                        )
+                        message_card = json.loads(message_card)
                         post_message = requests.post(url=general_setting.ms_teams_webhook, json=message_card)
                         post_message_status_code = post_message.status_code
 

@@ -1,0 +1,65 @@
+{
+    "type": "message",
+    "attachments": [
+        {
+            "contentType": "application/vnd.microsoft.card.adaptive",
+            "contentUrl": null,
+            "content": {
+                "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+                "version": "1.2",
+                "type": "AdaptiveCard",
+                "body": [
+                    {
+                        "type": "Container",
+                        "items": [
+                            {
+                                "type": "TextBlock",
+                                "size": "Medium",
+                                "weight": "Bolder",
+                                "text": "NEW URGENT ORDER",
+                                "color": "Attention",
+                                "horizontalAlignment": "Center"
+                            },
+                            {
+                                "type": "FactSet",
+                                "facts": [
+                                    {
+                                        "title": "Item:",
+                                        "value": "{{item}}"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "type": "Container",
+                        "items": [
+                            {
+                                "type": "FactSet",
+                                "spacing": "None",
+                                "facts": [
+                                    {
+                                        "title": "Created by:",
+                                        "value": "{{created_by}}"
+                                    },
+                                    {
+                                        "title": "On/at:",
+                                        "value": "{{created_date_time}}"
+                                    }
+                                ],
+                                "separator": true
+                            }
+                        ]
+                    }
+                ],
+                "actions": [
+                    {
+                        "type": "Action.OpenUrl",
+                        "title": "View order",
+                        "url": "{{order_change_url}}"
+                    }
+                ]
+            }
+        }
+    ]
+}

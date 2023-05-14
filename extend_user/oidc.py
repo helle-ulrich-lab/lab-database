@@ -129,6 +129,7 @@ class MyOIDCAB(OIDCAuthenticationBackend):
         user.email = email
         user.first_name = first_name
         user.last_name = last_name
+        user.set_unusable_password() # Set password to unusable, just in case
         user.save()
 
         if not user.labuser.oidc_identifier and sub:

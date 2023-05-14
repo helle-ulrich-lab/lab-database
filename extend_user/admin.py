@@ -92,8 +92,10 @@ class LabUserAdmin(BaseUserAdmin):
                 })
                 )
         elif request.user.has_perm('auth.change_user'):
+            obj = self.model.objects.get(id=object_id)
+            user_fields = ('username', 'password') if obj.has_usable_password() else ('username',)
             self.fieldsets = (
-                (None, {'fields': ('username', 'password')}),
+                (None, {'fields': user_fields}),
                 (_('Personal info'), {'fields': ('first_name', 'last_name', 'email')}),
                 (_('Permissions'), {
                     'fields': ('is_active', 'groups',),

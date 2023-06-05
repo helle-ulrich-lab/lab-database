@@ -49,10 +49,9 @@
 {% url 'oidc_authentication_init' as oidc_login_url %}
 {% settings_value "OIDC_PROVIDER_NAME" as oidc_provider_name %}
 {% if oidc_login_url %}
-<form>
-  <div class="submit-row">
-  <input type="button" onclick='window.location.href="{{oidc_login_url}}";' value="Log in with{% if oidc_provider_name %} your {{oidc_provider_name}} account {% else %} OpenID {% endif %}"/>
-  </div>
+<form method="get" action="{{oidc_login_url}}" style='text-align:center;'>
+  <input type="hidden" name="next" value="{{ next }}">
+  <input type="submit" value="Log in with{% if oidc_provider_name %} your {{oidc_provider_name}} account {% else %} OpenID {% endif %}"/>
 </form>
 <button class="collapsible">Log in with your personal account</button>
 {% endif %}

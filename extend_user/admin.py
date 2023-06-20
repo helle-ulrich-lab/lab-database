@@ -83,12 +83,20 @@ class LabUserAdmin(BaseUserAdmin):
         
         extra_context = extra_context or {}
 
-        if request.user.is_superuser or request.user.labuser.is_principal_investigator:
+        if request.user.is_superuser:
             self.fieldsets = (
                 (None, {'fields': ('username', 'password')}),
                 (_('Personal info'), {'fields': ('first_name', 'last_name', 'email')}),
                 (_('Permissions'), {
                     'fields': ('is_active', 'is_superuser', 'groups', 'user_permissions'),
+                })
+                )
+        elif request.user.labuser.is_principal_investigator:
+            self.fieldsets = (
+                (None, {'fields': ('username', 'password')}),
+                (_('Personal info'), {'fields': ('first_name', 'last_name', 'email')}),
+                (_('Permissions'), {
+                    'fields': ('is_active', 'groups', 'user_permissions'),
                 })
                 )
         elif request.user.has_perm('auth.change_user'):

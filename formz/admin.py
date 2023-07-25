@@ -354,21 +354,21 @@ class FormZBaseElementForm(forms.ModelForm):
 class FormZBaseElementResource(resources.ModelResource):
     """Defines a custom export resource class for FormZBaseElement"""
 
-    donor_organisms_names = Field()
+    donor_organism_name_rg = Field()
     aliases = Field()
 
-    def dehydrate_donor_organisms_names(self, e):
-        return ', '.join(e.donor_organism.values_list('name_for_search', flat=True))
+    def dehydrate_donor_organism_name_rg(self, e):
+        return ', '.join(f'{n} (RG{rg})' if rg else n for n, rg in e.donor_organism.values_list('name_for_search', 'risk_group'))
 
     def dehydrate_aliases(self, e):
         return ', '.join(e.extra_label.values_list('label', flat=True))
 
     class Meta:
         model = FormZBaseElement
-        fields = ('id', 'name', 'donor_organisms_names', 'nuc_acid_purity__english_name',
+        fields = ('id', 'name', 'donor_organism_name_rg', 'nuc_acid_purity__english_name',
                   'nuc_acid_risk__english_name', 'zkbs_oncogene__name',
                   'description', 'aliases')
-        export_order = ('id', 'name', 'donor_organisms_names', 'nuc_acid_purity__english_name',
+        export_order = ('id', 'name', 'donor_organism_name_rg', 'nuc_acid_purity__english_name',
                         'nuc_acid_risk__english_name', 'zkbs_oncogene__name',
                         'description', 'aliases')
 

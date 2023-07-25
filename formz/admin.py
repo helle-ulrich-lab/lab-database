@@ -32,6 +32,14 @@ from formz.models import FormZStorageLocation
 from formz.models import FormZHeader
 from formz.models import ZkbsCellLine
 
+# Import/Export functionalities from django-import-export
+from import_export import resources
+from import_export.fields import Field
+from django.http import HttpResponse
+
+# Other imports
+import time
+
 #################################################
 #                 FORMZ ADMIN                   #
 #################################################
@@ -343,6 +351,41 @@ class FormZBaseElementForm(forms.ModelForm):
 
         return self.cleaned_data
 
+class FormZBaseElementResource(resources.ModelResource):
+    """Defines a custom export resource class for FormZBaseElement"""
+
+    donor_organisms_names = Field()
+    aliases = Field()
+
+    def dehydrate_donor_organisms_names(self, e):
+        return ', '.join(e.donor_organism.values_list('name_for_search', flat=True))
+
+    def dehydrate_aliases(self, e):
+        return ', '.join(e.extra_label.values_list('label', flat=True))
+
+    class Meta:
+        model = FormZBaseElement
+        fields = ('id', 'name', 'donor_organisms_names', 'nuc_acid_purity__english_name',
+                  'nuc_acid_risk__english_name', 'zkbs_oncogene__name',
+                  'description', 'aliases')
+        export_order = ('id', 'name', 'donor_organisms_names', 'nuc_acid_purity__english_name',
+                        'nuc_acid_risk__english_name', 'zkbs_oncogene__name',
+                        'description', 'aliases')
+
+def export_formzbaseelement(modeladmin, request, queryset):
+    """Export Sequence element"""
+
+    export_data = FormZBaseElementResource().export(queryset)
+
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.xlsx'\
+                                      .format(queryset.model.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
+    response.write(export_data.xlsx)
+
+    return response
+
+export_formzbaseelement.short_description = "Export selected sequence elements as XLSX"
+
 class FormZBaseElementPage(admin.ModelAdmin):
     
     list_display = ('name', 'get_donor_organism', 'description', 'get_extra_labels')
@@ -353,6 +396,7 @@ class FormZBaseElementPage(admin.ModelAdmin):
     autocomplete_fields = ['zkbs_oncogene', 'donor_organism']
     inlines = [FormZBaseElementExtraLabelPage]
     form = FormZBaseElementForm
+    actions = [export_formzbaseelement]
     
     def get_extra_labels(self, instance):
         return ', '.join(instance.extra_label.all().values_list('label',flat=True))

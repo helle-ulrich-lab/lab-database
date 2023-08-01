@@ -126,6 +126,9 @@ class MsdsForm(models.Model):
             except:
                 errors.append(ValidationError('Invalid file format. File does not have an extension'))
 
+            if any(c.isspace() for c in self.name.name):
+                errors.append(ValidationError('File name cannot contain white spaces.'))
+
         if len(errors) > 0:
             raise ValidationError(errors)
 

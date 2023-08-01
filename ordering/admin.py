@@ -38,6 +38,7 @@ from ordering.models import MsdsForm
 from ordering.models import GhsSymbol
 from ordering.models import SignalWord
 from ordering.models import GhsSymbol
+from ordering.models import HazardStatement
 
 #################################################
 #          DJANGO PROJECT SETTINGS              #
@@ -118,8 +119,8 @@ class OrderAdmin(admin.AdminSite):
         first_export_field = "supplier_part_no" if query_field_name == "part_description" else "part_description"
 
         export_fields =  [first_export_field, "supplier",  "location_id", "msds_form_id", 
-                          "price", "cas_number", "history_ghs_symbols",
-                          "history_signal_words", "hazard_level_pregnancy"]
+                          "price", "cas_number", "history_ghs_symbols", "history_signal_words",
+                          'history_hazard_statements', "hazard_level_pregnancy"]
 
         # Get possible hits
         orders = Order.objects.filter(**{'{}__icontains'.format(query_field_name): search_query}) \
@@ -434,21 +435,29 @@ class BaseOrderResource(resources.ModelResource):
 
     ghs_symbols_field = Field(column_name='ghs_symbols')
     signal_words_field = Field(column_name='signal_words')
+    hazard_statements_field = Field(column_name='hazard_statements')
+    is_cmr_field = Field(column_name='is_cmr')
 
     def dehydrate_ghs_symbols_field(self, order):
-        return str(tuple(order.ghs_symbols.all().values_list('code', flat=True))).replace("'", "").replace('"', "").replace(',)', ')')[1:-1]
+        return ", ".join(order.ghs_symbols.all().values_list('code', flat=True))
 
     def dehydrate_signal_words_field(self, order):
-        return str(tuple(order.signal_words.all().values_list('signal_word', flat=True))).replace("'", "").replace('"', "").replace(',)', ')')[1:-1]
+        return ", ".join(order.signal_words.all().values_list('signal_word', flat=True))
+    
+    def dehydrate_hazard_statements_field(self, order):
+        return ", ".join(order.hazard_statements.all().values_list('code', flat=True))
+    
+    def dehydrate_is_cmr_field(self, order):
+        return 'Yes' if order.hazard_statements.filter(is_cmr=True).exists() else ''
 
 class OrderChemicalExportResource(BaseOrderResource):
     """Defines a custom export resource class for chemicals"""
     
     class Meta:
         model = Order
-        fields = ('id','supplier', 'supplier_part_no', 'part_description', 'quantity', 
-        "location__name", "cas_number", 'ghs_symbols_field', 'signal_words_field', 
-         'hazard_level_pregnancy')
+        fields = ('id','supplier', 'supplier_part_no', 'part_description', 'quantity',
+        "location__name", "cas_number", 'ghs_symbols_field', 'signal_words_field',
+        'hazard_statements_field', 'is_cmr_field', 'hazard_level_pregnancy')
         export_order = fields
 
 class OrderExportResource(BaseOrderResource):
@@ -714,6 +723,29 @@ class SearchFieldHasGhsSymbol(BoolField):
         op, _ = super(BoolField, self).get_operator(operator)
         return op, True
 
+class SearchFieldOptHazardSatetement(StrField):
+    """Create a list of unique hazard statements for search"""
+
+    model = HazardStatement
+    name = 'hazard_statements'
+    suggest_options = True
+
+    def get_options(self, search):
+        return self.model.objects.filter(code__icontains=search).order_by('code').\
+        values_list('code', flat=True)
+
+    def get_lookup_name(self):
+        return 'hazard_statements__code'
+
+class SearchFieldIsCmr(BoolField):
+    """Boolean field to search for orders with CMR status"""
+
+    model = Order
+    name = 'is_cmr'
+
+    def get_lookup_name(self):
+        return 'hazard_statements__is_cmr'
+
 class OrderQLSchema(DjangoQLSchema):
     '''Customize search functionality'''
     
@@ -727,12 +759,13 @@ class OrderQLSchema(DjangoQLSchema):
         ''' Define fields that can be searched'''
         
         if model == Order:
-            return ['id', SearchFieldOptSupplier() ,'supplier_part_no', 'internal_order_no', 
-            SearchFieldOptPartDescription(), SearchFieldOptCostUnit(), 'status', 'urgent', 
-            SearchFieldOptLocation(), 'comment', 'delivered_date', 'cas_number', 
-            SearchFieldOptGhsSymbol(), SearchFieldOptSignalWord(), SearchFieldOptMsdsForm(), 
-            SearchFieldOptAzardousPregnancy(), SearchFieldHasGhsSymbol(), 'created_date_time', 
-            'last_changed_date_time', 'created_by',]
+            return ['id', SearchFieldOptSupplier() ,'supplier_part_no', 'internal_order_no',
+            SearchFieldOptPartDescription(), SearchFieldOptCostUnit(), 'status', 'urgent',
+            SearchFieldOptLocation(), 'comment', 'delivered_date', 'cas_number',
+            SearchFieldOptGhsSymbol(), SearchFieldHasGhsSymbol(), SearchFieldOptSignalWord(),
+            SearchFieldOptMsdsForm(), SearchFieldOptHazardSatetement(), SearchFieldIsCmr(),
+            SearchFieldOptAzardousPregnancy(), 'created_date_time', 'last_changed_date_time',
+            'created_by',]
         elif model == User:
             return [SearchFieldOptUsernameOrder(), SearchFieldOptLastnameOrder()]
         return super(OrderQLSchema, self).get_fields(model)
@@ -746,7 +779,7 @@ class MyMassUpdateOrderForm(MassUpdateForm):
         model = Order
         fields = ['supplier','supplier_part_no', 'internal_order_no', 'part_description', 'quantity', 
             'price', 'cost_unit', 'location', 'comment', 'url', 'cas_number', "ghs_symbols", 'signal_words', 
-            'msds_form', 'hazard_level_pregnancy']
+            'msds_form', 'hazard_statements', 'hazard_level_pregnancy']
     
     def clean__validate(self):
         return True
@@ -789,8 +822,11 @@ class OrderForm(forms.ModelForm):
 
         ghs_symbols = self.cleaned_data.get('ghs_symbols')
         cas_number = self.cleaned_data.get('cas_number')
+        hazard_statements = self.cleaned_data.get('hazard_statements')
         if ghs_symbols and not cas_number:
             raise ValidationError({"cas_number": "If you provide a GHS symbol, you must also enter a CAS number."})
+        if ghs_symbols and not hazard_statements:
+            raise ValidationError({"hazard_statements": "If you provide a GHS symbol, you must also enter a hazard statement."})
         
         return self.cleaned_data
 
@@ -806,7 +842,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeF
     actions = [change_order_status_to_arranged, change_order_status_to_delivered, change_order_status_to_used_up, export_orders, export_chemicals, mass_update]
     search_fields = ['id', 'part_description', 'supplier_part_no']
     form = OrderForm
-    raw_id_fields = ["ghs_symbols", 'msds_form', 'signal_words']
+    raw_id_fields = ["ghs_symbols", 'msds_form', 'signal_words', 'hazard_statements']
     autocomplete_fields = []
 
     def get_form(self, request, obj=None, **kwargs):
@@ -979,6 +1015,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeF
 
             obj.history_ghs_symbols = list(obj.ghs_symbols.order_by('id').distinct('id').values_list('id', flat=True)) if obj.ghs_symbols.exists() else []
             obj.history_signal_words = list(obj.signal_words.order_by('id').distinct('id').values_list('id', flat=True)) if obj.signal_words.exists() else []
+            obj.history_hazard_statements = list(obj.hazard_statements.order_by('id').distinct('id').values_list('id', flat=True)) if obj.hazard_statements.exists() else []
 
             obj.save_without_historical_record()
 
@@ -986,6 +1023,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeF
             history_obj = obj.history.latest()
             history_obj.history_ghs_symbols = obj.history_ghs_symbols
             history_obj.history_signal_words = obj.history_signal_words
+            history_obj.history_hazard_statements = obj.history_hazard_statements
 
             history_obj.save()
 
@@ -1012,10 +1050,10 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeF
                 'created_date_time', 'last_changed_date_time',]
             else:
                 return ['supplier','supplier_part_no', 'internal_order_no', 'part_description', 'quantity', 
-            'price', 'cost_unit', 'status', 'urgent', 'delivery_alert', 'location', 'comment', 'url', 
-            'delivered_date', 'cas_number', "ghs_symbols", 'signal_words', 'msds_form', 
-            'hazard_level_pregnancy', 'order_manager_created_date_time', 'created_date_time', 
-            'last_changed_date_time', 'created_by',]
+                        'price', 'cost_unit', 'status', 'urgent', 'delivery_alert', 'location', 'comment', 'url', 
+                        'delivered_date', 'cas_number', "ghs_symbols", 'signal_words', 'msds_form', 'hazard_statements',
+                        'hazard_level_pregnancy', 'order_manager_created_date_time', 'created_date_time', 
+                        'last_changed_date_time', 'created_by',]
         else:
             return ['order_manager_created_date_time', 'created_date_time',  'last_changed_date_time',]
 
@@ -1023,7 +1061,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeF
         
         # Specifies which fields should be shown in the add view
 
-        self.raw_id_fields = ["ghs_symbols", 'msds_form', 'signal_words']
+        self.raw_id_fields = ["ghs_symbols", 'msds_form', 'signal_words', 'hazard_statements',]
         self.autocomplete_fields = []
 
         if request.user.groups.filter(name='Lab manager').exists() or request.user.groups.filter(name='Order manager').exists() or request.user.is_superuser:            
@@ -1031,12 +1069,12 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeF
             self.fieldsets = (
                 (None, {
                 'fields': ('internal_order_no', 'supplier','supplier_part_no', 'part_description', 'quantity', 
-            'price', 'cost_unit', 'status', 'urgent', 'delivery_alert', 'location', 'comment', 
-            'url', 'created_by')
+                            'price', 'cost_unit', 'status', 'urgent', 'delivery_alert', 'location', 'comment', 
+                            'url', 'created_by')
                     }),
                     ('SAFETY INFORMATION', {
                         'classes': ('collapse',),
-                        'fields': ('cas_number', "ghs_symbols", 'signal_words', 'msds_form', 
+                        'fields': ('cas_number', "ghs_symbols", 'signal_words', 'msds_form', 'hazard_statements',
                         'hazard_level_pregnancy',)
                         }),
                     )
@@ -1050,7 +1088,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeF
                     }),
                     ('SAFETY INFORMATION', {
                         'classes': ('collapse',),
-                        'fields': ('cas_number', "ghs_symbols", 'signal_words', 'msds_form', 
+                        'fields': ('cas_number', "ghs_symbols", 'signal_words', 'msds_form', 'hazard_statements',
                         'hazard_level_pregnancy',)
                         }),
                     )
@@ -1064,7 +1102,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeF
         self.can_change = False
 
         if object_id:
-            self.autocomplete_fields = ["ghs_symbols", 'msds_form', 'signal_words']
+            self.autocomplete_fields = ["ghs_symbols", 'msds_form', 'signal_words', 'hazard_statements',]
             self.raw_id_fields = []
             
             extra_context = extra_context or {}
@@ -1079,7 +1117,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeF
                     }),
                     ('SAFETY INFORMATION', {
                         'fields': ('cas_number', 'ghs_symbols', 'ghs_pict_img', 
-                        'signal_words', 'msds_form', 'hazard_level_pregnancy',)
+                        'signal_words', 'msds_form', 'hazard_statements', 'hazard_level_pregnancy',)
                         }),
                     )
 
@@ -1105,7 +1143,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeF
         
         else:
             self.autocomplete_fields = []
-            self.raw_id_fields = ["ghs_symbols", 'msds_form', 'signal_words']
+            self.raw_id_fields = ["ghs_symbols", 'msds_form', 'signal_words', 'hazard_statements',]
 
         return super(OrderPage,self).change_view(request, object_id, extra_context=extra_context)
 
@@ -1434,3 +1472,15 @@ class SignalWordPage(admin.ModelAdmin):
     list_per_page = 25
     ordering = ['signal_word']
     search_fields = ['signal_word']
+
+#################################################
+#              SIGNAL WORD PAGES                #
+#################################################
+
+class HazardStatementPage(admin.ModelAdmin):
+
+    list_display = ('code', 'description', 'is_cmr')
+    list_display_links = ('code', )
+    list_per_page = 25
+    ordering = ['code']
+    search_fields = ['code']

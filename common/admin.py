@@ -328,6 +328,7 @@ from ordering.models import OrderExtraDoc
 from ordering.models import MsdsForm
 from ordering.models import GhsSymbol
 from ordering.models import SignalWord
+from ordering.models import HazardStatement
 
 from ordering.admin import SearchFieldOptLocation, SearchFieldOptCostUnit, SearchFieldOptSupplier, SearchFieldOptPartDescription, OrderQLSchema
 from ordering.admin import OrderExtraDocInline
@@ -339,6 +340,7 @@ from ordering.admin import MsdsFormPage
 from ordering.admin import OrderExtraDocPage
 from ordering.admin import GhsSymbolPage
 from ordering.admin import SignalWordPage
+from ordering.admin import HazardStatementPage
 
 main_admin_site.register(Order, OrderPage)
 main_admin_site.register(CostUnit, CostUnitPage)
@@ -347,6 +349,7 @@ main_admin_site.register(MsdsForm, MsdsFormPage)
 main_admin_site.register(OrderExtraDoc, OrderExtraDocPage)
 main_admin_site.register(GhsSymbol, GhsSymbolPage)
 main_admin_site.register(SignalWord, SignalWordPage)
+main_admin_site.register(HazardStatement, HazardStatementPage)
 
 #################################################
 #            CUSTOM USER/GROUP PAGES            #

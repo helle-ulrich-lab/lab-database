@@ -175,9 +175,11 @@ class Order(models.Model, SaveWithoutHistoricalRecord):
     cas_number = models.CharField("CAS number", max_length=255, blank=True, validators=[validate_absence_airquotes])
     ghs_pictogram_old = models.CharField("GHS pictogram", max_length=255, blank=True, validators=[validate_absence_airquotes])
     ghs_symbols = models.ManyToManyField('GhsSymbol', verbose_name ='GHS symbols', related_name='order_ghs_symbols', blank=True)
+    hazard_statements = models.ManyToManyField('HazardStatement', verbose_name ='hazard statements', related_name='order_hazard_statement', blank=True)
     signal_words = models.ManyToManyField('SignalWord', verbose_name ='signal words', related_name='order_signal_words', blank=True)
     history_ghs_symbols = ArrayField(models.PositiveIntegerField(), verbose_name="GHS symbols", blank=True, null=True)
     history_signal_words = ArrayField(models.PositiveIntegerField(), verbose_name="signal words", blank=True, null=True)
+    history_hazard_statements = ArrayField(models.PositiveIntegerField(), verbose_name="hazard statements", blank=True, null=True)
     msds_form = models.ForeignKey(MsdsForm, on_delete=models.PROTECT, verbose_name='MSDS form', blank=True, null=True)
     hazard_level_pregnancy = models.CharField("Hazard level for pregnancy", max_length=255, choices=HAZARD_LEVEL_PREGNANCY_CHOICES, default='none', blank=True)
     
@@ -403,3 +405,22 @@ class SignalWord(models.Model):
         self.signal_word = self.signal_word.strip()
         
         super(SignalWord, self).save(force_insert, force_update, using, update_fields)
+
+class HazardStatement(models.Model):
+
+    code = models.CharField("code", max_length=10, unique=True, blank=False)
+    description = models.CharField("description", max_length=255, blank=False)
+    is_cmr = models.BooleanField("is CMR?", default=False)
+
+    class Meta:
+        verbose_name = 'hazard statement'
+    
+    def __str__(self):
+         return f'{self.code}{" - CMR" if self.is_cmr else ""}'
+
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+
+        self.code = self.code.strip()
+        self.description = self.description.strip()
+        
+        super(HazardStatement, self).save(force_insert, force_update, using, update_fields)

@@ -1273,6 +1273,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeF
         return {**super(OrderPage, self).get_history_array_fields(),
                 'history_ghs_symbols': GhsSymbol,
                 'history_signal_words': SignalWord,
+                'history_hazard_statements': HazardStatement,
                 }
 
 #################################################

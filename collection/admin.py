@@ -2178,6 +2178,42 @@ def export_oligo(modeladmin, request, queryset):
     return response
 export_oligo.short_description = "Export selected oligos"
 
+class PlasmidForm(forms.ModelForm):
+    
+    class Meta:
+        model = Oligo
+        fields = '__all__'
+
+    def clean_sequence(self):
+        """Check if sequence is unique before saving"""
+
+        sequence = self.cleaned_data["sequence"].upper()
+        qs = Oligo.objects.filter(sequence=sequence)
+        
+        if not self.instance.pk:
+            if qs.exists():
+                raise forms.ValidationError('Oligo with this Sequence already exists.')
+        else:
+            if qs.exclude(id=self.instance.pk).exists():
+                raise forms.ValidationError('Oligo with this Sequence already exists.')
+        
+        return sequence
+
+    def clean_name(self):
+        """Check if name is unique before saving"""
+
+        name = self.cleaned_data["name"]
+        qs = Oligo.objects.filter(name=name)
+        
+        if not self.instance.pk:
+            if qs.exists():
+                raise forms.ValidationError('Oligo with this Name already exists.')
+        else:
+            if qs.exclude(id=self.instance.pk).exists():
+                raise forms.ValidationError('Oligo with this Name already exists.')
+        
+        return name
+
 class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Approval, AdminChangeFormWithNavigation):
     list_display = ('id', 'name','get_oligo_short_sequence', 'restriction_site','created_by', 'approval')
     list_display_links = ('id',)
@@ -2188,6 +2224,7 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Approval, Ad
     djangoql_completion_enabled_by_default = False
     actions = [export_oligo]
     search_fields = ['id', 'name']
+    form = PlasmidForm
 
     def get_oligo_short_sequence(self, instance):
         '''This function allows you to define a custom field for the list view to

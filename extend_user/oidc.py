@@ -1,12 +1,14 @@
 from mozilla_django_oidc.auth import OIDCAuthenticationBackend
 from django.contrib.auth.models import Group
-from config.private_settings import OIDC_ALLOWED_GROUPS, SITE_TITLE, SITE_ADMIN_EMAIL_ADDRESSES, OIDC_UPN_FIELD_NAME
+from config.private_settings import (OIDC_ALLOWED_GROUPS, OIDC_ALLOWED_USER_UPNS,
+                                     SITE_TITLE, SITE_ADMIN_EMAIL_ADDRESSES,
+                                     OIDC_UPN_FIELD_NAME)
 from config.settings import ALLOWED_HOSTS
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.urls import reverse
 from inspect import cleandoc
-
+from django.contrib import messages
 
 class MyOIDCAB(OIDCAuthenticationBackend):
 
@@ -16,11 +18,13 @@ class MyOIDCAB(OIDCAuthenticationBackend):
         """ 
 
         # Check that the user is part of one of the allowed OIDC groups
-        if OIDC_ALLOWED_GROUPS:
-            groups = claims.get('role', [])
-            is_allowed = any(g in groups for g in OIDC_ALLOWED_GROUPS)
-            if not is_allowed:
-                return False
+        groups = claims.get('role', [])
+        upn = claims.get(OIDC_UPN_FIELD_NAME, '').split('@')[0].lower()
+        is_allowed = any(g in groups for g in OIDC_ALLOWED_GROUPS) or (upn in OIDC_ALLOWED_USER_UPNS)
+        if not is_allowed:
+            if self.request:
+                messages.error(self.request, f"Your user is not allowed to access the  {SITE_TITLE}.")
+            return False
 
         return super(MyOIDCAB, self).verify_claims(claims)
     

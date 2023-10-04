@@ -22,8 +22,7 @@ class MyOIDCAB(OIDCAuthenticationBackend):
         upn = claims.get(OIDC_UPN_FIELD_NAME, '').split('@')[0].lower()
         is_allowed = any(g in groups for g in OIDC_ALLOWED_GROUPS) or (upn in OIDC_ALLOWED_USER_UPNS)
         if not is_allowed:
-            if self.request:
-                messages.error(self.request, f"Your user is not allowed to access the  {SITE_TITLE}.")
+            messages.error(self.request, f"Your user is not allowed to access the  {SITE_TITLE}.")
             return False
 
         return super(MyOIDCAB, self).verify_claims(claims)

@@ -17,7 +17,7 @@ django-simple-history==3.0.0
 lxml==4.4.1
 mozilla-django-oidc==2.0.0
 openpyxl==3.0.1
-psycopg2
-git+https://github.com/django-wiki/django-wiki.git # Temporary solution until patch is released
+psycopg2==2.9.5
+Pillow
 xlrd==1.1.0
 zmq==0.0.0

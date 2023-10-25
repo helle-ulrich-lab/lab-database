@@ -24,6 +24,8 @@ dill==0.3.6
     # via pylint
 executing==1.2.0
     # via stack-data
+importlib-metadata==6.8.0
+    # via jupyter-client
 ipykernel==6.19.2
     # via -r requirements/dev.in
 ipython==8.7.0
@@ -104,6 +106,8 @@ wcwidth==0.2.6
     # via prompt-toolkit
 wrapt==1.14.1
     # via astroid
+zipp==3.17.0
+    # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools

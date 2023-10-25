@@ -33,8 +33,6 @@ from config.private_settings import DB_NAME
 from config.private_settings import DB_USER
 from config.private_settings import DB_PASSWORD
 
-from wiki.models.article import ArticleRevision
-
 import warnings
 # Suppress silly warning "UserWarning: Using a coordinate with ws.cell is deprecated..."
 warnings.simplefilter("ignore")
@@ -65,16 +63,6 @@ def export_db_table_as_xlsx(model,export_resource):
         out_handle.write(out_data)
     convert_xlsx_to_tsv(file_name)
 
-def save_wiki_article_as_md(article_id):
-    from wiki.models.article import ArticleRevision
-    from os.path import join
-    from config.settings import BASE_DIR
-
-    obj = ArticleRevision.objects.filter(article_id=article_id).latest('id')
-    file_name = ''.join(obj.title.title().split()) + '.md'
-    with open(join(BASE_DIR, 'db_backup/wiki_articles', file_name), 'w') as handle:
-        handle.write(obj.content)
-
 
 ENV_DIR = dirname(BASE_DIR)
 BACKUP_DIR = join(BASE_DIR, 'db_backup')
@@ -82,7 +70,6 @@ BACKUP_DIR = join(BASE_DIR, 'db_backup')
 # Create any required folder, if necessary
 pathlib.Path(join(BACKUP_DIR, 'db_dumps')).mkdir(parents=True, exist_ok=True)
 pathlib.Path(join(BACKUP_DIR, 'excel_tables')).mkdir(parents=True, exist_ok=True)
-pathlib.Path(join(BACKUP_DIR, 'wiki_articles')).mkdir(parents=True, exist_ok=True)
 pathlib.Path(join(BACKUP_DIR, 'uploads')).mkdir(parents=True, exist_ok=True)
 
 # Remove all and .gz files older than 7 days from backup folder 
@@ -105,17 +92,6 @@ DB_TABLES = [(SaCerevisiaeStrain, SaCerevisiaeStrainExportResource),
 
 for model, export_resource in DB_TABLES:
     if model.objects.exists(): export_db_table_as_xlsx(model, export_resource)
-
-# Save wiki articles as markdown files
-
-for f in listdir(join(BACKUP_DIR, 'wiki_articles')):
-    file_path = join(BACKUP_DIR, 'wiki_articles/', f)
-    if isfile(file_path):
-        remove(file_path)
-
-article_ids = set(ArticleRevision.objects.all().values_list('article_id', flat=True))
-for article_id in article_ids:
-    save_wiki_article_as_md(article_id)
 
 # Sync uploads
 check_output(f"/usr/bin/rsync -a {BASE_DIR}/uploads/ {BACKUP_DIR}/uploads", shell=True)

@@ -23,91 +23,9 @@ from django.contrib.auth.decorators import login_required
 from django.urls import reverse_lazy
 from django.urls import path
 
-from wiki.urls import get_pattern as get_wiki_pattern
 from config.private_settings import ALLOW_OIDC
-
 from common.admin import main_admin_site
 
-# Apply a decorator to every urlpattern and URLconf module returned by
-# Django's include() method. From https://djangosnippets.org/snippets/2532/
-
-from django.urls.resolvers import URLPattern, URLResolver
-
-class DecoratedURLPattern(URLPattern):
-    
-    def resolve(self, *args, **kwargs):
-        result = super(DecoratedURLPattern, self).resolve(*args, **kwargs)
-        if result:
-            result.func = self._decorate_with(result.func)
-        return result
-
-class DecoratedURLResolver(URLResolver):
-    
-    def resolve(self, *args, **kwargs):
-        result = super(DecoratedURLResolver, self).resolve(*args, **kwargs)
-        if result:
-            result.func = self._decorate_with(result.func)
-        return result
-
-def decorated_includes(func, includes, *args, **kwargs):
-    
-    urlconf_module, app_name, namespace = includes
-
-    for item in urlconf_module:
-        if isinstance(item, URLPattern):
-            item.__class__ = DecoratedURLPattern
-            item._decorate_with = func
-
-        elif isinstance(item, URLResolver):
-            item.__class__ = DecoratedURLResolver
-            item._decorate_with = func
-
-    return urlconf_module, app_name, namespace
-
-def wiki_check_login_guest(f):
-    """For wiki pages, verify that user is logged in and is not a guest"""
-
-    def decorator(request, **kwargs):
-
-        if request.user.is_authenticated:
-            
-            if request.user.groups.filter(name='Guest').exists():
-                
-                from django.http import HttpResponseRedirect
-                from django.urls import reverse
-                from django.contrib import messages
-                
-                messages.error(request, 'Guests are not allowed to view our Wiki, you have been automatically redirected to the home page.')
-                
-                return HttpResponseRedirect('/')
-            
-            else:
-                
-                return f(request, **kwargs)
-        else:
-            
-            from django.shortcuts import resolve_url
-            from urllib.parse import urlparse
-            from django.contrib.auth.views import redirect_to_login
-            from django.contrib.auth import REDIRECT_FIELD_NAME
-            
-            path = request.build_absolute_uri()
-            resolved_login_url = resolve_url(settings.LOGIN_URL)
-            
-            # If the login url is the same scheme and net location then just
-            # use the path as the "next" url.
-            login_scheme, login_netloc = urlparse(resolved_login_url)[:2]
-            current_scheme, current_netloc = urlparse(path)[:2]
-            
-            if ((not login_scheme or login_scheme == current_scheme) and
-                    (not login_netloc or login_netloc == current_netloc)):
-                
-                path = request.get_full_path()
-            
-            return redirect_to_login(
-                path, resolved_login_url, REDIRECT_FIELD_NAME)
-    
-    return decorator
 
 def check_guest(f):
     """If guest, do not allow access to view"""
@@ -133,12 +51,7 @@ def check_guest(f):
 #                 URL PATTERNS                  #
 #################################################
 
-from wiki.plugins.attachments.views import AttachmentDownloadView
-
 urlpatterns = [
-    url(r'^wiki/(?P<article_id>[0-9]+)/plugin/attachments/download/(?P<attachment_id>[0-9]+)/$', login_required(AttachmentDownloadView.as_view())),
-    path('notifications/', include('django_nyt.urls')),
-    path('wiki/', decorated_includes(wiki_check_login_guest, get_wiki_pattern())),
     path('password_change/', check_guest(auth_views.PasswordChangeView.as_view(success_url=reverse_lazy('admin:password_change_done')))),
     path('', main_admin_site.urls),
     ]

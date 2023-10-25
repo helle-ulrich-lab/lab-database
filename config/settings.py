@@ -38,17 +38,6 @@ INSTALLED_APPS = [
     'extend_user',
     'ordering',
     'guardian',
-    'django.contrib.sites.apps.SitesConfig',
-    'django.contrib.humanize.apps.HumanizeConfig',
-    'django_nyt.apps.DjangoNytConfig',
-    'mptt',
-    'sekizai',
-    'sorl.thumbnail',
-    'wiki.apps.WikiConfig',
-    'wiki.plugins.attachments.apps.AttachmentsConfig',
-    'wiki.plugins.notifications.apps.NotificationsConfig',
-    'wiki.plugins.images.apps.ImagesConfig',
-    'wiki.plugins.macros.apps.MacrosConfig',
     'background_task',
     'formz',
     'approval',
@@ -91,7 +80,6 @@ TEMPLATES = [
                 'django.template.context_processors.static',
                 'django.template.context_processors.tz',
                 'django.contrib.messages.context_processors.messages',
-                "sekizai.context_processors.sekizai",
             ],
         },
     },
@@ -253,17 +241,6 @@ LOGGING = {
         },
     }
 }
-
-
-# Wiki settings
-
-SITE_ID = 1
-WIKI_ACCOUNT_SIGNUP_ALLOWED = False
-WIKI_ACCOUNT_HANDLING = True
-WIKI_MARKDOWN_HTML_WHITELIST = ['a', 'abbr', 'acronym', 'b', 'blockquote', 'code', 'em',
-'i', 'li', 'ol', 'strong', 'ul', 'figure', 'figcaption', 'br', 'hr', 'p', 'div', 'img', 
-'pre', 'span', 'sup', 'table', 'thead', 'tbody', 'th', 'tr', 'td', 'dl', 'dt', 'dd',
-'h0', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'h7', 'sub', 'sup']
 
 
 # OIDC settings

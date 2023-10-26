@@ -6,9 +6,8 @@ from django.db import models
 from django.contrib.postgres.fields import ArrayField
 from django.contrib.auth.models import User
 from django.forms import ValidationError
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from django.contrib.contenttypes.fields import GenericRelation
-from django.utils.safestring import mark_safe
 
 from formz.models import ZkbsPlasmid
 from formz.models import FormZBaseElement
@@ -794,7 +793,7 @@ class CellLineDoc(models.Model):
                 if field:
                     
                     # Create new file name
-                    file_name = force_text(field)
+                    file_name = force_str(field)
                     name, ext = os.path.splitext(file_name)
                     ext = ext.lower()
                     keep_ext = options.get('keep_ext', True)

@@ -12,13 +12,12 @@ from django.http import HttpResponseRedirect
 from django.contrib import messages
 from django.db.models import Q
 from django.utils.text import capfirst
-from django.conf.urls import url
+from django.urls import re_path
 from django.urls import path
 from django.http import Http404
 from django.core.exceptions import PermissionDenied
-from django.forms import ValidationError
 from django.apps import apps
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from django.shortcuts import render
 from django.contrib import messages
 
@@ -49,7 +48,7 @@ class FormZAdmin(admin.AdminSite):
     def get_formz_urls(self):
 
         urls = [path('<path:object_id>/formz/', self.admin_view(self.formz_view)),
-                url(r'^formz/(?P<model_name>.*)/upload_zkbs_excel_file$', self.admin_view(self.upload_zkbs_excel_file_view)),]
+                re_path(r'^formz/(?P<model_name>.*)/upload_zkbs_excel_file$', self.admin_view(self.upload_zkbs_excel_file_view)),]
 
         return urls
     
@@ -102,7 +101,7 @@ class FormZAdmin(admin.AdminSite):
 
         context = {
         'title': 'FormZ: {}'.format(obj),
-        'module_name': capfirst(force_text(opts.verbose_name_plural)),
+        'module_name': capfirst(force_str(opts.verbose_name_plural)),
         'site_header': self.site_header,
         'has_permission': self.has_permission(request),
         'app_label': app_label,
@@ -139,7 +138,7 @@ class FormZAdmin(admin.AdminSite):
             app_label = 'formz'
             model = apps.get_model(app_label, model_name)
             opts = model._meta
-            verbose_model_name_plural = capfirst(force_text(opts.verbose_name_plural))
+            verbose_model_name_plural = capfirst(force_str(opts.verbose_name_plural))
 
             file_missing_error = False
 

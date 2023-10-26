@@ -3,7 +3,7 @@
 #################################################
 
 from django import forms
-from django.conf.urls import url
+from django.urls import re_path
 from django.contrib import admin, messages
 from django.contrib.admin import helpers
 from django.contrib.admin.widgets import AdminFileWidget
@@ -20,7 +20,7 @@ from django.shortcuts import render
 from django.utils import timezone
 from django.utils.encoding import smart_str
 from django.utils.safestring import mark_safe
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext_lazy as _
 from config.private_settings import LAB_ABBREVIATION_FOR_FILES
 from config.settings import MEDIA_ROOT
 from django.template.loader import render_to_string
@@ -97,8 +97,8 @@ class OrderAdmin(admin.AdminSite):
     
     def get_order_urls(self):
 
-        urls = [url(r'^ordering/my_orders_redirect$', self.admin_view(self.my_orders_redirect_view)),
-                url(r'^ordering/order_autocomplete/(?P<field>.*)=(?P<query>.*),(?P<timestamp>.*)', self.admin_view(self.autocomplete_order_view))]
+        urls = [re_path(r'^ordering/my_orders_redirect$', self.admin_view(self.my_orders_redirect_view)),
+                re_path(r'^ordering/order_autocomplete/(?P<field>.*)=(?P<query>.*),(?P<timestamp>.*)', self.admin_view(self.autocomplete_order_view))]
 
         return urls
     

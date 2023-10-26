@@ -5,8 +5,6 @@ from django.core.mail import mail_admins
 from config.private_settings import SITE_TITLE
 from config.private_settings import ALLOWED_HOSTS
 
-from common.models import GeneralSetting
-
 warnings.filterwarnings("ignore") # Suppress all warnings, including the InsecureRequestWarning caused by verify=False below
 
 time.sleep(900) # Give some time to the server to ready itself before starting to check if it works

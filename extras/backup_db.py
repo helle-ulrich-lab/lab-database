@@ -1,5 +1,4 @@
-from os.path import join, dirname, isfile
-from os import remove, listdir
+from os.path import join, dirname
 from subprocess import check_output
 from datetime import datetime
 import pathlib

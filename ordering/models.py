@@ -5,7 +5,7 @@
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
 from django.contrib.auth.models import User
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from django.contrib.contenttypes.fields import GenericRelation
 from django.forms import ValidationError
 
@@ -267,7 +267,7 @@ class OrderExtraDoc(models.Model):
                 if field:
                     
                     # Create new file name
-                    file_name = force_text(field)
+                    file_name = force_str(field)
                     name, ext = os.path.splitext(file_name)
                     ext = ext.lower()
                     keep_ext = options.get('keep_ext', True)
@@ -348,7 +348,7 @@ class GhsSymbol(models.Model):
                 if field:
                     
                     # Create new file name
-                    file_name = force_text(field)
+                    file_name = force_str(field)
                     name, ext = os.path.splitext(file_name)
                     ext = ext.lower()
                     keep_ext = options.get('keep_ext', True)

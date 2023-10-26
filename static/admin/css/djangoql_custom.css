@@ -1,0 +1,15 @@
+@media (prefers-color-scheme: dark) {
+
+    .djangoql-completion {
+        background-color: #212121;
+    }
+
+    .ui-autocomplete {
+        background-color: #212121;
+        color: white;
+    }
+
+    .djangoql-completion li:hover i {
+        color: black;
+    }
+}

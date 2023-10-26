@@ -8,7 +8,7 @@ from django.db.models import CharField
 from django.urls import reverse, resolve
 from django.core.mail import mail_admins
 from django.core.exceptions import PermissionDenied
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext_lazy as _
 from django import forms
 from django.forms import TextInput
 from django.http import HttpResponseRedirect
@@ -25,12 +25,11 @@ from django.contrib.admin.utils import unquote
 from django.contrib.admin.templatetags.admin_urls import add_preserved_filters
 from django.template.response import TemplateResponse
 from django.shortcuts import get_object_or_404, render
-from django.conf import settings
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from django.utils.text import capfirst
 from django.utils import timezone
 from django.db.models import Q
-from django.conf.urls import url
+from django.urls import re_path
 from django.core.serializers.json import Serializer as JsonSerializer
 
 from django.contrib.admin.options import IS_POPUP_VAR
@@ -112,7 +111,7 @@ class AdminChangeFormWithNavigation(admin.ModelAdmin):
 
         urls = super(AdminChangeFormWithNavigation, self).get_urls()
 
-        urls = [url(r'^(?P<object_id>.+)/navigation/$', view=self.navigation)] + urls
+        urls = [re_path(r'^(?P<object_id>.+)/navigation/$', view=self.navigation)] + urls
         
         return urls
 
@@ -143,7 +142,7 @@ class AdminOligosInPlasmid(admin.ModelAdmin):
 
         urls = super(AdminOligosInPlasmid, self).get_urls()
 
-        urls = [url(r'^(?P<object_id>.+)/find_oligos/$', view=self.find_oligos)] + urls
+        urls = [re_path(r'^(?P<object_id>.+)/find_oligos/$', view=self.find_oligos)] + urls
         
         return urls
 
@@ -354,9 +353,9 @@ class SimpleHistoryWithSummaryAdmin(SimpleHistoryAdmin):
         context = self.admin_site.each_context(request)
 
         context.update({
-            'title': _('Change history: %s') % force_text(obj),
+            'title': _('Change history: %s') % force_str(obj),
             'action_list': action_list,
-            'module_name': capfirst(force_text(opts.verbose_name_plural)),
+            'module_name': capfirst(force_str(opts.verbose_name_plural)),
             'object': obj,
             'root_path': getattr(self.admin_site, 'root_path', None),
             'app_label': app_label,
@@ -418,7 +417,7 @@ class CustomGuardedModelAdmin(GuardedModelAdmin):
 
         info = self.model._meta.app_label, self.model._meta.model_name
         myurls = [
-            url(r'^(?P<object_pk>.+)/permissions/(?P<user_id>\-?\d+)/remove/$',
+            re_path(r'^(?P<object_pk>.+)/permissions/(?P<user_id>\-?\d+)/remove/$',
                 view=self.admin_site.admin_view(
                     self.obj_perms_delete),name='%s_%s_permissions_delete' % info)
         ]

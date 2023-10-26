@@ -4,15 +4,12 @@
 
 from django.contrib import admin
 from django.apps import apps
-from django.utils.text import capfirst
 from django.http import HttpResponseRedirect
 from django.contrib.auth.models import Group, User
 from django.contrib.auth.admin import GroupAdmin, UserAdmin
-from django.contrib.contenttypes.models import ContentType
-from django.utils.encoding import force_text
 from django.shortcuts import render
 from django.contrib import messages
-from django.conf.urls import url
+from django.urls import re_path
 from django.http import HttpResponse
 from django.http import Http404
 from django.core.files.storage import default_storage
@@ -125,9 +122,9 @@ class MyAdminSite(OrderAdmin, FormZAdmin, admin.AdminSite):
         # This doesn't work with urls += ...
         urls = super(MyAdminSite, self).get_formz_urls() + \
             super(MyAdminSite, self).get_order_urls() + [
-            url(r'uploads/(?P<url_path>.*)$', self.admin_view(self.uploads)),
-            url(r'^150freezer/$', self.freezer150_view),
-            url(r'ove/(?P<url_path>.*)$', self.admin_view(self.ove_protected_view)),
+            re_path(r'uploads/(?P<url_path>.*)$', self.admin_view(self.uploads)),
+            re_path(r'^150freezer/$', self.freezer150_view),
+            re_path(r'ove/(?P<url_path>.*)$', self.admin_view(self.ove_protected_view)),
             ] + \
             urls 
             

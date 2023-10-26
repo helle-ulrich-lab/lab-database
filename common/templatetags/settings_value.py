@@ -11,4 +11,6 @@ def settings_value(name):
     # return getattr(settings, name, "")
     if name == 'OIDC_PROVIDER_NAME':
         return getattr(settings, name, "")
+    elif name == 'HOMEPAGE_DOCS_URL':
+        return getattr(settings, name, "")
     return ''

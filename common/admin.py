@@ -4,11 +4,8 @@
 
 from django.contrib import admin
 from django.apps import apps
-from django.http import HttpResponseRedirect
 from django.contrib.auth.models import Group, User
 from django.contrib.auth.admin import GroupAdmin, UserAdmin
-from django.shortcuts import render
-from django.contrib import messages
 from django.urls import re_path
 from django.http import HttpResponse
 from django.http import Http404
@@ -24,22 +21,8 @@ from config.private_settings import SITE_TITLE
 #        ADDED FUNCTIONALITIES IMPORTS          #
 #################################################
 
-# Import/Export functionalities from django-import-export
-from import_export import resources
-
-# Http stuff
-import http.cookiejar
 import urllib.request, urllib.parse
-
-# SnapGene
-from snapgene.pyclasses.client import Client
-from snapgene.pyclasses.config import Config
-
-import datetime
-import zmq
 import os
-import time
-from bs4 import BeautifulSoup
 import re
 import mimetypes
 
@@ -49,7 +32,6 @@ import mimetypes
 
 from formz.models import FormZBaseElement
 from formz.models import FormZProject
-from .models import GeneralSetting
 
 #################################################
 #            CUSTOM ADMINS IMPORTS              #
@@ -57,44 +39,6 @@ from .models import GeneralSetting
 
 from ordering.admin import OrderAdmin
 from formz.admin import FormZAdmin
-
-#################################################
-#                CUSTOM CLASSES                 #
-#################################################
-
-class DataLoggerWebsiteLogin(object):
-
-    """ Class to log on to the Saveris website with 
-    username and password """
-
-    def __init__(self, login, password):
-
-        self.login = login
-        self.password = password
-
-        self.cj = http.cookiejar.CookieJar()
-        self.opener = urllib.request.build_opener(
-            urllib.request.HTTPRedirectHandler(),
-            urllib.request.HTTPHandler(debuglevel=0),
-            urllib.request.HTTPSHandler(debuglevel=0),
-            urllib.request.HTTPCookieProcessor(self.cj)
-        )
-        self.opener.addheaders = [
-            ('User-agent', ('Mozilla/4.0 (compatible; MSIE 6.0; '
-                           'Windows NT 5.2; .NET CLR 1.1.4322)'))
-        ]
-        self.loginToWebsite()
-
-    def loginToWebsite(self):
-        """ Handle login. This should populate our cookie jar """
-
-        login_data = urllib.parse.urlencode({
-            'data[User][login]' : self.login,
-            'data[User][password]' : self.password,
-        }).encode("utf-8")
-        
-        response = self.opener.open("https://www.saveris.net/users/login", login_data)
-        return ''.join(str(response.readlines()))
 
 #################################################
 #               CUSTOM ADMIN SITE               #
@@ -123,7 +67,6 @@ class MyAdminSite(OrderAdmin, FormZAdmin, admin.AdminSite):
         urls = super(MyAdminSite, self).get_formz_urls() + \
             super(MyAdminSite, self).get_order_urls() + [
             re_path(r'uploads/(?P<url_path>.*)$', self.admin_view(self.uploads)),
-            re_path(r'^150freezer/$', self.freezer150_view),
             re_path(r'ove/(?P<url_path>.*)$', self.admin_view(self.ove_protected_view)),
             ] + \
             urls 
@@ -198,47 +141,6 @@ class MyAdminSite(OrderAdmin, FormZAdmin, admin.AdminSite):
         else:
             raise Http404
 
-    def freezer150_view(self, request):
-        """ View to show the temperature of the -150° C freezer """
-
-        try:
-            general_setting = GeneralSetting.objects.all().first()
-
-            # Log on to the Saveris website, browse to page that shows T and read response
-            html = DataLoggerWebsiteLogin(general_setting.saveris_username,
-                                        general_setting.saveris_password).\
-                                        opener.open('https://www.saveris.net/MeasuringPts').read()
-
-            soup = BeautifulSoup(html)
-            
-            # Get all td elements, extract relevant info and style it a bit
-            td_elements = soup.find_all('td')
-            T = td_elements[4].text.strip().replace(",", ".").replace("Â", "").replace("°", "° ")
-            date_time = datetime.datetime.strptime(td_elements[5].text.strip(), '%d.%m.%Y %H:%M:%S')
-
-            context = {
-            'user': request.user,
-            'site_header': self.site_header,
-            'has_permission': self.has_permission(request), 
-            'site_url': self.site_url, 
-            'title':"-150° C Freezer", 
-            'date_time': date_time,
-            'temperature': T
-            }
-        
-        except:
-            context = {
-            'user': request.user,
-            'site_header': self.site_header,
-            'has_permission': self.has_permission(request), 
-            'site_url': self.site_url, 
-            'title':"-150° C Freezer", 
-            'date_time': '',
-            'temperature': ''
-            }
-        
-        return render(request, 'admin/freezer150.html', context)
-
     def ove_protected_view(self, request, *args, **kwargs):
         """Put OVE behind Django's authentication system"""
         
@@ -257,31 +159,6 @@ main_admin_site = MyAdminSite()
 
 # Disable delete selected action
 main_admin_site.disable_action('delete_selected')
-
-#################################################
-#              GENERAL SETTINGS                 #
-#################################################
-
-class GeneralSettingPage(admin.ModelAdmin):
-    
-    list_display = ('site_title', )
-    list_display_links = ('site_title', )
-    list_per_page = 25
-
-    def site_title(self, instance):
-        return SITE_TITLE
-    site_title.short_description = 'Site title'
-
-    def add_view(self, request, form_url='', extra_context=None):
-        
-        if GeneralSetting.objects.all().exists():
-            # Override default add_view to prevent addition of new records, one is enough!
-            messages.error(request, 'Nice try, you can only have one set of general settings')
-            return HttpResponseRedirect("..")
-        else:
-            return super(GeneralSettingPage,self).add_view(request, form_url='', extra_context=None)
-
-main_admin_site.register(GeneralSetting, GeneralSettingPage)
 
 #################################################
 #          COLLECTION MANAGEMENT PAGES          #
@@ -327,9 +204,6 @@ from ordering.models import GhsSymbol
 from ordering.models import SignalWord
 from ordering.models import HazardStatement
 
-from ordering.admin import SearchFieldOptLocation, SearchFieldOptCostUnit, SearchFieldOptSupplier, SearchFieldOptPartDescription, OrderQLSchema
-from ordering.admin import OrderExtraDocInline
-from ordering.admin import AddOrderExtraDocInline
 from ordering.admin import CostUnitPage
 from ordering.admin import LocationPage
 from ordering.admin import OrderPage
@@ -354,8 +228,6 @@ main_admin_site.register(HazardStatement, HazardStatementPage)
 
 main_admin_site.register(Group, GroupAdmin)
 main_admin_site.register(User, UserAdmin)
-
-from extend_user.models import LabUser
 
 from extend_user.admin import LabUserAdmin
 

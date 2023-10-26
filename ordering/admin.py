@@ -20,7 +20,7 @@ from django.utils import timezone
 from django.utils.encoding import smart_str
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
-from config.private_settings import LAB_ABBREVIATION_FOR_FILES
+from config.private_settings import LAB_ABBREVIATION_FOR_FILES, MS_TEAMS_WEBHOOK, ORDER_EMAIL_ADDRESS
 from config.settings import MEDIA_ROOT
 from django.template.loader import render_to_string
 from django.urls import reverse
@@ -45,7 +45,6 @@ from ordering.models import HazardStatement
 
 from config.settings import TIME_ZONE
 from config.private_settings import SITE_TITLE, SERVER_EMAIL_ADDRESS, ALLOWED_HOSTS
-from common.models import GeneralSetting
 
 #################################################
 #     DJANGO ADDED FUNCTIONALITIES IMPORTS      #
@@ -84,7 +83,6 @@ from time import strftime
 from xlrd import open_workbook
 from inspect import cleandoc
 from ast import literal_eval
-from collections import defaultdict
 import time
 import os
 
@@ -849,12 +847,11 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeF
 
                 # If MS Teams webhook exists, send urgent order notification to it, if not send email
 
-                general_setting = GeneralSetting.objects.all().first()
                 post_message_status_code = 0
                 current_site = ALLOWED_HOSTS[0]
                 order_change_url = f'{request.scheme + "://" if request.scheme else ""}{current_site}{reverse("admin:ordering_order_change", args=(obj.id,))}'
 
-                if general_setting.ms_teams_webhook:
+                if MS_TEAMS_WEBHOOK:
 
                     try:
                         
@@ -865,7 +862,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeF
                                                         "order_change_url": order_change_url}
                                                         )
                         message_card = json.loads(message_card)
-                        post_message = requests.post(url=general_setting.ms_teams_webhook, json=message_card)
+                        post_message = requests.post(url=MS_TEAMS_WEBHOOK, json=message_card)
                         post_message_status_code = post_message.status_code
 
                     except:
@@ -887,7 +884,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeF
                         send_mail('New urgent order', 
                                 message, 
                                     SERVER_EMAIL_ADDRESS,
-                                [   general_setting.order_email_addresses],
+                                [   ORDER_EMAIL_ADDRESS],
                                     fail_silently=False,)
                         messages.success(request, 'The lab managers have been informed of your urgent order.')
 

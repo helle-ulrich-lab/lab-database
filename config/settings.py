@@ -131,7 +131,7 @@ en_gb_formats.DATE_FORMAT = "j N Y"
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_DIRS = BASE_DIR / "static"
+STATICFILES_DIRS = [BASE_DIR / "static",]
 
 
 # Media files
@@ -241,11 +241,7 @@ OIDC_RENEW_ID_TOKEN_EXPIRY_SECONDS = 86400 # 24 h
 # Other settings
 
 FILE_UPLOAD_PERMISSIONS = 0o664
-
 LOGIN_URL = "/login/"
-
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
-
 X_FRAME_OPTIONS = 'SAMEORIGIN'
-
 OVE_URL = '/ove/'

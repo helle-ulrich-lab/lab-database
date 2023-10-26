@@ -11,7 +11,6 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.core.mail import send_mail
 from django.db import models
-from django.db.models import ForeignKey, fields as df
 from django.db.transaction import atomic
 from django.forms import ValidationError
 from django.forms.models import ModelMultipleChoiceField, modelform_factory
@@ -65,7 +64,7 @@ from import_export import resources
 from import_export.fields import Field
 
 # adminactions (for mass update functionality)
-from adminactions.mass_update import MassUpdateForm, get_permission_codename,\
+from adminactions.mass_update import MassUpdateForm, \
     ActionInterrupted, adminaction_requested, adminaction_start, adminaction_end
 
 # Functions for navigation floater
@@ -171,24 +170,6 @@ def mass_update(modeladmin, request, queryset):
         kwargs['request'] = request
         return modeladmin.formfield_for_dbfield(field, **kwargs)
 
-    def _get_sample():
-        for f in mass_update_hints:
-            if isinstance(f, ForeignKey):
-                # Filter by queryset so we only get results without our
-                # current resultset
-                filters = {"%s__in" % f.remote_field.name: queryset}
-                # Order by random to get a nice sample
-                query = f.related_model.objects.filter(**filters).distinct().order_by('?')
-                # Limit the amount of results so we don't accidently query
-                # many thousands of items and kill the database.
-                grouped[f.name] = [(a.pk, str(a)) for a in query[:10]]
-            elif hasattr(f, 'flatchoices') and f.flatchoices:
-                grouped[f.name] = dict(getattr(f, 'flatchoices')).keys()
-            elif hasattr(f, 'choices') and f.choices:
-                grouped[f.name] = dict(getattr(f, 'choices')).keys()
-            elif isinstance(f, df.BooleanField):
-                grouped[f.name] = [("True", True), ("False", False)]
-
     def _doit():
         errors = {}
         updated = 0
@@ -217,8 +198,7 @@ def mass_update(modeladmin, request, queryset):
                              errors=errors,
                              updated=updated)
 
-    opts = modeladmin.model._meta
-    perm = "{0}.{1}".format(opts.app_label, get_permission_codename('adminactions_massupdate', opts))
+    # Only Lab or Order Managers
     if not (request.user.groups.filter(name='Lab manager').exists() or request.user.groups.filter(name='Order manager').exists()):
         messages.error(request, _('Nice try, you are not allowed to do that.'))
         return
@@ -233,15 +213,13 @@ def mass_update(modeladmin, request, queryset):
         messages.error(request, str(e))
         return
 
-    # Allows to specified a custom mass update Form in the ModelAdmin
+    # Allows to specify a custom mass update Form in the ModelAdmin
 
-    mass_update_form = getattr(modeladmin, 'mass_update_form', MassUpdateForm)
+    mass_update_form = MyMassUpdateOrderForm
     mass_update_fields = getattr(modeladmin, 'mass_update_fields', None)
     mass_update_exclude = getattr(modeladmin, 'mass_update_exclude', ['pk']) or []
     if 'pk' not in mass_update_exclude:
         mass_update_exclude.append('pk')
-    mass_update_hints = getattr(modeladmin, 'mass_update_hints',
-                                [f.name for f in modeladmin.model._meta.fields])
 
     if mass_update_fields and mass_update_exclude:
         raise Exception("Cannot set both 'mass_update_exclude' and 'mass_update_fields'")
@@ -249,7 +227,6 @@ def mass_update(modeladmin, request, queryset):
                               exclude=mass_update_exclude,
                               fields=mass_update_fields,
                               formfield_callback=not_required)
-    grouped = defaultdict(lambda: [])
     selected_fields = []
     initial = {'_selected_action': request.POST.getlist(helpers.ACTION_CHECKBOX_NAME),
                'select_across': request.POST.get('select_across') == '1',
@@ -269,7 +246,6 @@ def mass_update(modeladmin, request, queryset):
                 messages.error(request, str(e))
                 return HttpResponseRedirect(request.get_full_path())
 
-            # need_transaction = form.cleaned_data.get('_unique_transaction', False)
             validate = form.cleaned_data.get('_validate', False)
             clean = form.cleaned_data.get('_clean', False)
 
@@ -278,18 +254,17 @@ def mass_update(modeladmin, request, queryset):
                     _doit()
 
             else:
-                success_message = False
                 values = {}
                 for field_name, value in list(form.cleaned_data.items()):
                     if isinstance(form.fields[field_name], ModelMultipleChoiceField):
-                        if field_name == 'ghs_symbols' or field_name == 'signal_words':
+                        # Handle M2M fields
+                        if field_name in ['ghs_symbols', 'signal_words', 'hazard_statements']:
                             for e in queryset:
                                 field = getattr(e, field_name)
                                 field.clear()
                                 field.add(*value)
                             history_ids = list(value.order_by('id').distinct('id').values_list('id', flat=True))
                             queryset.update(**{f'history_{field_name}': history_ids})
-                            success_message = True
                         else:
                             messages.error(request, "Unable to mass update ManyToManyField without 'validate'")
                             return HttpResponseRedirect(request.get_full_path())
@@ -316,29 +291,6 @@ def mass_update(modeladmin, request, queryset):
 
         form = MForm(initial=initial, instance=prefill_instance)
 
-    if mass_update_hints:
-        _get_sample()
-    already_grouped = set(grouped)
-    for el in queryset.all()[:10]:
-        for f in modeladmin.model._meta.fields:
-            if f.name in mass_update_hints and f.name not in already_grouped:
-                if isinstance(f, ForeignKey):
-                    filters = {"%s__isnull" % f.remote_field.name: False}
-                    grouped[f.name] = [(a.pk, str(a)) for a in
-                                       f.related_model.objects.filter(**filters).distinct()]
-                elif hasattr(f, 'flatchoices') and f.flatchoices:
-                    grouped[f.name] = dict(getattr(f, 'flatchoices')).keys()
-                elif hasattr(f, 'choices') and f.choices:
-                    grouped[f.name] = dict(getattr(f, 'choices')).keys()
-                elif isinstance(f, df.BooleanField):
-                    grouped[f.name] = [("True", True), ("False", False)]
-                else:
-                    value = getattr(el, f.name)
-                    target = [str(value), value]
-                    if value is not None and target not in grouped[f.name] and len(grouped) <= 10:
-                        grouped[f.name].append(target)
-
-                    initial[f.name] = initial.get(f.name, value)
     adminForm = helpers.AdminForm(form, modeladmin.get_fieldsets(request), {}, [], model_admin=modeladmin)
     media = modeladmin.media + adminForm.media
     dthandler = lambda obj: obj.isoformat() if isinstance(obj, datetime.date) else str(obj)
@@ -350,8 +302,8 @@ def mass_update(modeladmin, request, queryset):
                mass_update.short_description.capitalize(),
                smart_str(modeladmin.opts.verbose_name_plural),
            ),
-           'grouped': grouped,
-           'fieldvalues': json.dumps(grouped, default=dthandler),
+           'grouped': {},
+           'fieldvalues': json.dumps({}, default=dthandler),
            'change': True,
            'selected_fields': selected_fields,
            'is_popup': False,
@@ -361,8 +313,6 @@ def mass_update(modeladmin, request, queryset):
            'has_change_permission': True,
            'opts': modeladmin.model._meta,
            'app_label': modeladmin.model._meta.app_label,
-           # 'action': 'mass_update',
-           # 'select_across': request.POST.get('select_across')=='1',
            'media': mark_safe(media),
            'selection': queryset}
     ctx.update(modeladmin.admin_site.each_context(request))

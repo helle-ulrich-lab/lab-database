@@ -1,10 +1,13 @@
 import inspect
 from django.core.mail import send_mail
-from config.private_settings import ALLOWED_HOSTS
-from config.private_settings import SITE_TITLE
-from config.private_settings import SERVER_EMAIL_ADDRESS
 from django.urls import reverse
 from approval.models import RecordToBeApproved
+
+from django.conf import settings
+SITE_TITLE = getattr(settings, 'SITE_TITLE', 'Lab DB')
+ALLOWED_HOSTS = getattr(settings, 'ALLOWED_HOSTS', [])
+SERVER_EMAIL_ADDRESS = getattr(settings, 'SERVER_EMAIL_ADDRESS', 'noreply@example.com')
+
 
 def get_formz_project_leader_emails(qs):
 

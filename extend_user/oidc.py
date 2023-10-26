@@ -1,14 +1,18 @@
 from mozilla_django_oidc.auth import OIDCAuthenticationBackend
 from django.contrib.auth.models import Group
-from config.private_settings import (OIDC_ALLOWED_GROUPS, OIDC_ALLOWED_USER_UPNS,
-                                     SITE_TITLE, SITE_ADMIN_EMAIL_ADDRESSES,
-                                     OIDC_UPN_FIELD_NAME)
-from config.settings import ALLOWED_HOSTS
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.urls import reverse
 from inspect import cleandoc
 from django.contrib import messages
+
+from django.conf import settings
+OIDC_ALLOWED_GROUPS = getattr(settings, 'OIDC_ALLOWED_GROUPS', [])
+OIDC_ALLOWED_USER_UPNS = getattr(settings, 'OIDC_ALLOWED_USER_UPNS', [])
+SITE_TITLE = getattr(settings, 'SITE_TITLE', 'Lab DB')
+SITE_ADMIN_EMAIL_ADDRESSES = getattr(settings, 'SITE_ADMIN_EMAIL_ADDRESSES', [])
+OIDC_UPN_FIELD_NAME = getattr(settings, 'OIDC_UPN_FIELD_NAME', 'upn')
+ALLOWED_HOSTS = getattr(settings, 'ALLOWED_HOSTS', [])
 
 class MyOIDCAB(OIDCAuthenticationBackend):
 

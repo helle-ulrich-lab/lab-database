@@ -14,9 +14,6 @@ from django.forms import TextInput
 from django.http import HttpResponseRedirect
 from django.http import HttpResponse, HttpResponseNotFound
 from django.http import JsonResponse
-from config.settings import MEDIA_ROOT
-from config.settings import BASE_DIR
-from config.private_settings import LAB_ABBREVIATION_FOR_FILES
 from django.contrib.auth.models import User
 from django.utils.safestring import mark_safe
 from django.contrib.admin.utils import quote
@@ -34,6 +31,11 @@ from django.core.serializers.json import Serializer as JsonSerializer
 
 from django.contrib.admin.options import IS_POPUP_VAR
 from django.contrib.admin.options import TO_FIELD_VAR
+
+from django.conf import settings
+BASE_DIR = settings.BASE_DIR
+MEDIA_ROOT = settings.MEDIA_ROOT
+LAB_ABBREVIATION_FOR_FILES = getattr(settings, 'LAB_ABBREVIATION_FOR_FILES', '')
 
 #################################################
 #        ADDED FUNCTIONALITIES IMPORTS          #

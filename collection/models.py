@@ -9,6 +9,10 @@ from django.forms import ValidationError
 from django.utils.encoding import force_str
 from django.contrib.contenttypes.fields import GenericRelation
 
+from django.conf import settings
+LAB_ABBREVIATION_FOR_FILES = getattr(settings, 'LAB_ABBREVIATION_FOR_FILES', '')
+OVE_URL = getattr(settings, 'OVE_URL', '')
+
 from formz.models import ZkbsPlasmid
 from formz.models import FormZBaseElement
 from formz.models import FormZProject
@@ -17,8 +21,7 @@ from formz.models import GenTechMethod
 from formz.models import Species
 
 from approval.models import RecordToBeApproved
-from config.private_settings import LAB_ABBREVIATION_FOR_FILES
-from config.settings import OVE_URL
+
 
 #################################################
 #        ADDED FUNCTIONALITIES IMPORTS          #

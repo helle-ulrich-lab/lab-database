@@ -20,10 +20,15 @@ from django.utils import timezone
 from django.utils.encoding import smart_str
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
-from config.private_settings import LAB_ABBREVIATION_FOR_FILES, MS_TEAMS_WEBHOOK, ORDER_EMAIL_ADDRESS
-from config.settings import MEDIA_ROOT
 from django.template.loader import render_to_string
 from django.urls import reverse
+
+from django.conf import settings
+MEDIA_ROOT = settings.MEDIA_ROOT
+ORDER_EMAIL_ADDRESS = getattr(settings, 'ORDER_EMAIL_ADDRESS', 'noreply@example.com')
+LAB_ABBREVIATION_FOR_FILES = getattr(settings, 'LAB_ABBREVIATION_FOR_FILES', '')
+MS_TEAMS_WEBHOOK = getattr(settings, 'MS_TEAMS_WEBHOOK', '')
+
 
 #################################################
 #                DJANGO MODELS                  #
@@ -43,8 +48,11 @@ from ordering.models import HazardStatement
 #          DJANGO PROJECT SETTINGS              #
 #################################################
 
-from config.settings import TIME_ZONE
-from config.private_settings import SITE_TITLE, SERVER_EMAIL_ADDRESS, ALLOWED_HOSTS
+from django.conf import settings
+TIME_ZONE = settings.TIME_ZONE
+SITE_TITLE = getattr(settings, 'SITE_TITLE', 'Lab DB')
+ALLOWED_HOSTS = getattr(settings, 'ALLOWED_HOSTS', [])
+SERVER_EMAIL_ADDRESS = getattr(settings, 'SERVER_EMAIL_ADDRESS', 'noreply@example.com')
 
 #################################################
 #     DJANGO ADDED FUNCTIONALITIES IMPORTS      #

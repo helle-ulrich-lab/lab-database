@@ -17,8 +17,9 @@ from simple_history.models import HistoricalRecords
 import os
 import time
 from approval.models import RecordToBeApproved
-from config.private_settings import LAB_ABBREVIATION_FOR_FILES
-from os.path import basename
+
+from django.conf import settings
+LAB_ABBREVIATION_FOR_FILES = getattr(settings, 'LAB_ABBREVIATION_FOR_FILES', '')
 
 #################################################
 #                CUSTOM CLASSES                 #

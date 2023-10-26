@@ -12,8 +12,9 @@ from ordering.models import Order
 from .models import RecordToBeApproved
 from django.contrib.contenttypes.models import ContentType
 
-from config.private_settings import SITE_TITLE
-from config.private_settings import SERVER_EMAIL_ADDRESS
+from django.conf import settings
+SITE_TITLE = getattr(settings, 'SITE_TITLE', 'Lab DB')
+SERVER_EMAIL_ADDRESS = getattr(settings, 'SERVER_EMAIL_ADDRESS', 'email@example.com')
 
 from django.utils import timezone
 

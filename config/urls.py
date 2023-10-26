@@ -21,8 +21,10 @@ from django.contrib.auth import views as auth_views
 from django.urls import reverse_lazy
 from django.urls import path
 
-from config.private_settings import ALLOW_OIDC
 from common.admin import main_admin_site
+
+from django.conf import settings
+ALLOW_OIDC = getattr(settings, 'ALLOW_OIDC', False)
 
 
 def check_guest(f):

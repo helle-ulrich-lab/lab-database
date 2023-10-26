@@ -2,8 +2,10 @@ import requests
 import time
 import warnings
 from django.core.mail import mail_admins
-from config.private_settings import SITE_TITLE
-from config.private_settings import ALLOWED_HOSTS
+
+from django.conf import settings
+SITE_TITLE = getattr(settings, 'SITE_TITLE', 'Lab DB')
+ALLOWED_HOSTS = getattr(settings, 'ALLOWED_HOSTS', [])
 
 warnings.filterwarnings("ignore") # Suppress all warnings, including the InsecureRequestWarning caused by verify=False below
 

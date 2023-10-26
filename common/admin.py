@@ -15,7 +15,8 @@ from django.core.files.storage import default_storage
 #          DJANGO PROJECT SETTINGS              #
 #################################################
 
-from config.private_settings import SITE_TITLE
+from django.conf import settings
+SITE_TITLE = getattr(settings, 'SITE_TITLE', 'Lab DB')
 
 #################################################
 #        ADDED FUNCTIONALITIES IMPORTS          #

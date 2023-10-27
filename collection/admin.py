@@ -2142,8 +2142,8 @@ class OligoQLSchema(DjangoQLSchema):
         '''Define fields that can be searched'''
         
         if model == Oligo:
-            return ['id', 'name','sequence', FieldUse(), 'gene', 'restriction_site', 'description', 'comment', 'created_by',
-                    FieldCreated(), FieldLastChanged(),]
+            return ['id', 'name','sequence', 'length', FieldUse(), 'gene', 'restriction_site', 
+                    'description', 'comment', 'created_by', FieldCreated(), FieldLastChanged(),]
         elif model == User:
             return [SearchFieldOptUsernameOligo(), SearchFieldOptLastnameOligo()]
         return super(OligoQLSchema, self).get_fields(model)

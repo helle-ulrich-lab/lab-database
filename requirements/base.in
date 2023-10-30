@@ -6,7 +6,7 @@
 # And then run the following from the project's root
 # pip-compile-multi --no-upgrade -d requirements/ -i in -o txt
 
-beautifulsoup4==4.8.1
+beautifulsoup4==4.12.2
 Django==4.2.4
 django-adminactions==1.9
 django4-background-tasks==1.2.9

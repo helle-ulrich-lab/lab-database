@@ -7,7 +7,7 @@
 # pip-compile-multi --no-upgrade -d requirements/ -i in -o txt
 
 beautifulsoup4==4.8.1
-Django==4.2.4
+Django==4.2.7
 django-adminactions==1.9
 django4-background-tasks==1.2.9
 django-guardian==2.4.0

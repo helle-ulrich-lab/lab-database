@@ -322,9 +322,9 @@ class SimpleHistoryWithSummaryAdmin(SimpleHistoryAdmin):
 
                     if field_type == 'FileField':
                         field_name = field_name.replace(' (.dna)', '') # Remove unwanted characters from field name
-                        change_old = os.path.basename(change.old.path). \
+                        change_old = os.path.basename(change.old). \
                             replace('.dna', '') if change.old else 'None'
-                        change_new = os.path.basename(change.new.path). \
+                        change_new = os.path.basename(change.new). \
                             replace('.dna', '') if change.new else 'None'
                     elif field_type == 'ForeignKey':
                         field_model = field.remote_field.model

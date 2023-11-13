@@ -30,7 +30,7 @@ $(document).ready(function() {
         const fieldName = $(this).attr('id').replace('id_', '');
 
         if ($(`#detect-common-features-dna_${fieldName}`).length < 1) {
-            var dna_map_field_label = document.getElementsByClassName(`form-row field-${fieldName}`).item(0).children.item(0).children.item(0);
+            var dna_map_field_label = Array.from(document.getElementsByTagName("label")).filter(function(e){return e.htmlFor === `id_${fieldName}`})[0];
             dna_map_field_label.innerHTML = dna_map_field_label.innerHTML + '<br><br>';
 
             var detect_common_features_toggle = document.createElement('input');

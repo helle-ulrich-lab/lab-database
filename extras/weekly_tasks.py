@@ -63,13 +63,13 @@ CompletedTask.objects.all().delete()
 
 # Delete history items that differ just by last_changed_date_time 
 
-from collection.models import Plasmid
-from collection.models import SaCerevisiaeStrain
-from collection.models import Oligo
-from collection.models import ScPombeStrain
-from collection.models import EColiStrain
-from collection.models import CellLine
-from collection.models import Antibody
+from collection.models.plasmid import Plasmid
+from collection.models.sa_cerevisiae_strain import SaCerevisiaeStrain
+from collection.models.oligo import Oligo
+from collection.models.sc_pombe_strain import ScPombeStrain
+from collection.models.e_coli_strain import EColiStrain
+from collection.models.cell_line import CellLine
+from collection.models.antibody import Antibody
 from ordering.models import Order
 
 from collection.models import HistoricalPlasmid

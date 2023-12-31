@@ -1,7 +1,3 @@
-#################################################
-#    DJANGO 'CORE' FUNCTIONALITIES IMPORTS      #
-#################################################
-
 from django.contrib import admin
 from django.apps import apps
 from django.contrib.auth.models import Group, User
@@ -11,32 +7,16 @@ from django.http import HttpResponse
 from django.http import Http404
 from django.core.files.storage import default_storage
 
-#################################################
-#          DJANGO PROJECT SETTINGS              #
-#################################################
-
 from django.conf import settings
 SITE_TITLE = getattr(settings, 'SITE_TITLE', 'Lab DB')
-
-#################################################
-#        ADDED FUNCTIONALITIES IMPORTS          #
-#################################################
 
 import urllib.request, urllib.parse
 import os
 import re
 import mimetypes
 
-#################################################
-#                OTHER IMPORTS                  #
-#################################################
-
 from formz.models import FormZBaseElement
 from formz.models import FormZProject
-
-#################################################
-#            CUSTOM ADMINS IMPORTS              #
-#################################################
 
 from ordering.admin import OrderAdmin
 from formz.admin import FormZAdmin
@@ -165,23 +145,23 @@ main_admin_site.disable_action('delete_selected')
 #          COLLECTION MANAGEMENT PAGES          #
 #################################################
 
-from collection.models import SaCerevisiaeStrain
-from collection.models import Plasmid
-from collection.models import Oligo
-from collection.models import ScPombeStrain
-from collection.models import EColiStrain
-from collection.models import CellLine
-from collection.models import CellLineDoc
-from collection.models import Antibody
+from collection.models.sa_cerevisiae_strain import SaCerevisiaeStrain
+from collection.models.plasmid import Plasmid
+from collection.models.oligo import Oligo
+from collection.models.sc_pombe_strain import ScPombeStrain
+from collection.models.e_coli_strain import EColiStrain
+from collection.models.cell_line import CellLine
+from collection.models.cell_line import CellLineDoc
+from collection.models.antibody import Antibody
 
-from collection.admin import SaCerevisiaeStrainPage
-from collection.admin import PlasmidPage
-from collection.admin import OligoPage
-from collection.admin import ScPombeStrainPage
-from collection.admin import EColiStrainPage
-from collection.admin import CellLinePage
-from collection.admin import CellLineDocPage
-from collection.admin import AntibodyPage
+from collection.admin.sa_cerevisiae_strain import SaCerevisiaeStrainPage
+from collection.admin.plasmid import PlasmidPage
+from collection.admin.oligo import OligoPage
+from collection.admin.sc_pombe_strain import ScPombeStrainPage
+from collection.admin.e_coli_strain import EColiStrainPage
+from collection.admin.cell_line import CellLinePage
+from collection.admin.cell_line import CellLineDocPage
+from collection.admin.antibody import AntibodyPage
 
 main_admin_site.register(SaCerevisiaeStrain, SaCerevisiaeStrainPage)
 main_admin_site.register(Plasmid, PlasmidPage)

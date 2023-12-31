@@ -61,10 +61,8 @@ SERVER_EMAIL_ADDRESS = getattr(settings, 'SERVER_EMAIL_ADDRESS', 'noreply@exampl
 # DjangoQL
 from djangoql.admin import DjangoQLSearchMixin
 from djangoql.schema import DjangoQLSchema, StrField, BoolField
-from collection.admin import SearchFieldOptUsername, SearchFieldOptLastname
-
-# django-simple-history
-from collection.admin import SimpleHistoryWithSummaryAdmin
+from common.shared_elements import SearchFieldOptUsername, SearchFieldOptLastname
+from common.shared_elements import SimpleHistoryWithSummaryAdmin
 
 # django-import-export
 from import_export import resources
@@ -76,7 +74,7 @@ from adminactions.mass_update import MassUpdateForm, \
 
 # Functions for navigation floater
 
-from collection.admin import AdminChangeFormWithNavigation
+from common.shared_elements import AdminChangeFormWithNavigation
 
 #################################################
 #                OTHER IMPORTS                  #

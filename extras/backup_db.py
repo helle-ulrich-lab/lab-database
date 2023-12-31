@@ -5,26 +5,26 @@ import pathlib
 import xlrd
 import csv
 
-from collection.models import SaCerevisiaeStrain
-from collection.admin import SaCerevisiaeStrainExportResource
+from collection.models.sa_cerevisiae_strain import SaCerevisiaeStrain
+from collection.admin.admin import SaCerevisiaeStrainExportResource
 
-from collection.models import Plasmid
-from collection.admin import PlasmidExportResource
+from collection.models.plasmid import Plasmid
+from collection.admin.admin import PlasmidExportResource
 
-from collection.models import Oligo
-from collection.admin import OligoExportResource
+from collection.models.oligo import Oligo
+from collection.admin.admin import OligoExportResource
 
-from collection.models import ScPombeStrain
-from collection.admin import ScPombeStrainExportResource
+from collection.models.sc_pombe_strain import ScPombeStrain
+from collection.admin.admin import ScPombeStrainExportResource
 
-from collection.models import EColiStrain
-from collection.admin import EColiStrainExportResource
+from collection.models.e_coli_strain import EColiStrain
+from collection.admin.admin import EColiStrainExportResource
 
-from collection.models import CellLine
-from collection.admin import CellLineExportResource
+from collection.models.cell_line import CellLine
+from collection.admin.admin import CellLineExportResource
 
-from collection.models import Antibody
-from collection.admin import AntibodyExportResource
+from collection.models.antibody import Antibody
+from collection.admin.admin import AntibodyExportResource
 
 from ordering.models import Order
 from ordering.admin import OrderExportResource

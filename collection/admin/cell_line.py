@@ -523,5 +523,5 @@ class CellLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGua
                 'history_formz_projects': FormZProject,
                 'history_formz_gentech_methods': GenTechMethod,
                 'history_formz_elements': FormZBaseElement,
-                'history_document': CellLineDoc
+                'history_documents': CellLineDoc
                 }

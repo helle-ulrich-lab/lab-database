@@ -5,83 +5,163 @@
 #
 #    pip-compile-multi
 #
--r base.txt
+asgiref==3.7.2
+    # via django
 astroid==3.0.1
     # via pylint
 asttokens==2.4.0
     # via stack-data
 autopep8==2.0.1
-    # via -r requirements/dev.in
-backcall==0.2.0
-    # via ipython
+    # via -r dev.in
+beautifulsoup4==4.8.1
+    # via -r base.in
+certifi==2023.7.22
+    # via requests
+cffi==1.16.0
+    # via cryptography
+charset-normalizer==3.3.1
+    # via requests
 comm==0.1.4
     # via ipykernel
+cryptography==41.0.5
+    # via
+    #   josepy
+    #   mozilla-django-oidc
+    #   pyopenssl
 debugpy==1.8.0
     # via ipykernel
 decorator==5.1.1
     # via ipython
+defusedxml==0.7.1
+    # via odfpy
+diff-match-patch==20230430
+    # via django-import-export
 dill==0.3.7
     # via pylint
+django==4.2.4
+    # via
+    #   -r base.in
+    #   django-guardian
+    #   django-import-export
+    #   mozilla-django-oidc
+django-adminactions==1.9
+    # via -r base.in
+django-guardian==2.4.0
+    # via -r base.in
+django-import-export==3.3.1
+    # via -r base.in
+django-simple-history==3.4.0
+    # via -r base.in
+django4-background-tasks==1.2.9
+    # via -r base.in
+djangoql==0.17.1
+    # via -r base.in
+et-xmlfile==1.1.0
+    # via openpyxl
 executing==2.0.0
     # via stack-data
-importlib-metadata==6.8.0
-    # via jupyter-client
+idna==3.4
+    # via requests
 ipykernel==6.19.2
-    # via -r requirements/dev.in
-ipython==8.7.0
+    # via -r dev.in
+ipython==8.20.0
     # via
-    #   -r requirements/dev.in
+    #   -r dev.in
     #   ipykernel
 isort==5.12.0
     # via pylint
+jdcal==1.4.1
+    # via openpyxl
 jedi==0.19.1
     # via ipython
+josepy==1.13.0
+    # via mozilla-django-oidc
 jupyter-client==8.5.0
     # via ipykernel
 jupyter-core==5.4.0
     # via jupyter-client
+lxml==4.4.1
+    # via -r base.in
+markuppy==1.14
+    # via tablib
 matplotlib-inline==0.1.6
     # via
     #   ipykernel
     #   ipython
 mccabe==0.7.0
     # via pylint
+mozilla-django-oidc==3.0.0
+    # via -r base.in
 nest-asyncio==1.5.8
     # via ipykernel
+odfpy==1.4.1
+    # via tablib
+openpyxl==3.0.1
+    # via
+    #   -r base.in
+    #   tablib
 packaging==23.2
     # via ipykernel
 parso==0.8.3
     # via jedi
 pexpect==4.8.0
     # via ipython
-pickleshare==0.7.5
-    # via ipython
+pillow==10.1.0
+    # via -r base.in
 platformdirs==3.11.0
     # via
     #   jupyter-core
     #   pylint
-prompt-toolkit==3.0.39
+ply==3.11
+    # via djangoql
+prompt-toolkit==3.0.43
     # via ipython
 psutil==5.9.6
     # via ipykernel
+psycopg==3.1.12
+    # via -r base.in
 ptyprocess==0.7.0
     # via pexpect
 pure-eval==0.2.2
     # via stack-data
 pycodestyle==2.11.1
     # via autopep8
+pycparser==2.21
+    # via cffi
 pygments==2.16.1
     # via ipython
 pylint==3.0.2
-    # via -r requirements/dev.in
+    # via -r dev.in
+pyopenssl==23.3.0
+    # via josepy
 python-dateutil==2.8.2
     # via jupyter-client
+pytz==2023.3.post1
+    # via django-adminactions
+pyyaml==6.0.1
+    # via tablib
+pyzmq==25.1.1
+    # via
+    #   ipykernel
+    #   jupyter-client
+    #   zmq
+requests==2.31.0
+    # via mozilla-django-oidc
+six==1.16.0
+    # via
+    #   asttokens
+    #   django4-background-tasks
+    #   python-dateutil
+soupsieve==2.5
+    # via beautifulsoup4
+sqlparse==0.4.4
+    # via django
 stack-data==0.6.3
     # via ipython
-tomli==2.0.1
+tablib[html,ods,xls,xlsx,yaml]==3.5.0
     # via
-    #   autopep8
-    #   pylint
+    #   django-import-export
+    #   tablib
 tomlkit==0.12.1
     # via pylint
 tornado==6.3.3
@@ -96,10 +176,23 @@ traitlets==5.12.0
     #   jupyter-client
     #   jupyter-core
     #   matplotlib-inline
+typing-extensions==4.8.0
+    # via psycopg
+urllib3==2.0.7
+    # via requests
 wcwidth==0.2.8
     # via prompt-toolkit
-zipp==3.17.0
-    # via importlib-metadata
+xlrd==1.1.0
+    # via
+    #   -r base.in
+    #   django-adminactions
+    #   tablib
+xlwt==1.3.0
+    # via
+    #   django-adminactions
+    #   tablib
+zmq==0.0.0
+    # via -r base.in
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools

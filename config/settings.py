@@ -137,11 +137,6 @@ MEDIA_ROOT = BASE_DIR / 'uploads'
 
 
 #Email/SMTP settings
-
-EMAIL_HOST = 'localhost'
-EMAIL_PORT = 25
-EMAIL_HOST_USER = None
-EMAIL_HOST_PASSWORD = None
 DEFAULT_FROM_EMAIL = SERVER_EMAIL_ADDRESS
 
 #Email settings for error messages

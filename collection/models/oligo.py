@@ -1,10 +1,12 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.fields import GenericRelation
+from django.contrib.postgres.fields import ArrayField
 
 from simple_history.models import HistoricalRecords
 
 from approval.models import RecordToBeApproved
+from formz.models import FormZBaseElement
 from common.models import SaveWithoutHistoricalRecord
 
 from django.conf import settings
@@ -31,7 +33,10 @@ class Oligo (models.Model, SaveWithoutHistoricalRecord):
     approval = GenericRelation(RecordToBeApproved)
     created_by = models.ForeignKey(User, related_name='oligo_createdby_user', on_delete=models.PROTECT)
     history = HistoricalRecords()
-    
+
+    formz_elements = models.ManyToManyField(FormZBaseElement, verbose_name ='elements', related_name='oligo_formz_element', blank=True)
+    history_formz_elements = ArrayField(models.PositiveIntegerField(), verbose_name="formz elements", blank=True, null=True)
+
     def __str__(self):
        return "{} - {}".format(self.id, self.name)
 

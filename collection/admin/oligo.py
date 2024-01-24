@@ -30,6 +30,7 @@ from .admin import Approval
 from .admin import FieldUse
 
 from ..models.oligo import Oligo
+from formz.models import FormZBaseElement
 
 
 class SearchFieldOptUsernameOligo(SearchFieldOptUsername):
@@ -86,7 +87,7 @@ def export_oligo(modeladmin, request, queryset):
     return response
 export_oligo.short_description = "Export selected oligos"
 
-class PlasmidForm(forms.ModelForm):
+class OligoForm(forms.ModelForm):
     
     class Meta:
         model = Oligo
@@ -132,7 +133,8 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Approval, Ad
     djangoql_completion_enabled_by_default = False
     actions = [export_oligo]
     search_fields = ['id', 'name']
-    form = PlasmidForm
+    autocomplete_fields = ['formz_elements']
+    form = OligoForm
 
     def get_oligo_short_sequence(self, instance):
         '''This function allows you to define a custom field for the list view to
@@ -213,7 +215,24 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Approval, Ad
 
             else:
                 raise PermissionDenied
-    
+
+    def save_related(self, request, form, formsets, change):
+        
+        super(OligoPage, self).save_related(request, form, formsets, change)
+
+        # Keep a record of the IDs of linked M2M fields in the main strain record
+        # Not pretty, but it works
+
+        obj = Oligo.objects.get(pk=form.instance.id)
+
+        obj.history_formz_elements = list(obj.formz_elements.order_by('id').distinct('id').values_list('id', flat=True)) if obj.formz_elements.exists() else []
+
+        obj.save_without_historical_record()
+
+        history_obj = obj.history.latest()
+        history_obj.history_formz_elements = obj.history_formz_elements
+        history_obj.save()
+
     def get_readonly_fields(self, request, obj=None):
         '''Override default get_readonly_fields to define user-specific read-only fields
         If a user is not a superuser, lab manager or the user who created a record
@@ -225,7 +244,7 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Approval, Ad
             if self.can_change:
                 return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi','created_by'] 
             else:
-                return ['name','sequence', 'us_e', 'gene', 'restriction_site', 'description', 'comment', 'created_date_time',
+                return ['name','sequence', 'us_e', 'gene', 'restriction_site', 'description', 'comment', 'formz_elements', 'created_date_time',
                 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',]
         else:
             return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
@@ -268,7 +287,7 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Approval, Ad
             extra_context['show_disapprove'] = True if request.user.groups.filter(name='Approval manager').exists() else False
 
         if '_saveasnew' in request.POST:
-            self.fields = ('name','sequence', 'us_e', 'gene', 'restriction_site', 'description', 'comment' )
+            self.fields = ('name','sequence', 'us_e', 'gene', 'restriction_site', 'description', 'comment', 'formz_elements',)
             extra_context.update({'show_save_and_continue': False,
                         'show_save': False,
                         'show_save_and_add_another': False,
@@ -277,7 +296,7 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Approval, Ad
                         'show_obj_permission': False
                         })
         else:
-            self.fields = ('name','sequence', 'us_e', 'gene', 'restriction_site', 'description', 'comment',
+            self.fields = ('name','sequence', 'us_e', 'gene', 'restriction_site', 'description', 'comment', 'formz_elements',
                 'created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',)
 
         return super(OligoPage,self).change_view(request,object_id, extra_context=extra_context)
@@ -299,3 +318,9 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Approval, Ad
             return HttpResponseRedirect(reverse("admin:approval_recordtobeapproved_change", args=(obj.approval.latest('created_date_time').id,)))
         
         return super(OligoPage,self).response_change(request,obj)
+    
+    def get_history_array_fields(self):
+
+        return {**super(OligoPage, self).get_history_array_fields(),
+                'history_formz_elements': FormZBaseElement,
+                }

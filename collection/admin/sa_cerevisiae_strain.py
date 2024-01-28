@@ -383,7 +383,7 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
                 self.can_change = True
 
                 if (obj.created_by.labuser.is_principal_investigator or obj.created_by.groups.filter(name='Past member')) and \
-                        not request.user.has_perm('collection.change_plasmid', obj):
+                        not request.user.has_perm('collection.change_sacerevisiaestrain', obj):
                     
                     extra_context.update({'show_close': True,
                                     'show_save_and_add_another': False,

@@ -6,25 +6,28 @@ import xlrd
 import csv
 
 from collection.models.sa_cerevisiae_strain import SaCerevisiaeStrain
-from collection.admin.admin import SaCerevisiaeStrainExportResource
+from collection.admin.sa_cerevisiae_strain import SaCerevisiaeStrainExportResource
 
 from collection.models.plasmid import Plasmid
-from collection.admin.admin import PlasmidExportResource
+from collection.admin.plasmid import PlasmidExportResource
 
 from collection.models.oligo import Oligo
-from collection.admin.admin import OligoExportResource
+from collection.admin.oligo import OligoExportResource
 
 from collection.models.sc_pombe_strain import ScPombeStrain
-from collection.admin.admin import ScPombeStrainExportResource
+from collection.admin.sc_pombe_strain import ScPombeStrainExportResource
 
 from collection.models.e_coli_strain import EColiStrain
-from collection.admin.admin import EColiStrainExportResource
+from collection.admin.e_coli_strain import EColiStrainExportResource
 
 from collection.models.cell_line import CellLine
-from collection.admin.admin import CellLineExportResource
+from collection.admin.cell_line import CellLineExportResource
 
 from collection.models.antibody import Antibody
-from collection.admin.admin import AntibodyExportResource
+from collection.admin.antibody import AntibodyExportResource
+
+from collection.models.worm_strain import WormStrain
+from collection.admin.worm_strain import WormStrainExportResource
 
 from ordering.models import Order
 from ordering.admin import OrderExportResource
@@ -84,6 +87,7 @@ DB_TABLES = [(SaCerevisiaeStrain, SaCerevisiaeStrainExportResource),
             (EColiStrain, EColiStrainExportResource),
             (CellLine, CellLineExportResource),
             (Antibody, AntibodyExportResource),
+            (WormStrain, WormStrainExportResource),
             (Order, OrderExportResource)]
 
 for model, export_resource in DB_TABLES:

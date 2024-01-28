@@ -26,7 +26,7 @@
     <h2>Details zum Organismus</h2>
     <div><span style='font-weight: bold'>Bezeichnung:</span> {{object}} {% if object.supplier%}({{object.supplier}}){% endif %}</div>
     <div><span style='font-weight: bold'>Risikogruppe:</span> {{object.formz_risk_group}}</div>
-    <div><span style='font-weight: bold'>Empfängerorganismus:</span> <span style='font-style: italic'>{{storage_location.species_name.name_for_search}}</span>
+    <div><span style='font-weight: bold'>Empfängerorganismus:</span> <span style='font-style: italic'>{{storage_location.species_name_str}}</span>
     {% if object.formz_ecoli_strains %}
         {% if object.formz_ecoli_strains.all|length == 1 %}
                 {% for ecoli in object.formz_ecoli_strains.all %}
@@ -143,6 +143,17 @@
                 </li>
             {% endfor %}
             </ul>
+    {% endif %}
+
+    {% if object.integrated_dna_oligos.exists %}
+        <h3>Synthetisches/e DNA-Fragment/e, die zur Erschaffung des Organismus genutzt wurden</h3>
+        <ul>
+        {% for oligo in object.integrated_dna_oligos.all %}
+            <li>
+                Oligo #{{oligo}} - {{oligo.sequence}}
+            </li>
+        {% endfor %}
+        </ul>
     {% endif %}
 
     {% if object.uncommon_formz_elements or object.common_formz_elements %}

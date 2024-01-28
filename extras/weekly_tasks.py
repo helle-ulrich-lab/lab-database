@@ -70,6 +70,7 @@ from collection.models.sc_pombe_strain import ScPombeStrain
 from collection.models.e_coli_strain import EColiStrain
 from collection.models.cell_line import CellLine
 from collection.models.antibody import Antibody
+from collection.models.worm_strain import WormStrain
 from ordering.models import Order
 
 from collection.models import HistoricalPlasmid
@@ -79,6 +80,7 @@ from collection.models import HistoricalScPombeStrain
 from collection.models import HistoricalEColiStrain
 from collection.models import HistoricalCellLine
 from collection.models import HistoricalAntibody
+from collection.models import HistoricalWormStrain
 from ordering.models import HistoricalOrder
 
 from datetime import timedelta
@@ -122,6 +124,7 @@ MODELS = {Plasmid: HistoricalPlasmid,
         EColiStrain: HistoricalEColiStrain,
         CellLine: HistoricalCellLine,
         Antibody: HistoricalAntibody,
+        WormStrain: HistoricalWormStrain,
         Order: HistoricalOrder}
 
 NOW_MINUS_8DAYS = timezone.now() - timedelta(days=8)

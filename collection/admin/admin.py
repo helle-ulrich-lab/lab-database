@@ -313,13 +313,20 @@ def formz_as_html(modeladmin, request, queryset):
 
         if model_name == 'cellline':
             storage_location.species_name = obj.organism
+            storage_location.species_name_str = obj.organism.name_for_search
+            storage_location.species_risk_group = obj.organism.risk_group
             obj.s2_plasmids = obj.celllineepisomalplasmid_set.all().filter(s2_work_episomal_plasmid=True).distinct().order_by('id')
             transfected = True
             try:
                 virus_packaging_cell_line = ZkbsCellLine.objects.filter(name__iexact='293T (HEK 293T)').order_by('id')[0]
             except:
                 virus_packaging_cell_line = ZkbsCellLine(name = '293T (HEK 293T)')
+        elif model_name == 'wormstrain':
+            transfected = False
+            virus_packaging_cell_line = None
+            storage_location.species_name_str = obj.get_organism_display()
         else:
+            storage_location.species_name_str = storage_location.species_name.name_for_search
             obj.s2_plasmids = None
             transfected = False
             virus_packaging_cell_line = None

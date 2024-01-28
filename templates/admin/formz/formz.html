@@ -83,7 +83,7 @@
         <h2>Details zum Organismus</h2>
         <div><span style='font-weight: bold'>Bezeichnung:</span> {{object}} {% if object.supplier%}({{object.supplier}}){% endif %}</div>
         <div><span style='font-weight: bold'>Risikogruppe:</span> {{object.formz_risk_group}}</div>
-        <div><span style='font-weight: bold'>Empfängerorganismus:</span> <span style='font-style: italic'>{{storage_location.species_name.name_for_search}}</span>
+        <div><span style='font-weight: bold'>Empfängerorganismus:</span> <span style='font-style: italic'>{{storage_location.species_name_str}}</span>
         {% if object.formz_ecoli_strains %}
             {% if object.formz_ecoli_strains.all|length == 1 %}
                     {% for ecoli in object.formz_ecoli_strains.all %}
@@ -206,6 +206,19 @@
                             <span style='text-transform: none'>- ZKBS Plasmid </span><a class='magnific-popup-iframe-zkbsplasmid' style='text-transform: none' href="{% url 'admin:formz_zkbsplasmid_change' plasmid.vector_zkbs.id %}?_to_field=id&_popup=1" target="_blank">{{plasmid.vector_zkbs.name}}</a>
                         {% endif %}
                     {% endif %}
+                </li>
+            {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
+    {% if object.integrated_dna_oligos.exists %}
+        <div id='instock-oligos'>
+            <h3>Synthetisches/e DNA-Fragment/e, die zur Erschaffung des Organismus genutzt wurden</h3>
+            <ul>
+            {% for oligo in object.integrated_dna_oligos.all %}
+                <li>
+                    <a class="magnific-popup-iframe-oligo" href="{% url 'admin:collection_oligo_change' oligo.id %}?_to_field=id&_popup=1" target="_blank">Oligo #{{oligo}}</a>
                 </li>
             {% endfor %}
             </ul>
@@ -604,7 +617,8 @@
                                         'magnific-popup-iframe-s2-plasmid-map',
                                         'magnific-popup-iframe-transient-episomal-plasmid-map',
                                         'magnific-popup-iframe-plasmid-map',
-                                        'magnific-popup-iframe-virus_packaging_cell_line'];
+                                        'magnific-popup-iframe-virus_packaging_cell_line',
+                                        'magnific-popup-iframe-oligo',];
         const MagnificImgClassIds = ['magnific-popup-img-plasmid-map',
                                      'magnific-popup-img-s2-plasmid-map',
                                      'magnific-popup-img-transient-episomal-plasmid-map'];

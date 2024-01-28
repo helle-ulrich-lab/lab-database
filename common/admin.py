@@ -153,6 +153,7 @@ from collection.models.e_coli_strain import EColiStrain
 from collection.models.cell_line import CellLine
 from collection.models.cell_line import CellLineDoc
 from collection.models.antibody import Antibody
+from collection.models.worm_strain import WormStrain
 
 from collection.admin.sa_cerevisiae_strain import SaCerevisiaeStrainPage
 from collection.admin.plasmid import PlasmidPage
@@ -162,6 +163,7 @@ from collection.admin.e_coli_strain import EColiStrainPage
 from collection.admin.cell_line import CellLinePage
 from collection.admin.cell_line import CellLineDocPage
 from collection.admin.antibody import AntibodyPage
+from collection.admin.worm_strain import WormStrainPage
 
 main_admin_site.register(SaCerevisiaeStrain, SaCerevisiaeStrainPage)
 main_admin_site.register(Plasmid, PlasmidPage)
@@ -171,6 +173,7 @@ main_admin_site.register(EColiStrain, EColiStrainPage)
 main_admin_site.register(CellLineDoc, CellLineDocPage)
 main_admin_site.register(CellLine, CellLinePage)
 main_admin_site.register(Antibody, AntibodyPage)
+main_admin_site.register(WormStrain, WormStrainPage)
 
 #################################################
 #             ORDER MANAGEMENT PAGES            #

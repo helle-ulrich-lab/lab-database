@@ -277,3 +277,12 @@ from approval.models import RecordToBeApproved
 from approval.admin import RecordToBeApprovedPage
 
 main_admin_site.register(RecordToBeApproved, RecordToBeApprovedPage)
+
+#################################################
+#                  INHIBITOR                    #
+#################################################
+
+from collection.models.inhibitor import Inhibitor
+from collection.admin.inhibitor import InhibitorPage
+
+main_admin_site.register(Inhibitor, InhibitorPage)

@@ -6,3 +6,4 @@ from .plasmid import Plasmid
 from .sa_cerevisiae_strain import SaCerevisiaeStrain, SaCerevisiaeStrainEpisomalPlasmid
 from .sc_pombe_strain import ScPombeStrain, ScPombeStrainEpisomalPlasmid
 from .worm_strain import WormStrain
+from .inhibitor import Inhibitor

@@ -890,7 +890,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeF
                         send_mail('New urgent order', 
                                 message, 
                                     SERVER_EMAIL_ADDRESS,
-                                    [ORDER_EMAIL_ADDRESSES],
+                                    ORDER_EMAIL_ADDRESSES,
                                     fail_silently=False,)
                         messages.success(request, 'The lab managers have been informed of your urgent order.')
 

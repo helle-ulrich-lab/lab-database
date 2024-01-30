@@ -25,7 +25,7 @@ from django.urls import reverse
 
 from django.conf import settings
 MEDIA_ROOT = settings.MEDIA_ROOT
-ORDER_EMAIL_ADDRESS = getattr(settings, 'ORDER_EMAIL_ADDRESS', 'noreply@example.com')
+ORDER_EMAIL_ADDRESSES = getattr(settings, 'ORDER_EMAIL_ADDRESSES', ['noreply@example.com'])
 LAB_ABBREVIATION_FOR_FILES = getattr(settings, 'LAB_ABBREVIATION_FOR_FILES', '')
 MS_TEAMS_WEBHOOK = getattr(settings, 'MS_TEAMS_WEBHOOK', '')
 
@@ -890,7 +890,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeF
                         send_mail('New urgent order', 
                                 message, 
                                     SERVER_EMAIL_ADDRESS,
-                                [   ORDER_EMAIL_ADDRESS],
+                                    [ORDER_EMAIL_ADDRESSES],
                                     fail_silently=False,)
                         messages.success(request, 'The lab managers have been informed of your urgent order.')
 

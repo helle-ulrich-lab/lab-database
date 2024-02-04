@@ -1,9 +1,13 @@
-from .antibody import Antibody
-from .cell_line import CellLine, CellLineEpisomalPlasmid, CellLineDoc
-from .e_coli_strain import EColiStrain
-from .oligo import Oligo
-from .plasmid import Plasmid
-from .sa_cerevisiae_strain import SaCerevisiaeStrain, SaCerevisiaeStrainEpisomalPlasmid
-from .sc_pombe_strain import ScPombeStrain, ScPombeStrainEpisomalPlasmid
-from .worm_strain import WormStrain
-from .inhibitor import Inhibitor
+from .antibody import Antibody, HistoricalAntibody
+from .cell_line import (CellLine, CellLineEpisomalPlasmid,
+                        CellLineDoc, HistoricalCellLine)
+from .e_coli_strain import EColiStrain, HistoricalEColiStrain
+from .oligo import Oligo, HistoricalOligo
+from .plasmid import Plasmid, HistoricalPlasmid
+from .sa_cerevisiae_strain import (SaCerevisiaeStrain,
+                                   SaCerevisiaeStrainEpisomalPlasmid,
+                                   HistoricalSaCerevisiaeStrain)
+from .sc_pombe_strain import (ScPombeStrain, ScPombeStrainEpisomalPlasmid,
+                              HistoricalScPombeStrain)
+from .worm_strain import WormStrain, HistoricalWormStrain
+from .inhibitor import Inhibitor, HistoricalInhibitor

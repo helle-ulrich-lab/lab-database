@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.postgres.fields import ArrayField
+from django.forms import ValidationError
 
 from simple_history.models import HistoricalRecords
 
@@ -24,7 +25,8 @@ class Oligo (models.Model, SaveWithoutHistoricalRecord):
     restriction_site = models.CharField("restriction sites", max_length=255, blank=True)
     description = models.TextField("description", blank=True)
     comment = models.CharField("comments", max_length=255, blank=True)
-    
+    info_sheet = models.FileField("info sheet", help_text = 'only .pdf files, max. 2 MB', upload_to="collection/oligo/", blank=True, null=True)
+
     created_date_time = models.DateTimeField("created", auto_now_add=True)
     created_approval_by_pi = models.BooleanField("record creation approval", default=False)
     last_changed_date_time = models.DateTimeField("last changed", auto_now=True)
@@ -49,3 +51,25 @@ class Oligo (models.Model, SaveWithoutHistoricalRecord):
         self.length = len(self.sequence)
         
         super(Oligo, self).save(force_insert, force_update, using, update_fields)
+    
+    def clean(self):
+
+        errors = []
+        file_size_limit = 2 * 1024 * 1024
+        
+        if self.info_sheet:
+            
+            # Check if file is bigger than 2 MB
+            if self.info_sheet.size > file_size_limit:
+                errors.append(ValidationError('File too large. Size cannot exceed 2 MB.'))
+            
+            # Check if file's extension is '.pdf'
+            try:
+                info_sheet_ext = self.info_sheet.name.split('.')[-1].lower()
+            except:
+                info_sheet_ext = None
+            if info_sheet_ext == None or info_sheet_ext != 'pdf':
+                errors.append(ValidationError('Invalid file format. Please select a valid .pdf file'))
+
+        if len(errors) > 0:
+            raise ValidationError(errors)

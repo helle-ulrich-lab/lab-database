@@ -17,8 +17,13 @@ from import_export import resources
 
 import xlrd
 import csv
-import time
+from datetime import datetime
 from urllib.parse import quote as urlquote
+import os
+
+from django.conf import settings
+MEDIA_ROOT = settings.MEDIA_ROOT
+LAB_ABBREVIATION_FOR_FILES = getattr(settings, 'LAB_ABBREVIATION_FOR_FILES', '')
 
 from common.shared_elements import SimpleHistoryWithSummaryAdmin
 from common.shared_elements import AdminChangeFormWithNavigation
@@ -73,11 +78,11 @@ def export_oligo(modeladmin, request, queryset):
 
     if file_format == 'xlsx':
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.xlsx'.format(queryset.model.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
+        response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.xlsx'.format(queryset.model.__name__, datetime.now().strftime("%Y%m%d"), datetime.now().strftime("%H%M%S"))
         response.write(export_data.xlsx)
     elif file_format == 'tsv':
         response = HttpResponse(content_type='text/tab-separated-values')
-        response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.tsv'.format(queryset.model.__name__, time.strftime("%Y%m%d"), time.strftime("%H%M%S"))
+        response['Content-Disposition'] = 'attachment; filename="{}_{}_{}.tsv'.format(queryset.model.__name__, datetime.now().strftime("%Y%m%d"), datetime.now().strftime("%H%M%S"))
         xlsx_file = xlrd.open_workbook(file_contents=export_data.xlsx)
         sheet = xlsx_file.sheet_by_index(0)
         wr = csv.writer(response, delimiter="\t")
@@ -153,11 +158,17 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Approval, Ad
         Superusers and lab managers can change all records
         Regular users can change only their own records
         Guests cannot change any record'''
+
+        rename_doc = False
+        new_obj = False
         
         if obj.pk == None:
             
             obj.id = Oligo.objects.order_by('-id').first().id + 1 if Oligo.objects.exists() else 1
             obj.created_by = request.user
+            if obj.info_sheet:
+                rename_doc = True
+                new_obj = True
             obj.save()
 
             # If the request's user is the principal investigator, approve the record
@@ -192,14 +203,12 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Approval, Ad
                     obj.last_changed_approval_by_pi = True
                     if not obj.created_approval_by_pi: obj.created_approval_by_pi = True # Set created_approval_by_pi to True, should it still be None or False
                     obj.approval_by_pi_date_time = timezone.now()
-                    obj.save()
 
                     if obj.approval.all().exists():
                         approval_records = obj.approval.all()
                         approval_records.delete()
                 else:
                     obj.last_changed_approval_by_pi = False
-                    obj.save()
 
                     # If an approval record for this object does not exist, create one
                     if not obj.approval.all().exists():
@@ -212,9 +221,50 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Approval, Ad
                             if obj.last_changed_date_time > approval_obj.message_date_time:
                                 approval_obj.edited = True
                                 approval_obj.save()
+                
+                saved_obj = Oligo.objects.get(pk=obj.pk)
+                if obj.info_sheet and obj.info_sheet != saved_obj.info_sheet:
+                    rename_doc = True
+                    obj.save_without_historical_record()
+                else:
+                    obj.save()
 
             else:
                 raise PermissionDenied
+
+        # Rename info_sheet
+        if rename_doc:
+            doc_dir_path = os.path.join(MEDIA_ROOT, 'collection/oligo/')
+            old_file_name_abs_path = os.path.join(MEDIA_ROOT, obj.info_sheet.name)
+            old_file_name, ext = os.path.splitext(os.path.basename(old_file_name_abs_path)) 
+            new_file_name = os.path.join(
+                'collection/oligo/',
+                "o{}{}_{}_{}_{}{}".format(LAB_ABBREVIATION_FOR_FILES,
+                                        obj.id,
+                                        datetime.now().strftime("%Y%m%d"),
+                                        datetime.now().strftime("%H%M%S"),
+                                        datetime.now().strftime("%H%M%S"),
+                                        ext.lower()))
+            new_file_name_abs_path = os.path.join(MEDIA_ROOT, new_file_name)
+            
+            if not os.path.exists(doc_dir_path):
+                os.makedirs(doc_dir_path) 
+            
+            os.rename(
+                old_file_name_abs_path, 
+                new_file_name_abs_path)
+
+            obj.info_sheet.name = new_file_name
+            obj.save()
+
+            # For new records, delete first history record, which contains the unformatted info_sheet name, and change 
+            # the newer history record's history_type from changed (~) to created (+). This gets rid of a duplicate
+            # history record created when automatically generating a info_sheet name
+            if new_obj:
+                obj.history.last().delete()
+                history_obj = obj.history.first()
+                history_obj.history_type = "+"
+                history_obj.save()
 
     def save_related(self, request, form, formsets, change):
         
@@ -242,17 +292,22 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Approval, Ad
         
         if obj:
             if self.can_change:
-                return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi','created_by'] 
+                return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 
+                        'last_changed_approval_by_pi','created_by'] 
             else:
-                return ['name','sequence', 'us_e', 'gene', 'restriction_site', 'description', 'comment', 'formz_elements', 'created_date_time',
-                'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',]
+                return ['name','sequence', 'us_e', 'gene', 'restriction_site', 'description', 
+                        'comment', 'info_sheet', 'formz_elements', 'created_date_time',
+                        'created_approval_by_pi', 'last_changed_date_time', 
+                        'last_changed_approval_by_pi', 'created_by',]
         else:
-            return ['created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi',]
+            return ['created_date_time', 'created_approval_by_pi',
+                    'last_changed_date_time', 'last_changed_approval_by_pi',]
     
     def add_view(self,request,extra_context=None):
         '''Override default add_view to show only desired fields'''
         
-        self.fields = ('name','sequence', 'us_e', 'gene', 'restriction_site', 'description', 'comment', )
+        self.fields = ('name','sequence', 'us_e', 'gene', 'restriction_site',
+                       'description', 'comment', 'info_sheet',)
         return super(OligoPage,self).add_view(request)
 
     def change_view(self,request,object_id,extra_context=None):
@@ -287,7 +342,8 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Approval, Ad
             extra_context['show_disapprove'] = True if request.user.groups.filter(name='Approval manager').exists() else False
 
         if '_saveasnew' in request.POST:
-            self.fields = ('name','sequence', 'us_e', 'gene', 'restriction_site', 'description', 'comment', 'formz_elements',)
+            self.fields = ('name','sequence', 'us_e', 'gene', 'restriction_site',
+                           'description', 'comment', 'info_sheet', 'formz_elements',)
             extra_context.update({'show_save_and_continue': False,
                         'show_save': False,
                         'show_save_and_add_another': False,
@@ -296,8 +352,10 @@ class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Approval, Ad
                         'show_obj_permission': False
                         })
         else:
-            self.fields = ('name','sequence', 'us_e', 'gene', 'restriction_site', 'description', 'comment', 'formz_elements',
-                'created_date_time', 'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',)
+            self.fields = ('name','sequence', 'us_e', 'gene', 'restriction_site', 'description',
+                           'comment', 'info_sheet', 'formz_elements', 'created_date_time', 
+                           'created_approval_by_pi', 'last_changed_date_time',
+                           'last_changed_approval_by_pi', 'created_by',)
 
         return super(OligoPage,self).change_view(request,object_id, extra_context=extra_context)
 

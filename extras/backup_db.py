@@ -29,6 +29,9 @@ from collection.admin.antibody import AntibodyExportResource
 from collection.models.worm_strain import WormStrain
 from collection.admin.worm_strain import WormStrainExportResource
 
+from collection.models.inhibitor import Inhibitor
+from collection.admin.inhibitor import InhibitorExportResource
+
 from ordering.models import Order
 from ordering.admin import OrderExportResource
 
@@ -88,6 +91,7 @@ DB_TABLES = [(SaCerevisiaeStrain, SaCerevisiaeStrainExportResource),
             (CellLine, CellLineExportResource),
             (Antibody, AntibodyExportResource),
             (WormStrain, WormStrainExportResource),
+            (Inhibitor, InhibitorExportResource),
             (Order, OrderExportResource)]
 
 for model, export_resource in DB_TABLES:

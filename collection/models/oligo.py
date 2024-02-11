@@ -12,13 +12,12 @@ from common.models import SaveWithoutHistoricalRecord
 
 from django.conf import settings
 LAB_ABBREVIATION_FOR_FILES = getattr(settings, 'LAB_ABBREVIATION_FOR_FILES', '')
-OVE_URL = getattr(settings, 'OVE_URL', '')
 
 
 class Oligo (models.Model, SaveWithoutHistoricalRecord):
     
     name = models.CharField("name", max_length=255, unique=True, blank=False)
-    sequence = models.CharField("sequence", max_length=255, unique=True, blank=False)
+    sequence = models.CharField("sequence", max_length=255, unique=True, db_collation="case_insensitive", blank=False)
     length = models.SmallIntegerField("length", null=True)
     us_e = models.CharField("use", max_length=255, blank=True)
     gene = models.CharField("gene", max_length=255, blank=True)
@@ -44,10 +43,8 @@ class Oligo (models.Model, SaveWithoutHistoricalRecord):
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         
-        # Automatically capitalize the sequence of an oligo and remove all white spaces
-        # from it. Also set its lenght
-        upper_sequence = self.sequence.upper()
-        self.sequence = "".join(upper_sequence.split())
+        # Remove all white spaces from sequence and set its length
+        self.sequence = "".join(self.sequence.split())
         self.length = len(self.sequence)
         
         super(Oligo, self).save(force_insert, force_update, using, update_fields)

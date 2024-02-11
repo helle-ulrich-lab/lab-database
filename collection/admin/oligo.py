@@ -101,7 +101,7 @@ class OligoForm(forms.ModelForm):
     def clean_sequence(self):
         """Check if sequence is unique before saving"""
 
-        sequence = self.cleaned_data["sequence"].upper()
+        sequence = self.cleaned_data["sequence"]
         qs = Oligo.objects.filter(sequence=sequence)
         
         if not self.instance.pk:

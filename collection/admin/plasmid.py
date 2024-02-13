@@ -34,6 +34,7 @@ from urllib.parse import quote as urlquote
 import os
 from uuid import uuid4
 import urllib.parse
+import re
 
 from snapgene.pyclasses.client import Client
 from snapgene.pyclasses.config import Config
@@ -89,17 +90,6 @@ class AdminOligosInPlasmid(admin.ModelAdmin):
         to detect common features and create map preview as png
         and gbk"""
 
-        class OligoSnapGeneSerializer(JsonSerializer):
-
-            name_prefix = f'o{LAB_ABBREVIATION_FOR_FILES}'
-
-            def get_dump_object(self, obj):
-                o = self._current or {}
-                o.update({'Name': f'! {self.name_prefix}{obj.pk}'})
-                o.update({'Sequence': obj.sequence})
-                o.update({'Notes': ''})
-                return o
-
         file_format = request.GET.get('file_format', 'gbk')
 
         if attempt_number > 0:
@@ -122,12 +112,15 @@ class AdminOligosInPlasmid(admin.ModelAdmin):
                 gbk_temp_path = os.path.join(temp_dir_path, f'{str(uuid4())}.gb')
 
                 # Write oligos to file
-                oligos = Oligo.objects.exclude(sequence__regex=r'[BDEFHIJKLMNOPQRSUVWXYZ*/0123456789].*$') # Only oligos with ATCG in them
-                if not oligos.exists():
+                if not Oligo.objects.exists():
                     return HttpResponseNotFound
-                oligo_serializer = OligoSnapGeneSerializer()
-                with open(oligos_json_path, "w") as fhandle:
-                    oligo_serializer.serialize(oligos, fields=('Name','Sequence', 'Notes'), stream=fhandle)
+                oligos = Oligo.objects.all().values_list('id', 'sequence')
+                regexp = re.compile(r'[ATCGatcg].*$')
+                oligos = list({"Name": f'! o{LAB_ABBREVIATION_FOR_FILES}{i[0]}',
+                               "Sequence": i[1],
+                               "Notes": "",} for i in filter(lambda x: regexp.search(x[1]), oligos))
+                with open(oligos_json_path, 'w') as fhandle:
+                    json.dump(oligos, fhandle)
                 
                 # Find oligos in plasmid map and convert result to gbk
                 plasmid = self.model.objects.get(id=kwargs['object_id'])
@@ -148,7 +141,7 @@ class AdminOligosInPlasmid(admin.ModelAdmin):
                     with open(dna_temp_path, 'rb') as fhandle:
                         file_data = fhandle.read()
 
-                    os.unlink(oligos_json_path)
+                    # os.unlink(oligos_json_path)
                     os.unlink(dna_temp_path)
 
                     # Send response
@@ -182,7 +175,8 @@ class AdminOligosInPlasmid(admin.ModelAdmin):
                 response['Content-Disposition'] = 'attachment; filename="map_with_imported_oligos.gbk"'
                 return response
             
-            except:
+            except Exception as err:
+                messages.append(str(err))
                 self.find_oligos(request, attempt_number - 1, messages, *args, **kwargs)
         else:
             mail_admins("Error finding oligos in plasmid",

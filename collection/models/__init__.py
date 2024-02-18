@@ -11,3 +11,4 @@ from .sc_pombe_strain import (ScPombeStrain, ScPombeStrainEpisomalPlasmid,
                               HistoricalScPombeStrain)
 from .worm_strain import WormStrain, HistoricalWormStrain
 from .inhibitor import Inhibitor, HistoricalInhibitor
+from .si_rna import SiRna, HistoricalSiRna

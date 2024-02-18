@@ -94,11 +94,15 @@ class SimpleHistoryWithSummaryAdmin(SimpleHistoryAdmin):
                         change_new = str(field_model.objects. \
                             get(id=change.new)) if change.new else 'None'
                     elif field_type == 'ArrayField':
-                        array_field_model = array_fields[change.field]
-                        change_old = ', '.join(map(str, array_field_model.objects. \
-                            filter(id__in=change.old))) if change.old else 'None'
-                        change_new = ', '.join(map(str, array_field_model.objects. \
-                            filter(id__in=change.new))) if change.new else 'None'
+                        array_field_model = array_fields.get(change.field, None)
+                        if array_field_model:
+                            change_old = ', '.join(map(str, array_field_model.objects. \
+                                filter(id__in=change.old))) if change.old else 'None'
+                            change_new = ', '.join(map(str, array_field_model.objects. \
+                                filter(id__in=change.new))) if change.new else 'None'
+                        else:
+                            change_old = ', '.join(change.old)
+                            change_new = ', '.join(change.new)
                     else:
                         change_old = change.old if change.old else 'None'
                         change_new = change.new if change.new else 'None'

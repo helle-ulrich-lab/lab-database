@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'approval',
     'common',
     'mozilla_django_oidc',
+    'django_better_admin_arrayfield',
     ]
 
 FORM_RENDERER = 'django.forms.renderers.TemplatesSetting' 

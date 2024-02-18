@@ -286,3 +286,12 @@ from collection.models.inhibitor import Inhibitor
 from collection.admin.inhibitor import InhibitorPage
 
 main_admin_site.register(Inhibitor, InhibitorPage)
+
+#################################################
+#                    siRNA                      #
+#################################################
+
+from collection.models.si_rna import SiRna
+from collection.admin.si_rna import SiRnaPage
+
+main_admin_site.register(SiRna, SiRnaPage)

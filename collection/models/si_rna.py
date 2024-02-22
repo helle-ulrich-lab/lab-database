@@ -14,7 +14,7 @@ from formz.models import Species
 class SiRna (models.Model, SaveWithoutHistoricalRecord):
 
     name = models.CharField("name", max_length = 255, blank=False)
-    sequence = models.CharField("sequence", max_length=50, blank=False)
+    sequence = models.CharField("sequence", max_length=50, help_text="Sense strand", blank=False)
     supplier = models.CharField("supplier", max_length=255, blank=False)
     supplier_part_no = models.CharField("supplier Part-No", max_length=255, blank=False)
     supplier_si_rna_id = models.CharField("supplier siRNA ID", max_length=255, blank=False)

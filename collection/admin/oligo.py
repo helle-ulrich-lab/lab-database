@@ -10,8 +10,16 @@ from django.contrib import messages
 from django import forms
 from django.core.exceptions import PermissionDenied
 from django.utils.translation import gettext_lazy as _
+from django.core.exceptions import FieldError, ValidationError
+from django.db import DataError
+from django.db.models.functions import Collate
 
 from djangoql.schema import DjangoQLSchema
+from djangoql.schema import StrField
+from djangoql.exceptions import DjangoQLError
+from djangoql.parser import DjangoQLParser
+from djangoql.queryset import build_filter
+
 from djangoql.admin import DjangoQLSearchMixin
 from import_export import resources
 
@@ -46,6 +54,38 @@ class SearchFieldOptLastnameOligo(SearchFieldOptLastname):
 
     id_list = Oligo.objects.all().values_list('created_by', flat=True).distinct()
 
+class OligoSequence(StrField):
+    
+    name = 'sequence'
+
+    def get_lookup(self, path, operator, value):
+        """
+        Performs a lookup for this field with given path, operator and value.
+
+        Override this if you'd like to implement a fully custom lookup. It
+        should support all comparison operators compatible with the field type.
+
+        :param path: a list of names preceding current lookup. For example,
+            if expression looks like 'author.groups.name = "Foo"' path would
+            be ['author', 'groups']. 'name' is not included, because it's the
+            current field instance itself.
+        :param operator: a string with comparison operator. It could be one of
+            the following: '=', '!=', '>', '>=', '<', '<=', '~', '!~', 'in',
+            'not in'. Depending on the field type, some operators may be
+            excluded. '~' and '!~' can be applied to StrField only and aren't
+            allowed for any other fields. BoolField can't be used with less or
+            greater operators, '>', '>=', '<' and '<=' are excluded for it.
+        :param value: value passed for comparison
+        :return: Q-object
+        """
+        from django.db import models
+
+        search = '__'.join(path + [self.get_lookup_name()])
+        search = search.replace('sequence', 'sequence_deterministic') if 'sequence' in search else search
+        op, invert = self.get_operator(operator)
+        q = models.Q(**{'%s%s' % (search, op): self.get_lookup_value(value)})
+        return ~q if invert else q
+
 class OligoQLSchema(DjangoQLSchema):
     '''Customize search functionality'''
     
@@ -55,7 +95,7 @@ class OligoQLSchema(DjangoQLSchema):
         '''Define fields that can be searched'''
         
         if model == Oligo:
-            return ['id', 'name','sequence', 'length', FieldUse(), 'gene', 'restriction_site', 
+            return ['id', 'name', OligoSequence(), 'length', FieldUse(), 'gene', 'restriction_site', 
                     'description', 'comment', 'created_by', FieldCreated(), FieldLastChanged(),]
         elif model == User:
             return [SearchFieldOptUsernameOligo(), SearchFieldOptLastnameOligo()]
@@ -128,7 +168,65 @@ class OligoForm(forms.ModelForm):
         
         return name
 
-class OligoPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Approval, AdminChangeFormWithNavigation):
+class OligoDjangoQLSearchMixin(DjangoQLSearchMixin):
+
+    def get_search_results(self, request, queryset, search_term):
+
+        def apply_search(queryset, search, schema=None):
+
+            """
+            Applies search written in DjangoQL mini-language to given queryset
+            """
+            ast = DjangoQLParser().parse(search)
+            schema = schema or DjangoQLSchema
+            schema_instance = schema(queryset.model)
+            schema_instance.validate(ast)
+            filter_params = build_filter(ast, schema_instance)
+            filter_sequence = any(n[0].startswith('sequence') for n in filter_params.deconstruct()[1])
+            if filter_sequence:
+                return queryset.annotate(sequence_deterministic=Collate("sequence", "und-x-icu")).filter(filter_params)
+            else:
+                return queryset.filter(filter_params)
+
+        if (
+            self.search_mode_toggle_enabled() and
+            not self.djangoql_search_enabled(request)
+        ):
+            return super(DjangoQLSearchMixin, self).get_search_results(
+                request=request,
+                queryset=queryset,
+                search_term=search_term,
+            )
+        use_distinct = False
+        if not search_term:
+            return queryset, use_distinct
+
+        try:
+            qs = apply_search(queryset, search_term, self.djangoql_schema)
+        except (DjangoQLError, ValueError, FieldError, ValidationError) as e:
+            msg = self.djangoql_error_message(e)
+            messages.add_message(request, messages.WARNING, msg)
+            qs = queryset.none()
+        else:
+            # Hack to handle 'inet' comparison errors in Postgres. If you
+            # know a better way to check for such an error, please submit a PR.
+            try:
+                # Django >= 2.1 has built-in .explain() method
+                explain = getattr(qs, 'explain', None)
+                if callable(explain):
+                    explain()
+                else:
+                    list(qs[:1])
+            except DataError as e:
+                if 'inet' not in str(e):
+                    raise
+                msg = self.djangoql_error_message(e)
+                messages.add_message(request, messages.WARNING, msg)
+                qs = queryset.none()
+
+        return qs, use_distinct
+
+class OligoPage(OligoDjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Approval, AdminChangeFormWithNavigation):
     list_display = ('id', 'name','get_oligo_short_sequence', 'restriction_site','created_by', 'approval')
     list_display_links = ('id',)
     list_per_page = 25

@@ -17,7 +17,7 @@ from django.contrib.admin.templatetags.admin_urls import add_preserved_filters
 from django.core.mail import mail_admins
 from django.utils.translation import gettext_lazy as _
 from django.http import HttpResponseNotFound
-from django.core.serializers.json import Serializer as JsonSerializer
+from django.db.models.functions import Collate
 from django.urls import re_path
 
 from djangoql.schema import DjangoQLSchema
@@ -34,7 +34,6 @@ from urllib.parse import quote as urlquote
 import os
 from uuid import uuid4
 import urllib.parse
-import re
 
 from snapgene.pyclasses.client import Client
 from snapgene.pyclasses.config import Config
@@ -114,11 +113,12 @@ class AdminOligosInPlasmid(admin.ModelAdmin):
                 # Write oligos to file
                 if not Oligo.objects.exists():
                     return HttpResponseNotFound
-                oligos = Oligo.objects.all().values_list('id', 'sequence')
-                regexp = re.compile(r'[ATCGatcg].*$')
+                oligos = Oligo.objects.annotate(sequence_deterministic=Collate("sequence", "und-x-icu")).\
+                                       filter(sequence_deterministic__iregex=r"^[ATCG]+$", length__gte=15).\
+                                       values_list('id', 'sequence')
                 oligos = list({"Name": f'! o{LAB_ABBREVIATION_FOR_FILES}{i[0]}',
                                "Sequence": i[1],
-                               "Notes": "",} for i in filter(lambda x: regexp.search(x[1]), oligos))
+                               "Notes": "",} for i in oligos)
                 with open(oligos_json_path, 'w') as fhandle:
                     json.dump(oligos, fhandle)
                 

@@ -13,6 +13,7 @@ from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import FieldError, ValidationError
 from django.db import DataError
 from django.db.models.functions import Collate
+from django.db import models
 
 from djangoql.schema import DjangoQLSchema
 from djangoql.schema import StrField
@@ -59,26 +60,9 @@ class OligoSequence(StrField):
     name = 'sequence'
 
     def get_lookup(self, path, operator, value):
-        """
-        Performs a lookup for this field with given path, operator and value.
 
-        Override this if you'd like to implement a fully custom lookup. It
-        should support all comparison operators compatible with the field type.
-
-        :param path: a list of names preceding current lookup. For example,
-            if expression looks like 'author.groups.name = "Foo"' path would
-            be ['author', 'groups']. 'name' is not included, because it's the
-            current field instance itself.
-        :param operator: a string with comparison operator. It could be one of
-            the following: '=', '!=', '>', '>=', '<', '<=', '~', '!~', 'in',
-            'not in'. Depending on the field type, some operators may be
-            excluded. '~' and '!~' can be applied to StrField only and aren't
-            allowed for any other fields. BoolField can't be used with less or
-            greater operators, '>', '>=', '<' and '<=' are excluded for it.
-        :param value: value passed for comparison
-        :return: Q-object
-        """
-        from django.db import models
+        """Override parent's method to include deterministic
+        collation flag to lookup for sequence"""
 
         search = '__'.join(path + [self.get_lookup_name()])
         search = search.replace('sequence', 'sequence_deterministic') if 'sequence' in search else search
@@ -172,21 +156,20 @@ class OligoDjangoQLSearchMixin(DjangoQLSearchMixin):
 
     def get_search_results(self, request, queryset, search_term):
 
-        def apply_search(queryset, search, schema=None):
+        """
+            Override parent's method to filter sequence using a non
+            deterministic collaction
+        """
 
-            """
-            Applies search written in DjangoQL mini-language to given queryset
-            """
+        def apply_search(queryset, search, schema=None):
             ast = DjangoQLParser().parse(search)
             schema = schema or DjangoQLSchema
             schema_instance = schema(queryset.model)
             schema_instance.validate(ast)
             filter_params = build_filter(ast, schema_instance)
-            filter_sequence = any(n[0].startswith('sequence') for n in filter_params.deconstruct()[1])
-            if filter_sequence:
+            if any(n[0].startswith('sequence') for n in filter_params.deconstruct()[1]):
                 return queryset.annotate(sequence_deterministic=Collate("sequence", "und-x-icu")).filter(filter_params)
-            else:
-                return queryset.filter(filter_params)
+            return queryset.filter(filter_params)
 
         if (
             self.search_mode_toggle_enabled() and

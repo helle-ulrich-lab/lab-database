@@ -22,20 +22,23 @@ import csv
 import time
 from urllib.parse import quote as urlquote
 
-from common.shared_elements import SimpleHistoryWithSummaryAdmin
-from common.shared_elements import AdminChangeFormWithNavigation
-from common.shared_elements import SearchFieldOptUsername
-from common.shared_elements import SearchFieldOptLastname
-from .admin import FieldUse
-from .admin import FieldCreated
-from .admin import FieldLastChanged
-from .admin import FieldFormZProject
-from .admin import FieldParent1
-from .admin import FieldParent2
-from .admin import formz_as_html
-from .admin import CustomGuardedModelAdmin
-from .admin import Approval
-from .admin import SortAutocompleteResultsId
+from common.shared import SimpleHistoryWithSummaryAdmin
+from common.shared import AdminChangeFormWithNavigation
+from common.shared import SearchFieldOptUsername
+from common.shared import SearchFieldOptLastname
+from collection.admin.shared import FieldUse
+from collection.admin.shared import FieldCreated
+from collection.admin.shared import FieldLastChanged
+from collection.admin.shared import FieldFormZProject
+from collection.admin.shared import FieldParent1
+from collection.admin.shared import FieldParent2
+from collection.admin.shared import formz_as_html
+from collection.admin.shared import CustomGuardedModelAdmin
+from collection.admin.shared import Approval
+from collection.admin.shared import SortAutocompleteResultsId
+from common.shared import DocFileInlineMixin
+from common.shared import AddDocFileInlineMixin
+from common.shared import ToggleDocInlineMixin
 
 from .oligo import Oligo
 from .plasmid import Plasmid
@@ -43,8 +46,9 @@ from formz.models import FormZProject
 from formz.models import FormZBaseElement
 from formz.models import GenTechMethod
 
-from ..models.worm_strain import WormStrain
-from ..models.worm_strain import WormStrainGenotypingAssay
+from collection.models.worm_strain import WormStrain
+from collection.models.worm_strain import WormStrainGenotypingAssay
+from collection.models.worm_strain import WormStrainDoc
 
 
 class SearchFieldOptUsernameWormStrain(SearchFieldOptUsername):
@@ -159,7 +163,20 @@ class AddWormStrainGenotypingAssayInline(admin.TabularInline):
     def get_queryset(self, request):
         return self.model.objects.none()
 
-class WormStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin, Approval, AdminChangeFormWithNavigation, SortAutocompleteResultsId):
+class WormStrainDocInline(DocFileInlineMixin):
+    """Inline to view existing worm strain documents"""
+
+    model = WormStrainDoc
+
+class WormStrainAddDocInline(AddDocFileInlineMixin):
+    """Inline to add new worm strain documents"""
+    
+    model = WormStrainDoc
+
+class WormStrainPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
+                     SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin,
+                     Approval, AdminChangeFormWithNavigation,
+                     SortAutocompleteResultsId):
     
     list_display = ('id', 'name', 'chromosomal_genotype', 'created_by', 'approval')
     list_display_links = ('id', )
@@ -172,7 +189,8 @@ class WormStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomG
     search_fields = ['id', 'name']
     autocomplete_fields = ['parent_1', 'parent_2', 'formz_projects', 'formz_gentech_methods', 'formz_elements',
                            'integrated_dna_plasmids', 'integrated_dna_oligos']
-    inlines = [WormStrainGenotypingAssayInline, AddWormStrainGenotypingAssayInline]
+    inlines = [WormStrainGenotypingAssayInline, AddWormStrainGenotypingAssayInline,
+               WormStrainDocInline, WormStrainAddDocInline]
     
     def save_model(self, request, obj, form, change):
         '''Override default save_model to limit a user's ability to save a record
@@ -255,6 +273,7 @@ class WormStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomG
         obj.history_formz_gentech_methods = list(obj.formz_gentech_methods.order_by('id').distinct('id').values_list('id', flat=True)) if obj.formz_gentech_methods.exists() else []
         obj.history_formz_elements = list(obj.formz_elements.order_by('id').distinct('id').values_list('id', flat=True)) if obj.formz_elements.exists() else []
         obj.history_genotyping_oligos = list(Oligo.objects.filter(wormstrain_genotypingassay_oligo=obj.id).order_by('id').distinct('id').values_list('id', flat=True)) if obj.wormstraingenotypingassay_set.exists() else []
+        obj.history_documents = list(obj.wormstraindoc_set.order_by('id').distinct('id').values_list('id', flat=True)) if obj.wormstraindoc_set.exists() else []
 
         obj.save_without_historical_record()
 
@@ -265,6 +284,7 @@ class WormStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomG
         history_obj.history_formz_gentech_methods = obj.history_formz_gentech_methods
         history_obj.history_formz_elements = obj.history_formz_elements
         history_obj.history_genotyping_oligos = obj.history_genotyping_oligos
+        history_obj.history_documents = obj.history_documents
 
         history_obj.save()
 
@@ -496,5 +516,6 @@ class WormStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomG
                 'history_formz_projects': FormZProject,
                 'history_formz_gentech_methods': GenTechMethod,
                 'history_formz_elements': FormZBaseElement,
-                'history_genotyping_oligos': Oligo
+                'history_genotyping_oligos': Oligo,
+                'history_documents': WormStrainDoc
                 }

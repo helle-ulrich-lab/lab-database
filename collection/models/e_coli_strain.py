@@ -9,6 +9,7 @@ from approval.models import RecordToBeApproved
 from common.models import SaveWithoutHistoricalRecord
 from formz.models import FormZBaseElement
 from formz.models import FormZProject
+from common.models import DocFileMixin
 
 
 class EColiStrain (models.Model, SaveWithoutHistoricalRecord):
@@ -42,6 +43,9 @@ class EColiStrain (models.Model, SaveWithoutHistoricalRecord):
     history_formz_projects = ArrayField(models.PositiveIntegerField(), verbose_name="formZ projects", blank=True, null=True)
     history_formz_gentech_methods = ArrayField(models.PositiveIntegerField(), verbose_name="genTech methods", blank=True, null=True)
     history_formz_elements = ArrayField(models.PositiveIntegerField(), verbose_name="formz elements", blank=True, null=True)
+    history_documents = ArrayField(models.PositiveIntegerField(), verbose_name="documents", blank=True, null=True)
+
+    _model_abbreviation = 'ec'
 
     class Meta:
         verbose_name = 'strain - E. coli'
@@ -71,3 +75,13 @@ class EColiStrain (models.Model, SaveWithoutHistoricalRecord):
         
     def __str__(self):
        return "{} - {}".format(self.id, self.name)
+
+class EColiStrainDoc(DocFileMixin):
+    ecoli_strain = models.ForeignKey(EColiStrain, on_delete=models.PROTECT)
+
+    _mixin_props = {'destination_dir': 'collection/ecolistraindoc/',
+                    'file_prefix': 'ecDoc',
+                    'parent_field_name': 'ecoli_strain'}
+
+    class Meta:
+        verbose_name = 'e. coli strain document'

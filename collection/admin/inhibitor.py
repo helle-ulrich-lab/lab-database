@@ -17,10 +17,14 @@ from django.conf import settings
 MEDIA_ROOT = settings.MEDIA_ROOT
 LAB_ABBREVIATION_FOR_FILES = getattr(settings, 'LAB_ABBREVIATION_FOR_FILES', '')
 
-from common.shared_elements import SimpleHistoryWithSummaryAdmin
-from .admin import FieldLocation
+from common.shared import SimpleHistoryWithSummaryAdmin
+from collection.admin.shared import FieldLocation
+from common.shared import DocFileInlineMixin
+from common.shared import AddDocFileInlineMixin
+from common.shared import ToggleDocInlineMixin
 
-from ..models import Inhibitor
+from collection.models import Inhibitor
+from collection.models import InhibitorDoc
 
 
 class InhibitorQLSchema(DjangoQLSchema):
@@ -65,8 +69,19 @@ def export_inhibitor(modeladmin, request, queryset):
     return response
 export_inhibitor.short_description = "Export selected inhibitors"
 
-class InhibitorPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.ModelAdmin):
+class InhibitorDocInline(DocFileInlineMixin):
+    """Inline to view existing Inhibitor documents"""
+
+    model = InhibitorDoc
+
+class InhibitorAddDocInline(AddDocFileInlineMixin):
+    """Inline to add new Inhibitor documents"""
     
+    model = InhibitorDoc
+
+class InhibitorPage(ToggleDocInlineMixin, DjangoQLSearchMixin, 
+                    SimpleHistoryWithSummaryAdmin, admin.ModelAdmin):
+
     list_display = ('id', 'name', 'target', 'catalogue_number', 'received_from', 'l_ocation', 'get_sheet_short_name')
     list_display_links = ('id', )
     list_per_page = 25
@@ -75,6 +90,7 @@ class InhibitorPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.Mo
     djangoql_completion_enabled_by_default = False
     actions = [export_inhibitor]
     search_fields = ['id', 'name']
+    inlines = [InhibitorDocInline, InhibitorAddDocInline]
     
     def save_model(self, request, obj, form, change):
         '''Override default save_model to limit a user's ability to save a record
@@ -129,6 +145,25 @@ class InhibitorPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.Mo
                 history_obj = obj.history.first()
                 history_obj.history_type = "+"
                 history_obj.save()
+
+    def save_related(self, request, form, formsets, change):
+        
+        super().save_related(request, form, formsets, change)
+
+        # Keep a record of the IDs of linked M2M fields in the main strain record
+        # Not pretty, but it works
+
+        obj = Inhibitor.objects.get(pk=form.instance.id)
+
+        obj.history_documents = list(obj.inhibitordoc_set.order_by('id').\
+                                     distinct('id').values_list('id', flat=True)) \
+                                    if obj.inhibitordoc_set.exists() else []
+
+        obj.save_without_historical_record()
+
+        history_obj = obj.history.latest()
+        history_obj.history_documents = obj.history_documents
+        history_obj.save()
         
     def get_readonly_fields(self, request, obj=None):
         '''Override default get_readonly_fields to define user-specific read-only fields
@@ -166,3 +201,9 @@ class InhibitorPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, admin.Mo
         else:
             return ''
     get_sheet_short_name.short_description = 'Info Sheet'
+
+    def get_history_array_fields(self):
+
+        return {**super().get_history_array_fields(),
+                'history_documents': InhibitorDoc
+                }

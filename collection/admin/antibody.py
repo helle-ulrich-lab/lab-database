@@ -16,12 +16,16 @@ from django.conf import settings
 MEDIA_ROOT = settings.MEDIA_ROOT
 LAB_ABBREVIATION_FOR_FILES = getattr(settings, 'LAB_ABBREVIATION_FOR_FILES', '')
 
-from common.shared_elements import SimpleHistoryWithSummaryAdmin
-from common.shared_elements import AdminChangeFormWithNavigation
-from .admin import FieldLocation
-from .admin import FieldApplication
+from common.shared import SimpleHistoryWithSummaryAdmin
+from common.shared import AdminChangeFormWithNavigation
+from collection.admin.shared import FieldLocation
+from collection.admin.shared import FieldApplication
+from common.shared import DocFileInlineMixin
+from common.shared import AddDocFileInlineMixin
+from common.shared import ToggleDocInlineMixin
 
-from ..models.antibody import Antibody
+from collection.models.antibody import Antibody
+from collection.models.antibody import AntibodyDoc
 
 
 class AntibodyQLSchema(DjangoQLSchema):
@@ -66,8 +70,19 @@ def export_antibody(modeladmin, request, queryset):
     return response
 export_antibody.short_description = "Export selected antibodies"
 
-class AntibodyPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeFormWithNavigation):
+class AntibodyDocInline(DocFileInlineMixin):
+    """Inline to view existing Antibody documents"""
+
+    model = AntibodyDoc
+
+class AntibodyAddDocInline(AddDocFileInlineMixin):
+    """Inline to add new Antibody documents"""
     
+    model = AntibodyDoc
+
+class AntibodyPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
+                   SimpleHistoryWithSummaryAdmin, AdminChangeFormWithNavigation):
+
     list_display = ('id', 'name', 'catalogue_number', 'received_from', 'species_isotype', 'clone', 'l_ocation', 'get_sheet_short_name', 'availability',)
     list_display_links = ('id',)
     list_per_page = 25
@@ -76,7 +91,8 @@ class AntibodyPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChan
     djangoql_completion_enabled_by_default = False
     actions = [export_antibody]
     search_fields = ['id', 'name']
-    
+    inlines = [AntibodyDocInline, AntibodyAddDocInline]
+
     def save_model(self, request, obj, form, change):
         '''Override default save_model to limit a user's ability to save a record
         Superusers and lab managers can change all records
@@ -131,7 +147,27 @@ class AntibodyPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChan
                 history_obj = obj.history.first()
                 history_obj.history_type = "+"
                 history_obj.save()
+
+    def save_related(self, request, form, formsets, change):
         
+        super().save_related(request, form, formsets, change)
+
+        # Keep a record of the IDs of linked M2M fields in the main strain record
+        # Not pretty, but it works
+
+        obj = Antibody.objects.get(pk=form.instance.id)
+
+        obj.history_documents = list(obj.antibodydoc_set.order_by('id').\
+                                     distinct('id').values_list('id', flat=True)) \
+                                     if obj.antibodydoc_set.exists() \
+                                     else []
+
+        obj.save_without_historical_record()
+
+        history_obj = obj.history.latest()
+        history_obj.history_documents = obj.history_documents
+        history_obj.save()
+
     def get_readonly_fields(self, request, obj=None):
         '''Override default get_readonly_fields to define user-specific read-only fields
         If a user is not a superuser, lab manager or the user who created a record
@@ -168,3 +204,9 @@ class AntibodyPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChan
         else:
             return ''
     get_sheet_short_name.short_description = 'Info Sheet'
+
+    def get_history_array_fields(self):
+
+        return {**super().get_history_array_fields(),
+                'history_documents': AntibodyDoc,
+                }

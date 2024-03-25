@@ -1,13 +1,16 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.forms import ValidationError
+from django.contrib.postgres.fields import ArrayField
 
 from simple_history.models import HistoricalRecords
 
 from common.models import SaveWithoutHistoricalRecord
+from common.models import DocFileMixin
+from common.models import DownloadFileNameMixin
 
 
-class Inhibitor (models.Model, SaveWithoutHistoricalRecord):
+class Inhibitor (DownloadFileNameMixin, models.Model, SaveWithoutHistoricalRecord):
 
     name = models.CharField("name", max_length = 255, blank=False)
     other_names = models.CharField("other names", max_length = 255, blank=False)
@@ -25,6 +28,10 @@ class Inhibitor (models.Model, SaveWithoutHistoricalRecord):
     last_changed_date_time = models.DateTimeField("last changed", auto_now=True)
     created_by = models.ForeignKey(User, on_delete=models.PROTECT)
     history = HistoricalRecords()
+
+    history_documents = ArrayField(models.PositiveIntegerField(), verbose_name="documents", blank=True, null=True)
+
+    _model_abbreviation = 'ib'
 
     def clean(self):
 
@@ -54,3 +61,13 @@ class Inhibitor (models.Model, SaveWithoutHistoricalRecord):
     
     def __str__(self):
         return str(self.id)
+
+class InhibitorDoc(DocFileMixin):
+    inhibitor = models.ForeignKey(Inhibitor, on_delete=models.PROTECT)
+
+    _mixin_props = {'destination_dir': 'collection/inhibitordoc/',
+                    'file_prefix': 'ibDoc',
+                    'parent_field_name': 'inhibitor'}
+
+    class Meta:
+        verbose_name = 'inhibitor document'

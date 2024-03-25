@@ -23,24 +23,28 @@ import csv
 import time
 from urllib.parse import quote as urlquote
 
-from common.shared_elements import SimpleHistoryWithSummaryAdmin
-from common.shared_elements import AdminChangeFormWithNavigation
-from common.shared_elements import SearchFieldOptUsername
-from common.shared_elements import SearchFieldOptLastname
-from .admin import FieldIntegratedPlasmidM2M
-from .admin import FieldEpisomalPlasmidM2M
-from .admin import FieldCreated
-from .admin import FieldLastChanged
-from .admin import FieldFormZProject
-from .admin import formz_as_html
-from .admin import CustomGuardedModelAdmin
-from .admin import Approval
-from .admin import SortAutocompleteResultsId
+from common.shared import SimpleHistoryWithSummaryAdmin
+from common.shared import AdminChangeFormWithNavigation
+from common.shared import SearchFieldOptUsername
+from common.shared import SearchFieldOptLastname
+from common.shared import DocFileInlineMixin
+from common.shared import AddDocFileInlineMixin
+from common.shared import ToggleDocInlineMixin
 
-from ..models.cell_line import CellLine
-from ..models.cell_line import CellLineDoc
-from ..models.cell_line import CellLineEpisomalPlasmid
-from ..models.plasmid import Plasmid
+from collection.admin.shared import FieldIntegratedPlasmidM2M
+from collection.admin.shared import FieldEpisomalPlasmidM2M
+from collection.admin.shared import FieldCreated
+from collection.admin.shared import FieldLastChanged
+from collection.admin.shared import FieldFormZProject
+from collection.admin.shared import formz_as_html
+from collection.admin.shared import CustomGuardedModelAdmin
+from collection.admin.shared import Approval
+from collection.admin.shared import SortAutocompleteResultsId
+
+from collection.models.cell_line import CellLine
+from collection.models.cell_line import CellLineDoc
+from collection.models.cell_line import CellLineEpisomalPlasmid
+from collection.models.plasmid import Plasmid
 from formz.models import FormZProject
 from formz.models import FormZBaseElement
 from formz.models import Species
@@ -62,55 +66,32 @@ class CellLineDocPage(admin.ModelAdmin):
         '''Override default get_readonly_fields'''
 
         if obj:
-            return ['name', 'typ_e', 'date_of_test', 'cell_line', 'created_date_time',]
+            return ['name', 'description', 'date_of_test', 'cell_line', 'created_date_time',]
     
     def add_view(self,request,extra_context=None):
         '''Override default add_view to show only desired fields'''
 
-        self.fields = (['name', 'typ_e', 'cell_line', 'comment', 'date_of_test'])
+        self.fields = (['name', 'description', 'cell_line', 'comment', 'date_of_test'])
         return super(CellLineDocPage,self).add_view(request)
 
     def change_view(self,request,object_id,extra_context=None):
         '''Override default change_view to show only desired fields'''
 
-        self.fields = (['name', 'typ_e', 'date_of_test', 'cell_line', 'comment', 'created_date_time',])
+        self.fields = (['name', 'description', 'date_of_test', 'cell_line', 'comment', 'created_date_time',])
         return super(CellLineDocPage,self).change_view(request,object_id)
 
-class CellLineDocInline(admin.TabularInline):
+class CellLineDocInline(DocFileInlineMixin):
     """Inline to view existing cell line documents"""
 
     model = CellLineDoc
-    verbose_name_plural = "Existing docs"
-    extra = 0
-    fields = ['typ_e', 'date_of_test', 'get_doc_short_name', 'comment']
-    readonly_fields = ['get_doc_short_name', 'typ_e', 'date_of_test']
+    fields = ['description', 'date_of_test', 'get_doc_short_name', 'comment']
+    readonly_fields = ['description', 'date_of_test', 'get_doc_short_name']
 
-    def has_add_permission(self, request, obj):
-        return False
-    
-    def get_doc_short_name(self, instance):
-        '''This function allows you to define a custom field for the list view to
-        be defined in list_display as the name of the function, e.g. in this case
-        list_display = ('id', 'name', 'selection', 'get_plasmidmap_short_name','created_by',)'''
-        if instance.name:
-            return mark_safe('<a href="{}">View</a>'.format(str(instance.name.url)))
-        else:
-            return ''
-    get_doc_short_name.short_description = 'Document'
-
-class AddCellLineDocInline(admin.TabularInline):
+class AddCellLineDocInline(AddDocFileInlineMixin):
     """Inline to add new cell line documents"""
     
     model = CellLineDoc
-    verbose_name_plural = "New docs"
-    extra = 0
-    fields = ['typ_e', 'date_of_test', 'name','comment']
-
-    def has_change_permission(self, request, obj=None):
-        return False
-
-    def get_queryset(self, request):
-        return CellLineDoc.objects.none()
+    fields = ['description', 'date_of_test', 'name','comment']
 
 #################################################
 #                CELL LINE PAGES                #
@@ -235,8 +216,10 @@ class CellLineEpisomalPlasmidInline(admin.TabularInline):
             self.classes = []
         return super(CellLineEpisomalPlasmidInline, self).get_queryset(request)
 
-class CellLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin, Approval, AdminChangeFormWithNavigation, SortAutocompleteResultsId):
-    
+class CellLinePage(ToggleDocInlineMixin, DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
+                   CustomGuardedModelAdmin, Approval, AdminChangeFormWithNavigation,
+                   SortAutocompleteResultsId):
+
     list_display = ('id', 'name', 'box_name', 'created_by', 'approval')
     list_display_links = ('id',)
     list_per_page = 25
@@ -450,25 +433,6 @@ class CellLinePage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGua
             
         return super(CellLinePage,self).change_view(request,object_id,extra_context=extra_context)
 
-    def get_formsets_with_inlines(self, request, obj=None):
-        """Remove AddCellLineDocInline from add/change form if user who
-        created a CellLine object is not the request user a lab manager
-        or a superuser"""
-        
-        if obj:
-            for inline in self.get_inline_instances(request, obj):
-                if inline.verbose_name_plural == 'Existing docs':
-                    yield inline.get_formset(request, obj), inline
-                else:
-                    if not request.user.groups.filter(name='Guest').exists():
-                        yield inline.get_formset(request, obj), inline
-        else:
-            for inline in self.get_inline_instances(request, obj):
-                if inline.verbose_name_plural == 'Existing docs':
-                    continue
-                else:
-                    yield inline.get_formset(request, obj), inline
-    
     def obj_perms_manage_view(self, request, object_pk):
         """
         Main object Guardian permissions view. 

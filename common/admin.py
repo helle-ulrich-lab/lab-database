@@ -71,37 +71,25 @@ class MyAdminSite(OrderAdmin, FormZAdmin, admin.AdminSite):
 
             download_file_name = os.path.basename(url_path)
             
-            # Get app and model names
+            # Try creating pretty file name
             try:
+                # Get app and model names
                 url_path_split = url_path.split('/')
                 app_name = url_path_split[0]
                 model_name = url_path_split[1]
-                file_name, file_ext = os.path.splitext(url_path_split[-1]) 
 
-                # Generate name for download file
-                if app_name == 'collection':
+                # Get file name and extension
+                file_name, file_ext = os.path.splitext(url_path_split[-1])
 
-                    # Get object 
-                    file_prefix = file_name.split('_')[0]
-
-                    if model_name == 'celllinedoc':
-                        obj_id = int(file_name.split('_')[-1])
-                    else:
-                        obj_id = int(re.findall('\d+(?=_)', file_name + '_')[0])
-                    obj = apps.get_model(app_name, model_name).objects.get(id=obj_id)  
-
-                    if model_name == 'celllinedoc':
-                        obj_name = "{} - {} Doc# {}".format(obj.cell_line.name, obj.typ_e.title(), obj.id)
-                    else:
-                        obj_name = obj.name
-
-                    download_file_name = "{} - {}{}".format(file_prefix, obj_name, file_ext).replace(',','')
-
-                if model_name == 'msdsform':
+                # Get object
+                if model_name.endswith('doc'):
+                    obj_id = int(file_name.split('_')[-1])
+                else:
                     obj_id = int(re.findall('\d+(?=_)', file_name + '_')[0])
-                    obj = apps.get_model(app_name, model_name).objects.get(id=obj_id)  
-                    download_file_name = obj.download_file_name
-            
+                obj = apps.get_model(app_name, model_name).objects.get(id=obj_id)
+
+                # Create file name
+                download_file_name = f"{obj.download_file_name}{file_ext}"
             except:
                 pass
 

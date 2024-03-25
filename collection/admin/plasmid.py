@@ -39,21 +39,25 @@ from snapgene.pyclasses.client import Client
 from snapgene.pyclasses.config import Config
 import zmq
 
-from common.shared_elements import SimpleHistoryWithSummaryAdmin
-from common.shared_elements import AdminChangeFormWithNavigation
-from common.shared_elements import SearchFieldOptUsername
-from common.shared_elements import SearchFieldOptLastname
+from common.shared import SimpleHistoryWithSummaryAdmin
+from common.shared import AdminChangeFormWithNavigation
+from common.shared import SearchFieldOptUsername
+from common.shared import SearchFieldOptLastname
 
-from .admin import FieldCreated
-from .admin import FieldLastChanged
-from .admin import FieldFormZProject
-from .admin import FieldUse
-from .admin import formz_as_html
-from .admin import CustomGuardedModelAdmin
-from .admin import Approval
-from .admin import SortAutocompleteResultsId
+from collection.admin.shared import FieldCreated
+from collection.admin.shared import FieldLastChanged
+from collection.admin.shared import FieldFormZProject
+from collection.admin.shared import FieldUse
+from collection.admin.shared import formz_as_html
+from collection.admin.shared import CustomGuardedModelAdmin
+from collection.admin.shared import Approval
+from collection.admin.shared import SortAutocompleteResultsId
+from common.shared import DocFileInlineMixin
+from common.shared import AddDocFileInlineMixin
+from common.shared import ToggleDocInlineMixin
 
-from ..models.plasmid import Plasmid
+from collection.models.plasmid import Plasmid
+from collection.models.plasmid import PlasmidDoc
 from formz.models import FormZProject
 from formz.models import FormZBaseElement
 from formz.models import GenTechMethod
@@ -66,8 +70,8 @@ LAB_ABBREVIATION_FOR_FILES = getattr(settings, 'LAB_ABBREVIATION_FOR_FILES', '')
 from django.contrib.admin.options import IS_POPUP_VAR
 from django.contrib.admin.options import TO_FIELD_VAR
 
-from ..models.oligo import Oligo
-from ..models.plasmid import Plasmid
+from collection.models.oligo import Oligo
+from collection.models.plasmid import Plasmid
 
 
 class AdminOligosInPlasmid(admin.ModelAdmin):
@@ -303,7 +307,20 @@ class PlasmidForm(forms.ModelForm):
 
         return self.cleaned_data
 
-class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin, Approval, AdminChangeFormWithNavigation, AdminOligosInPlasmid, SortAutocompleteResultsId):
+class PlasmidDocInline(DocFileInlineMixin):
+    """Inline to view existing plasmid documents"""
+
+    model = PlasmidDoc
+
+class PlasmidAddDocInline(AddDocFileInlineMixin):
+    """Inline to add new plasmid documents"""
+
+    model = PlasmidDoc
+
+class PlasmidPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
+                  SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin,
+                  Approval, AdminChangeFormWithNavigation,
+                  AdminOligosInPlasmid, SortAutocompleteResultsId):
     
     list_display = ('id', 'name', 'selection', 'get_plasmidmap_short_name', 'created_by', 'approval')
     list_display_links = ('id',)
@@ -314,6 +331,7 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
     actions = [export_plasmid, formz_as_html]
     search_fields = ['id', 'name']
     autocomplete_fields = ['parent_vector', 'formz_projects', 'formz_elements', 'vector_zkbs', 'formz_ecoli_strains', 'formz_gentech_methods']
+    inlines = [PlasmidDocInline, PlasmidAddDocInline]
     redirect_to_obj_page = False
     form = PlasmidForm
 
@@ -414,55 +432,26 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
 
             saved_obj = Plasmid.objects.get(pk=obj.pk)
 
-            if self.can_change:
+            if obj.map != saved_obj.map or obj.map_gbk != saved_obj.map_gbk:
 
-                if obj.map != saved_obj.map or obj.map_gbk != saved_obj.map_gbk:
+                if (obj.map and obj.map_gbk) or (not saved_obj.map and not saved_obj.map_gbk): 
+                    rename_and_preview = True
+                    self.rename_and_preview = True
+                    obj.save_without_historical_record()
+                    
+                    if obj.map_gbk != saved_obj.map_gbk:
+                        convert_map_to_dna = True
 
-                    if (obj.map and obj.map_gbk) or (not saved_obj.map and not saved_obj.map_gbk): 
-                        rename_and_preview = True
-                        self.rename_and_preview = True
-                        obj.save_without_historical_record()
-                        
-                        if obj.map_gbk != saved_obj.map_gbk:
-                            convert_map_to_dna = True
-
-                    else:
-                        obj.map.name = ''
-                        obj.map_png.name = ''
-                        obj.map_gbk.name = ''
-                        self.clear_formz_elements = True
-                        obj.save()
-                
                 else:
+                    obj.map.name = ''
+                    obj.map_png.name = ''
+                    obj.map_gbk.name = ''
+                    self.clear_formz_elements = True
                     obj.save()
-
+            
             else:
-                
-                if obj.created_by.labuser.is_principal_investigator: # Allow saving object, if record belongs to principal investigator
-                    
-                    if obj.map != saved_obj.map or obj.map_gbk != saved_obj.map_gbk:
+                obj.save()
 
-                        if (obj.map and obj.map_gbk) or (not saved_obj.map and not saved_obj.map_gbk): 
-                            rename_and_preview = True
-                            self.rename_and_preview = True
-                            obj.save_without_historical_record()
-                            
-                            if obj.map_gbk != saved_obj.map_gbk:
-                                convert_map_to_dna = True
-
-                        else:
-                            obj.map.name = ''
-                            obj.map_png.name = ''
-                            obj.map_gbk.name = ''
-                            self.clear_formz_elements = True
-                            obj.save()
-                    
-                    else:
-                        obj.save()
-
-                else:
-                    raise PermissionDenied
-        
         # Rename plasmid map
         if rename_and_preview:
 
@@ -564,6 +553,7 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
         obj.history_formz_elements = list(obj.formz_elements.order_by('id').distinct('id').values_list('id', flat=True)) if obj.formz_elements.exists() else []
         obj.history_formz_ecoli_strains = list(obj.formz_ecoli_strains.order_by('id').distinct('id').values_list('id', flat=True)) if obj.formz_ecoli_strains.exists() else []
         obj.history_formz_gentech_methods = list(obj.formz_gentech_methods.order_by('id').distinct('id').values_list('id', flat=True)) if obj.formz_gentech_methods.exists() else []
+        obj.history_documents = list(obj.plasmiddoc_set.order_by('id').distinct('id').values_list('id', flat=True)) if obj.plasmiddoc_set.exists() else []
 
         # For new records without map preview, delete first history record, which contains the unformatted map name, and change 
         # the newer history record's history_type from changed (~) to created (+). This gets rid of a duplicate
@@ -582,6 +572,7 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
         history_obj.history_formz_elements = obj.history_formz_elements
         history_obj.history_formz_ecoli_strains = obj.history_formz_ecoli_strains
         history_obj.history_formz_gentech_methods = obj.history_formz_gentech_methods
+        history_obj.history_documents = obj.history_documents
         history_obj.save()
 
     def response_add(self, request, obj, post_url_continue=None):
@@ -830,10 +821,10 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
             else:
                 
                 extra_context.update({'show_close': True,
-                                 'show_save_and_add_another': False,
-                                 'show_save_and_continue': False,
-                                 'show_save_as_new': False,
-                                 'show_save': False,
+                                 'show_save_and_add_another': True,
+                                 'show_save_and_continue': True,
+                                 'show_save_as_new': True,
+                                 'show_save': True,
                                  'show_obj_permission': False,
                                  'show_redetect_save': False})
             
@@ -1073,4 +1064,5 @@ class PlasmidPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuar
                 'history_formz_gentech_methods': GenTechMethod,
                 'history_formz_elements': FormZBaseElement,
                 'history_formz_ecoli_strains': FormZBaseElement,
+                'history_documents': PlasmidDoc
                 }

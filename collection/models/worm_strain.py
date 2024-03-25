@@ -13,6 +13,7 @@ from formz.models import FormZProject
 from formz.models import GenTechMethod
 from collection.models import Plasmid
 from collection.models import Oligo
+from common.models import DocFileMixin
 
 
 WORM_SPECIES_CHOICES = (
@@ -76,6 +77,9 @@ class WormStrain (models.Model, SaveWithoutHistoricalRecord):
     history_formz_gentech_methods = ArrayField(models.PositiveIntegerField(), verbose_name="genTech methods", blank=True, null=True)
     history_formz_elements = ArrayField(models.PositiveIntegerField(), verbose_name="formz elements", blank=True, null=True)
     history_genotyping_oligos = ArrayField(models.PositiveIntegerField(), verbose_name="genotyping oligos", blank=True, null=True)
+    history_documents = ArrayField(models.PositiveIntegerField(), verbose_name="documents", blank=True, null=True)
+
+    _model_abbreviation = 'w'
 
     class Meta:
         verbose_name = 'strain - Worm'
@@ -136,3 +140,13 @@ class WormStrainGenotypingAssay (models.Model):
     
     def __str__(self):
         return str(self.id)
+
+class WormStrainDoc(DocFileMixin):
+    worm_strain = models.ForeignKey(WormStrain, on_delete=models.PROTECT)
+
+    _mixin_props = {'destination_dir': 'collection/wormstraindoc/',
+                    'file_prefix': 'wDoc',
+                    'parent_field_name': 'worm_strain'}
+
+    class Meta:
+        verbose_name = 'worm strain document'

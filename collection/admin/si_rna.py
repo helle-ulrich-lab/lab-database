@@ -1,12 +1,13 @@
-from ..models.si_rna import SiRna
+from collection.models.si_rna import SiRna
+from collection.models.si_rna import SiRnaDoc
 from ordering.models import Order
 from formz.models import Species
-from .admin import FieldLastChanged
-from .admin import FieldCreated
-from common.shared_elements import SearchFieldOptLastname
-from common.shared_elements import SearchFieldOptUsername
-from common.shared_elements import AdminChangeFormWithNavigation
-from common.shared_elements import SimpleHistoryWithSummaryAdmin
+from collection.admin.shared import FieldLastChanged
+from collection.admin.shared import FieldCreated
+from common.shared import SearchFieldOptLastname
+from common.shared import SearchFieldOptUsername
+from common.shared import AdminChangeFormWithNavigation
+from common.shared import SimpleHistoryWithSummaryAdmin
 from django.http import HttpResponse
 from django.utils.safestring import mark_safe
 from django.forms import TextInput
@@ -18,6 +19,9 @@ from djangoql.admin import DjangoQLSearchMixin
 from import_export import resources
 from django_better_admin_arrayfield.admin.mixins import DynamicArrayMixin
 from import_export.fields import Field
+from common.shared import DocFileInlineMixin
+from common.shared import AddDocFileInlineMixin
+from common.shared import ToggleDocInlineMixin
 
 import xlrd
 import csv
@@ -26,8 +30,7 @@ from datetime import datetime
 
 from django.conf import settings
 MEDIA_ROOT = settings.MEDIA_ROOT
-LAB_ABBREVIATION_FOR_FILES = getattr(
-    settings, 'LAB_ABBREVIATION_FOR_FILES', '')
+LAB_ABBREVIATION_FOR_FILES = getattr(settings, 'LAB_ABBREVIATION_FOR_FILES', '')
 
 
 class SearchFieldOptUsernameSiRna(SearchFieldOptUsername):
@@ -38,7 +41,6 @@ class SearchFieldOptUsernameSiRna(SearchFieldOptUsername):
 class SearchFieldOptLastnameSiRna(SearchFieldOptLastname):
 
     id_list = SiRna.objects.all().values_list('created_by', flat=True).distinct()
-
 
 class SiRnaQLSchema(DjangoQLSchema):
     '''Customize search functionality'''
@@ -54,7 +56,6 @@ class SiRnaQLSchema(DjangoQLSchema):
         elif model == User:
             return [SearchFieldOptUsernameSiRna(), SearchFieldOptLastnameSiRna()]
         return super(SiRnaQLSchema, self).get_fields(model)
-
 
 class SiRnaExportResource(resources.ModelResource):
     """Defines a custom export resource class for SiRna"""
@@ -75,7 +76,6 @@ class SiRnaExportResource(resources.ModelResource):
                         'supplier_si_rna_id', 'species_name', 'target_genes', 'locus_ids',
                         'description_comment', 'info_sheet', 'orders', 'created_date_time',
                         'created_by__username',)
-
 
 def export_si_rna(modeladmin, request, queryset):
     """Export SiRna"""
@@ -106,9 +106,19 @@ def export_si_rna(modeladmin, request, queryset):
     return response
 export_si_rna.short_description = "Export selected siRNAs"
 
+class InhibitorDocInline(DocFileInlineMixin):
+    """Inline to view existing Inhibitor documents"""
 
-class SiRnaPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeFormWithNavigation, DynamicArrayMixin):
+    model = SiRnaDoc
 
+class InhibitorAddDocInline(AddDocFileInlineMixin):
+    """Inline to add new Inhibitor documents"""
+    
+    model = SiRnaDoc
+
+class SiRnaPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
+                SimpleHistoryWithSummaryAdmin, AdminChangeFormWithNavigation, 
+                DynamicArrayMixin):
     list_display = ('id', 'name', 'sequence', 'supplier',
                     'supplier_part_no', 'target_genes', 'get_sheet_short_name')
     list_display_links = ('id',)
@@ -120,6 +130,7 @@ class SiRnaPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeF
     actions = [export_si_rna]
     search_fields = ['id', 'name']
     autocomplete_fields = ['created_by', 'orders']
+    inlines = [InhibitorDocInline, InhibitorAddDocInline]
 
     def save_model(self, request, obj, form, change):
         '''Override default save_model to limit a user's ability to save a record
@@ -197,13 +208,19 @@ class SiRnaPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeF
 
         obj = SiRna.objects.get(pk=form.instance.id)
 
-        obj.history_orders = list(obj.orders.order_by('id').distinct(
-            'id').values_list('id', flat=True)) if obj.orders.exists() else []
+        obj.history_orders = list(obj.orders.order_by('id').distinct('id').\
+                                  values_list('id', flat=True)) \
+                                  if obj.orders.exists() \
+                                  else []
+        obj.history_documents = list(obj.si_rnadoc_set.order_by('id').\
+                                     distinct('id').values_list('id', flat=True)) \
+                                    if obj.si_rnadoc_set.exists() else []
 
         obj.save_without_historical_record()
 
         history_obj = obj.history.latest()
         history_obj.history_orders = obj.history_orders
+        history_obj.history_documents = obj.history_documents
         history_obj.save()
 
     def get_readonly_fields(self, request, obj=None):
@@ -270,4 +287,5 @@ class SiRnaPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeF
 
         return {**super(SiRnaPage, self).get_history_array_fields(),
                 'history_orders': Order,
+                'history_documents': SiRnaDoc
                 }

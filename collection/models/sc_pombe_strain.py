@@ -14,6 +14,7 @@ from common.models import SaveWithoutHistoricalRecord
 from formz.models import FormZBaseElement
 from formz.models import FormZProject
 from formz.models import GenTechMethod
+from common.models import DocFileMixin
 
 
 class ScPombeStrain (models.Model, SaveWithoutHistoricalRecord):
@@ -61,7 +62,10 @@ class ScPombeStrain (models.Model, SaveWithoutHistoricalRecord):
     history_formz_projects =ArrayField(models.PositiveIntegerField(), verbose_name="formZ projects", blank=True, null=True)
     history_formz_gentech_methods = ArrayField(models.PositiveIntegerField(), verbose_name="genTech methods", blank=True, null=True)
     history_formz_elements = ArrayField(models.PositiveIntegerField(), verbose_name="formz elements", blank=True, null=True)
-    
+    history_documents = ArrayField(models.PositiveIntegerField(), verbose_name="documents", blank=True, null=True)
+
+    _model_abbreviation = 'sp'
+
     class Meta:
         verbose_name = 'strain - Sc. pombe'
         verbose_name_plural = 'strains - Sc. pombe'
@@ -148,3 +152,13 @@ class ScPombeStrainEpisomalPlasmid (models.Model):
 
     def is_highlighted(self):
         return self.present_in_stocked_strain
+
+class ScPombeStrainDoc(DocFileMixin):
+    scpombe_strain = models.ForeignKey(ScPombeStrain, on_delete=models.PROTECT)
+
+    _mixin_props = {'destination_dir': 'collection/scpombestraindoc/',
+                    'file_prefix': 'spDoc',
+                    'parent_field_name': 'scpombe_strain'}
+
+    class Meta:
+        verbose_name = 'sc. pombe strain document'

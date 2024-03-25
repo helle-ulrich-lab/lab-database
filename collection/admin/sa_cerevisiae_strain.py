@@ -24,31 +24,35 @@ import csv
 import time
 from urllib.parse import quote as urlquote
 
-from common.shared_elements import SimpleHistoryWithSummaryAdmin
-from common.shared_elements import AdminChangeFormWithNavigation
-from common.shared_elements import SearchFieldOptUsername
-from common.shared_elements import SearchFieldOptLastname
-from .admin import FieldIntegratedPlasmidM2M
-from .admin import FieldEpisomalPlasmidM2M
-from .admin import FieldCassettePlasmidM2M
-from .admin import FieldUse
-from .admin import FieldCreated
-from .admin import FieldLastChanged
-from .admin import FieldFormZProject
-from .admin import FieldParent1
-from .admin import FieldParent2
-from .admin import formz_as_html
-from .admin import CustomGuardedModelAdmin
-from .admin import Approval
-from .admin import SortAutocompleteResultsId
+from common.shared import SimpleHistoryWithSummaryAdmin
+from common.shared import AdminChangeFormWithNavigation
+from common.shared import SearchFieldOptUsername
+from common.shared import SearchFieldOptLastname
+from collection.admin.shared import FieldIntegratedPlasmidM2M
+from collection.admin.shared import FieldEpisomalPlasmidM2M
+from collection.admin.shared import FieldCassettePlasmidM2M
+from collection.admin.shared import FieldUse
+from collection.admin.shared import FieldCreated
+from collection.admin.shared import FieldLastChanged
+from collection.admin.shared import FieldFormZProject
+from collection.admin.shared import FieldParent1
+from collection.admin.shared import FieldParent2
+from collection.admin.shared import formz_as_html
+from collection.admin.shared import CustomGuardedModelAdmin
+from collection.admin.shared import Approval
+from collection.admin.shared import SortAutocompleteResultsId
+from common.shared import DocFileInlineMixin
+from common.shared import AddDocFileInlineMixin
+from common.shared import ToggleDocInlineMixin
 
-from ..models.plasmid import Plasmid
+from collection.models.plasmid import Plasmid
 from formz.models import FormZProject
 from formz.models import FormZBaseElement
 from formz.models import GenTechMethod
 
-from ..models.sa_cerevisiae_strain import SaCerevisiaeStrain
-from ..models.sa_cerevisiae_strain import SaCerevisiaeStrainEpisomalPlasmid
+from collection.models.sa_cerevisiae_strain import SaCerevisiaeStrain
+from collection.models.sa_cerevisiae_strain import SaCerevisiaeStrainEpisomalPlasmid
+from collection.models.sa_cerevisiae_strain import SaCerevisiaeStrainDoc
 
 
 class SearchFieldOptUsernameSaCerStrain(SearchFieldOptUsername):
@@ -186,7 +190,20 @@ class SaCerevisiaeStrainEpisomalPlasmidInline(admin.TabularInline):
             self.classes = []
         return super(SaCerevisiaeStrainEpisomalPlasmidInline, self).get_queryset(request)
 
-class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin, Approval, AdminChangeFormWithNavigation, SortAutocompleteResultsId):
+class SaCerevisiaeStrainDocInline(DocFileInlineMixin):
+    """Inline to view existing Sa. cerevisiae strain documents"""
+
+    model = SaCerevisiaeStrainDoc
+
+class SaCerevisiaeStrainAddDocInline(AddDocFileInlineMixin):
+    """Inline to add new Sa. cerevisiae strain documents"""
+    
+    model = SaCerevisiaeStrainDoc
+
+class SaCerevisiaeStrainPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
+                             SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin,
+                             Approval, AdminChangeFormWithNavigation,
+                             SortAutocompleteResultsId):
     
     list_display = ('id', 'name', 'mating_type', 'background', 'created_by', 'approval')
     list_display_links = ('id',)
@@ -199,7 +216,8 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
     search_fields = ['id', 'name']
     autocomplete_fields = ['parent_1', 'parent_2', 'integrated_plasmids', 'cassette_plasmids', 
                            'formz_projects', 'formz_gentech_methods', 'formz_elements']
-    inlines = [SaCerevisiaeStrainEpisomalPlasmidInline]
+    inlines = [SaCerevisiaeStrainEpisomalPlasmidInline, SaCerevisiaeStrainDocInline,
+               SaCerevisiaeStrainAddDocInline]
     
     def save_model(self, request, obj, form, change):
         '''Override default save_model to limit a user's ability to save a record
@@ -239,39 +257,39 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
                 return
             
             # Check if the request's user can change the object, if not raise PermissionDenied
-            if self.can_change:
-                
-                # Approve right away if the request's user is the principal investigator. If not,
-                # create an approval record
-                if request.user.labuser.is_principal_investigator and request.user.id in obj.formz_projects.all().values_list('project_leader__id', flat=True):
-                    obj.last_changed_approval_by_pi = True
-                    if not obj.created_approval_by_pi: obj.created_approval_by_pi = True # Set created_approval_by_pi to True, should it still be None or False
-                    obj.approval_user = request.user
-                    obj.approval_by_pi_date_time = timezone.now()
-                    obj.save()
+            # if self.can_change:
+            
+            # Approve right away if the request's user is the principal investigator. If not,
+            # create an approval record
+            if request.user.labuser.is_principal_investigator and request.user.id in obj.formz_projects.all().values_list('project_leader__id', flat=True):
+                obj.last_changed_approval_by_pi = True
+                if not obj.created_approval_by_pi: obj.created_approval_by_pi = True # Set created_approval_by_pi to True, should it still be None or False
+                obj.approval_user = request.user
+                obj.approval_by_pi_date_time = timezone.now()
+                obj.save()
 
-                    if obj.approval.all().exists():
-                        approval_records = obj.approval.all()
-                        approval_records.delete()
-                else:
-                    obj.last_changed_approval_by_pi = False
-                    obj.approval_user = None
-                    obj.save()
-
-                    # If an approval record for this object does not exist, create one
-                    if not obj.approval.all().exists():
-                        obj.approval.create(activity_type='changed', activity_user=request.user)
-                    else:
-                        # If an approval record for this object exists, check if a message was 
-                        # sent. If so, update the approval record's edited field
-                        approval_obj = obj.approval.all().latest('message_date_time')
-                        if approval_obj.message_date_time:
-                            if obj.last_changed_date_time > approval_obj.message_date_time:
-                                approval_obj.edited = True
-                                approval_obj.save()
-
+                if obj.approval.all().exists():
+                    approval_records = obj.approval.all()
+                    approval_records.delete()
             else:
-                raise PermissionDenied
+                obj.last_changed_approval_by_pi = False
+                obj.approval_user = None
+                obj.save()
+
+                # If an approval record for this object does not exist, create one
+                if not obj.approval.all().exists():
+                    obj.approval.create(activity_type='changed', activity_user=request.user)
+                else:
+                    # If an approval record for this object exists, check if a message was 
+                    # sent. If so, update the approval record's edited field
+                    approval_obj = obj.approval.all().latest('message_date_time')
+                    if approval_obj.message_date_time:
+                        if obj.last_changed_date_time > approval_obj.message_date_time:
+                            approval_obj.edited = True
+                            approval_obj.save()
+
+            # else:
+            #     raise PermissionDenied
     
     def save_related(self, request, form, formsets, change):
         
@@ -297,6 +315,7 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
         obj.history_formz_projects = list(obj.formz_projects.order_by('id').distinct('id').values_list('id', flat=True)) if obj.formz_projects.exists() else []
         obj.history_formz_gentech_methods = list(obj.formz_gentech_methods.order_by('id').distinct('id').values_list('id', flat=True)) if obj.formz_gentech_methods.exists() else []
         obj.history_formz_elements = list(obj.formz_elements.order_by('id').distinct('id').values_list('id', flat=True)) if obj.formz_elements.exists() else []
+        obj.history_documents = list(obj.sacerevisiaestraindoc_set.order_by('id').distinct('id').values_list('id', flat=True)) if obj.sacerevisiaestraindoc_set.exists() else []
 
         obj.save_without_historical_record()
 
@@ -308,6 +327,7 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
         history_obj.history_formz_projects = obj.history_formz_projects
         history_obj.history_formz_gentech_methods = obj.history_formz_gentech_methods
         history_obj.history_formz_elements = obj.history_formz_elements
+        history_obj.history_documents = obj.history_documents
         history_obj.save()
 
         # Clear non-relevant fields for in-stock episomal plasmids
@@ -404,10 +424,10 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
             else:
 
                 extra_context.update({'show_close': True,
-                    'show_save_and_add_another': False,
-                    'show_save_and_continue': False,
-                    'show_save_as_new': False,
-                    'show_save': False,
+                    'show_save_and_add_another': True,
+                    'show_save_and_continue': True,
+                    'show_save_as_new': True,
+                    'show_save': True,
                     'show_obj_permission': False})
 
             extra_context['show_disapprove'] = True if request.user.groups.filter(name='Approval manager').exists() else False
@@ -510,4 +530,5 @@ class SaCerevisiaeStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
                 'history_formz_projects': FormZProject,
                 'history_formz_gentech_methods': GenTechMethod,
                 'history_formz_elements': FormZBaseElement,
+                'history_documents': SaCerevisiaeStrainDoc
                 }

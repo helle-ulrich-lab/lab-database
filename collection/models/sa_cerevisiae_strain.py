@@ -14,6 +14,8 @@ from common.models import SaveWithoutHistoricalRecord
 from formz.models import FormZBaseElement
 from formz.models import FormZProject
 from formz.models import GenTechMethod
+from common.models import DocFileMixin
+
 
 CEREVISIAE_MATING_TYPE_CHOICES = (
     ('a','a'),
@@ -79,6 +81,9 @@ class SaCerevisiaeStrain (models.Model, SaveWithoutHistoricalRecord):
     history_formz_projects =ArrayField(models.PositiveIntegerField(), verbose_name="formZ projects", blank=True, null=True)
     history_formz_gentech_methods = ArrayField(models.PositiveIntegerField(), verbose_name="genTech methods", blank=True, null=True)
     history_formz_elements = ArrayField(models.PositiveIntegerField(), verbose_name="formz elements", blank=True, null=True)
+    history_documents = ArrayField(models.PositiveIntegerField(), verbose_name="documents", blank=True, null=True)
+
+    _model_abbreviation = 'sc'
 
     class Meta:
         verbose_name = 'strain - Sa. cerevisiae'
@@ -161,3 +166,13 @@ class SaCerevisiaeStrainEpisomalPlasmid (models.Model):
 
     def is_highlighted(self):
         return self.present_in_stocked_strain
+
+class SaCerevisiaeStrainDoc(DocFileMixin):
+    sacerevisiae_strain = models.ForeignKey(SaCerevisiaeStrain, on_delete=models.PROTECT)
+
+    _mixin_props = {'destination_dir': 'collection/sacerevisiaestraindoc/',
+                    'file_prefix': 'scDoc',
+                    'parent_field_name': 'sacerevisiae_strain'}
+
+    class Meta:
+        verbose_name = 'sa. cerevisiae strain document'

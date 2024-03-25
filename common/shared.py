@@ -8,6 +8,7 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from django.contrib.auth.models import User
 from django.urls import re_path
+from django.utils.safestring import mark_safe
 
 import os
 from functools import reduce
@@ -232,3 +233,66 @@ class SearchFieldOptLastname(StrField):
             exclude(q_list).\
             distinct().order_by(self.name).\
             values_list(self.name, flat=True)
+
+#################################################
+#               Doc File Inlines                #
+#################################################
+
+class DocFileInlineMixin(admin.TabularInline):
+    """Inline to view existing documents"""
+
+    verbose_name_plural = "Existing docs"
+    extra = 0
+    fields = ['description', 'get_doc_short_name', 'comment', 'created_date_time']
+    readonly_fields = ['description', 'get_doc_short_name', 'comment', 'created_date_time']
+
+    def has_add_permission(self, request, obj):
+        return False
+
+    def get_doc_short_name(self, instance):
+
+        if instance.name and instance.name.name.endswith('pdf'):
+            return mark_safe(f'<a class="magnific-popup-iframe-pdflink" href="{instance.name.url}">View PDF</a>')
+        return mark_safe(f'<a href="{instance.name.url}">Download</a>')
+
+    get_doc_short_name.short_description = 'Document'
+
+class AddDocFileInlineMixin(admin.TabularInline):
+    """Inline to add new documents"""
+    
+    verbose_name_plural = "New docs"
+    extra = 0
+    fields = ['description', 'name', 'comment']
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def get_queryset(self, request):
+        return self.model.objects.none()
+
+class ToggleDocInlineMixin():
+
+    def get_formsets_with_inlines(self, request, obj=None):
+        """Remove DocInline from add/change form if user who
+        created a  object is not the request user a lab manager
+        or a superuser"""
+        
+        # New objects
+        if not obj:
+            for inline in self.get_inline_instances(request, obj):
+                # Do not show DocFileInlineMixin for new objetcs
+                if inline.verbose_name_plural == 'Existing docs':
+                    continue
+                else:
+                    yield inline.get_formset(request, obj), inline
+
+        # Existing objects
+        else:
+            for inline in self.get_inline_instances(request, obj):
+                # Always show existing docs
+                if inline.verbose_name_plural == 'Existing docs':
+                    yield inline.get_formset(request, obj), inline
+                else:
+                    # Do not allow guests to add docs, ever
+                    if not request.user.groups.filter(name='Guest').exists():
+                        yield inline.get_formset(request, obj), inline

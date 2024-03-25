@@ -1,8 +1,10 @@
 from django.db import models
+from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.contrib.auth.models import User
 from django.forms import ValidationError
 from django.contrib.contenttypes.fields import GenericRelation
+
 
 from datetime import timedelta, datetime
 import random
@@ -16,13 +18,14 @@ from formz.models import FormZBaseElement
 from formz.models import FormZProject
 from formz.models import GenTechMethod
 from formz.models import ZkbsPlasmid
+from common.models import DocFileMixin
+from common.models import DownloadFileNameMixin
 
-from django.conf import settings
 LAB_ABBREVIATION_FOR_FILES = getattr(settings, 'LAB_ABBREVIATION_FOR_FILES', '')
 OVE_URL = getattr(settings, 'OVE_URL', '')
 
 
-class Plasmid (models.Model, SaveWithoutHistoricalRecord):
+class Plasmid (DownloadFileNameMixin, models.Model, SaveWithoutHistoricalRecord):
     
     name = models.CharField("name", max_length=255, unique=True, blank=False)
     other_name = models.CharField("other name", max_length=255, blank=True)
@@ -66,7 +69,10 @@ class Plasmid (models.Model, SaveWithoutHistoricalRecord):
     history_formz_elements = ArrayField(models.PositiveIntegerField(), verbose_name="formz elements", blank=True, null=True)
     history_formz_gentech_methods = ArrayField(models.PositiveIntegerField(), verbose_name="genTech methods", blank=True, null=True)
     history_formz_ecoli_strains = ArrayField(models.PositiveIntegerField(), verbose_name="e. coli strains", blank=True, null=True)
-    
+    history_documents = ArrayField(models.PositiveIntegerField(), verbose_name="documents", blank=True, null=True)
+
+    _model_abbreviation = 'p'
+
     class Meta:
         verbose_name = 'plasmid'
         verbose_name_plural = 'plasmids'
@@ -204,3 +210,13 @@ class Plasmid (models.Model, SaveWithoutHistoricalRecord):
                   'show_oligos': 'true'}
 
         return f'{OVE_URL}?{urlencode(params)}'
+
+class PlasmidDoc(DocFileMixin):
+    plasmid = models.ForeignKey(Plasmid, on_delete=models.PROTECT)
+
+    _mixin_props = {'destination_dir': 'collection/plasmiddoc/',
+                    'file_prefix': 'pDoc',
+                    'parent_field_name': 'plasmid'}
+
+    class Meta:
+        verbose_name = 'plasmid document'

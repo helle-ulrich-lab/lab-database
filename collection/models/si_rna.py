@@ -4,14 +4,14 @@ from django.forms import ValidationError
 from django.contrib.postgres.fields import ArrayField
 from django_better_admin_arrayfield.models.fields import ArrayField as BetterArrayField
 
-
 from simple_history.models import HistoricalRecords
 from common.models import SaveWithoutHistoricalRecord
 from ordering.models import Order
 from formz.models import Species
+from common.models import DocFileMixin
+from common.models import DownloadFileNameMixin
 
-
-class SiRna (models.Model, SaveWithoutHistoricalRecord):
+class SiRna (DownloadFileNameMixin, models.Model, SaveWithoutHistoricalRecord):
 
     name = models.CharField("name", max_length = 255, blank=False)
     sequence = models.CharField("sequence", max_length=50, help_text="Sense strand", blank=False)
@@ -32,6 +32,11 @@ class SiRna (models.Model, SaveWithoutHistoricalRecord):
     last_changed_date_time = models.DateTimeField("last changed", auto_now=True)
     created_by = models.ForeignKey(User, on_delete=models.PROTECT)
     history = HistoricalRecords()
+
+    history_documents = ArrayField(models.PositiveIntegerField(), verbose_name="documents", blank=True, null=True)
+
+    _model_abbreviation = 'siRNA'
+
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         
@@ -68,3 +73,13 @@ class SiRna (models.Model, SaveWithoutHistoricalRecord):
     
     def __str__(self):
         return str(self.id)
+
+class SiRnaDoc(DocFileMixin):
+    si_rna = models.ForeignKey(SiRna, on_delete=models.PROTECT)
+
+    _mixin_props = {'destination_dir': 'collection/sirnadoc/',
+                    'file_prefix': 'sirnaDoc',
+                    'parent_field_name': 'si_rna'}
+
+    class Meta:
+        verbose_name = 'siRNA document'

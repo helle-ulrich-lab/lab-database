@@ -9,12 +9,14 @@ from simple_history.models import HistoricalRecords
 from approval.models import RecordToBeApproved
 from formz.models import FormZBaseElement
 from common.models import SaveWithoutHistoricalRecord
+from common.models import DocFileMixin
+from common.models import DownloadFileNameMixin
 
 from django.conf import settings
 LAB_ABBREVIATION_FOR_FILES = getattr(settings, 'LAB_ABBREVIATION_FOR_FILES', '')
 
 
-class Oligo (models.Model, SaveWithoutHistoricalRecord):
+class Oligo (DownloadFileNameMixin, models.Model, SaveWithoutHistoricalRecord):
     
     name = models.CharField("name", max_length=255, unique=True, blank=False)
     sequence = models.CharField("sequence", max_length=255, unique=True, db_collation="case_insensitive", blank=False)
@@ -37,6 +39,9 @@ class Oligo (models.Model, SaveWithoutHistoricalRecord):
 
     formz_elements = models.ManyToManyField(FormZBaseElement, verbose_name ='elements', related_name='oligo_formz_element', blank=True)
     history_formz_elements = ArrayField(models.PositiveIntegerField(), verbose_name="formz elements", blank=True, null=True)
+    history_documents = ArrayField(models.PositiveIntegerField(), verbose_name="documents", blank=True, null=True)
+
+    _model_abbreviation = 'o'
 
     def __str__(self):
        return "{} - {}".format(self.id, self.name)
@@ -70,3 +75,13 @@ class Oligo (models.Model, SaveWithoutHistoricalRecord):
 
         if len(errors) > 0:
             raise ValidationError(errors)
+
+class OligoDoc(DocFileMixin):
+    oligo = models.ForeignKey(Oligo, on_delete=models.PROTECT)
+
+    _mixin_props = {'destination_dir': 'collection/oligodoc/',
+                    'file_prefix': 'oDoc',
+                    'parent_field_name': 'oligo'}
+
+    class Meta:
+        verbose_name = 'oligo document'

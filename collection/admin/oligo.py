@@ -34,16 +34,20 @@ from django.conf import settings
 MEDIA_ROOT = settings.MEDIA_ROOT
 LAB_ABBREVIATION_FOR_FILES = getattr(settings, 'LAB_ABBREVIATION_FOR_FILES', '')
 
-from common.shared_elements import SimpleHistoryWithSummaryAdmin
-from common.shared_elements import AdminChangeFormWithNavigation
-from common.shared_elements import SearchFieldOptUsername
-from common.shared_elements import SearchFieldOptLastname
-from .admin import FieldCreated
-from .admin import FieldLastChanged
-from .admin import Approval
-from .admin import FieldUse
+from common.shared import SimpleHistoryWithSummaryAdmin
+from common.shared import AdminChangeFormWithNavigation
+from common.shared import SearchFieldOptUsername
+from common.shared import SearchFieldOptLastname
+from common.shared import DocFileInlineMixin
+from common.shared import AddDocFileInlineMixin
+from collection.admin.shared import FieldCreated
+from collection.admin.shared import FieldLastChanged
+from collection.admin.shared import Approval
+from collection.admin.shared import FieldUse
 
-from ..models.oligo import Oligo
+from collection.models.oligo import Oligo
+from collection.models.oligo import OligoDoc
+from common.shared import ToggleDocInlineMixin
 from formz.models import FormZBaseElement
 
 
@@ -209,7 +213,19 @@ class OligoDjangoQLSearchMixin(DjangoQLSearchMixin):
 
         return qs, use_distinct
 
-class OligoPage(OligoDjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Approval, AdminChangeFormWithNavigation):
+class OligoDocInline(DocFileInlineMixin):
+    """Inline to view existing Oligo documents"""
+
+    model = OligoDoc
+
+class OligoAddDocInline(AddDocFileInlineMixin):
+    """Inline to add new Oligo documents"""
+
+    model = OligoDoc
+
+class OligoPage(ToggleDocInlineMixin, OligoDjangoQLSearchMixin,
+                SimpleHistoryWithSummaryAdmin, Approval,
+                AdminChangeFormWithNavigation):
     list_display = ('id', 'name','get_oligo_short_sequence', 'restriction_site','created_by', 'approval')
     list_display_links = ('id',)
     list_per_page = 25
@@ -221,6 +237,7 @@ class OligoPage(OligoDjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Approva
     search_fields = ['id', 'name']
     autocomplete_fields = ['formz_elements']
     form = OligoForm
+    inlines = [OligoDocInline, OligoAddDocInline]
 
     def get_oligo_short_sequence(self, instance):
         '''This function allows you to define a custom field for the list view to
@@ -242,7 +259,7 @@ class OligoPage(OligoDjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Approva
 
         rename_doc = False
         new_obj = False
-        
+
         if obj.pk == None:
             
             obj.id = Oligo.objects.order_by('-id').first().id + 1 if Oligo.objects.exists() else 1
@@ -276,42 +293,42 @@ class OligoPage(OligoDjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Approva
                     Oligo.objects.filter(id=obj.pk).update(last_changed_date_time=original_last_changed_date_time)
                 return
 
-            if self.can_change:
+            # if self.can_change:
 
-                # Approve right away if the request's user is the principal investigator. If not,
-                # create an approval record
-                if request.user.labuser.is_principal_investigator:
-                    obj.last_changed_approval_by_pi = True
-                    if not obj.created_approval_by_pi: obj.created_approval_by_pi = True # Set created_approval_by_pi to True, should it still be None or False
-                    obj.approval_by_pi_date_time = timezone.now()
+            # Approve right away if the request's user is the principal investigator. If not,
+            # create an approval record
+            if request.user.labuser.is_principal_investigator:
+                obj.last_changed_approval_by_pi = True
+                if not obj.created_approval_by_pi: obj.created_approval_by_pi = True # Set created_approval_by_pi to True, should it still be None or False
+                obj.approval_by_pi_date_time = timezone.now()
 
-                    if obj.approval.all().exists():
-                        approval_records = obj.approval.all()
-                        approval_records.delete()
-                else:
-                    obj.last_changed_approval_by_pi = False
-
-                    # If an approval record for this object does not exist, create one
-                    if not obj.approval.all().exists():
-                        obj.approval.create(activity_type='changed', activity_user=request.user)
-                    else:
-                        # If an approval record for this object exists, check if a message was 
-                        # sent. If so, update the approval record's edited field
-                        approval_obj = obj.approval.all().latest('message_date_time')
-                        if approval_obj.message_date_time:
-                            if obj.last_changed_date_time > approval_obj.message_date_time:
-                                approval_obj.edited = True
-                                approval_obj.save()
-                
-                saved_obj = Oligo.objects.get(pk=obj.pk)
-                if obj.info_sheet and obj.info_sheet != saved_obj.info_sheet:
-                    rename_doc = True
-                    obj.save_without_historical_record()
-                else:
-                    obj.save()
-
+                if obj.approval.all().exists():
+                    approval_records = obj.approval.all()
+                    approval_records.delete()
             else:
-                raise PermissionDenied
+                obj.last_changed_approval_by_pi = False
+
+                # If an approval record for this object does not exist, create one
+                if not obj.approval.all().exists():
+                    obj.approval.create(activity_type='changed', activity_user=request.user)
+                else:
+                    # If an approval record for this object exists, check if a message was 
+                    # sent. If so, update the approval record's edited field
+                    approval_obj = obj.approval.all().latest('message_date_time')
+                    if approval_obj.message_date_time:
+                        if obj.last_changed_date_time > approval_obj.message_date_time:
+                            approval_obj.edited = True
+                            approval_obj.save()
+            
+            saved_obj = Oligo.objects.get(pk=obj.pk)
+            if obj.info_sheet and obj.info_sheet != saved_obj.info_sheet:
+                rename_doc = True
+                obj.save_without_historical_record()
+            else:
+                obj.save()
+
+            # else:
+            #     raise PermissionDenied
 
         # Rename info_sheet
         if rename_doc:
@@ -357,11 +374,15 @@ class OligoPage(OligoDjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Approva
         obj = Oligo.objects.get(pk=form.instance.id)
 
         obj.history_formz_elements = list(obj.formz_elements.order_by('id').distinct('id').values_list('id', flat=True)) if obj.formz_elements.exists() else []
+        obj.history_documents = list(obj.oligodoc_set.order_by('id').\
+                                    distinct('id').values_list('id', flat=True)) \
+                                    if obj.oligodoc_set.exists() else []
 
         obj.save_without_historical_record()
 
         history_obj = obj.history.latest()
         history_obj.history_formz_elements = obj.history_formz_elements
+        history_obj.history_documents = obj.history_documents
         history_obj.save()
 
     def get_readonly_fields(self, request, obj=None):
@@ -415,10 +436,10 @@ class OligoPage(OligoDjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Approva
             else:
 
                 extra_context.update({'show_close': True,
-                                 'show_save_and_add_another': False,
-                                 'show_save_and_continue': False,
-                                 'show_save_as_new': False,
-                                 'show_save': False,})
+                                 'show_save_and_add_another': True,
+                                 'show_save_and_continue': True,
+                                 'show_save_as_new': True,
+                                 'show_save': True,})
 
             extra_context['show_disapprove'] = True if request.user.groups.filter(name='Approval manager').exists() else False
 
@@ -462,4 +483,5 @@ class OligoPage(OligoDjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Approva
 
         return {**super(OligoPage, self).get_history_array_fields(),
                 'history_formz_elements': FormZBaseElement,
+                'history_documents': OligoDoc
                 }

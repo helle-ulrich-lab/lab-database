@@ -1,13 +1,16 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.forms import ValidationError
+from django.contrib.postgres.fields import ArrayField
 
 from simple_history.models import HistoricalRecords
 
 from common.models import SaveWithoutHistoricalRecord
+from common.models import DocFileMixin
+from common.models import DownloadFileNameMixin
 
 
-class Antibody (models.Model, SaveWithoutHistoricalRecord):
+class Antibody (DownloadFileNameMixin, models.Model, SaveWithoutHistoricalRecord):
     
     name = models.CharField("name", max_length = 255, blank=False)
     species_isotype = models.CharField("species/isotype", max_length = 255, blank=False)
@@ -24,6 +27,17 @@ class Antibody (models.Model, SaveWithoutHistoricalRecord):
     last_changed_date_time = models.DateTimeField("last changed", auto_now=True)
     created_by = models.ForeignKey(User, on_delete=models.PROTECT)
     history = HistoricalRecords()
+
+    history_documents = ArrayField(models.PositiveIntegerField(), verbose_name="documents", blank=True, null=True)
+
+    _model_abbreviation = 'ab'
+
+    class Meta:
+        verbose_name = 'antibody'
+        verbose_name_plural = 'antibodies'
+    
+    def __str__(self):
+        return str(self.id)
 
     def clean(self):
 
@@ -46,10 +60,13 @@ class Antibody (models.Model, SaveWithoutHistoricalRecord):
 
         if len(errors) > 0:
             raise ValidationError(errors)
-    
+
+class AntibodyDoc(DocFileMixin):
+    antibody = models.ForeignKey(Antibody, on_delete=models.PROTECT)
+
+    _mixin_props = {'destination_dir': 'collection/antibodydoc/',
+                    'file_prefix': 'abDoc',
+                    'parent_field_name': 'antibody'}
+
     class Meta:
-        verbose_name = 'antibody'
-        verbose_name_plural = 'antibodies'
-    
-    def __str__(self):
-        return str(self.id)
+        verbose_name = 'antibody document'

@@ -17,6 +17,7 @@ from simple_history.models import HistoricalRecords
 import os
 import time
 from approval.models import RecordToBeApproved
+from common.models import DocFileMixin
 
 from django.conf import settings
 LAB_ABBREVIATION_FOR_FILES = getattr(settings, 'LAB_ABBREVIATION_FOR_FILES', '')
@@ -194,6 +195,8 @@ class Order(models.Model, SaveWithoutHistoricalRecord):
     approval = GenericRelation(RecordToBeApproved)
     history = HistoricalRecords()
 
+    _model_abbreviation = 'order'
+
     class Meta:
         verbose_name = 'order'
     
@@ -229,87 +232,20 @@ class Order(models.Model, SaveWithoutHistoricalRecord):
 #           ORDER EXTRA DOC MODEL               #
 #################################################
 
-class OrderExtraDoc(models.Model):
-    
-    name = models.FileField("file name", help_text = 'max. 2 MB', upload_to="temp/", blank=False)
-    description = models.CharField("description", max_length=255, blank=False)
+class OrderExtraDoc(DocFileMixin):
+
+    # Override description, as type is used instead
+    # for Cell line docs
+    comment = None
+
     order = models.ForeignKey(Order, on_delete=models.PROTECT, null=True)
-    
-    created_date_time = models.DateTimeField("created", auto_now_add=True)
-    last_changed_date_time = models.DateTimeField("last changed", auto_now=True)
 
     class Meta:
         verbose_name = 'order extra document'
-    
-    def __str__(self):
-         return str(self.id)
 
-    RENAME_FILES = {
-        'name': 
-        {'dest': 'ordering/orderextradoc/', 
-        'keep_ext': True}
-        }
-
-    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
-        
-        # Rename a file of any given name to  ordocXX_date-uploaded_time-uploaded.ext,
-        # after the corresponding entry has been created
-
-        rename_files = getattr(self, 'RENAME_FILES', None)
-        
-        if rename_files:
-            
-            super(OrderExtraDoc, self).save(force_insert, force_update, using, update_fields)
-            force_insert, force_update = False, True
-            
-            for field_name, options in rename_files.items():
-                field = getattr(self, field_name)
-                
-                if field:
-                    
-                    # Create new file name
-                    file_name = force_str(field)
-                    name, ext = os.path.splitext(file_name)
-                    ext = ext.lower()
-                    keep_ext = options.get('keep_ext', True)
-                    final_dest = options['dest']
-                    
-                    if callable(final_dest):
-                        final_name = final_dest(self, file_name)
-                    else:
-                        final_name = os.path.join(final_dest, "ordoc" + LAB_ABBREVIATION_FOR_FILES + str(self.order.id) + "_" + time.strftime("%Y%m%d") + "_" + time.strftime("%H%M%S") + "_" + str(self.id))
-                        if keep_ext:
-                            final_name += ext
-                    
-                    # Essentially, rename file
-                    if file_name != final_name:
-                        field.storage.delete(final_name)
-                        field.storage.save(final_name, field)
-                        field.close()
-                        field.storage.delete(file_name)
-                        setattr(self, field_name, final_name)
-        
-        super(OrderExtraDoc, self).save(force_insert, force_update, using, update_fields)
-
-    def clean(self):
-
-        errors = []
-        file_size_limit = 2 * 1024 * 1024
-        
-        if self.name:
-            
-            # Check if file is bigger than 2 MB
-            if self.name.size > file_size_limit:
-                errors.append(ValidationError('File too large. Size cannot exceed 2 MB.'))
-            
-            # Check if file has extension
-            try:
-                file_ext = self.name.name.split('.')[-1].lower()
-            except:
-                errors.append(ValidationError('Invalid file format. File does not have an extension'))
-
-        if len(errors) > 0:
-            raise ValidationError(errors)
+    _mixin_props = {'destination_dir': 'ordering/orderextradoc/',
+                    'file_prefix': 'orderDoc',
+                    'parent_field_name': 'order'}
 
 class GhsSymbol(models.Model):
     code = models.CharField("code", max_length=10, unique=True, blank=False)

@@ -19,22 +19,26 @@ import csv
 import time
 from urllib.parse import quote as urlquote
 
-from common.shared_elements import SimpleHistoryWithSummaryAdmin
-from common.shared_elements import AdminChangeFormWithNavigation
-from common.shared_elements import SearchFieldOptUsername
-from common.shared_elements import SearchFieldOptLastname
-from .admin import FieldCreated
-from .admin import FieldUse
-from .admin import FieldLastChanged
-from .admin import FieldFormZProject
-from .admin import formz_as_html
-from .admin import Approval
+from common.shared import SimpleHistoryWithSummaryAdmin
+from common.shared import AdminChangeFormWithNavigation
+from common.shared import SearchFieldOptUsername
+from common.shared import SearchFieldOptLastname
+from common.shared import DocFileInlineMixin
+from common.shared import AddDocFileInlineMixin
+from collection.admin.shared import FieldCreated
+from collection.admin.shared import FieldUse
+from collection.admin.shared import FieldLastChanged
+from collection.admin.shared import FieldFormZProject
+from collection.admin.shared import formz_as_html
+from collection.admin.shared import Approval
 
 from formz.models import FormZProject
 from formz.models import FormZBaseElement
 from formz.models import GenTechMethod
 
-from ..models.e_coli_strain import EColiStrain
+from collection.models.e_coli_strain import EColiStrain
+from collection.models.e_coli_strain import EColiStrainDoc
+from common.shared import ToggleDocInlineMixin
 
 
 class SearchFieldOptUsernameEColi(SearchFieldOptUsername):
@@ -91,7 +95,19 @@ def export_ecolistrain(modeladmin, request, queryset):
     return response
 export_ecolistrain.short_description = "Export selected strains"
 
-class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Approval, AdminChangeFormWithNavigation):
+class EcoliStrainDocInline(DocFileInlineMixin):
+    """Inline to view existing E. coli strain documents"""
+
+    model = EColiStrainDoc
+
+class EColiStrainAddDocInline(AddDocFileInlineMixin):
+    """Inline to add new E. coli strain documents"""
+
+    model = EColiStrainDoc
+
+class EColiStrainPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
+                      SimpleHistoryWithSummaryAdmin, Approval,
+                      AdminChangeFormWithNavigation):
     list_display = ('id', 'name', 'resistance', 'us_e','purpose', 'approval')
     list_display_links = ('id',)
     list_per_page = 25
@@ -101,6 +117,7 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Approv
     actions = [export_ecolistrain, formz_as_html]
     search_fields = ['id', 'name']
     autocomplete_fields = ['formz_projects', 'formz_elements']
+    inlines = [EcoliStrainDocInline, EColiStrainAddDocInline]
     
     def save_model(self, request, obj, form, change):
         '''Override default save_model to limit a user's ability to save a record
@@ -140,40 +157,61 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Approv
                     EColiStrain.objects.filter(id=obj.pk).update(last_changed_date_time=original_last_changed_date_time)
                 return
 
-            if self.can_change:
-                
-                # Approve right away if the request's user is the principal investigator. If not,
-                # create an approval record
-                if request.user.labuser.is_principal_investigator and request.user.id in obj.formz_projects.all().values_list('project_leader__id', flat=True):
-                    obj.last_changed_approval_by_pi = True
-                    if not obj.created_approval_by_pi: obj.created_approval_by_pi = True # Set created_approval_by_pi to True, should it still be None or False
-                    obj.approval_user = request.user
-                    obj.approval_by_pi_date_time = timezone.now()
-                    obj.save()
+            # if self.can_change:
 
-                    if obj.approval.all().exists():
-                        approval_records = obj.approval.all()
-                        approval_records.delete()
-                else:
-                    obj.last_changed_approval_by_pi = False
-                    obj.approval_user = None
-                    obj.save()
+            # Approve right away if the request's user is the principal investigator. If not,
+            # create an approval record
+            if request.user.labuser.is_principal_investigator and request.user.id in obj.formz_projects.all().values_list('project_leader__id', flat=True):
+                obj.last_changed_approval_by_pi = True
+                if not obj.created_approval_by_pi: obj.created_approval_by_pi = True # Set created_approval_by_pi to True, should it still be None or False
+                obj.approval_user = request.user
+                obj.approval_by_pi_date_time = timezone.now()
+                obj.save()
 
-                    # If an approval record for this object does not exist, create one
-                    if not obj.approval.all().exists():
-                        obj.approval.create(activity_type='changed', activity_user=request.user)
-                    else:
-                        # If an approval record for this object exists, check if a message was 
-                        # sent. If so, update the approval record's edited field
-                        approval_obj = obj.approval.all().latest('message_date_time')
-                        if approval_obj.message_date_time:
-                            if obj.last_changed_date_time > approval_obj.message_date_time:
-                                approval_obj.edited = True
-                                approval_obj.save()
-                
+                if obj.approval.all().exists():
+                    approval_records = obj.approval.all()
+                    approval_records.delete()
             else:
-                raise PermissionDenied
+                obj.last_changed_approval_by_pi = False
+                obj.approval_user = None
+                obj.save()
+
+                # If an approval record for this object does not exist, create one
+                if not obj.approval.all().exists():
+                    obj.approval.create(activity_type='changed', activity_user=request.user)
+                else:
+                    # If an approval record for this object exists, check if a message was 
+                    # sent. If so, update the approval record's edited field
+                    approval_obj = obj.approval.all().latest('message_date_time')
+                    if approval_obj.message_date_time:
+                        if obj.last_changed_date_time > approval_obj.message_date_time:
+                            approval_obj.edited = True
+                            approval_obj.save()
                 
+            # else:
+            #     raise PermissionDenied
+
+    def save_related(self, request, form, formsets, change):
+        
+        super(EColiStrainPage, self).save_related(request, form, formsets, change)
+
+        # Keep a record of the IDs of linked M2M fields in the main strain record
+        # Not pretty, but it works
+
+        obj = EColiStrain.objects.get(pk=form.instance.id)
+
+        obj.history_formz_projects = list(obj.formz_projects.order_by('id').distinct('id').values_list('id', flat=True)) if obj.formz_projects.exists() else []
+        obj.history_formz_elements = list(obj.formz_elements.order_by('id').distinct('id').values_list('id', flat=True)) if obj.formz_elements.exists() else []
+        obj.history_documents = list(obj.ecolistraindoc_set.order_by('id').distinct('id').values_list('id', flat=True)) if obj.ecolistraindoc_set.exists() else []
+
+        obj.save_without_historical_record()
+
+        history_obj = obj.history.latest()
+        history_obj.history_formz_projects = obj.history_formz_projects
+        history_obj.history_formz_elements = obj.history_formz_elements
+        history_obj.history_documents = obj.history_documents
+        history_obj.save()
+
     def get_readonly_fields(self, request, obj=None):
         '''Override default get_readonly_fields to define user-specific read-only fields
         If a user is not a superuser, lab manager or the user who created a record
@@ -234,10 +272,10 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Approv
             else:
 
                 extra_context.update({'show_close': True,
-                                 'show_save_and_add_another': False,
-                                 'show_save_and_continue': False,
-                                 'show_save_as_new': False,
-                                 'show_save': False,
+                                'show_save_and_add_another': True,
+                                'show_save_and_continue': True,
+                                'show_save_as_new': True,
+                                'show_save': True,
                                  'show_obj_permission': False})
             
             extra_context['show_disapprove'] = True if request.user.groups.filter(name='Approval manager').exists() else False
@@ -283,28 +321,11 @@ class EColiStrainPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, Approv
         
         return super(EColiStrainPage,self).response_change(request,obj)
 
-    def save_related(self, request, form, formsets, change):
-        
-        super(EColiStrainPage, self).save_related(request, form, formsets, change)
-
-        # Keep a record of the IDs of linked M2M fields in the main strain record
-        # Not pretty, but it works
-
-        obj = EColiStrain.objects.get(pk=form.instance.id)
-
-        obj.history_formz_projects = list(obj.formz_projects.order_by('id').distinct('id').values_list('id', flat=True)) if obj.formz_projects.exists() else []
-        obj.history_formz_elements = list(obj.formz_elements.order_by('id').distinct('id').values_list('id', flat=True)) if obj.formz_elements.exists() else []
-        obj.save_without_historical_record()
-
-        history_obj = obj.history.latest()
-        history_obj.history_formz_projects = obj.history_formz_projects
-        history_obj.history_formz_elements = obj.history_formz_elements
-        history_obj.save()
-
     def get_history_array_fields(self):
 
         return {**super(EColiStrainPage, self).get_history_array_fields(),
                 'history_formz_projects': FormZProject,
                 'history_formz_gentech_methods': GenTechMethod,
                 'history_formz_elements': FormZBaseElement,
+                'history_documents': EColiStrainDoc
                 }

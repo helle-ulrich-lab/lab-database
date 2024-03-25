@@ -19,6 +19,7 @@ from formz.models import FormZProject
 from formz.models import GenTechMethod
 from formz.models import Species
 from formz.models import ZkbsCellLine
+from common.models import DocFileMixin
 
 from django.conf import settings
 LAB_ABBREVIATION_FOR_FILES = getattr(settings, 'LAB_ABBREVIATION_FOR_FILES', '')
@@ -73,7 +74,9 @@ class CellLine (models.Model, SaveWithoutHistoricalRecord):
     history_formz_gentech_methods = ArrayField(models.PositiveIntegerField(), verbose_name="genTech methods", blank=True, null=True)
     history_formz_elements = ArrayField(models.PositiveIntegerField(), verbose_name="formz elements", blank=True, null=True)
     history_documents = ArrayField(models.PositiveIntegerField(), verbose_name="documents", blank=True, null=True)
-    
+
+    _model_abbreviation = 'cl'
+
     class Meta:
         verbose_name = 'cell line'
         verbose_name_plural = 'cell lines'
@@ -147,89 +150,19 @@ class CellLineEpisomalPlasmid (models.Model):
 
 CELL_LINE_DOC_TYPE_CHOICES = (
     ("virus", "Virus test"),
-    ("mycoplasma", "Mycoplasma test"), 
-    ("fingerprint", "Fingerprinting"), 
+    ("mycoplasma", "Mycoplasma test"),
+    ("fingerprint", "Fingerprinting"),
     ("other", "Other"))
 
-class CellLineDoc(models.Model):
-    
-    name = models.FileField("file name", help_text = 'max. 2 MB', upload_to="temp/", blank=False, null=True)
-    typ_e = models.CharField("doc type", max_length=255, choices=CELL_LINE_DOC_TYPE_CHOICES, blank=False)
-    date_of_test = models.DateField("date of test", blank=False, null=True)
-    comment = models.CharField("comment", max_length=150, blank=True)
-    cell_line = models.ForeignKey(CellLine, on_delete=models.PROTECT)
-    
-    created_date_time = models.DateTimeField("created", auto_now_add=True)
-    last_changed_date_time = models.DateTimeField("last Changed", auto_now=True)
-    
-    RENAME_FILES = {
-        'name': 
-        {'dest': 'collection/celllinedoc/', 'keep_ext': True}
-        }
+class CellLineDoc(DocFileMixin):
 
-    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
-        
-        # Rename a file of any given name to mclXX_date-uploaded_time-uploaded.ext,
-        # after the corresponding entry has been created
-        
-        rename_files = getattr(self, 'RENAME_FILES', None)
-        
-        if rename_files:
-            
-            super(CellLineDoc, self).save(force_insert, force_update, using, update_fields)
-            force_insert, force_update = False, True
-            
-            for field_name, options in rename_files.items():
-                field = getattr(self, field_name)
-                
-                if field:
-                    
-                    # Create new file name
-                    file_name = force_str(field)
-                    name, ext = os.path.splitext(file_name)
-                    ext = ext.lower()
-                    keep_ext = options.get('keep_ext', True)
-                    final_dest = options['dest']
-                    
-                    if callable(final_dest):
-                        final_name = final_dest(self, file_name)
-                    else:
-                        final_name = os.path.join(final_dest, "cl" + LAB_ABBREVIATION_FOR_FILES + str(self.cell_line.id) + "_" + self.typ_e + "_" + time.strftime("%Y%m%d") + "_" + time.strftime("%H%M%S") + "_" + str(self.id))
-                        if keep_ext:
-                            final_name += ext
-                    
-                    # Essentially, rename file 
-                    if file_name != final_name:
-                        field.storage.delete(final_name)
-                        field.storage.save(final_name, field)
-                        field.close()
-                        field.storage.delete(file_name)
-                        setattr(self, field_name, final_name)
-        
-        super(CellLineDoc, self).save(force_insert, force_update, using, update_fields)
+    description = models.CharField("doc type", max_length=255, choices=CELL_LINE_DOC_TYPE_CHOICES, blank=False)
+    date_of_test = models.DateField("date of test", blank=False, null=True)
+    cell_line = models.ForeignKey(CellLine, on_delete=models.PROTECT)
+
+    _mixin_props = {'destination_dir': 'collection/celllinedoc/',
+                    'file_prefix': 'clDoc',
+                    'parent_field_name': 'cell_line'}
 
     class Meta:
         verbose_name = 'cell line document'
-    
-    def __str__(self):
-         return str(self.id)
-
-    def clean(self):
-
-        errors = []
-        file_size_limit = 2 * 1024 * 1024
-
-        if self.name:
-            
-            # Check if file is bigger than 2 MB
-            if self.name.size > file_size_limit:
-                errors.append(ValidationError('File too large. Size cannot exceed 2 MB.'))
-            
-            # Check if file has extension
-            try:
-                file_ext = self.name.name.split('.')[-1].lower()
-            except:
-                errors.append(ValidationError('Invalid file format. File does not have an extension'))
-
-        if len(errors) > 0:
-            raise ValidationError(errors)

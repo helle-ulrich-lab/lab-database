@@ -332,25 +332,22 @@ class OligoPage(ToggleDocInlineMixin, OligoDjangoQLSearchMixin,
 
         # Rename info_sheet
         if rename_doc:
-            doc_dir_path = os.path.join(MEDIA_ROOT, 'collection/oligo/')
+            doc_dir_path = os.path.join(MEDIA_ROOT, obj._model_upload_to)
             old_file_name_abs_path = os.path.join(MEDIA_ROOT, obj.info_sheet.name)
-            old_file_name, ext = os.path.splitext(os.path.basename(old_file_name_abs_path)) 
-            new_file_name = os.path.join(
-                'collection/oligo/',
-                "o{}{}_{}_{}_{}{}".format(LAB_ABBREVIATION_FOR_FILES,
-                                        obj.id,
-                                        datetime.now().strftime("%Y%m%d"),
-                                        datetime.now().strftime("%H%M%S"),
-                                        datetime.now().strftime("%H%M%S"),
-                                        ext.lower()))
+            _, ext = os.path.splitext(os.path.basename(old_file_name_abs_path))
+            file_timestamp = timezone.now().strftime('%Y%m%d_%H%M%S_%f')
+            new_file_name = f"{obj._model_abbreviation}{LAB_ABBREVIATION_FOR_FILES}" \
+                            f"{obj.id}_{file_timestamp}{ext.lower()}"
+            new_file_name = os.path.join(obj._model_upload_to, new_file_name)
             new_file_name_abs_path = os.path.join(MEDIA_ROOT, new_file_name)
-            
+
+            # Create destination folder if it doesn't exist
             if not os.path.exists(doc_dir_path):
-                os.makedirs(doc_dir_path) 
-            
-            os.rename(
-                old_file_name_abs_path, 
-                new_file_name_abs_path)
+                os.makedirs(doc_dir_path)
+
+            # Rename file
+            os.rename(old_file_name_abs_path,
+                      new_file_name_abs_path)
 
             obj.info_sheet.name = new_file_name
             obj.save()

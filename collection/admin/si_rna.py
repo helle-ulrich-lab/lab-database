@@ -13,6 +13,7 @@ from django.utils.safestring import mark_safe
 from django.forms import TextInput
 from django.db.models import CharField
 from django.contrib.auth.models import User
+from django.utils import timezone
 
 from djangoql.schema import DjangoQLSchema
 from djangoql.admin import DjangoQLSearchMixin
@@ -166,23 +167,20 @@ class SiRnaPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
 
         # Rename info_sheet
         if rename_doc:
-            doc_dir_path = os.path.join(MEDIA_ROOT, 'collection/sirna/')
-            old_file_name_abs_path = os.path.join(
-                MEDIA_ROOT, obj.info_sheet.name)
-            old_file_name, ext = os.path.splitext(
-                os.path.basename(old_file_name_abs_path))
-            new_file_name = os.path.join(
-                'collection/sirna/',
-                f'sirna{LAB_ABBREVIATION_FOR_FILES}{obj.id}_'
-                f'{datetime.now().strftime("%Y%m%d")}_'
-                f'{datetime.now().strftime("%H%M%S")}_'
-                f'{datetime.now().strftime("%H%M%S")}'
-                f'{ext.lower()}')
+            doc_dir_path = os.path.join(MEDIA_ROOT, obj._model_upload_to)
+            old_file_name_abs_path = os.path.join(MEDIA_ROOT, obj.info_sheet.name)
+            _, ext = os.path.splitext(os.path.basename(obj.info_sheet.name))
+            file_timestamp = timezone.now().strftime('%Y%m%d_%H%M%S_%f')
+            new_file_name = f"{obj._model_abbreviation}{LAB_ABBREVIATION_FOR_FILES}" \
+                            f"{obj.id}_{file_timestamp}{ext.lower()}"
+            new_file_name = os.path.join(obj._model_upload_to, new_file_name)
             new_file_name_abs_path = os.path.join(MEDIA_ROOT, new_file_name)
 
+            # Create destination folder if it doesn't exist
             if not os.path.exists(doc_dir_path):
                 os.makedirs(doc_dir_path)
 
+            # Rename file
             os.rename(
                 old_file_name_abs_path,
                 new_file_name_abs_path)

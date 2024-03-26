@@ -36,6 +36,7 @@ class SiRna (DownloadFileNameMixin, models.Model, SaveWithoutHistoricalRecord):
     history_documents = ArrayField(models.PositiveIntegerField(), verbose_name="documents", blank=True, null=True)
 
     _model_abbreviation = 'siRNA'
+    _model_upload_to = 'collection/sirna/'
 
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):

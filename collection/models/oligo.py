@@ -42,6 +42,7 @@ class Oligo (DownloadFileNameMixin, models.Model, SaveWithoutHistoricalRecord):
     history_documents = ArrayField(models.PositiveIntegerField(), verbose_name="documents", blank=True, null=True)
 
     _model_abbreviation = 'o'
+    _model_upload_to = 'collection/oligo/'
 
     def __str__(self):
        return "{} - {}".format(self.id, self.name)

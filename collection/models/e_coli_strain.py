@@ -40,10 +40,10 @@ class EColiStrain (models.Model, SaveWithoutHistoricalRecord):
                                             '<a href="/formz/formzbaseelement/" target="_blank">View all/Change</a>')
     destroyed_date = models.DateField("destroyed", blank=True, null=True)
 
-    history_formz_projects = ArrayField(models.PositiveIntegerField(), verbose_name="formZ projects", blank=True, null=True)
-    history_formz_gentech_methods = ArrayField(models.PositiveIntegerField(), verbose_name="genTech methods", blank=True, null=True)
-    history_formz_elements = ArrayField(models.PositiveIntegerField(), verbose_name="formz elements", blank=True, null=True)
-    history_documents = ArrayField(models.PositiveIntegerField(), verbose_name="documents", blank=True, null=True)
+    history_formz_projects = ArrayField(models.PositiveIntegerField(), verbose_name="formZ projects", blank=True, null=True, default=list)
+    history_formz_gentech_methods = ArrayField(models.PositiveIntegerField(), verbose_name="genTech methods", blank=True, null=True, default=list)
+    history_formz_elements = ArrayField(models.PositiveIntegerField(), verbose_name="formz elements", blank=True, null=True, default=list)
+    history_documents = ArrayField(models.PositiveIntegerField(), verbose_name="documents", blank=True, null=True, default=list)
 
     _model_abbreviation = 'ec'
 

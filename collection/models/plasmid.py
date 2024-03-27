@@ -65,11 +65,11 @@ class Plasmid (DownloadFileNameMixin, models.Model, SaveWithoutHistoricalRecord)
 
     # Fields to keep a record of M2M field values in the main plasmid record: IDs for formz_projects
     # and names for formz_elements
-    history_formz_projects = ArrayField(models.PositiveIntegerField(), verbose_name="formZ projects", blank=True, null=True)
-    history_formz_elements = ArrayField(models.PositiveIntegerField(), verbose_name="formz elements", blank=True, null=True)
-    history_formz_gentech_methods = ArrayField(models.PositiveIntegerField(), verbose_name="genTech methods", blank=True, null=True)
-    history_formz_ecoli_strains = ArrayField(models.PositiveIntegerField(), verbose_name="e. coli strains", blank=True, null=True)
-    history_documents = ArrayField(models.PositiveIntegerField(), verbose_name="documents", blank=True, null=True)
+    history_formz_projects = ArrayField(models.PositiveIntegerField(), verbose_name="formZ projects", blank=True, null=True, default=list)
+    history_formz_elements = ArrayField(models.PositiveIntegerField(), verbose_name="formz elements", blank=True, null=True, default=list)
+    history_formz_gentech_methods = ArrayField(models.PositiveIntegerField(), verbose_name="genTech methods", blank=True, null=True, default=list)
+    history_formz_ecoli_strains = ArrayField(models.PositiveIntegerField(), verbose_name="e. coli strains", blank=True, null=True, default=list)
+    history_documents = ArrayField(models.PositiveIntegerField(), verbose_name="documents", blank=True, null=True, default=list)
 
     _model_abbreviation = 'p'
 

@@ -71,13 +71,13 @@ class WormStrain (models.Model, SaveWithoutHistoricalRecord):
     destroyed_date = models.DateField("destroyed", blank=True, null=True)
 
     # Fields to keep a record of M2M field values (only IDs!) in the main strain record
-    history_integrated_plasmids = ArrayField(models.PositiveIntegerField(), verbose_name="integrated plasmids", blank=True, null=True)
-    history_integrated_oligos = ArrayField(models.PositiveIntegerField(), verbose_name="integrated oligos", blank=True, null=True)
-    history_formz_projects = ArrayField(models.PositiveIntegerField(), verbose_name="formZ projects", blank=True, null=True)
-    history_formz_gentech_methods = ArrayField(models.PositiveIntegerField(), verbose_name="genTech methods", blank=True, null=True)
-    history_formz_elements = ArrayField(models.PositiveIntegerField(), verbose_name="formz elements", blank=True, null=True)
-    history_genotyping_oligos = ArrayField(models.PositiveIntegerField(), verbose_name="genotyping oligos", blank=True, null=True)
-    history_documents = ArrayField(models.PositiveIntegerField(), verbose_name="documents", blank=True, null=True)
+    history_integrated_plasmids = ArrayField(models.PositiveIntegerField(), verbose_name="integrated plasmids", blank=True, null=True, default=list)
+    history_integrated_oligos = ArrayField(models.PositiveIntegerField(), verbose_name="integrated oligos", blank=True, null=True, default=list)
+    history_formz_projects = ArrayField(models.PositiveIntegerField(), verbose_name="formZ projects", blank=True, null=True, default=list)
+    history_formz_gentech_methods = ArrayField(models.PositiveIntegerField(), verbose_name="genTech methods", blank=True, null=True, default=list)
+    history_formz_elements = ArrayField(models.PositiveIntegerField(), verbose_name="formz elements", blank=True, null=True, default=list)
+    history_genotyping_oligos = ArrayField(models.PositiveIntegerField(), verbose_name="genotyping oligos", blank=True, null=True, default=list)
+    history_documents = ArrayField(models.PositiveIntegerField(), verbose_name="documents", blank=True, null=True, default=list)
 
     _model_abbreviation = 'w'
 

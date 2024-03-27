@@ -29,7 +29,7 @@ class Inhibitor (DownloadFileNameMixin, models.Model, SaveWithoutHistoricalRecor
     created_by = models.ForeignKey(User, on_delete=models.PROTECT)
     history = HistoricalRecords()
 
-    history_documents = ArrayField(models.PositiveIntegerField(), verbose_name="documents", blank=True, null=True)
+    history_documents = ArrayField(models.PositiveIntegerField(), verbose_name="documents", blank=True, null=True, default=list)
 
     _model_abbreviation = 'ib'
 

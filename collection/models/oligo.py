@@ -38,8 +38,8 @@ class Oligo (DownloadFileNameMixin, models.Model, SaveWithoutHistoricalRecord):
     history = HistoricalRecords()
 
     formz_elements = models.ManyToManyField(FormZBaseElement, verbose_name ='elements', related_name='oligo_formz_element', blank=True)
-    history_formz_elements = ArrayField(models.PositiveIntegerField(), verbose_name="formz elements", blank=True, null=True)
-    history_documents = ArrayField(models.PositiveIntegerField(), verbose_name="documents", blank=True, null=True)
+    history_formz_elements = ArrayField(models.PositiveIntegerField(), verbose_name="formz elements", blank=True, null=True, default=list)
+    history_documents = ArrayField(models.PositiveIntegerField(), verbose_name="documents", blank=True, null=True, default=list)
 
     _model_abbreviation = 'o'
     _model_upload_to = 'collection/oligo/'

@@ -182,9 +182,9 @@ class Order(models.Model, SaveWithoutHistoricalRecord):
     ghs_symbols = models.ManyToManyField('GhsSymbol', verbose_name ='GHS symbols', related_name='order_ghs_symbols', blank=True)
     hazard_statements = models.ManyToManyField('HazardStatement', verbose_name ='hazard statements', related_name='order_hazard_statement', blank=True)
     signal_words = models.ManyToManyField('SignalWord', verbose_name ='signal words', related_name='order_signal_words', blank=True)
-    history_ghs_symbols = ArrayField(models.PositiveIntegerField(), verbose_name="GHS symbols", blank=True, null=True)
-    history_signal_words = ArrayField(models.PositiveIntegerField(), verbose_name="signal words", blank=True, null=True)
-    history_hazard_statements = ArrayField(models.PositiveIntegerField(), verbose_name="hazard statements", blank=True, null=True)
+    history_ghs_symbols = ArrayField(models.PositiveIntegerField(), verbose_name="GHS symbols", blank=True, null=True, default=list)
+    history_signal_words = ArrayField(models.PositiveIntegerField(), verbose_name="signal words", blank=True, null=True, default=list)
+    history_hazard_statements = ArrayField(models.PositiveIntegerField(), verbose_name="hazard statements", blank=True, null=True, default=list)
     msds_form = models.ForeignKey(MsdsForm, on_delete=models.PROTECT, verbose_name='MSDS form', blank=True, null=True)
     hazard_level_pregnancy = models.CharField("Hazard level for pregnancy", max_length=255, choices=HAZARD_LEVEL_PREGNANCY_CHOICES, default='none', blank=True)
     

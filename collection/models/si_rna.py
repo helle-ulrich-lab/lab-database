@@ -19,21 +19,21 @@ class SiRna (DownloadFileNameMixin, models.Model, SaveWithoutHistoricalRecord):
     supplier_part_no = models.CharField("supplier Part-No", max_length=255, blank=False)
     supplier_si_rna_id = models.CharField("supplier siRNA ID", max_length=255, blank=False)
     species = models.ForeignKey(Species, verbose_name = 'organism', on_delete=models.PROTECT, null=True, blank=False)
-    target_genes = BetterArrayField(models.CharField(max_length=15), blank=False, null=True)
-    locus_ids = BetterArrayField(models.CharField(max_length=15), blank=True, null=True)
+    target_genes = BetterArrayField(models.CharField(max_length=15), blank=False, null=True, default=list)
+    locus_ids = BetterArrayField(models.CharField(max_length=15), blank=True, null=True, default=list)
     description_comment = models.TextField("description/comments", help_text='Include transfection conditions, etc. here', blank=True)
     info_sheet = models.FileField("info sheet", help_text = 'only .pdf files, max. 2 MB', upload_to="collection/sirna/", blank=True, null=True)
     orders = models.ManyToManyField(Order, verbose_name='orders', related_name='si_rna_order', blank=True)
 
     # Fields to keep a record of M2M field values (only IDs!) in the main strain record
-    history_orders = ArrayField(models.PositiveIntegerField(), verbose_name="order", blank=True, null=True)
+    history_orders = ArrayField(models.PositiveIntegerField(), verbose_name="order", blank=True, null=True, default=list)
 
     created_date_time = models.DateTimeField("created", auto_now_add=True)
     last_changed_date_time = models.DateTimeField("last changed", auto_now=True)
     created_by = models.ForeignKey(User, on_delete=models.PROTECT)
     history = HistoricalRecords()
 
-    history_documents = ArrayField(models.PositiveIntegerField(), verbose_name="documents", blank=True, null=True)
+    history_documents = ArrayField(models.PositiveIntegerField(), verbose_name="documents", blank=True, null=True, default=list)
 
     _model_abbreviation = 'siRNA'
     _model_upload_to = 'collection/sirna/'

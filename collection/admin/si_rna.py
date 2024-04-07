@@ -50,10 +50,10 @@ class SiRnaQLSchema(DjangoQLSchema):
         '''Define fields that can be searched'''
 
         if model == SiRna:
-            return ['id', 'name', 'sequence', 'supplier', 'supplier_part_no',
-                    'supplier_si_rna_id', 'species', 'target_genes', 'locus_ids',
-                    'description_comment', 'info_sheet', 'created_by', FieldCreated(),
-                    FieldLastChanged(),]
+            return ['id', 'name', 'sequence', 'sequence_antisense', 'supplier',
+                    'supplier_part_no', 'supplier_si_rna_id', 'species',
+                    'target_genes', 'locus_ids', 'description_comment', 'info_sheet',
+                    'created_by', FieldCreated(), FieldLastChanged(),]
         elif model == User:
             return [SearchFieldOptUsernameSiRna(), SearchFieldOptLastnameSiRna()]
         return super(SiRnaQLSchema, self).get_fields(model)
@@ -69,13 +69,14 @@ class SiRnaExportResource(resources.ModelResource):
 
     class Meta:
         model = SiRna
-        fields = ('id', 'name', 'sequence', 'supplier', 'supplier_part_no',
-                  'supplier_si_rna_id', 'species_name', 'target_genes', 'locus_ids',
-                  'description_comment', 'info_sheet', 'orders', 'created_date_time',
-                  'created_by__username',)
-        export_order = ('id', 'name', 'sequence', 'supplier', 'supplier_part_no',
-                        'supplier_si_rna_id', 'species_name', 'target_genes', 'locus_ids',
-                        'description_comment', 'info_sheet', 'orders', 'created_date_time',
+        fields = ('id', 'name', 'sequence', 'sequence_antisense', 'supplier',
+                  'supplier_part_no', 'supplier_si_rna_id', 'species_name',
+                  'target_genes', 'locus_ids', 'description_comment', 'info_sheet',
+                  'orders', 'created_date_time', 'created_by__username',)
+        export_order = ('id', 'name', 'sequence', 'sequence_antisense', 'supplier',
+                        'supplier_part_no', 'supplier_si_rna_id', 'species_name',
+                        'target_genes', 'locus_ids', 'description_comment',
+                        'info_sheet', 'orders', 'created_date_time',
                         'created_by__username',)
 
 def export_si_rna(modeladmin, request, queryset):
@@ -118,10 +119,10 @@ class InhibitorAddDocInline(AddDocFileInlineMixin):
     model = SiRnaDoc
 
 class SiRnaPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
-                SimpleHistoryWithSummaryAdmin, AdminChangeFormWithNavigation, 
+                SimpleHistoryWithSummaryAdmin, AdminChangeFormWithNavigation,
                 DynamicArrayMixin):
-    list_display = ('id', 'name', 'sequence', 'supplier',
-                    'supplier_part_no', 'target_genes', 'get_sheet_short_name')
+    list_display = ('id', 'name', 'sequence', 'supplier', 'supplier_part_no',
+                    'target_genes', 'get_sheet_short_name')
     list_display_links = ('id',)
     list_per_page = 25
     formfield_overrides = {CharField: {
@@ -236,17 +237,19 @@ class SiRnaPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
     def add_view(self, request, extra_context=None):
         '''Override default add_view to show only desired fields'''
 
-        self.fields = ('name', 'sequence', 'supplier', 'supplier_part_no',
-                       'supplier_si_rna_id', 'species', 'target_genes', 'locus_ids',
-                       'description_comment', 'info_sheet', 'orders', 'created_by')
+        self.fields = ('name', 'sequence', 'sequence_antisense', 'supplier',
+                       'supplier_part_no', 'supplier_si_rna_id', 'species',
+                       'target_genes', 'locus_ids', 'description_comment',
+                       'info_sheet', 'orders', 'created_by')
         return super(SiRnaPage, self).add_view(request, extra_context=extra_context)
 
     def change_view(self, request, object_id, extra_context=None):
         '''Override default change_view to show only desired fields'''
 
-        self.fields = ('name', 'sequence', 'supplier', 'supplier_part_no',
-                       'supplier_si_rna_id', 'species', 'target_genes', 'locus_ids',
-                       'description_comment', 'info_sheet', 'orders', 'created_date_time',
+        self.fields = ('name', 'sequence', 'sequence_antisense', 'supplier',
+                       'supplier_part_no', 'supplier_si_rna_id', 'species',
+                       'target_genes', 'locus_ids', 'description_comment',
+                       'info_sheet', 'orders', 'created_date_time',
                        'last_changed_date_time', 'created_by',)
         return super(SiRnaPage, self).change_view(request, object_id, extra_context=extra_context)
 

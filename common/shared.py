@@ -9,6 +9,8 @@ from django.http import JsonResponse
 from django.contrib.auth.models import User
 from django.urls import re_path
 from django.utils.safestring import mark_safe
+from django.urls import resolve
+
 
 import os
 from functools import reduce
@@ -245,6 +247,33 @@ class DocFileInlineMixin(admin.TabularInline):
     extra = 0
     fields = ['description', 'get_doc_short_name', 'comment', 'created_date_time']
     readonly_fields = ['description', 'get_doc_short_name', 'comment', 'created_date_time']
+    classes = ['collapse',]
+
+    def get_parent_object(self, request):
+        """
+        Returns the parent object from the request or None.
+
+        Note that this only works for Inlines, because the `parent_model`
+        is not available in the regular admin.ModelAdmin as an attribute.
+        """
+
+        resolved = resolve(request.path_info)
+        if resolved.kwargs:
+            return self.parent_model.objects.get(pk=resolved.kwargs['object_id'])
+        return None
+
+    def get_queryset(self, request):
+
+        """Show inline uncollapsed only if docs exist"""
+
+        qs = super().get_queryset(request)
+        parent_object = self.get_parent_object(request)
+        if parent_object:
+            filter_params = {f"{self.model._mixin_props.get('parent_field_name')}__pk":
+                             parent_object.pk}
+            if qs.filter(**filter_params).exists():
+                self.classes = []
+        return qs
 
     def has_add_permission(self, request, obj):
         return False
@@ -263,12 +292,33 @@ class AddDocFileInlineMixin(admin.TabularInline):
     verbose_name_plural = "New docs"
     extra = 0
     fields = ['description', 'name', 'comment']
+    classes = ['collapse',]
+
+    def get_parent_object(self, request):
+        """
+        Returns the parent object from the request or None.
+
+        Note that this only works for Inlines, because the `parent_model`
+        is not available in the regular admin.ModelAdmin as an attribute.
+        """
+
+        resolved = resolve(request.path_info)
+        if resolved.kwargs:
+            return self.parent_model.objects.get(pk=resolved.kwargs['object_id'])
+        return None
+
+    def get_queryset(self, request):
+
+        """show inline uncollpased only when adding a new record,
+        also return an empty qs"""
+
+        parent_object = self.get_parent_object(request)
+        if not parent_object:
+            self.classes = []
+        return self.model.objects.none()
 
     def has_change_permission(self, request, obj=None):
         return False
-
-    def get_queryset(self, request):
-        return self.model.objects.none()
 
 class ToggleDocInlineMixin():
 

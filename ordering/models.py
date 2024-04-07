@@ -234,9 +234,8 @@ class Order(models.Model, SaveWithoutHistoricalRecord):
 
 class OrderExtraDoc(DocFileMixin):
 
-    # Override description, as type is used instead
-    # for Cell line docs
     comment = None
+    description = models.CharField("description", max_length=255, blank=False)
 
     order = models.ForeignKey(Order, on_delete=models.PROTECT, null=True)
 

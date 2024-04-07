@@ -7,7 +7,7 @@ from django.forms import ValidationError
 from django.conf import settings
 LAB_ABBREVIATION_FOR_FILES = getattr(settings, 'LAB_ABBREVIATION_FOR_FILES', '')
 MAX_UPLOAD_FILE_SIZE_MB = getattr(settings, 'MAX_UPLOAD_FILE_SIZE_MB', 2)
-ALLOWED_UPLOAD_FILE_EXTS = getattr(settings, 'ALLOWED_UPLOAD_FILE_EXTS', ['pdf'])
+ALLOWED_DOC_FILE_EXTS = getattr(settings, 'ALLOWED_DOC_FILE_EXTS', ['pdf'])
 
 
 class SaveWithoutHistoricalRecord():
@@ -106,9 +106,9 @@ class DocFileMixin(models.Model):
             except:
                 errors.append(ValidationError('Invalid file format. File does not have an extension'))
                 file_ext = None
-            if file_ext and file_ext not in ALLOWED_UPLOAD_FILE_EXTS:
+            if file_ext and file_ext not in ALLOWED_DOC_FILE_EXTS:
                 errors.append(ValidationError(
-                    f'Invalid file format. Only {", ".join(ALLOWED_UPLOAD_FILE_EXTS)} files are allowed'))
+                    f'Invalid file format. Only {", ".join(ALLOWED_DOC_FILE_EXTS)} files are allowed'))
 
         if len(errors) > 0:
             raise ValidationError(errors)

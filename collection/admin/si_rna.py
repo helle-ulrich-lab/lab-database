@@ -122,7 +122,7 @@ class SiRnaPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
                 SimpleHistoryWithSummaryAdmin, AdminChangeFormWithNavigation,
                 DynamicArrayMixin):
     list_display = ('id', 'name', 'sequence', 'supplier', 'supplier_part_no',
-                    'target_genes', 'get_sheet_short_name')
+                    'target_genes', 'get_sheet_short_name', 'created_by')
     list_display_links = ('id',)
     list_per_page = 25
     formfield_overrides = {CharField: {
@@ -237,20 +237,36 @@ class SiRnaPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
     def add_view(self, request, extra_context=None):
         '''Override default add_view to show only desired fields'''
 
-        self.fields = ('name', 'sequence', 'sequence_antisense', 'supplier',
-                       'supplier_part_no', 'supplier_si_rna_id', 'species',
+        self.fieldsets = (
+        (None, {
+            'fields': ('name', 'sequence', 'sequence_antisense', 'species',
                        'target_genes', 'locus_ids', 'description_comment',
-                       'info_sheet', 'orders', 'created_by')
+                       'info_sheet', 'created_by',)
+        }),
+        ('Supplier information', {
+            'fields': ('supplier', 'supplier_part_no',
+                       'supplier_si_rna_id', 'orders',)
+        }),
+        )
+
         return super(SiRnaPage, self).add_view(request, extra_context=extra_context)
 
     def change_view(self, request, object_id, extra_context=None):
         '''Override default change_view to show only desired fields'''
 
-        self.fields = ('name', 'sequence', 'sequence_antisense', 'supplier',
-                       'supplier_part_no', 'supplier_si_rna_id', 'species',
+        self.fieldsets = (
+        (None, {
+            'fields': ('name', 'sequence', 'sequence_antisense', 'species',
                        'target_genes', 'locus_ids', 'description_comment',
-                       'info_sheet', 'orders', 'created_date_time',
+                       'info_sheet', 'created_date_time',
                        'last_changed_date_time', 'created_by',)
+        }),
+        ('Order', {
+            'fields': ('supplier', 'supplier_part_no',
+                       'supplier_si_rna_id', 'orders',)
+        }),
+        )
+
         return super(SiRnaPage, self).change_view(request, object_id, extra_context=extra_context)
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):

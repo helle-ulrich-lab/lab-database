@@ -22,7 +22,7 @@ class SiRna (DownloadFileNameMixin, models.Model, SaveWithoutHistoricalRecord):
     supplier_si_rna_id = models.CharField("supplier siRNA ID", max_length=255, blank=False)
     species = models.ForeignKey(Species, verbose_name = 'organism', on_delete=models.PROTECT, null=True, blank=False)
     target_genes = BetterArrayField(models.CharField(max_length=15), blank=False, null=True, default=list)
-    locus_ids = BetterArrayField(models.CharField(max_length=15), blank=True, null=True, default=list)
+    locus_ids = BetterArrayField(models.CharField(max_length=15), verbose_name='locus IDs' , blank=True, null=True, default=list)
     description_comment = models.TextField("description/comments", help_text='Include transfection conditions, etc. here', blank=True)
     info_sheet = models.FileField("info sheet", help_text = 'only .pdf files, max. 2 MB', upload_to="collection/sirna/", blank=True, null=True)
     orders = models.ManyToManyField(Order, verbose_name='orders', related_name='si_rna_order', blank=True)

@@ -75,7 +75,7 @@ class SiRna (DownloadFileNameMixin, models.Model, SaveWithoutHistoricalRecord):
         verbose_name_plural = 'siRNAs'
     
     def __str__(self):
-        return str(self.id)
+        return f'{self.id} - {self.name}'
 
 class SiRnaDoc(DocFileMixin):
     si_rna = models.ForeignKey(SiRna, on_delete=models.PROTECT)

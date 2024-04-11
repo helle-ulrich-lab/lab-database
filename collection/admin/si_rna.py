@@ -261,7 +261,7 @@ class SiRnaPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
                        'info_sheet', 'created_date_time',
                        'last_changed_date_time', 'created_by',)
         }),
-        ('Order', {
+        ('Supplier information', {
             'fields': ('supplier', 'supplier_part_no',
                        'supplier_si_rna_id', 'orders',)
         }),

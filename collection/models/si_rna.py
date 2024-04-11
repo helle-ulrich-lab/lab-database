@@ -14,8 +14,8 @@ from common.models import DownloadFileNameMixin
 class SiRna (DownloadFileNameMixin, models.Model, SaveWithoutHistoricalRecord):
 
     name = models.CharField("name", max_length = 255, blank=False)
-    sequence = models.CharField("sequence - Sense strand", max_length=50, blank=False)
-    sequence_antisense = models.CharField("sequence - Antisense strand", max_length=50, blank=False)
+    sequence = models.CharField("sequence - Sense", max_length=50, blank=False)
+    sequence_antisense = models.CharField("sequence - Antisense", max_length=50, blank=False)
 
     supplier = models.CharField("supplier", max_length=255, blank=False)
     supplier_part_no = models.CharField("supplier Part-No", max_length=255, blank=False)

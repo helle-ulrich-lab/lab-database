@@ -238,4 +238,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 X_FRAME_OPTIONS = 'SAMEORIGIN'
 OVE_URL = '/ove/'
 MAX_UPLOAD_FILE_SIZE_MB = 2
-ALLOWED_DOC_FILE_EXTS = ['pdf', 'zip', '']
+ALLOWED_DOC_FILE_EXTS = ['pdf', 'zip', 'docx', 'xlsx',
+                         'pptx', 'odt', 'ods', 'odp']

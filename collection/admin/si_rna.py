@@ -211,9 +211,9 @@ class SiRnaPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
                                   values_list('id', flat=True)) \
                                   if obj.orders.exists() \
                                   else []
-        obj.history_documents = list(obj.si_rnadoc_set.order_by('id').\
+        obj.history_documents = list(obj.sirnadoc_set.order_by('id').\
                                      distinct('id').values_list('id', flat=True)) \
-                                    if obj.si_rnadoc_set.exists() else []
+                                    if obj.sirnadoc_set.exists() else []
 
         obj.save_without_historical_record()
 

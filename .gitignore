@@ -6,6 +6,7 @@ db_backup/
 private_settings.py
 others/
 .vscode/
+.vscode
 others
 staticfiles/
 

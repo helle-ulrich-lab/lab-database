@@ -24,8 +24,6 @@ dill==0.3.7
     # via pylint
 executing==2.0.0
     # via stack-data
-importlib-metadata==6.8.0
-    # via jupyter-client
 ipykernel==6.19.2
     # via -r requirements/dev.in
 ipython==8.7.0
@@ -78,10 +76,6 @@ python-dateutil==2.8.2
     # via jupyter-client
 stack-data==0.6.3
     # via ipython
-tomli==2.0.1
-    # via
-    #   autopep8
-    #   pylint
 tomlkit==0.12.1
     # via pylint
 tornado==6.3.3
@@ -98,8 +92,6 @@ traitlets==5.12.0
     #   matplotlib-inline
 wcwidth==0.2.8
     # via prompt-toolkit
-zipp==3.17.0
-    # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools

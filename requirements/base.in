@@ -6,7 +6,7 @@
 # And then run the following from the project's root
 # pip-compile-multi --no-upgrade -d requirements/ -i in -o txt
 
-beautifulsoup4==4.8.1
+beautifulsoup4==4.11.1
 Django==4.2.4
 django-adminactions==1.9
 django4-background-tasks==1.2.9
@@ -14,11 +14,12 @@ django-guardian==2.4.0
 django-import-export==3.3.1
 djangoql==0.17.1
 django-simple-history==3.4.0
-lxml==4.4.1
-mozilla-django-oidc==3.0.0
-openpyxl==3.0.1
+lxml==4.9.0
+mozilla-django-oidc==4.0.1
+openpyxl==3.1.2
 psycopg
 Pillow
 xlrd==1.1.0
 zmq==0.0.0
 django-better-admin-arrayfield==1.4.2
+backports-zoneinfo==0.2.1;python_version<"3.9"

@@ -28,10 +28,7 @@
     </div>
     {% endif %}
     <fieldset class="module aligned">
-        {% for error in user_form.errors %}
-            <p class="error">{{ error }}</p>
-        {% endfor %}
-        
+
         {% if users_perms %}
             <table id="user-permissions" class="object-perms" style='margin-bottom: 20px;'>
                 <caption>{% trans "User permissions" %}</caption>

@@ -46,7 +46,7 @@ class CustomUserManage(UserManage):
         user = forms.ChoiceField(choices=[('------', '------')] + [(u.username, u) for u in User.objects.all().order_by('last_name') if u.groups.filter(name='Regular lab member').exists()],
                                 label=_("Username"),
                             error_messages={'does_not_exist': _(
-                                "This user does not exist")},)
+                                "This user is not valid")},)
         is_permanent = forms.BooleanField(required=False, label=_("Grant indefinitely?"))
     except:
         pass
@@ -123,17 +123,19 @@ class CustomGuardedModelAdmin(GuardedModelAdmin):
         )
 
         if request.method == 'POST' and 'submit_manage_user' in request.POST:
-            perm = '{}.change_{}'.format(self.model._meta.app_label, self.model._meta.model_name)
-            user = User.objects.get(username=request.POST['user'])
-            assign_perm(perm, user, obj)
+
             user_form = self.get_obj_perms_user_select_form(request)(request.POST)
-            group_form = self.get_obj_perms_group_select_form(request)(request.POST)
-            info = (
-                self.admin_site.name,
-                self.model._meta.app_label,
-                self.model._meta.model_name,
-            )
             if user_form.is_valid():
+                perm = '{}.change_{}'.format(self.model._meta.app_label, self.model._meta.model_name)
+                user = User.objects.get(username=request.POST['user'])
+                assign_perm(perm, user, obj)
+                group_form = self.get_obj_perms_group_select_form(request)(request.POST)
+                info = (
+                    self.admin_site.name,
+                    self.model._meta.app_label,
+                    self.model._meta.model_name,
+                )
+
                 user_id = user_form.cleaned_data['user'].pk
                 messages.success(request, 'Permissions saved.')
                 if not request.POST.get('is_permanent', False): # If "Grant indefinitely" not selected remove permission after 24 h

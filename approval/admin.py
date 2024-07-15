@@ -112,9 +112,11 @@ def notify_user_edits_required(modeladmin, request, queryset):
             The {}
             """
             
-            message = inspect.cleandoc(message).format(user.first_name, request.user, records_str, SITE_TITLE)
+            message = inspect.cleandoc(message).format(user.first_name,
+                                                       f'{request.user.first_name} {request.user.last_name}',
+                                                       records_str, SITE_TITLE)
 
-            send_mail('Some records that you have created/changed need your attention', 
+            send_mail('Some records that you have created/changed need your attention',
                     message, 
                     SERVER_EMAIL_ADDRESS,
                     [user.email],

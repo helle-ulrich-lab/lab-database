@@ -787,8 +787,8 @@ class OrderForm(forms.ModelForm):
 class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeFormWithNavigation):
     
     list_display = ('custom_internal_order_no', 'item_description', 'supplier_and_part_no', 'quantity',
-                    'price', 'cost_unit', 'trimmed_comment' ,'location', 'msds_link', 'coloured_status',
-                    "created_by")
+                    'price', 'cost_unit_name', 'trimmed_comment' ,'location', 'msds_link', 
+                    'coloured_status', "created_by")
     list_display_links = ('custom_internal_order_no', )
     list_per_page = 25
     inlines = [OrderExtraDocInline, AddOrderExtraDocInline]
@@ -1196,9 +1196,13 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeF
             return instance.internal_order_no
         else:
             return str(instance.id)
-    
     custom_internal_order_no.short_description = "ID"
     custom_internal_order_no.admin_order_field = 'id'
+
+    def cost_unit_name(self, instance):
+        return instance.cost_unit.name
+    cost_unit_name.short_description = "Cost unit"
+    cost_unit_name.admin_order_field = 'cost_unit__name'
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         

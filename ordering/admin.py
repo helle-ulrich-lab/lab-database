@@ -786,7 +786,9 @@ class OrderForm(forms.ModelForm):
 
 class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeFormWithNavigation):
     
-    list_display = ('custom_internal_order_no', 'item_description', 'supplier_and_part_no', 'quantity', 'trimmed_comment' ,'location', 'msds_link', 'coloured_status', "created_by")
+    list_display = ('custom_internal_order_no', 'item_description', 'supplier_and_part_no', 'quantity',
+                    'price', 'cost_unit', 'trimmed_comment' ,'location', 'msds_link', 'coloured_status',
+                    "created_by")
     list_display_links = ('custom_internal_order_no', )
     list_per_page = 25
     inlines = [OrderExtraDocInline, AddOrderExtraDocInline]

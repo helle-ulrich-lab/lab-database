@@ -1388,10 +1388,38 @@ class OrderExtraDocPage(DjangoQLSearchMixin, admin.ModelAdmin):
 
 class CostUnitPage(admin.ModelAdmin):
     
-    list_display = ('name', 'description', 'status')
+    list_display = ('name', 'description', 'status', 'price_sum')
     list_display_links = ('name',)
     list_per_page = 25
     ordering = ['name']
+
+    def price_sum(self, instance):
+
+        SQL_EXPRESSION = r"""
+                          CAST(
+                              (REGEXP_MATCH(REPLACE(price, ',', '.'), '\d*\.*\d+'))[1] as FLOAT
+                              )
+                           """
+
+        sum_prices = 'NA'
+
+        if not instance.status:
+            try:
+                now = timezone.now()
+                orders = Order.objects.\
+                            filter(cost_unit=instance,
+                                created_date_time__year=now.year).\
+                            extra(select={'price_value': SQL_EXPRESSION})
+
+                sum_prices = sum([v for v in orders.values_list('price_value', flat=True) if v])
+                sum_prices = f'{round(sum_prices):,}'
+
+            except:
+                sum_prices = 'Error'
+        
+        return sum_prices
+    price_sum.short_description = "Yearly sum of prices"
+
 
 #################################################
 #           ORDER LOCATION PAGES                #

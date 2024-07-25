@@ -17,7 +17,10 @@ LAB_ABBREVIATION_FOR_FILES = getattr(settings, 'LAB_ABBREVIATION_FOR_FILES', '')
 
 
 class Oligo (DownloadFileNameMixin, models.Model, SaveWithoutHistoricalRecord):
-    
+
+    _model_abbreviation = 'o'
+    _model_upload_to = 'collection/oligo/'
+
     name = models.CharField("name", max_length=255, unique=True, blank=False)
     sequence = models.CharField("sequence", max_length=255, unique=True, db_collation="case_insensitive", blank=False)
     length = models.SmallIntegerField("length", null=True)
@@ -26,7 +29,7 @@ class Oligo (DownloadFileNameMixin, models.Model, SaveWithoutHistoricalRecord):
     restriction_site = models.CharField("restriction sites", max_length=255, blank=True)
     description = models.TextField("description", blank=True)
     comment = models.CharField("comments", max_length=255, blank=True)
-    info_sheet = models.FileField("info sheet", help_text = 'only .pdf files, max. 2 MB', upload_to="collection/oligo/", blank=True, null=True)
+    info_sheet = models.FileField("info sheet", help_text = 'only .pdf files, max. 2 MB', upload_to=_model_upload_to, blank=True, null=True)
 
     created_date_time = models.DateTimeField("created", auto_now_add=True)
     created_approval_by_pi = models.BooleanField("record creation approval", default=False)
@@ -40,9 +43,6 @@ class Oligo (DownloadFileNameMixin, models.Model, SaveWithoutHistoricalRecord):
     formz_elements = models.ManyToManyField(FormZBaseElement, verbose_name ='elements', related_name='oligo_formz_element', blank=True)
     history_formz_elements = ArrayField(models.PositiveIntegerField(), verbose_name="formz elements", blank=True, null=True, default=list)
     history_documents = ArrayField(models.PositiveIntegerField(), verbose_name="documents", blank=True, null=True, default=list)
-
-    _model_abbreviation = 'o'
-    _model_upload_to = 'collection/oligo/'
 
     def __str__(self):
        return "{} - {}".format(self.id, self.name)

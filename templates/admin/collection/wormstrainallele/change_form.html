@@ -7,7 +7,13 @@
 {{ media }}
 {% endblock %}
 
-{% block extrastyle %}{{ block.super }}<link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}" />{% endblock %}
+{% block extrastyle %}{{ block.super }}
+<link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}" />
+<link rel="stylesheet" type="text/css" href="{% static "admin/css/vendor/magnific-popup.css" %}">
+<link rel="stylesheet" type="text/css" href="{% static "admin/css/custom_style_magnific-popup.css" %}">
+<link rel="stylesheet" type="text/css" href="{% static "admin/css/spinner_loader.css" %}">
+<link rel="stylesheet" type="text/css" href="{% static "admin/css/collection_plasmid_change_form.css" %}">
+{% endblock %}
 
 {% block coltype %}colM{% endblock %}
 
@@ -22,7 +28,7 @@
 &rsaquo; {% if add %}{% blocktrans with name=opts.verbose_name %}Add {{ name }}{% endblocktrans %}{% else %}{{ original|truncatewords:"18" }}{% endif %}
 </div>
 
-{% if not add and original.id %}
+{% if not add and original.id%}
 {% include "admin/navigation_floater.html" %}
 {% endif %}
 
@@ -34,17 +40,14 @@
 {% if change %}{% if not is_popup %}
   <ul class="object-tools">
     {% block object-tools-items %}
-
-    {% if include_clone_link %}
-    <li><a href="clone/">{{ clone_verbose_name }} fggggg</a></li>
+    
+    {% if show_obj_permission %}
+      {% url opts|admin_urlname:'permissions' original.pk|admin_urlquote as history_url %}
+      <li><a href="{% add_preserved_filters history_url %}" class="permissionslink">{% trans "Object permissions" %}</a></li>
     {% endif %}
     
     {% if plasmid_id_list %}
-      {% if plasmid_id_list|length == 1 %}
-        <li><a href="/collection/plasmid/?q-l=on&q=id+=+{{plasmid_id_list.0}}">{% trans "Plasmids" %}</a></li>
-      {% else %}
-        <li><a href="/collection/plasmid/?q-l=on&q=id+in+{{plasmid_id_list}}">{% trans "Plasmids" %}</a></li>
-      {% endif %}
+      <li><a href="/collection/plasmid/?q-l=on&q=id+in+{{plasmid_id_list}}">{% trans "Plasmids" %}</a></li>
     {% endif %}
     
     <li>
@@ -54,9 +57,23 @@
  
     {% if show_formz %}
       <li>
-        <a href="{% url "admin:app_list" app_label %}/{{opts.model_name}}/{{object_id}}/formz">{% trans "FormZ" %}</a>
+        <a href="{% url "admin:app_list" app_label %}{{opts.model_name}}/{{object_id}}/formz">{% trans "FormZ" %}</a>
       </li>
     {% endif %}
+
+    {% if original.map %}
+    <li>
+      <div class="find-oligo">
+        <div>{% trans "Find Oligos" %}</div>
+        <a title='Download result as .dna file' style="pointer-events: all;" onclick="downloadMapWithImportedOligos(event)" download_url="{% url "admin:app_list" app_label %}{{opts.model_name}}/{{object_id}}/find_oligos/?file_format=dna">🠇</a>
+        <a title='View result in OVE' style='margin-left:5px' class="magnific-popup-iframe-findoligos" href="{{original.get_ove_url_find_oligos_map_gbk}}">⊙</a>
+      </div>
+    </li>
+    {% endif %}
+
+    <li>
+      <a href="/collection/wormstrain/?q-l=on&q=allele_id+%3D+{{original.pk}}">Strains</a>
+    </li>
 
     {% if has_absolute_url %}<li><a href="{{ absolute_url }}" class="viewsitelink">{% trans "View on site" %}</a></li>{% endif %}
     {% endblock %}
@@ -104,6 +121,17 @@
 
     <script type="text/javascript" src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
     <script type="text/javascript" src="{% static 'admin/js/vendor/jqueryui/jquery-ui.js' %}"></script>
+    <script type="text/javascript" src="{% static 'admin/js/admin/ShowLoading.js' %}"></script>
+    <script type="text/javascript" src="{% static 'admin/js/admin/wormstrainallele_change_form.js' %}"></script>
+    <script type="text/javascript" src="{% static 'admin/js/vendor/jquery.magnific-popup.min.js' %}"></script>
+    <script type="text/javascript">
+      const MagnificiFrameClassIds = ['magnific-popup-iframe-map', "magnific-popup-iframe-findoligos"];
+      const MagnificImgClassIds = ['magnific-popup-img-map'];
+      {% if original.map %} const oveUrls = {map: "{{original.get_ove_url_map}}"}; {% else %} const oveUrls = {}; {% endif %}
+      {% if original.map_gbk %} oveUrls['map_gbk'] = "{{original.get_ove_url_map_gbk}}"; {% endif %}
+    </script>
+    <script type="text/javascript" src="{% static 'admin/js/admin/MagnificPopUpiFrame.js' %}"></script>
+    <script type="text/javascript" src="{% static 'admin/js/admin/MagnificPopUpImg.js' %}"></script>
 {% endblock %}
 
 {# JavaScript for prepopulated fields #}

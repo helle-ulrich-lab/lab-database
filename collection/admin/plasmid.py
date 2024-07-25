@@ -1,4 +1,3 @@
-from django.contrib import admin
 from django.http import HttpResponse
 from django.utils.safestring import mark_safe
 from django.forms import TextInput
@@ -10,21 +9,15 @@ from django.http import HttpResponseRedirect
 from django.utils.html import format_html
 from django.contrib import messages
 from django import forms
-from django.core.exceptions import PermissionDenied
 from django.contrib.admin.utils import quote
 from django.template.response import TemplateResponse
 from django.contrib.admin.templatetags.admin_urls import add_preserved_filters
-from django.core.mail import mail_admins
 from django.utils.translation import gettext_lazy as _
-from django.http import HttpResponseNotFound
-from django.db.models.functions import Collate
-from django.urls import re_path
 
 from djangoql.schema import DjangoQLSchema
 from djangoql.admin import DjangoQLSearchMixin
 from import_export import resources
 from import_export.fields import Field
-from djangoql.schema import StrField
 
 import xlrd
 import csv
@@ -32,12 +25,6 @@ import time
 import json
 from urllib.parse import quote as urlquote
 import os
-from uuid import uuid4
-import urllib.parse
-
-from snapgene.pyclasses.client import Client
-from snapgene.pyclasses.config import Config
-import zmq
 
 from common.shared import SimpleHistoryWithSummaryAdmin
 from common.shared import AdminChangeFormWithNavigation
@@ -52,12 +39,16 @@ from collection.admin.shared import formz_as_html
 from collection.admin.shared import CustomGuardedModelAdmin
 from collection.admin.shared import Approval
 from collection.admin.shared import SortAutocompleteResultsId
+from collection.admin.shared import FieldFormZBaseElement
+from collection.admin.shared import (create_map_preview, convert_map_gbk_to_dna,
+                                     get_map_features)
 from common.shared import DocFileInlineMixin
 from common.shared import AddDocFileInlineMixin
 from common.shared import ToggleDocInlineMixin
 
 from collection.models.plasmid import Plasmid
 from collection.models.plasmid import PlasmidDoc
+from collection.admin.shared import AdminOligosInMap
 from formz.models import FormZProject
 from formz.models import FormZBaseElement
 from formz.models import GenTechMethod
@@ -70,123 +61,7 @@ LAB_ABBREVIATION_FOR_FILES = getattr(settings, 'LAB_ABBREVIATION_FOR_FILES', '')
 from django.contrib.admin.options import IS_POPUP_VAR
 from django.contrib.admin.options import TO_FIELD_VAR
 
-from collection.models.oligo import Oligo
 from collection.models.plasmid import Plasmid
-
-
-class AdminOligosInPlasmid(admin.ModelAdmin):
-    
-    def get_urls(self):
-        """
-        Add navigation url
-        """
-
-        urls = super(AdminOligosInPlasmid, self).get_urls()
-
-        urls = [re_path(r'^(?P<object_id>.+)/find_oligos/$', view=self.find_oligos)] + urls
-        
-        return urls
-
-    def find_oligos(self, request, attempt_number=3, messages=[], *args, **kwargs):
-
-        """ Given a path to a snapgene plasmid map, use snapegene server
-        to detect common features and create map preview as png
-        and gbk"""
-
-        file_format = request.GET.get('file_format', 'gbk')
-
-        if attempt_number > 0:
-            try:
-                # Connect to SnapGene server
-                config = Config()
-                server_ports = config.get_server_ports()
-                for port in server_ports.values():
-                    try:
-                        client = Client(port, zmq.Context())
-                    except:
-                        continue
-                    else:
-                        break
-
-                # Create paths for temp files
-                temp_dir_path = os.path.join(BASE_DIR, "uploads/temp")
-                oligos_json_path = os.path.join(temp_dir_path, str(uuid4()))
-                dna_temp_path = os.path.join(temp_dir_path, str(uuid4()))
-                gbk_temp_path = os.path.join(temp_dir_path, f'{str(uuid4())}.gb')
-
-                # Write oligos to file
-                if not Oligo.objects.exists():
-                    return HttpResponseNotFound
-                oligos = Oligo.objects.annotate(sequence_deterministic=Collate("sequence", "und-x-icu")).\
-                                       filter(sequence_deterministic__iregex=r"^[ATCG]+$", length__gte=15).\
-                                       values_list('id', 'sequence')
-                oligos = list({"Name": f'! o{LAB_ABBREVIATION_FOR_FILES}{i[0]}',
-                               "Sequence": i[1],
-                               "Notes": "",} for i in oligos)
-                with open(oligos_json_path, 'w') as fhandle:
-                    json.dump(oligos, fhandle)
-                
-                # Find oligos in plasmid map and convert result to gbk
-                plasmid = self.model.objects.get(id=kwargs['object_id'])
-                argument = {"request":"importPrimersFromList", "inputFile": plasmid.map.path, 
-                            "inputPrimersFile": oligos_json_path, "outputFile": dna_temp_path}
-                r = client.requestResponse(argument, 60000)
-                r_code = r.get('code', 1)
-                if r_code > 0:
-                    error_message = 'importPrimersFromList - error ' + r_code
-                    if error_message not in messages: messages.append(error_message)
-                    client.close()
-                    raise Exception
-                
-                # If user wants to download file, then do so
-                if file_format == 'dna':
-                    client.close()
-                    # Get processed .dna map and delete temp files
-                    with open(dna_temp_path, 'rb') as fhandle:
-                        file_data = fhandle.read()
-
-                    # os.unlink(oligos_json_path)
-                    os.unlink(dna_temp_path)
-
-                    # Send response
-                    response = HttpResponse(file_data, content_type='application/octet-stream')
-                    file_name = f"p{LAB_ABBREVIATION_FOR_FILES}{plasmid.id} - {plasmid.name} (imported oligos).dna"
-                    response['Content-Disposition'] = f"attachment; filename*=utf-8''{urllib.parse.quote(file_name)}"
-                    return response
-
-                argument = {"request":"exportDNAFile", "inputFile": dna_temp_path,
-                            "outputFile": gbk_temp_path, "exportFilter": "biosequence.gb"}
-                r = client.requestResponse(argument, 10000)
-                r_code = r.get('code', 1)
-                if r_code > 0:
-                    error_message = 'exportDNAFile - error ' + r_code
-                    if error_message not in messages: messages.append(error_message)
-                    client.close()
-                    raise Exception
-
-                client.close()
-
-                # Get processed .gbk map and delete temp files
-                with open(gbk_temp_path, 'r') as fhandle:
-                    file_data = fhandle.read()
-
-                os.unlink(oligos_json_path)
-                os.unlink(dna_temp_path)
-                os.unlink(gbk_temp_path)
-
-                # Send response
-                response = HttpResponse(file_data, content_type='text/plain')
-                response['Content-Disposition'] = 'attachment; filename="map_with_imported_oligos.gbk"'
-                return response
-            
-            except Exception as err:
-                messages.append(str(err))
-                self.find_oligos(request, attempt_number - 1, messages, *args, **kwargs)
-        else:
-            mail_admins("Error finding oligos in plasmid",
-                        "There was an error with finding oligos in plasmid {} with snapgene server.\n\nErrors: {}.".format(kwargs['object_id'], str(messages)), 
-                        fail_silently=True)
-            raise Exception
 
 
 class SearchFieldOptUsernamePlasmid(SearchFieldOptUsername):
@@ -197,21 +72,9 @@ class SearchFieldOptLastnamePlasmid(SearchFieldOptLastname):
 
     id_list = Plasmid.objects.all().values_list('created_by', flat=True).distinct()
 
-class FieldFormZBaseElement(StrField):
+class FieldFormZBaseElementPlasmid(FieldFormZBaseElement):
     
-    name = 'formz_elements_name'
     model = Plasmid
-    suggest_options = True
-
-    def get_options(self, search):
-        
-        if len(search) < 3:
-            return ["Type 3 or more characters to see suggestions"]
-        else:
-            return FormZBaseElement.objects.filter(name__icontains=search).values_list('name', flat=True)
-
-    def get_lookup_name(self):
-        return 'formz_elements__name'
 
 class PlasmidQLSchema(DjangoQLSchema):
     '''Customize search functionality'''
@@ -223,7 +86,7 @@ class PlasmidQLSchema(DjangoQLSchema):
         
         if model == Plasmid:
             return ['id', 'name', 'other_name', 'parent_vector', 'selection', FieldUse(), 'construction_feature', 'received_from', 'note', 
-                'reference', 'created_by', FieldCreated(), FieldLastChanged(), FieldFormZBaseElement(), FieldFormZProject()]
+                'reference', 'created_by', FieldCreated(), FieldLastChanged(), FieldFormZBaseElementPlasmid(), FieldFormZProject()]
         elif model == User:
             return [SearchFieldOptUsernamePlasmid(), SearchFieldOptLastnamePlasmid()]
         return super(PlasmidQLSchema, self).get_fields(model)
@@ -320,7 +183,7 @@ class PlasmidAddDocInline(AddDocFileInlineMixin):
 class PlasmidPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
                   SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin,
                   Approval, AdminChangeFormWithNavigation,
-                  AdminOligosInPlasmid, SortAutocompleteResultsId):
+                  AdminOligosInMap, SortAutocompleteResultsId):
     
     list_display = ('id', 'name', 'selection', 'get_plasmidmap_short_name', 'created_by', 'approval')
     list_display_links = ('id',)
@@ -470,7 +333,7 @@ class PlasmidPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
                     old_gbk_file_path, 
                     new_gbk_file_path)
                 try:
-                    self.convert_plasmid_map_gbk_to_dna(new_gbk_file_path, new_dna_file_path)
+                    convert_map_gbk_to_dna(new_gbk_file_path, new_dna_file_path)
                 except:
                     messages.error(request, 'There was an error with converting your plasmid map to .gbk.')
             else:
@@ -498,7 +361,7 @@ class PlasmidPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
                 detect_common_features_map_dna = request.POST.get("detect_common_features_map", False)
                 detect_common_features_map_gbk = request.POST.get("detect_common_features_map_gbk", False)
                 detect_common_features = True if (detect_common_features_map_dna or detect_common_features_map_gbk) else False
-                self.create_plasmid_map_preview(obj.map.path, obj.map_png.path, obj.map_gbk.path, obj.id, obj.name, detect_common_features)
+                create_map_preview(obj, detect_common_features)
             except:
                 messages.error(request, 'There was an error with detection of common features and/or saving of the map preview')
 
@@ -521,7 +384,7 @@ class PlasmidPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
             unknown_feat_name_list = []
             
             try:
-                feature_names = self.get_plasmid_map_features(obj.map.path)
+                feature_names = get_map_features(obj)
             except:
                 messages.error(request, 'There was an error getting your plasmid map features')
                 feature_names = []
@@ -917,145 +780,6 @@ class PlasmidPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
                 messages.error(request, 'Nice try, you are allowed to change the permissions of your own records only.')
                 return HttpResponseRedirect("..")
         return super(PlasmidPage,self).obj_perms_manage_view(request, object_pk)
-
-    #@background(schedule=1) # Run 1 s after it is called, as "background" process
-    def create_plasmid_map_preview(self, plasmid_map_path, png_plasmid_map_path, gbk_plasmid_map_path, obj_id, obj_name, detect_common_features, attempt_number=3, messages=[]):
-        """ Given a path to a snapgene plasmid map, use snapegene server
-        to detect common features and create map preview as png
-        and gbk"""
-
-        if attempt_number > 0:
-            try:
-                config = Config()
-                server_ports = config.get_server_ports()
-                for port in server_ports.values():
-                    try:
-                        client = Client(port, zmq.Context())
-                    except:
-                        continue
-                    else:
-                        break
-                
-                common_features_path = os.path.join(BASE_DIR, "snapgene/standardCommonFeatures.ftrs")
-                
-                if detect_common_features:
-                    argument = {"request":"detectFeatures", "inputFile": plasmid_map_path, 
-                    "outputFile": plasmid_map_path, "featureDatabase": common_features_path}
-                    r = client.requestResponse(argument, 10000)
-                    r_code = r.get('code', 1)
-                    if r_code > 0:
-                        error_message = 'detectFeatures - error ' + r_code
-                        if error_message not in messages: messages.append(error_message)
-                        client.close()
-                        raise Exception
-                
-                argument = {"request":"generatePNGMap", "inputFile": plasmid_map_path,
-                "outputPng": png_plasmid_map_path, "title": "p{}{} - {}".format(LAB_ABBREVIATION_FOR_FILES, obj_id, obj_name),
-                "showEnzymes": True, "showFeatures": True, "showPrimers": True, "showORFs": False}
-                r = client.requestResponse(argument, 10000)
-                r_code = r.get('code', 1)
-                if r_code > 0:
-                    error_message = 'generatePNGMap - error ' + r_code
-                    if error_message not in messages: messages.append(error_message)
-                    client.close()
-                    raise Exception
-                
-                argument = {"request":"exportDNAFile", "inputFile": plasmid_map_path,
-                "outputFile": gbk_plasmid_map_path, "exportFilter": "biosequence.gb"}
-                r = client.requestResponse(argument, 10000)
-                r_code = r.get('code', 1)
-                if r_code > 0:
-                    error_message = 'exportDNAFile - error ' + r_code
-                    if error_message not in messages: messages.append(error_message)
-                    client.close()
-                    raise Exception
-
-                client.close()
-
-            except:
-                self.create_plasmid_map_preview(plasmid_map_path, png_plasmid_map_path, gbk_plasmid_map_path, obj_id, obj_name, detect_common_features, attempt_number - 1, messages)
-
-        else:
-            mail_admins("Snapgene server error", 
-                        "There was an error with creating the preview for {} with snapgene server.\n\nErrors: {}.".format(plasmid_map_path, str(messages)), 
-                        fail_silently=True)
-            raise Exception
-
-    def get_plasmid_map_features(self, plasmid_map_path, attempt_number=3, messages=[]):
-        """ Given a path to a snapgene plasmid map (.dna), use snapegene server
-        to return features, as json"""
-
-        if attempt_number > 0:
-            try:
-                config = Config()
-                server_ports = config.get_server_ports()
-                for port in server_ports.values():
-                    try:
-                        client = Client(port, zmq.Context())
-                    except:
-                        continue
-                    else:
-                        break
-            
-                argument = {"request":"reportFeatures", "inputFile": plasmid_map_path}
-                r = client.requestResponse(argument, 10000)
-                r_code = r.get('code', 1)
-                if r_code > 0:
-                    error_message = 'reportFeatures - error ' + r_code
-                    if error_message not in messages: messages.append(error_message)
-                    client.close()
-                    raise Exception
-                
-                client.close()
-                
-                plasmid_features = r.get('features', [])
-                feature_names = [feat['name'].strip() for feat in plasmid_features]
-                return feature_names
-            
-            except:
-                self.get_plasmid_map_features(plasmid_map_path, attempt_number - 1, messages)
-        
-        else:
-            mail_admins("Snapgene server error", 
-                        "There was an error with getting plasmid features for {} with snapgene server.\n\nErrors: {}.".format(plasmid_map_path, str(messages)), 
-                        fail_silently=True)
-            raise Exception
-
-    def convert_plasmid_map_gbk_to_dna(self, gbk_map_path, dna_map_path, attempt_number=3, messages=[]):
-        """ Given a path to a snapgene plasmid map (.dna), use snapegene server
-        to return features, as json"""
-
-        if attempt_number > 0:
-            try:
-                config = Config()
-                server_ports = config.get_server_ports()
-                for port in server_ports.values():
-                    try:
-                        client = Client(port, zmq.Context())
-                    except:
-                        continue
-                    else:
-                        break
-                
-                argument = {"request":"importDNAFile", "inputFile": gbk_map_path, 'outputFile': dna_map_path}
-                r = client.requestResponse(argument, 10000)
-                r_code = r.get('code', 1)
-                if r_code > 0:
-                    error_message = 'importDNAFile - error ' + r_code
-                    if error_message not in messages: messages.append(error_message)
-                    client.close()
-                    raise Exception
-
-                client.close()
-            
-            except:
-                self.convert_plasmid_map_gbk_to_dna(gbk_map_path, dna_map_path, attempt_number - 1, messages)
-        
-        else:
-            mail_admins("Snapgene server error", 
-                        "There was an error converting a gbk map to dna for {} with snapgene server.\n\nErrors: {}.".format(gbk_map_path, str(messages)), 
-                        fail_silently=True)
-            raise Exception
 
     def get_history_array_fields(self):
 

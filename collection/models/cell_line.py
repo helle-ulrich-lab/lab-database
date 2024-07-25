@@ -96,7 +96,7 @@ class CellLine (models.Model, SaveWithoutHistoricalRecord):
         all_plasmids = self.celllineepisomalplasmid_set.filter(s2_work_episomal_plasmid=False).distinct().order_by('plasmid__id')
         return all_plasmids
 
-    def get_all_plasmid_maps(self):
+    def get_all_maps(self):
         """Returns all plasmids"""
         return (self.integrated_plasmids.all() | self.episomal_plasmids.all()).distinct().exclude(map='').order_by('id')
 

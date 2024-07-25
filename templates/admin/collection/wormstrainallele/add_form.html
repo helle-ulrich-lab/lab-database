@@ -35,39 +35,25 @@
   <ul class="object-tools">
     {% block object-tools-items %}
 
-    {% if include_clone_link %}
-    <li><a href="clone/">{{ clone_verbose_name }} fggggg</a></li>
-    {% endif %}
-    
-    {% if plasmid_id_list %}
-      {% if plasmid_id_list|length == 1 %}
-        <li><a href="/collection/plasmid/?q-l=on&q=id+=+{{plasmid_id_list.0}}">{% trans "Plasmids" %}</a></li>
-      {% else %}
-        <li><a href="/collection/plasmid/?q-l=on&q=id+in+{{plasmid_id_list}}">{% trans "Plasmids" %}</a></li>
-      {% endif %}
-    {% endif %}
-    
     <li>
         {% url opts|admin_urlname:'history' original.pk|admin_urlquote as history_url %}
         <a href="{% add_preserved_filters history_url %}" class="historylink">{% trans "History" %}</a>
     </li>
- 
-    {% if show_formz %}
-      <li>
-        <a href="{% url "admin:app_list" app_label %}/{{opts.model_name}}/{{object_id}}/formz">{% trans "FormZ" %}</a>
-      </li>
-    {% endif %}
 
     {% if has_absolute_url %}<li><a href="{{ absolute_url }}" class="viewsitelink">{% trans "View on site" %}</a></li>{% endif %}
     {% endblock %}
   </ul>
 {% endif %}{% endif %}
 {% endblock %}
-<form {% if has_file_field %}enctype="multipart/form-data" {% endif %}action="{{ form_url }}" method="post" id="{{ opts.model_name }}_form" novalidate>{% csrf_token %}{% block form_top %}{% endblock %}
+{% if request.GET.allele_type == 't' or request.GET.allele_type == 'm' %}
+
+  <form {% if has_file_field %}enctype="multipart/form-data" {% endif %}action="{{ form_url }}" method="post" id="{{ opts.model_name }}_form" novalidate>{% csrf_token %}{% block form_top %}{% endblock %}
+
 <div>
 {% if is_popup %}<input type="hidden" name="{{ is_popup_var }}" value="1" />{% endif %}
 {% if to_field %}<input type="hidden" name="{{ to_field_var }}" value="{{ to_field }}" />{% endif %}
 {% if save_on_top %}{% block submit_buttons_top %}{% submit_row %}{% endblock %}{% endif %}
+
 {% if errors %}
     <p class="errornote">
     {% if errors|length == 1 %}{% trans "Please correct the error below." %}{% else %}{% trans "Please correct the errors below." %}{% endif %}
@@ -92,6 +78,17 @@
 {% block after_related_objects %}{% endblock %}
 
 {% block submit_buttons_bottom %}{% submit_row %}{% endblock %}
+{% else %}
+
+<h2>Which allele type would you like to add?</h2>
+<div>
+<ul>
+  <li><a href="{% url "admin:app_list" app_label %}{{opts.model_name}}/add/?allele_type=t">Transgene</a></li>
+  <li><a href="{% url "admin:app_list" app_label %}{{opts.model_name}}/add/?allele_type=m">Mutation</a></li>
+</ul>
+</div>
+
+{% endif %}
 
 {% block admin_change_form_document_ready %}
     <script type="text/javascript"
@@ -104,6 +101,7 @@
 
     <script type="text/javascript" src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
     <script type="text/javascript" src="{% static 'admin/js/vendor/jqueryui/jquery-ui.js' %}"></script>
+
 {% endblock %}
 
 {# JavaScript for prepopulated fields #}

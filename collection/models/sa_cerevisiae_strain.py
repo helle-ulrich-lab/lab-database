@@ -106,7 +106,7 @@ class SaCerevisiaeStrain (models.Model, SaveWithoutHistoricalRecord):
         all_plasmids = self.sacerevisiaestrainepisomalplasmid_set.filter(present_in_stocked_strain=False).distinct().order_by('plasmid__id')
         return all_plasmids
 
-    def get_all_plasmid_maps(self):
+    def get_all_maps(self):
         """Returns all plasmids"""
         return (self.integrated_plasmids.all() | self.episomal_plasmids.all() | self.cassette_plasmids.all()).distinct().exclude(map='').order_by('id')
 

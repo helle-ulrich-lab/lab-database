@@ -469,21 +469,22 @@
         </div>
     {% endif %}
 
-    {% if map_attachment_type != 'none' and object.get_all_plasmid_maps %}
-    <h2>Plasmidkarten (wenn verfügbar)</h2>
+    {% if map_attachment_type != 'none' and object.get_all_maps %}
+    <h2>Karten (wenn verfügbar)</h2>
         {% if map_attachment_type == 'png' %}
-            {% for plasmid in object.get_all_plasmid_maps %}
-                {% if plasmid.map %}
+            {% for map in object.get_all_maps %}
+                {% if map.map %}
+                <h3>{{map.german_name}} #{{map}}</h3>
                 <br>
-                    <img alt='Plasmid #{{plasmid}}' src='data:image/png;base64,{{plasmid.convert_plasmid_map_to_base64}}'>
+                    <img alt='{{map.german_name}} #{{map}}' src='data:image/png;base64,{{map.convert_png_map_to_base64}}'>
                 {% endif %}
             {% endfor %}
         {% elif map_attachment_type == 'gbk' %}
-            {% for plasmid in object.get_all_plasmid_maps %}
-                {% if plasmid.map %}
-                    <h3>Plasmid #{{plasmid}}</h3>
+            {% for map in object.get_all_maps %}
+                {% if map.map %}
+                    <h3>{{map.german_name}} #{{map}}</h3>
                     {% autoescape off %}
-                    <p><pre>{{plasmid.utf8_encoded_gbk}}</pre></p>
+                    <p><pre>{{map.utf8_encoded_gbk}}</pre></p>
                     {% endautoescape %}
                 {% endif %}
             {% endfor %}

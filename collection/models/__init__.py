@@ -11,6 +11,8 @@ from .sa_cerevisiae_strain import (SaCerevisiaeStrain,
                                    HistoricalSaCerevisiaeStrain)
 from .sc_pombe_strain import (ScPombeStrain, ScPombeStrainEpisomalPlasmid,
                               ScPombeStrainDoc, HistoricalScPombeStrain)
-from .worm_strain import WormStrain, WormStrainDoc, HistoricalWormStrain
+from .worm_strain import (WormStrain, WormStrainDoc,
+                          WormStrainAllele, HistoricalWormStrain,
+                          HistoricalWormStrainAllele)
 from .inhibitor import Inhibitor, InhibitorDoc, HistoricalInhibitor
 from .si_rna import SiRna, SiRnaDoc, HistoricalSiRna

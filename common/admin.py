@@ -85,7 +85,7 @@ class MyAdminSite(OrderAdmin, FormZAdmin, admin.AdminSite):
                 if model_name.endswith('doc'):
                     obj_id = int(file_name.split('_')[-1])
                 else:
-                    obj_id = int(re.findall('\d+(?=_)', file_name + '_')[0])
+                    obj_id = int(re.findall(r'\d+(?=_)', file_name + '_')[0])
                 obj = apps.get_model(app_name, model_name).objects.get(id=obj_id)
 
                 # Create file name
@@ -142,6 +142,7 @@ from collection.models.cell_line import CellLine
 from collection.models.cell_line import CellLineDoc
 from collection.models.antibody import Antibody
 from collection.models.worm_strain import WormStrain
+from collection.models.worm_strain import WormStrainAllele
 
 from collection.admin.sa_cerevisiae_strain import SaCerevisiaeStrainPage
 from collection.admin.plasmid import PlasmidPage
@@ -152,6 +153,7 @@ from collection.admin.cell_line import CellLinePage
 from collection.admin.cell_line import CellLineDocPage
 from collection.admin.antibody import AntibodyPage
 from collection.admin.worm_strain import WormStrainPage
+from collection.admin.worm_strain import WormStrainAllelePage
 
 main_admin_site.register(SaCerevisiaeStrain, SaCerevisiaeStrainPage)
 main_admin_site.register(Plasmid, PlasmidPage)
@@ -162,6 +164,7 @@ main_admin_site.register(CellLineDoc, CellLineDocPage)
 main_admin_site.register(CellLine, CellLinePage)
 main_admin_site.register(Antibody, AntibodyPage)
 main_admin_site.register(WormStrain, WormStrainPage)
+main_admin_site.register(WormStrainAllele, WormStrainAllelePage)
 
 #################################################
 #             ORDER MANAGEMENT PAGES            #

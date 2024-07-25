@@ -11,10 +11,8 @@ from django.urls import re_path
 from django.utils.safestring import mark_safe
 from django.urls import resolve
 
-
 import os
 from functools import reduce
-
 from djangoql.schema import StrField
 from simple_history.admin import SimpleHistoryAdmin
 
@@ -188,7 +186,7 @@ class SearchFieldOptUsername(StrField):
         sorted in alphabetical order"""
 
         # from https://stackoverflow.com/questions/14907525/how-can-i-chain-djangos-in-and-iexact-queryset-field-lookups/14908214#14908214
-        excluded_users = ["AnonymousUser","guest","admin"]
+        excluded_users = ["AnonymousUser", "guest", "admin"]
         q_list = map(lambda n: Q(username__iexact=n), excluded_users)
         q_list = reduce(lambda a, b: a | b, q_list)
 

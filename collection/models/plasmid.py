@@ -26,6 +26,8 @@ OVE_URL = getattr(settings, 'OVE_URL', '')
 
 
 class Plasmid (DownloadFileNameMixin, models.Model, SaveWithoutHistoricalRecord):
+
+    german_name = 'Plasmid'
     
     name = models.CharField("name", max_length=255, unique=True, blank=False)
     other_name = models.CharField("other name", max_length=255, blank=True)
@@ -146,7 +148,7 @@ class Plasmid (DownloadFileNameMixin, models.Model, SaveWithoutHistoricalRecord)
 
         return None
     
-    def get_all_plasmid_maps(self):
+    def get_all_maps(self):
         """Returns self is has map"""
         
         if self.map:
@@ -166,7 +168,7 @@ class Plasmid (DownloadFileNameMixin, models.Model, SaveWithoutHistoricalRecord)
         elements = self.formz_elements.filter(common_feature=True).order_by('name')
         return elements
 
-    def convert_plasmid_map_to_base64(self):
+    def convert_png_map_to_base64(self):
         import base64
         """Returns html image element for map"""
 

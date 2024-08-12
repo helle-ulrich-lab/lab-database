@@ -78,6 +78,9 @@ class Oligo (DownloadFileNameMixin, models.Model, SaveWithoutHistoricalRecord):
             raise ValidationError(errors)
 
 class OligoDoc(DocFileMixin):
+
+    _inline_foreignkey_fieldname = 'oligo'
+
     oligo = models.ForeignKey(Oligo, on_delete=models.PROTECT)
 
     _mixin_props = {'destination_dir': 'collection/oligodoc/',

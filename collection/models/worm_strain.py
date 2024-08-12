@@ -358,7 +358,9 @@ class WormStrain (models.Model, SaveWithoutHistoricalRecord):
                list(self.integrated_dna_plasmids.all().distinct().exclude(map='').order_by('id'))
 
 class WormStrainGenotypingAssay (models.Model):
-    
+
+    _inline_foreignkey_fieldname = 'worm_strain'
+
     worm_strain = models.ForeignKey(WormStrain, on_delete=models.PROTECT)
     locus_allele = models.CharField("locus/allele", max_length=255, blank=False)
     oligos = models.ManyToManyField(Oligo, related_name='wormstrain_genotypingassay_oligo', blank=False)
@@ -371,6 +373,9 @@ class WormStrainGenotypingAssay (models.Model):
         return str(self.id)
 
 class WormStrainDoc(DocFileMixin):
+
+    _inline_foreignkey_fieldname = 'worm_strain'
+
     worm_strain = models.ForeignKey(WormStrain, on_delete=models.PROTECT)
 
     _mixin_props = {'destination_dir': 'collection/wormstraindoc/',

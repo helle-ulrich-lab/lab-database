@@ -26,6 +26,7 @@ from common.shared import ToggleDocInlineMixin
 
 from collection.models.antibody import Antibody
 from collection.models.antibody import AntibodyDoc
+from common.model_clone import CustomClonableModelAdmin
 
 
 class AntibodyQLSchema(DjangoQLSchema):
@@ -80,7 +81,7 @@ class AntibodyAddDocInline(AddDocFileInlineMixin):
     
     model = AntibodyDoc
 
-class AntibodyPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
+class AntibodyPage(ToggleDocInlineMixin, CustomClonableModelAdmin, DjangoQLSearchMixin,
                    SimpleHistoryWithSummaryAdmin, AdminChangeFormWithNavigation):
 
     list_display = ('id', 'name', 'catalogue_number', 'received_from', 'species_isotype', 'clone', 'l_ocation', 'get_sheet_short_name', 'availability',)
@@ -92,6 +93,9 @@ class AntibodyPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
     actions = [export_antibody]
     search_fields = ['id', 'name']
     inlines = [AntibodyDocInline, AntibodyAddDocInline]
+    add_view_fields = ('name', 'species_isotype', 'clone', 'received_from', 'catalogue_number', 'l_ocation', 'a_pplication',
+                'description_comment', 'info_sheet', 'availability',)
+    clone_ignore_fields = ['info_sheet']
 
     def save_model(self, request, obj, form, change):
         '''Override default save_model to limit a user's ability to save a record
@@ -183,9 +187,9 @@ class AntibodyPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
     def add_view(self,request,extra_context=None):
         '''Override default add_view to show only desired fields'''
 
-        self.fields = ('name', 'species_isotype', 'clone', 'received_from', 'catalogue_number', 'l_ocation', 'a_pplication',
-                'description_comment', 'info_sheet', 'availability',)
-        return super(AntibodyPage,self).add_view(request)
+        self.fields = self.add_view_fields
+
+        return super(AntibodyPage,self).add_view(request, extra_context)
     
     def change_view(self,request,object_id,extra_context=None):
         '''Override default change_view to show only desired fields'''

@@ -122,6 +122,8 @@ class CellLine (models.Model, SaveWithoutHistoricalRecord):
 
 
 class CellLineEpisomalPlasmid (models.Model):
+
+    _inline_foreignkey_fieldname = 'cell_line'
     
     cell_line = models.ForeignKey(CellLine, on_delete=models.PROTECT)
     plasmid = models.ForeignKey('Plasmid', verbose_name = 'Plasmid', on_delete=models.PROTECT)
@@ -155,6 +157,8 @@ CELL_LINE_DOC_TYPE_CHOICES = (
     ("other", "Other"))
 
 class CellLineDoc(DocFileMixin):
+
+    _inline_foreignkey_fieldname = 'cell_line'
 
     description = models.CharField("doc type", max_length=255, choices=CELL_LINE_DOC_TYPE_CHOICES, blank=False)
     date_of_test = models.DateField("date of test", blank=False, null=True)

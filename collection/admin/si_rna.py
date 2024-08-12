@@ -23,6 +23,7 @@ from import_export.fields import Field
 from common.shared import DocFileInlineMixin
 from common.shared import AddDocFileInlineMixin
 from common.shared import ToggleDocInlineMixin
+from common.model_clone import CustomClonableModelAdmin
 
 import xlrd
 import csv
@@ -118,7 +119,7 @@ class InhibitorAddDocInline(AddDocFileInlineMixin):
     
     model = SiRnaDoc
 
-class SiRnaPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
+class SiRnaPage(ToggleDocInlineMixin, CustomClonableModelAdmin, DjangoQLSearchMixin,
                 SimpleHistoryWithSummaryAdmin, AdminChangeFormWithNavigation,
                 DynamicArrayMixin):
     list_display = ('id', 'name', 'sequence', 'supplier', 'supplier_part_no',
@@ -133,6 +134,19 @@ class SiRnaPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
     search_fields = ['id', 'name']
     autocomplete_fields = ['created_by', 'orders']
     inlines = [InhibitorDocInline, InhibitorAddDocInline]
+    clone_ignore_fields = ['info_sheet']
+    add_view_fieldsets = (
+        (None, {
+            'fields': ('name', 'sequence', 'sequence_antisense', 'species',
+                       'target_genes', 'locus_ids', 'description_comment',
+                       'info_sheet', 'created_by',)
+        }),
+        ('Supplier information', {
+            'fields': ('supplier', 'supplier_part_no',
+                       'supplier_si_rna_id', 'orders',)
+        }),
+        )
+
 
     def save_model(self, request, obj, form, change):
         '''Override default save_model to limit a user's ability to save a record
@@ -237,17 +251,7 @@ class SiRnaPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
     def add_view(self, request, extra_context=None):
         '''Override default add_view to show only desired fields'''
 
-        self.fieldsets = (
-        (None, {
-            'fields': ('name', 'sequence', 'sequence_antisense', 'species',
-                       'target_genes', 'locus_ids', 'description_comment',
-                       'info_sheet', 'created_by',)
-        }),
-        ('Supplier information', {
-            'fields': ('supplier', 'supplier_part_no',
-                       'supplier_si_rna_id', 'orders',)
-        }),
-        )
+        self.fieldsets = self.add_view_fieldsets
 
         return super(SiRnaPage, self).add_view(request, extra_context=extra_context)
 

@@ -78,6 +78,9 @@ class SiRna (DownloadFileNameMixin, models.Model, SaveWithoutHistoricalRecord):
         return f'{self.id} - {self.name}'
 
 class SiRnaDoc(DocFileMixin):
+
+    _inline_foreignkey_fieldname = 'si_rna'
+
     si_rna = models.ForeignKey(SiRna, on_delete=models.PROTECT)
 
     _mixin_props = {'destination_dir': 'collection/sirnadoc/',

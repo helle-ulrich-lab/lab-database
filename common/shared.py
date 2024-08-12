@@ -245,7 +245,6 @@ class DocFileInlineMixin(admin.TabularInline):
     extra = 0
     fields = ['description', 'get_doc_short_name', 'comment', 'created_date_time']
     readonly_fields = ['description', 'get_doc_short_name', 'comment', 'created_date_time']
-    classes = ['collapse',]
 
     def get_parent_object(self, request):
         """
@@ -263,6 +262,7 @@ class DocFileInlineMixin(admin.TabularInline):
     def get_queryset(self, request):
 
         """Show inline uncollapsed only if docs exist"""
+        self.classes = ['collapse',]
 
         qs = super().get_queryset(request)
         parent_object = self.get_parent_object(request)
@@ -290,7 +290,6 @@ class AddDocFileInlineMixin(admin.TabularInline):
     verbose_name_plural = "New docs"
     extra = 0
     fields = ['description', 'name', 'comment']
-    classes = ['collapse',]
 
     def get_parent_object(self, request):
         """
@@ -310,6 +309,8 @@ class AddDocFileInlineMixin(admin.TabularInline):
         """show inline uncollpased only when adding a new record,
         also return an empty qs"""
 
+        self.classes = ['collapse',]
+
         parent_object = self.get_parent_object(request)
         if not parent_object:
             self.classes = []
@@ -318,29 +319,51 @@ class AddDocFileInlineMixin(admin.TabularInline):
     def has_change_permission(self, request, obj=None):
         return False
 
-class ToggleDocInlineMixin():
+class ToggleDocInlineMixin(admin.ModelAdmin):
 
-    def get_formsets_with_inlines(self, request, obj=None):
-        """Remove DocInline from add/change form if user who
-        created a  object is not the request user a lab manager
-        or a superuser"""
-        
+    def get_inline_instances(self, request, obj=None):
+        inline_instances = super().get_inline_instances(request, obj)
+        filtered_inline_instances = []
+
         # New objects
         if not obj:
-            for inline in self.get_inline_instances(request, obj):
-                # Do not show DocFileInlineMixin for new objetcs
-                if inline.verbose_name_plural == 'Existing docs':
-                    continue
-                else:
-                    yield inline.get_formset(request, obj), inline
+            filtered_inline_instances = [i for i in inline_instances if i.verbose_name_plural != 'Existing docs']
 
         # Existing objects
         else:
-            for inline in self.get_inline_instances(request, obj):
+            for inline in inline_instances:
                 # Always show existing docs
                 if inline.verbose_name_plural == 'Existing docs':
-                    yield inline.get_formset(request, obj), inline
+                    filtered_inline_instances.append(inline)
                 else:
                     # Do not allow guests to add docs, ever
                     if not request.user.groups.filter(name='Guest').exists():
-                        yield inline.get_formset(request, obj), inline
+                        filtered_inline_instances.append(inline)
+
+        return filtered_inline_instances
+
+    # def get_formsets_with_inlines(self, request, obj=None):
+    #     """Remove DocInline from add/change form if user who
+    #     created a  object is not the request user a lab manager
+    #     or a superuser"""
+
+        
+    #     # New objects
+    #     if not obj:
+    #         for inline in self.get_inline_instances(request, obj):
+    #             # Do not show DocFileInlineMixin for new objetcs
+    #             if inline.verbose_name_plural == 'Existing docs':
+    #                 continue
+    #             else:
+    #                 yield inline.get_formset(request, obj), inline
+
+    #     # Existing objects
+    #     else:
+    #         for inline in self.get_inline_instances(request, obj):
+    #             # Always show existing docs
+    #             if inline.verbose_name_plural == 'Existing docs':
+    #                 yield inline.get_formset(request, obj), inline
+    #             else:
+    #                 # Do not allow guests to add docs, ever
+    #                 if not request.user.groups.filter(name='Guest').exists():
+    #                     yield inline.get_formset(request, obj), inline

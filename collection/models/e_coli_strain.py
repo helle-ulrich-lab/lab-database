@@ -77,6 +77,9 @@ class EColiStrain (models.Model, SaveWithoutHistoricalRecord):
        return "{} - {}".format(self.id, self.name)
 
 class EColiStrainDoc(DocFileMixin):
+
+    _inline_foreignkey_fieldname = 'ecoli_strain'
+
     ecoli_strain = models.ForeignKey(EColiStrain, on_delete=models.PROTECT)
 
     _mixin_props = {'destination_dir': 'collection/ecolistraindoc/',

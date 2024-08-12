@@ -45,6 +45,7 @@ from collection.admin.shared import (create_map_preview, convert_map_gbk_to_dna,
 from common.shared import DocFileInlineMixin
 from common.shared import AddDocFileInlineMixin
 from common.shared import ToggleDocInlineMixin
+from common.model_clone import CustomClonableModelAdmin
 
 from collection.models.plasmid import Plasmid
 from collection.models.plasmid import PlasmidDoc
@@ -180,7 +181,7 @@ class PlasmidAddDocInline(AddDocFileInlineMixin):
 
     model = PlasmidDoc
 
-class PlasmidPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
+class PlasmidPage(CustomClonableModelAdmin, ToggleDocInlineMixin, DjangoQLSearchMixin,
                   SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin,
                   Approval, AdminChangeFormWithNavigation,
                   AdminOligosInMap, SortAutocompleteResultsId):
@@ -197,9 +198,20 @@ class PlasmidPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
     inlines = [PlasmidDocInline, PlasmidAddDocInline]
     redirect_to_obj_page = False
     form = PlasmidForm
-
     change_form_template = "admin/collection/plasmid/change_form.html"
     add_form_template = "admin/collection/plasmid/change_form.html"
+    clone_ignore_fields = ['map', 'map_gbk', 'map_png']
+
+    add_view_fieldsets = (
+        (None, {
+            'fields': ('name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
+                'reference', 'map', 'map_gbk')
+        }),
+        ('FormZ', {
+            'classes': tuple(),
+            'fields': ('formz_projects', 'formz_risk_group', 'vector_zkbs', 'formz_gentech_methods', 'formz_elements', 'formz_ecoli_strains', 'destroyed_date',)
+        }),
+        )
 
     def save_model(self, request, obj, form, change):
         '''Override default save_model to limit a user's ability to save a record
@@ -629,15 +641,7 @@ class PlasmidPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
     def add_view(self, request, extra_context=None):
         '''Override default add_view to show only desired fields'''
 
-        self.fieldsets = (
-        (None, {
-            'fields': ('name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
-                'reference', 'map', 'map_gbk')
-        }),
-        ('FormZ', {
-            'fields': ('formz_projects', 'formz_risk_group', 'vector_zkbs', 'formz_gentech_methods', 'formz_elements', 'formz_ecoli_strains', 'destroyed_date',)
-        }),
-        )
+        self.fieldsets = self.add_view_fieldsets
         
         return super(PlasmidPage,self).add_view(request)
     
@@ -667,7 +671,7 @@ class PlasmidPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
                         extra_context.update({'show_close': True,
                                         'show_save_and_add_another': False,
                                         'show_save_and_continue': True,
-                                        'show_save_as_new': False,
+                                        'show_duplicate': False,
                                         'show_save': True,
                                         'show_obj_permission': False,
                                         'show_redetect_save': True})
@@ -676,7 +680,7 @@ class PlasmidPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
                         extra_context.update({'show_close': True,
                                     'show_save_and_add_another': True,
                                     'show_save_and_continue': True,
-                                    'show_save_as_new': True,
+
                                     'show_save': True,
                                     'show_obj_permission': True,
                                     'show_redetect_save': True})
@@ -686,7 +690,7 @@ class PlasmidPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
                 extra_context.update({'show_close': True,
                                  'show_save_and_add_another': True,
                                  'show_save_and_continue': True,
-                                 'show_save_as_new': True,
+
                                  'show_save': True,
                                  'show_obj_permission': False,
                                  'show_redetect_save': False})
@@ -718,36 +722,15 @@ class PlasmidPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
                 }),
                 )
 
-        if '_saveasnew' in request.POST:
-            self.fieldsets = (
-                (None, {
-                    'fields': ('name', 'other_name', 'parent_vector', 'selection', 'us_e', 'construction_feature', 'received_from', 'note', 
-                'reference', 'map', 'map_gbk',)
-                }),
-                ('FormZ', {
-                    'fields': ('formz_projects', 'formz_risk_group', 'vector_zkbs', 'formz_gentech_methods', 'formz_elements', 'formz_ecoli_strains', 'destroyed_date',)
-                    }),
-                )
-            
-            extra_context.update({'show_save_and_continue': False,
-                                 'show_save': False,
-                                 'show_save_and_add_another': False,
-                                 'show_disapprove': False,
-                                 'show_formz': False,
-                                 'show_redetect_save': False,
-                                 'show_obj_permission': False
-                                 })
-
+        if request.user.has_perm('collection.change_plasmid', obj):
+            self.fieldsets = fieldsets_with_keep
+        if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by.labuser.is_principal_investigator):
+            self.fieldsets = fieldsets_wo_keep
         else:
-            if request.user.has_perm('collection.change_plasmid', obj):
+            if obj.created_by.labuser.is_principal_investigator and not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists()):
                 self.fieldsets = fieldsets_with_keep
-            if not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists() or request.user == obj.created_by or obj.created_by.labuser.is_principal_investigator):
-                self.fieldsets = fieldsets_wo_keep
             else:
-                if obj.created_by.labuser.is_principal_investigator and not (request.user.is_superuser or request.user.groups.filter(name='Lab manager').exists()):
-                    self.fieldsets = fieldsets_with_keep
-                else:
-                    self.fieldsets = fieldsets_wo_keep
+                self.fieldsets = fieldsets_wo_keep
         
         return super(PlasmidPage, self).change_view(request, object_id, extra_context=extra_context)
 

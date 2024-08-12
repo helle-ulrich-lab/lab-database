@@ -6,6 +6,7 @@
     <p class="deletelink-box"><a href="{% add_preserved_filters delete_url %}" class="deletelink">{% trans "Delete" %}</a></p>
 {% endif %}
 {% if show_save_as_new %}<input type="submit" value="{% trans 'Save as new' %}" name="_saveasnew">{% endif %}
+{% if show_duplicate %}<a href="clone/"><input type="button" value="Duplicate"></a>{% endif %}
 {% if show_save_and_add_another %}<input type="submit" value="{% trans 'Save and add another' %}" name="_addanother">{% endif %}
 {% if show_save_and_continue %}<input type="submit" value="{% if can_change %}{% trans 'Save and continue editing' %}{% else %}{% trans 'Save and view' %}{% endif %}" name="_continue">{% endif %}
 {% if show_redetect_save %}<input id="save-redetect" type="submit" value="Re-detect FormZ elements and save" name="_redetect_formz_elements">{% endif %}

@@ -61,6 +61,7 @@ from collection.models.worm_strain import WormStrain
 from collection.models.worm_strain import WormStrainGenotypingAssay
 from collection.models.worm_strain import WormStrainDoc
 from collection.models import WormStrainAllele
+from common.model_clone import CustomClonableModelAdmin
 
 from django.conf import settings
 BASE_DIR = settings.BASE_DIR
@@ -249,6 +250,23 @@ class WormStrainPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
                            'alleles', 'integrated_dna_plasmids', 'integrated_dna_oligos']
     inlines = [WormStrainGenotypingAssayInline, AddWormStrainGenotypingAssayInline,
                WormStrainDocInline, WormStrainAddDocInline]
+    change_form_template = 'admin/collection/change_form.html'
+    add_view_fieldsets = (
+        (None, {
+            'fields': ('name', 'chromosomal_genotype', 'parent_1', 'parent_2', 
+        'construction', 'outcrossed', 'growth_conditions', 
+        'organism',  'selection', 'phenotype', 'received_from', 
+        'us_e', 'note', 'reference', 'alleles')
+        }),
+        ("Integrated DNA", {"fields": (tuple(['integrated_dna_plasmids','integrated_dna_oligos']),),}),
+        ('Location', {
+            'fields': ('location_freezer1', 'location_freezer2', 'location_backup',)
+        }),
+        ('FormZ', {
+            'fields': ('formz_projects', 'formz_risk_group', 'formz_gentech_methods', 
+                       'formz_elements', 'destroyed_date')
+        }),
+        )
     
     def save_model(self, request, obj, form, change):
         '''Override default save_model to limit a user's ability to save a record
@@ -383,22 +401,7 @@ class WormStrainPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
     def add_view(self,request,extra_context=None):
         '''Override default add_view to show desired fields'''
 
-        self.fieldsets = (
-        (None, {
-            'fields': ('name', 'chromosomal_genotype', 'parent_1', 'parent_2', 
-        'construction', 'outcrossed', 'growth_conditions', 
-        'organism',  'selection', 'phenotype', 'received_from', 
-        'us_e', 'note', 'reference', 'alleles')
-        }),
-        ("Integrated DNA", {"fields": (tuple(['integrated_dna_plasmids','integrated_dna_oligos']),),}),
-        ('Location', {
-            'fields': ('location_freezer1', 'location_freezer2', 'location_backup',)
-        }),
-        ('FormZ', {
-            'fields': ('formz_projects', 'formz_risk_group', 'formz_gentech_methods', 
-                       'formz_elements', 'destroyed_date')
-        }),
-        )
+        self.fieldsets = self.add_view_fieldsets
 
         return super(WormStrainPage,self).add_view(request)
 
@@ -425,11 +428,9 @@ class WormStrainPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
                 
                 self.can_change = True
 
-                    
                 extra_context.update({'show_close': True,
                                 'show_save_and_add_another': False,
                                 'show_save_and_continue': True,
-                                'show_save_as_new': False,
                                 'show_save': True,
                                 'show_obj_permission': False,})
             
@@ -438,100 +439,78 @@ class WormStrainPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
                 extra_context.update({'show_close': True,
                     'show_save_and_add_another': True,
                     'show_save_and_continue': True,
-                    'show_save_as_new': False,
+                    'show_duplicate': False,
                     'show_save': True,
                     'show_obj_permission': False})
 
             extra_context['show_disapprove'] = True if request.user.groups.filter(name='Approval manager').exists() else False
             extra_context['show_formz'] = True
 
-        if '_saveasnew' in request.POST:
-            
+        if request.user == obj.created_by or not obj.created_by.groups.filter(name='Past member').exists():
             self.fieldsets = (
             (None, {
-                'fields': ('name', 'chromosomal_genotype', 'parent_1', 'parent_2', 
-                           'construction', 'outcrossed', 'growth_conditions', 'organism', 
-                           'selection', 'phenotype', 'received_from', 'us_e', 'note',
-                           'reference', 'alleles')
+                'fields': ('name', 'chromosomal_genotype', 'parent_1', 'parent_2',
+                            'construction', 'outcrossed', 'growth_conditions',
+                            'organism', 'selection', 'phenotype', 'received_from','us_e', 'note',
+                            'reference', 'alleles', 'created_date_time', 'created_approval_by_pi',
+                            'last_changed_date_time', 'last_changed_approval_by_pi',
+                            'created_by',)
             }),
             ("Integrated DNA", {"fields": (tuple(['integrated_dna_plasmids','integrated_dna_oligos']),),}),
             ('Location', {
                 'fields': ('location_freezer1', 'location_freezer2', 'location_backup',)
             }),
             ('FormZ', {
-                'fields': ('formz_projects', 'formz_risk_group', 'formz_gentech_methods',
-                           'formz_elements', 'destroyed_date')
+                'classes': ('collapse',) if not request.GET.get('_approval', '') else tuple(),
+                'fields': ('formz_projects', 'formz_risk_group', 'formz_gentech_methods', 'formz_elements','destroyed_date')
+            }),
+            )
+        else:
+            self.fieldsets = (
+            (None, {
+                'fields': ('name', 'chromosomal_genotype', 'parent_1', 'parent_2',
+                'parental_strain', 'construction', 'outcrossed', 'growth_conditions',
+                'organism',  'selection', 'phenotype', 'received_from','us_e', 'note',
+                'reference', 'alleles', 'created_date_time', 'created_approval_by_pi',
+                'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by')
+            }),
+            ("Integrated DNA", {"fields": (tuple(['integrated_dna_plasmids','integrated_dna_oligos']),),}),
+            ('Location', {
+                'fields': ('location_freezer1', 'location_freezer2', 'location_backup',)
+            }),
+            ('FormZ', {
+                'classes': ('collapse',) if not request.GET.get('_approval', '') else tuple(),
+                'fields': ('formz_projects', 'formz_risk_group', 'formz_gentech_methods', 'formz_elements', 'destroyed_date')
             }),
             )
 
-            extra_context.update({'show_save_and_continue': False,
-                                 'show_save': False,
-                                 'show_save_and_add_another': False,
-                                 'show_disapprove': False,
-                                 'show_formz': False,
-                                 'show_obj_permission': False
-                                 })
-
-        else:
-
-            if request.user == obj.created_by or not obj.created_by.groups.filter(name='Past member').exists():
-                self.fieldsets = (
-                (None, {
-                    'fields': ('name', 'chromosomal_genotype', 'parent_1', 'parent_2',
-                               'construction', 'outcrossed', 'growth_conditions',
-                               'organism', 'selection', 'phenotype', 'received_from','us_e', 'note',
-                               'reference', 'alleles', 'created_date_time', 'created_approval_by_pi',
-                               'last_changed_date_time', 'last_changed_approval_by_pi',
-                               'created_by',)
-                }),
-                ("Integrated DNA", {"fields": (tuple(['integrated_dna_plasmids','integrated_dna_oligos']),),}),
-                ('Location', {
-                    'fields': ('location_freezer1', 'location_freezer2', 'location_backup',)
-                }),
-                ('FormZ', {
-                    'classes': ('collapse',) if not request.GET.get('_approval', '') else tuple(),
-                    'fields': ('formz_projects', 'formz_risk_group', 'formz_gentech_methods', 'formz_elements','destroyed_date')
-                }),
-                )
-            else:
-                self.fieldsets = (
-                (None, {
-                    'fields': ('name', 'chromosomal_genotype', 'parent_1', 'parent_2',
-                    'parental_strain', 'construction', 'outcrossed', 'growth_conditions',
-                    'organism',  'selection', 'phenotype', 'received_from','us_e', 'note',
-                    'reference', 'alleles', 'created_date_time', 'created_approval_by_pi',
-                    'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by')
-                }),
-                ("Integrated DNA", {"fields": (tuple(['integrated_dna_plasmids','integrated_dna_oligos']),),}),
-                ('Location', {
-                    'fields': ('location_freezer1', 'location_freezer2', 'location_backup',)
-                }),
-                ('FormZ', {
-                    'classes': ('collapse',) if not request.GET.get('_approval', '') else tuple(),
-                    'fields': ('formz_projects', 'formz_risk_group', 'formz_gentech_methods', 'formz_elements', 'destroyed_date')
-                }),
-                )
-
         return super(WormStrainPage,self).change_view(request,object_id,extra_context=extra_context)
 
-    def get_formsets_with_inlines(self, request, obj=None):
-        """Remove AddCellLineDocInline from add/change form if user who
-        created a CellLine object is not the request user a lab manager
-        or a superuser"""
-        
-        if obj:
-            for inline in self.get_inline_instances(request, obj):
+    def get_inline_instances(self, request, obj=None):
+        inline_instances = super().get_inline_instances(request, obj)
+        filtered_inline_instances = []
+
+        # New objects
+        if not obj:
+            for inline in inline_instances:
                 if inline.verbose_name_plural == 'existing genotyping assays':
-                    yield inline.get_formset(request, obj), inline
+                    filtered_inline_instances.append(inline)
                 else:
                     if not request.user.groups.filter(name='Guest').exists():
-                        yield inline.get_formset(request, obj), inline
+                        filtered_inline_instances.append(inline)
+
+        # Existing objects
         else:
-            for inline in self.get_inline_instances(request, obj):
-                if inline.verbose_name_plural == 'existing genotyping assays':
-                    continue
+            for inline in inline_instances:
+                # Always show existing docs
+                if inline.verbose_name_plural == 'Existing docs':
+                    filtered_inline_instances.append(inline)
                 else:
-                    yield inline.get_formset(request, obj), inline
+                    # Do not allow guests to add docs, ever
+                    if not request.user.groups.filter(name='Guest').exists():
+                        filtered_inline_instances.append(inline)
+
+        return filtered_inline_instances
    
     def obj_perms_manage_view(self, request, object_pk):
         """
@@ -1132,7 +1111,7 @@ class WormStrainAllelePage(DjangoQLSearchMixin,
                         extra_context.update({'show_close': True,
                                         'show_save_and_add_another': False,
                                         'show_save_and_continue': True,
-                                        'show_save_as_new': False,
+                                        'show_duplicate': False,
                                         'show_save': True,
                                         'show_obj_permission': False,
                                         'show_redetect_save': True})
@@ -1141,7 +1120,7 @@ class WormStrainAllelePage(DjangoQLSearchMixin,
                         extra_context.update({'show_close': True,
                                     'show_save_and_add_another': True,
                                     'show_save_and_continue': True,
-                                    'show_save_as_new': True,
+
                                     'show_save': True,
                                     'show_obj_permission': True,
                                     'show_redetect_save': True})
@@ -1151,7 +1130,7 @@ class WormStrainAllelePage(DjangoQLSearchMixin,
                 extra_context.update({'show_close': True,
                                  'show_save_and_add_another': True,
                                  'show_save_and_continue': True,
-                                 'show_save_as_new': True,
+
                                  'show_save': True,
                                  'show_obj_permission': False,
                                  'show_redetect_save': False})

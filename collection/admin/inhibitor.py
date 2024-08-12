@@ -7,6 +7,7 @@ from django.db.models import CharField
 from djangoql.schema import DjangoQLSchema
 from djangoql.admin import DjangoQLSearchMixin
 from import_export import resources
+from common.model_clone import CustomClonableModelAdmin
 
 import xlrd
 import csv
@@ -22,6 +23,7 @@ from collection.admin.shared import FieldLocation
 from common.shared import DocFileInlineMixin
 from common.shared import AddDocFileInlineMixin
 from common.shared import ToggleDocInlineMixin
+from common.model_clone import CustomClonableModelAdmin
 
 from collection.models import Inhibitor
 from collection.models import InhibitorDoc
@@ -79,7 +81,7 @@ class InhibitorAddDocInline(AddDocFileInlineMixin):
     
     model = InhibitorDoc
 
-class InhibitorPage(ToggleDocInlineMixin, DjangoQLSearchMixin, 
+class InhibitorPage(ToggleDocInlineMixin, CustomClonableModelAdmin, DjangoQLSearchMixin, 
                     SimpleHistoryWithSummaryAdmin, admin.ModelAdmin):
 
     list_display = ('id', 'name', 'target', 'catalogue_number', 'received_from', 'l_ocation', 'get_sheet_short_name')
@@ -91,7 +93,10 @@ class InhibitorPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
     actions = [export_inhibitor]
     search_fields = ['id', 'name']
     inlines = [InhibitorDocInline, InhibitorAddDocInline]
-    
+    clone_ignore_fields = ['info_sheet']
+    add_view_fields = ('name', 'other_names', 'target', 'received_from', 'catalogue_number', 'l_ocation', 
+                  'ic50', 'amount', 'stock_solution', 'description_comment','info_sheet', )
+
     def save_model(self, request, obj, form, change):
         '''Override default save_model to limit a user's ability to save a record
         Superusers and lab managers can change all records
@@ -180,8 +185,8 @@ class InhibitorPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
     def add_view(self,request,extra_context=None):
         '''Override default add_view to show only desired fields'''
 
-        self.fields = ('name', 'other_names', 'target', 'received_from', 'catalogue_number', 'l_ocation', 
-                  'ic50', 'amount', 'stock_solution', 'description_comment','info_sheet', )
+        self.fields = self.add_view_fields
+
         return super(InhibitorPage,self).add_view(request)
     
     def change_view(self,request,object_id,extra_context=None):
@@ -189,7 +194,7 @@ class InhibitorPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
 
         self.fields = ('name', 'other_names', 'target', 'received_from', 'catalogue_number', 'l_ocation', 
                   'ic50', 'amount', 'stock_solution', 'description_comment','info_sheet', 'created_date_time','last_changed_date_time', )
-        return super(InhibitorPage,self).change_view(request,object_id)
+        return super(InhibitorPage,self).change_view(request, object_id, extra_context)
 
     def get_sheet_short_name(self, instance):
         '''Create custom column for information sheet

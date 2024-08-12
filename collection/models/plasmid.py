@@ -214,6 +214,9 @@ class Plasmid (DownloadFileNameMixin, models.Model, SaveWithoutHistoricalRecord)
         return f'{OVE_URL}?{urlencode(params)}'
 
 class PlasmidDoc(DocFileMixin):
+
+    _inline_foreignkey_fieldname = 'plasmid'
+
     plasmid = models.ForeignKey(Plasmid, on_delete=models.PROTECT)
 
     _mixin_props = {'destination_dir': 'collection/plasmiddoc/',

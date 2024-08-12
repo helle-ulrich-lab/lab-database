@@ -119,7 +119,9 @@ class ScPombeStrain (models.Model, SaveWithoutHistoricalRecord):
 
 
 class ScPombeStrainEpisomalPlasmid (models.Model):
-    
+
+    _inline_foreignkey_fieldname = 'scpombe_strain'
+
     scpombe_strain = models.ForeignKey(ScPombeStrain, on_delete=models.PROTECT)
     plasmid = models.ForeignKey('Plasmid', verbose_name = 'Plasmid', on_delete=models.PROTECT)
     present_in_stocked_strain = models.BooleanField("present in -80° C stock?", default = False)
@@ -154,6 +156,9 @@ class ScPombeStrainEpisomalPlasmid (models.Model):
         return self.present_in_stocked_strain
 
 class ScPombeStrainDoc(DocFileMixin):
+
+    _inline_foreignkey_fieldname = 'scpombe_strain'
+
     scpombe_strain = models.ForeignKey(ScPombeStrain, on_delete=models.PROTECT)
 
     _mixin_props = {'destination_dir': 'collection/scpombestraindoc/',

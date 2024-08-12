@@ -131,6 +131,8 @@ class SaCerevisiaeStrain (models.Model, SaveWithoutHistoricalRecord):
         return elements
 
 class SaCerevisiaeStrainEpisomalPlasmid (models.Model):
+
+    _inline_foreignkey_fieldname = 'sacerevisiae_strain'
     
     sacerevisiae_strain = models.ForeignKey(SaCerevisiaeStrain, on_delete=models.PROTECT)
     plasmid = models.ForeignKey('Plasmid', verbose_name = 'Plasmid', on_delete=models.PROTECT)
@@ -168,6 +170,9 @@ class SaCerevisiaeStrainEpisomalPlasmid (models.Model):
         return self.present_in_stocked_strain
 
 class SaCerevisiaeStrainDoc(DocFileMixin):
+
+    _inline_foreignkey_fieldname = 'sacerevisiae_strain'
+
     sacerevisiae_strain = models.ForeignKey(SaCerevisiaeStrain, on_delete=models.PROTECT)
 
     _mixin_props = {'destination_dir': 'collection/sacerevisiaestraindoc/',

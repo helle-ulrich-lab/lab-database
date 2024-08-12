@@ -17,6 +17,8 @@ from import_export import resources
 from import_export.fields import Field
 from djangoql.schema import StrField
 from djangoql.schema import IntField
+from common.model_clone import CustomClonableModelAdmin
+
 
 import xlrd
 import csv
@@ -185,7 +187,6 @@ class CellLineEpisomalPlasmidInline(admin.TabularInline):
     model = CellLineEpisomalPlasmid
     verbose_name_plural = mark_safe('Transiently transfected plasmids <span style="text-transform:lowercase;">(virus packaging plasmids are highlighted in <span style="color:var(--accent)">yellow</span>)</span>')
     verbose_name = 'Episomal Plasmid'
-    classes = ['collapse']
     extra = 0
     template = 'admin/tabular.html'
 
@@ -202,21 +203,22 @@ class CellLineEpisomalPlasmidInline(admin.TabularInline):
             return self.parent_model.objects.get(pk=resolved.kwargs['object_id'])
         return None
 
-    def get_queryset(self,request):
+    def get_queryset(self, request):
 
         """Do not show as collapsed in add view"""
 
         parent_object = self.get_parent_object(request)
+        self.classes = ['collapse']
 
         if parent_object:
             parent_obj_episomal_plasmids = parent_object.episomal_plasmids.all()
             if parent_obj_episomal_plasmids.filter(celllineepisomalplasmid__s2_work_episomal_plasmid=True):
-                self.classes = []
+                self.classes = None
         else:
-            self.classes = []
+            self.classes = None
         return super(CellLineEpisomalPlasmidInline, self).get_queryset(request)
 
-class CellLinePage(ToggleDocInlineMixin, DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
+class CellLinePage(ToggleDocInlineMixin, CustomClonableModelAdmin,DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin,
                    CustomGuardedModelAdmin, Approval, AdminChangeFormWithNavigation,
                    SortAutocompleteResultsId):
 
@@ -230,6 +232,16 @@ class CellLinePage(ToggleDocInlineMixin, DjangoQLSearchMixin, SimpleHistoryWithS
     actions = [export_cellline, formz_as_html]
     search_fields = ['id', 'name']
     autocomplete_fields = ['parental_line', 'integrated_plasmids', 'formz_projects', 'zkbs_cell_line', 'formz_gentech_methods', 'formz_elements']
+    add_view_fieldsets = (
+            (None, {
+                'fields': ('name', 'box_name', 'alternative_name', 'parental_line', 'organism', 'cell_type_tissue', 'culture_type', 'growth_condition',
+                    'freezing_medium', 'received_from', 'integrated_plasmids', 'description_comment', 's2_work',)
+            }),
+            ('FormZ', {
+                'classes': tuple(),
+                'fields': ('formz_projects', 'formz_risk_group','zkbs_cell_line', 'formz_gentech_methods', 'formz_elements', 'destroyed_date',)
+            }),
+            )
 
     def save_model(self, request, obj, form, change):
         '''Override default save_model to limit a user's ability to save a record
@@ -347,15 +359,7 @@ class CellLinePage(ToggleDocInlineMixin, DjangoQLSearchMixin, SimpleHistoryWithS
     def add_view(self,request,extra_context=None):
         '''Override default add_view to show only desired fields'''
 
-        self.fieldsets = (
-        (None, {
-            'fields': ('name', 'box_name', 'alternative_name', 'parental_line', 'organism', 'cell_type_tissue', 'culture_type', 'growth_condition',
-                'freezing_medium', 'received_from', 'integrated_plasmids', 'description_comment', 's2_work',)
-        }),
-        ('FormZ', {
-            'fields': ('formz_projects', 'formz_risk_group','zkbs_cell_line', 'formz_gentech_methods', 'formz_elements', 'destroyed_date',)
-        }),
-        )
+        self.fieldsets = self.add_view_fieldsets
 
         return super(CellLinePage,self).add_view(request)
 
@@ -384,7 +388,7 @@ class CellLinePage(ToggleDocInlineMixin, DjangoQLSearchMixin, SimpleHistoryWithS
                 extra_context.update({'show_close': True,
                             'show_save_and_add_another': True,
                             'show_save_and_continue': True,
-                            'show_save_as_new': True,
+
                             'show_save': True,
                             'show_obj_permission': True,})
             else:
@@ -392,44 +396,24 @@ class CellLinePage(ToggleDocInlineMixin, DjangoQLSearchMixin, SimpleHistoryWithS
                 extra_context.update({'show_close': True,
                                  'show_save_and_add_another': True,
                                  'show_save_and_continue': True,
-                                 'show_save_as_new': False,
+
                                  'show_save': True,
                                  'show_obj_permission': False})
 
             extra_context['show_disapprove'] = True if request.user.groups.filter(name='Approval manager').exists() else False
             extra_context['show_formz'] = True
 
-        if '_saveasnew' in request.POST:
-            self.fieldsets = (
-            (None, {
-                'fields': ('name', 'box_name', 'alternative_name', 'parental_line', 'organism', 'cell_type_tissue', 'culture_type', 'growth_condition',
-                    'freezing_medium', 'received_from', 'integrated_plasmids', 'description_comment', 's2_work',)
-            }),
-            ('FormZ', {
-                'fields': ('formz_projects', 'formz_risk_group','zkbs_cell_line', 'formz_gentech_methods', 'formz_elements', 'destroyed_date',)
-            }),
-            )
-            extra_context.update({'show_save_and_continue': False,
-                                 'show_save': False,
-                                 'show_save_and_add_another': False,
-                                 'show_disapprove': False,
-                                 'show_formz': False,
-                                 'show_save_and_continue': False,
-                                 'show_obj_permission': False
-                                 })
-
-        else:
-            self.fieldsets = (
-            (None, {
-                'fields': ('name', 'box_name', 'alternative_name', 'parental_line', 'organism', 'cell_type_tissue', 'culture_type', 'growth_condition',
-                    'freezing_medium', 'received_from', 'integrated_plasmids', 'description_comment', 's2_work', 'created_date_time', 'created_approval_by_pi',
-                'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',)
-            }),
-            ('FormZ', {
-                'classes': ('collapse',) if not request.GET.get('_approval', '') else tuple(),
-                'fields': ('formz_projects', 'formz_risk_group','zkbs_cell_line', 'formz_gentech_methods', 'formz_elements', 'destroyed_date',)
-            }),
-            )
+        self.fieldsets = (
+        (None, {
+            'fields': ('name', 'box_name', 'alternative_name', 'parental_line', 'organism', 'cell_type_tissue', 'culture_type', 'growth_condition',
+                'freezing_medium', 'received_from', 'integrated_plasmids', 'description_comment', 's2_work', 'created_date_time', 'created_approval_by_pi',
+            'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',)
+        }),
+        ('FormZ', {
+            'classes': ('collapse',) if not request.GET.get('_approval', '') else tuple(),
+            'fields': ('formz_projects', 'formz_risk_group','zkbs_cell_line', 'formz_gentech_methods', 'formz_elements', 'destroyed_date',)
+        }),
+        )
             
         return super(CellLinePage,self).change_view(request,object_id,extra_context=extra_context)
 

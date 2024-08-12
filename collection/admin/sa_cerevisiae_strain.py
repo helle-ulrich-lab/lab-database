@@ -44,6 +44,7 @@ from collection.admin.shared import SortAutocompleteResultsId
 from common.shared import DocFileInlineMixin
 from common.shared import AddDocFileInlineMixin
 from common.shared import ToggleDocInlineMixin
+from common.model_clone import CustomClonableModelAdmin
 
 from collection.models.plasmid import Plasmid
 from formz.models import FormZProject
@@ -158,7 +159,6 @@ class SaCerevisiaeStrainEpisomalPlasmidInline(admin.TabularInline):
     model = SaCerevisiaeStrainEpisomalPlasmid
     verbose_name_plural = mark_safe('Episomal plasmids <span style="text-transform:lowercase;">(highlighted in <span style="color:var(--accent)">yellow</span>, if present in the stocked strain</span>)')
     verbose_name = 'Episomal Plasmid'
-    classes = ['collapse']
     ordering = ("-present_in_stocked_strain",'id',)
     extra = 0
     template = 'admin/tabular.html'
@@ -181,6 +181,8 @@ class SaCerevisiaeStrainEpisomalPlasmidInline(admin.TabularInline):
         """Modify to conditionally collapse inline if there is an episomal 
         plasmid in the -80 stock"""
 
+        self.classes = ['collapse']
+
         parent_object = self.get_parent_object(request)
         if parent_object:
             parent_obj_episomal_plasmids = parent_object.episomal_plasmids.all()
@@ -200,7 +202,7 @@ class SaCerevisiaeStrainAddDocInline(AddDocFileInlineMixin):
     
     model = SaCerevisiaeStrainDoc
 
-class SaCerevisiaeStrainPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
+class SaCerevisiaeStrainPage(ToggleDocInlineMixin, CustomClonableModelAdmin, DjangoQLSearchMixin,
                              SimpleHistoryWithSummaryAdmin, CustomGuardedModelAdmin,
                              Approval, AdminChangeFormWithNavigation,
                              SortAutocompleteResultsId):
@@ -218,6 +220,17 @@ class SaCerevisiaeStrainPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
                            'formz_projects', 'formz_gentech_methods', 'formz_elements']
     inlines = [SaCerevisiaeStrainEpisomalPlasmidInline, SaCerevisiaeStrainDocInline,
                SaCerevisiaeStrainAddDocInline]
+    add_view_fieldsets = (
+        (None, {
+            'fields': ('name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parent_1', 'parent_2', 
+        'parental_strain', 'construction', 'modification','integrated_plasmids', 'cassette_plasmids', 'plasmids', 
+        'selection', 'phenotype', 'background', 'received_from', 'us_e', 'note', 'reference',)
+        }),
+        ('FormZ', {
+            'classes': tuple(),
+            'fields': ('formz_projects', 'formz_risk_group', 'formz_gentech_methods', 'formz_elements', 'destroyed_date')
+        }),
+        )
     
     def save_model(self, request, obj, form, change):
         '''Override default save_model to limit a user's ability to save a record
@@ -366,16 +379,7 @@ class SaCerevisiaeStrainPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
     def add_view(self,request,extra_context=None):
         '''Override default add_view to show desired fields'''
 
-        self.fieldsets = (
-        (None, {
-            'fields': ('name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parent_1', 'parent_2', 
-        'parental_strain', 'construction', 'modification','integrated_plasmids', 'cassette_plasmids', 'plasmids', 
-        'selection', 'phenotype', 'background', 'received_from', 'us_e', 'note', 'reference',)
-        }),
-        ('FormZ', {
-            'fields': ('formz_projects', 'formz_risk_group', 'formz_gentech_methods', 'formz_elements', 'destroyed_date')
-        }),
-        )
+        self.fieldsets = self.add_view_fieldsets
 
         return super(SaCerevisiaeStrainPage,self).add_view(request)
 
@@ -408,7 +412,7 @@ class SaCerevisiaeStrainPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
                     extra_context.update({'show_close': True,
                                     'show_save_and_add_another': False,
                                     'show_save_and_continue': True,
-                                    'show_save_as_new': False,
+                                    'show_duplicate': False,
                                     'show_save': True,
                                     'show_obj_permission': False,})
 
@@ -417,7 +421,7 @@ class SaCerevisiaeStrainPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
                     extra_context.update({'show_close': True,
                                     'show_save_and_add_another': True,
                                     'show_save_and_continue': True,
-                                    'show_save_as_new': True,
+
                                     'show_save': True,
                                     'show_obj_permission': True,})
             
@@ -426,62 +430,40 @@ class SaCerevisiaeStrainPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
                 extra_context.update({'show_close': True,
                     'show_save_and_add_another': True,
                     'show_save_and_continue': True,
-                    'show_save_as_new': True,
+
                     'show_save': True,
                     'show_obj_permission': False})
 
             extra_context['show_disapprove'] = True if request.user.groups.filter(name='Approval manager').exists() else False
             extra_context['show_formz'] = True
 
-        if '_saveasnew' in request.POST:
-            
+
+        if request.user == obj.created_by or not obj.created_by.groups.filter(name='Past member').exists():
             self.fieldsets = (
             (None, {
                 'fields': ('name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parent_1', 'parent_2', 
-            'parental_strain', 'construction', 'modification','integrated_plasmids', 'cassette_plasmids', 'plasmids', 
-            'selection', 'phenotype', 'background', 'received_from', 'us_e', 'note', 'reference',)
+                'parental_strain', 'construction', 'modification', 'integrated_plasmids', 'cassette_plasmids', 'plasmids', 
+                'selection', 'phenotype', 'background', 'received_from','us_e', 'note', 'reference', 'created_date_time', 
+                'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',)
             }),
             ('FormZ', {
+                'classes': ('collapse',) if not request.GET.get('_approval', '') else tuple(),
+                'fields': ('formz_projects', 'formz_risk_group', 'formz_gentech_methods', 'formz_elements','destroyed_date')
+            }),
+            )
+        else:
+            self.fieldsets = (
+            (None, {
+                'fields': ('name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parent_1', 'parent_2', 
+                'parental_strain', 'construction', 'modification', 'integrated_plasmids', 'cassette_plasmids', 'plasmids', 
+                'selection', 'phenotype', 'background', 'received_from','us_e', 'note', 'reference', 'created_date_time', 
+                'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by')
+            }),
+            ('FormZ', {
+                'classes': ('collapse',) if not request.GET.get('_approval', '') else tuple(),
                 'fields': ('formz_projects', 'formz_risk_group', 'formz_gentech_methods', 'formz_elements', 'destroyed_date')
             }),
             )
-
-            extra_context.update({'show_save_and_continue': False,
-                                 'show_save': False,
-                                 'show_save_and_add_another': False,
-                                 'show_disapprove': False,
-                                 'show_formz': False,
-                                 'show_obj_permission': False
-                                 })
-
-        else:
-
-            if request.user == obj.created_by or not obj.created_by.groups.filter(name='Past member').exists():
-                self.fieldsets = (
-                (None, {
-                    'fields': ('name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parent_1', 'parent_2', 
-                    'parental_strain', 'construction', 'modification', 'integrated_plasmids', 'cassette_plasmids', 'plasmids', 
-                    'selection', 'phenotype', 'background', 'received_from','us_e', 'note', 'reference', 'created_date_time', 
-                    'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by',)
-                }),
-                ('FormZ', {
-                    'classes': ('collapse',) if not request.GET.get('_approval', '') else tuple(),
-                    'fields': ('formz_projects', 'formz_risk_group', 'formz_gentech_methods', 'formz_elements','destroyed_date')
-                }),
-                )
-            else:
-                self.fieldsets = (
-                (None, {
-                    'fields': ('name', 'relevant_genotype', 'mating_type', 'chromosomal_genotype', 'parent_1', 'parent_2', 
-                    'parental_strain', 'construction', 'modification', 'integrated_plasmids', 'cassette_plasmids', 'plasmids', 
-                    'selection', 'phenotype', 'background', 'received_from','us_e', 'note', 'reference', 'created_date_time', 
-                    'created_approval_by_pi', 'last_changed_date_time', 'last_changed_approval_by_pi', 'created_by')
-                }),
-                ('FormZ', {
-                    'classes': ('collapse',) if not request.GET.get('_approval', '') else tuple(),
-                    'fields': ('formz_projects', 'formz_risk_group', 'formz_gentech_methods', 'formz_elements', 'destroyed_date')
-                }),
-                )
 
         return super(SaCerevisiaeStrainPage,self).change_view(request,object_id,extra_context=extra_context)
    

@@ -35,10 +35,6 @@
   <ul class="object-tools">
     {% block object-tools-items %}
 
-    {% if include_clone_link %}
-    <li><a href="clone/">{{ clone_verbose_name }} fggggg</a></li>
-    {% endif %}
-    
     {% if plasmid_id_list %}
       {% if plasmid_id_list|length == 1 %}
         <li><a href="/collection/plasmid/?q-l=on&q=id+=+{{plasmid_id_list.0}}">{% trans "Plasmids" %}</a></li>

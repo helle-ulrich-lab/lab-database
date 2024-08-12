@@ -39,6 +39,7 @@ from formz.models import GenTechMethod
 from collection.models.e_coli_strain import EColiStrain
 from collection.models.e_coli_strain import EColiStrainDoc
 from common.shared import ToggleDocInlineMixin
+from common.model_clone import CustomClonableModelAdmin
 
 
 class SearchFieldOptUsernameEColi(SearchFieldOptUsername):
@@ -105,7 +106,7 @@ class EColiStrainAddDocInline(AddDocFileInlineMixin):
 
     model = EColiStrainDoc
 
-class EColiStrainPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
+class EColiStrainPage(ToggleDocInlineMixin, CustomClonableModelAdmin, DjangoQLSearchMixin,
                       SimpleHistoryWithSummaryAdmin, Approval,
                       AdminChangeFormWithNavigation):
     list_display = ('id', 'name', 'resistance', 'us_e','purpose', 'approval')
@@ -118,7 +119,16 @@ class EColiStrainPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
     search_fields = ['id', 'name']
     autocomplete_fields = ['formz_projects', 'formz_elements']
     inlines = [EcoliStrainDocInline, EColiStrainAddDocInline]
-    
+    add_view_fieldsets = (
+        (None, {
+            'fields': ('name', 'resistance', 'genotype', 'background', 'supplier', 'us_e', 'purpose', 'note',)
+        }),
+        ('FormZ', {
+            'classes': tuple(),
+            'fields': ('formz_projects', 'formz_risk_group', 'formz_elements', 'destroyed_date')
+        }),
+        )
+
     def save_model(self, request, obj, form, change):
         '''Override default save_model to limit a user's ability to save a record
         Superusers and lab managers can change all records
@@ -233,14 +243,7 @@ class EColiStrainPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
     def add_view(self,request,extra_context=None):
         '''Override default add_view to show only desired fields'''
 
-        self.fieldsets = (
-        (None, {
-            'fields': ('name', 'resistance', 'genotype', 'background', 'supplier', 'us_e', 'purpose', 'note',)
-        }),
-        ('FormZ', {
-            'fields': ('formz_projects', 'formz_risk_group', 'formz_elements', 'destroyed_date')
-        }),
-        )
+        self.fieldsets = self.add_view_fieldsets
 
         return super(EColiStrainPage,self).add_view(request)
 
@@ -265,7 +268,7 @@ class EColiStrainPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
                 extra_context.update({'show_close': True,
                                 'show_save_and_add_another': True,
                                 'show_save_and_continue': True,
-                                'show_save_as_new': True,
+
                                 'show_save': True,
                                 'show_obj_permission': True})
 
@@ -274,7 +277,7 @@ class EColiStrainPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
                 extra_context.update({'show_close': True,
                                 'show_save_and_add_another': True,
                                 'show_save_and_continue': True,
-                                'show_save_as_new': True,
+
                                 'show_save': True,
                                  'show_obj_permission': False})
             
@@ -291,15 +294,6 @@ class EColiStrainPage(ToggleDocInlineMixin, DjangoQLSearchMixin,
                 'fields': ('formz_projects', 'formz_risk_group', 'formz_elements', 'destroyed_date')
             }),
             )
-
-        if '_saveasnew' in request.POST:
-            extra_context.update({'show_save_and_continue': False,
-                                 'show_save': False,
-                                 'show_save_and_add_another': False,
-                                 'show_disapprove': False,
-                                 'show_formz': False,
-                                 'show_obj_permission': False
-                                 })
 
         return super(EColiStrainPage,self).change_view(request,object_id, extra_context=extra_context)
     

@@ -14,6 +14,7 @@ from django.core.exceptions import FieldError, ValidationError
 from django.db import DataError
 from django.db.models.functions import Collate
 from django.db import models
+from common.model_clone import CustomClonableModelAdmin
 
 from djangoql.schema import DjangoQLSchema
 from djangoql.schema import StrField
@@ -223,7 +224,7 @@ class OligoAddDocInline(AddDocFileInlineMixin):
 
     model = OligoDoc
 
-class OligoPage(ToggleDocInlineMixin, OligoDjangoQLSearchMixin,
+class OligoPage(ToggleDocInlineMixin, CustomClonableModelAdmin, OligoDjangoQLSearchMixin,
                 SimpleHistoryWithSummaryAdmin, Approval,
                 AdminChangeFormWithNavigation):
     list_display = ('id', 'name','get_oligo_short_sequence', 'restriction_site','created_by', 'approval')
@@ -238,6 +239,9 @@ class OligoPage(ToggleDocInlineMixin, OligoDjangoQLSearchMixin,
     autocomplete_fields = ['formz_elements']
     form = OligoForm
     inlines = [OligoDocInline, OligoAddDocInline]
+    clone_ignore_fields = ['info_sheet',]
+    add_view_fields = ('name','sequence', 'us_e', 'gene', 'restriction_site',
+                       'description', 'comment', 'info_sheet',)
 
     def get_oligo_short_sequence(self, instance):
         '''This function allows you to define a custom field for the list view to
@@ -405,8 +409,7 @@ class OligoPage(ToggleDocInlineMixin, OligoDjangoQLSearchMixin,
     def add_view(self,request,extra_context=None):
         '''Override default add_view to show only desired fields'''
         
-        self.fields = ('name','sequence', 'us_e', 'gene', 'restriction_site',
-                       'description', 'comment', 'info_sheet',)
+        self.fields = self.add_view_fields
         return super(OligoPage,self).add_view(request)
 
     def change_view(self,request,object_id,extra_context=None):
@@ -427,7 +430,7 @@ class OligoPage(ToggleDocInlineMixin, OligoDjangoQLSearchMixin,
                 extra_context.update({'show_close': True,
                                  'show_save_and_add_another': True,
                                  'show_save_and_continue': True,
-                                 'show_save_as_new': True,
+
                                  'show_save': True,})
 
             else:
@@ -435,26 +438,15 @@ class OligoPage(ToggleDocInlineMixin, OligoDjangoQLSearchMixin,
                 extra_context.update({'show_close': True,
                                  'show_save_and_add_another': True,
                                  'show_save_and_continue': True,
-                                 'show_save_as_new': True,
+
                                  'show_save': True,})
 
             extra_context['show_disapprove'] = True if request.user.groups.filter(name='Approval manager').exists() else False
 
-        if '_saveasnew' in request.POST:
-            self.fields = ('name','sequence', 'us_e', 'gene', 'restriction_site',
-                           'description', 'comment', 'info_sheet', 'formz_elements',)
-            extra_context.update({'show_save_and_continue': False,
-                        'show_save': False,
-                        'show_save_and_add_another': False,
-                        'show_disapprove': False,
-                        'show_formz': False,
-                        'show_obj_permission': False
-                        })
-        else:
-            self.fields = ('name','sequence', 'us_e', 'gene', 'restriction_site', 'description',
-                           'comment', 'info_sheet', 'formz_elements', 'created_date_time', 
-                           'created_approval_by_pi', 'last_changed_date_time',
-                           'last_changed_approval_by_pi', 'created_by',)
+        self.fields = ('name','sequence', 'us_e', 'gene', 'restriction_site', 'description',
+                        'comment', 'info_sheet', 'formz_elements', 'created_date_time', 
+                        'created_approval_by_pi', 'last_changed_date_time',
+                        'last_changed_approval_by_pi', 'created_by',)
 
         return super(OligoPage,self).change_view(request,object_id, extra_context=extra_context)
 

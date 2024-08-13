@@ -14,7 +14,7 @@
         <div class='results'>
         {% for history_element in history_summary_data %}
         <div>
-        On {{history_element.0}}, {{history_element.1}} changed:
+        On {{history_element.0}}{% if history_element.1 %}, {{history_element.1}} changed{% endif %}:
         </div>
         <ul>
         {%for history_field in history_element.2%}

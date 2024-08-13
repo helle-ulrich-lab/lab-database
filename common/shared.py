@@ -114,8 +114,7 @@ class SimpleHistoryWithSummaryAdmin(SimpleHistoryAdmin):
                 if changes_list:
                     history_summary_data.append(
                         (newer_hist_obj.last_changed_date_time,
-                            User.objects.get(
-                                id=int(newer_hist_obj.history_user_id)),
+                            User.objects.get(id=int(newer_hist_obj.history_user_id)) if newer_hist_obj.history_user_id else None,
                             changes_list))
 
         context = self.admin_site.each_context(request)

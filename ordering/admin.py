@@ -1395,23 +1395,32 @@ class CostUnitPage(admin.ModelAdmin):
 
     def price_sum(self, instance):
 
-        SQL_EXPRESSION = r"""
-                          CAST(
-                              (REGEXP_MATCH(REPLACE(price, ',', '.'), '\d*\.*\d+'))[1] as FLOAT
+        # Cast price to float if possible
+        cast_price_sql_exp = r"""
+                              CAST(
+                                    (REGEXP_MATCH(REPLACE(price, ',', '.'), '\d*\.*\d+'))[1] AS FLOAT
                               )
-                           """
-
-        sum_prices = 'NA'
+                              """
+        # Cast quantity to int by matching start of field
+        # If string is empty, then return 1
+        cast_quantity_sql_exp = r"""
+                                 CAST(
+                                     (COALESCE(
+                                     (REGEXP_MATCH(quantity, '^\d+'))[1], '1')) AS INTEGER)
+                                 """
+        sum_prices = '-'
 
         if not instance.status:
             try:
                 now = timezone.now()
                 orders = Order.objects.\
                             filter(cost_unit=instance,
-                                created_date_time__year=now.year).\
-                            extra(select={'price_value': SQL_EXPRESSION})
+                                   created_date_time__year=now.year).\
+                            exclude(price="").\
+                            extra(select={'price_value': cast_price_sql_exp,
+                                          'quantity_value': cast_quantity_sql_exp,})
 
-                sum_prices = sum([v for v in orders.values_list('price_value', flat=True) if v])
+                sum_prices = sum(p*q for (p, q) in orders.values_list('price_value', 'quantity_value') if p)
                 sum_prices = f'{round(sum_prices):,}'
 
             except:

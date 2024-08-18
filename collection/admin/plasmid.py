@@ -200,7 +200,7 @@ class PlasmidPage(CustomClonableModelAdmin, ToggleDocInlineMixin, DjangoQLSearch
     form = PlasmidForm
     change_form_template = "admin/collection/plasmid/change_form.html"
     add_form_template = "admin/collection/plasmid/change_form.html"
-    clone_ignore_fields = ['map', 'map_gbk', 'map_png']
+    clone_ignore_fields = ['map', 'map_gbk', 'map_png', 'destroyed_date']
 
     add_view_fieldsets = (
         (None, {

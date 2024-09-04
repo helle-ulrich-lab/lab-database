@@ -189,7 +189,7 @@ class AntibodyPage(ToggleDocInlineMixin, CustomClonableModelAdmin, DjangoQLSearc
 
         self.fields = self.add_view_fields
 
-        return super(AntibodyPage,self).add_view(request, extra_context)
+        return super(AntibodyPage,self).add_view(request)
     
     def change_view(self,request,object_id,extra_context=None):
         '''Override default change_view to show only desired fields'''

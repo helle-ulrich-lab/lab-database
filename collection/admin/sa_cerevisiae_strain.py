@@ -412,7 +412,6 @@ class SaCerevisiaeStrainPage(ToggleDocInlineMixin, CustomClonableModelAdmin, Dja
                     extra_context.update({'show_close': True,
                                     'show_save_and_add_another': False,
                                     'show_save_and_continue': True,
-                                    'show_duplicate': False,
                                     'show_save': True,
                                     'show_obj_permission': False,})
 

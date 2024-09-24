@@ -189,12 +189,12 @@ class InhibitorPage(ToggleDocInlineMixin, CustomClonableModelAdmin, DjangoQLSear
 
         return super(InhibitorPage,self).add_view(request)
     
-    def change_view(self,request,object_id,extra_context=None):
+    def change_view(self, request, object_id, form_url="", extra_context=None):
         '''Override default change_view to show only desired fields'''
 
         self.fields = ('name', 'other_names', 'target', 'received_from', 'catalogue_number', 'l_ocation', 
                   'ic50', 'amount', 'stock_solution', 'description_comment','info_sheet', 'created_date_time','last_changed_date_time', )
-        return super(InhibitorPage,self).change_view(request, object_id, extra_context)
+        return super().change_view(request, object_id, form_url, extra_context)
 
     def get_sheet_short_name(self, instance):
         '''Create custom column for information sheet

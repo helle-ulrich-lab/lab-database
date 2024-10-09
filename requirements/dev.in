@@ -3,6 +3,6 @@
 ipykernel==6.19.2
 ipython==8.7.0
 pylint==3.0.2
-pre-commit==3.8.0
+pre-commit==4.0.0
 isort==5.11.5
 black==24.3.0

@@ -1,0 +1,39 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+
+default_language_version:
+  python: python3.11
+repos:
+  - repo: 'https://github.com/pre-commit/pre-commit-hooks'
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        types:
+          - python
+      - id: end-of-file-fixer
+        types:
+          - python
+      - id: check-yaml
+        types:
+          - yaml
+      - id: check-added-large-files
+      - id: check-merge-conflict
+        types:
+          - python
+  - repo: 'https://github.com/PyCQA/isort'
+    rev: 5.11.5
+    hooks:
+      - id: isort
+  - repo: 'https://github.com/psf/black'
+    rev: 24.3.0
+    hooks:
+      - id: black
+  - repo: local
+    hooks:
+      - id: django-check
+        name: Run Django Check
+        entry: python manage.py check
+        language: system
+        pass_filenames: false
+        types:
+          - python

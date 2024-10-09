@@ -1,32 +1,26 @@
-from django.db import models
-from django.contrib.postgres.fields import ArrayField
-from django.contrib.auth.models import User
-from django.forms import ValidationError
-from django.contrib.contenttypes.fields import GenericRelation
-from django.utils.encoding import force_str
-
-from datetime import timedelta
 import random
-import os
-import time
+from datetime import timedelta
 
+from django.contrib.auth.models import User
+from django.contrib.contenttypes.fields import GenericRelation
+from django.contrib.postgres.fields import ArrayField
+from django.db import models
 from simple_history.models import HistoricalRecords
 
 from approval.models import RecordToBeApproved
-from common.models import SaveWithoutHistoricalRecord
-from formz.models import FormZBaseElement
-from formz.models import FormZProject
-from formz.models import GenTechMethod
-from formz.models import Species
-from formz.models import ZkbsCellLine
-from common.models import DocFileMixin
-
-from django.conf import settings
-
-LAB_ABBREVIATION_FOR_FILES = getattr(settings, "LAB_ABBREVIATION_FOR_FILES", "")
+from common.models import DocFileMixin, SaveWithoutHistoricalRecord
+from formz.models import (
+    FormZBaseElement,
+    FormZProject,
+    GenTechMethod,
+    Species,
+    ZkbsCellLine,
+)
 
 
 class CellLine(models.Model, SaveWithoutHistoricalRecord):
+
+    _model_abbreviation = "cl"
 
     name = models.CharField("name", max_length=255, unique=True, blank=False)
     box_name = models.CharField("box", max_length=255, blank=False)
@@ -167,8 +161,6 @@ class CellLine(models.Model, SaveWithoutHistoricalRecord):
         null=True,
         default=list,
     )
-
-    _model_abbreviation = "cl"
 
     class Meta:
         verbose_name = "cell line"

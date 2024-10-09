@@ -10,6 +10,11 @@ from django.contrib.auth.models import User
 from django.urls import re_path
 from django.utils.safestring import mark_safe
 from django.urls import resolve
+import csv
+from django.utils import timezone
+
+import xlrd
+from django.http import HttpResponse
 
 import os
 from functools import reduce
@@ -20,9 +25,7 @@ from simple_history.admin import SimpleHistoryAdmin
 class SimpleHistoryWithSummaryAdmin(SimpleHistoryAdmin):
 
     object_history_template = "admin/object_history_with_change_summary.html"
-
-    def get_history_array_fields(self):
-        return {}
+    history_array_fields = {}
 
     def history_view(self, request, object_id, extra_context=None):
         """The 'history' admin view for this model."""
@@ -55,8 +58,6 @@ class SimpleHistoryWithSummaryAdmin(SimpleHistoryAdmin):
                 obj = action_list.latest('history_date').instance
             except action_list.model.DoesNotExist:
                 raise Http404
-
-        array_fields = self.get_history_array_fields()
 
         ignore_fields = ("time", "_pi", "map_png", "map_gbk", '_user', '_autocomplete')
 
@@ -95,7 +96,7 @@ class SimpleHistoryWithSummaryAdmin(SimpleHistoryAdmin):
                         change_new = str(field_model.objects. \
                             get(id=change.new)) if change.new else 'None'
                     elif field_type == 'ArrayField':
-                        array_field_model = array_fields.get(change.field, None)
+                        array_field_model = self.history_array_fields.get(change.field, None)
                         if array_field_model:
                             change_old = ', '.join(map(str, array_field_model.objects. \
                                 filter(id__in=change.old))) if change.old else 'None'
@@ -366,3 +367,35 @@ class ToggleDocInlineMixin(admin.ModelAdmin):
     #                 # Do not allow guests to add docs, ever
     #                 if not request.user.groups.filter(name='Guest').exists():
     #                     yield inline.get_formset(request, obj), inline
+
+
+def export_objects(request, queryset, export_data):
+
+    file_format = request.POST.get("format", default="none")
+    now = timezone.localtime(timezone.now())
+    file_name = f'{queryset.model.__name__}_{now.strftime("%Y%m%d_%H%M%S")}'
+
+    # Excel file
+    if file_format == "xlsx":
+        response = HttpResponse(
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        response["Content-Disposition"] = f'attachment; filename="{file_name}.xlsx'
+        response.write(export_data.xlsx)
+
+    # TSV file
+    elif file_format == "tsv":
+        response = HttpResponse(content_type="text/tab-separated-values")
+        response["Content-Disposition"] = f'attachment; filename="{file_name}.tsv'
+        xlsx_file = xlrd.open_workbook(file_contents=export_data.xlsx)
+        sheet = xlsx_file.sheet_by_index(0)
+        wr = csv.writer(response, delimiter="\t")
+        # Get rid of return chars
+        for rownum in range(sheet.nrows):
+            row_values = [
+                str(i).replace("\n", "").replace("\r", "").replace("\t", "")
+                for i in sheet.row_values(rownum)
+            ]
+            wr.writerow(row_values)
+
+    return response

@@ -785,7 +785,7 @@ class OrderForm(forms.ModelForm):
         return self.cleaned_data
 
 class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeFormWithNavigation):
-    
+
     list_display = ('custom_internal_order_no', 'item_description', 'supplier_and_part_no', 'quantity',
                     'price', 'cost_unit_name', 'trimmed_comment' ,'location', 'msds_link', 
                     'coloured_status', "created_by")
@@ -800,9 +800,14 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeF
     form = OrderForm
     raw_id_fields = ["ghs_symbols", 'msds_form', 'signal_words', 'hazard_statements']
     autocomplete_fields = []
+    history_array_fields = {
+        "history_ghs_symbols": GhsSymbol,
+        "history_signal_words": SignalWord,
+        "history_hazard_statements": HazardStatement,
+    }
 
     def get_form(self, request, obj=None, **kwargs):
-        
+
         form = super(OrderPage, self).get_form(request, obj, **kwargs)
 
         # Set the value of the custom ghs_pict_img field when an order exists otherwise
@@ -814,7 +819,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeF
         return form
 
     def save_model(self, request, obj, form, change):
-        
+
         if obj.pk == None:
 
             # New orders
@@ -830,21 +835,21 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeF
                 obj.created_by = request.user
 
             obj.save()
-            
+
             # Automatically create internal_order_number and add it to record
             if not obj.internal_order_no:
                 obj.internal_order_no = "{}-{}".format(obj.pk, datetime.date.today().strftime("%y%m%d"))
-            
+
             obj.save()
-            
-            # Delete first history record, which doesn't contain an internal_order_number, and change the newer history 
+
+            # Delete first history record, which doesn't contain an internal_order_number, and change the newer history
             # record's history_type from changed (~) to created (+). This gets rid of a duplicate history record created
             # when automatically generating an internal_order_number
             obj.history.last().delete()
             history_obj = obj.history.first()
             history_obj.history_type = "+"
             history_obj.save()
-            
+
             # Add approval record
             if not request.user.labuser.is_principal_investigator:
                 obj.approval.create(activity_type='created', activity_user=obj.history.latest().created_by)
@@ -862,7 +867,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeF
                 if MS_TEAMS_WEBHOOK:
 
                     try:
-                        
+
                         message_card = render_to_string("admin/ordering/order/urgent_order_msteam_card.json",
                                                         {"item": f"{obj.supplier} {obj.supplier_part_no} - {obj.part_description}",
                                                         "created_by": f"{request.user.first_name} {request.user.last_name}",
@@ -886,9 +891,9 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeF
 
                     """.format(request.user.first_name, request.user.last_name, obj.supplier, obj.supplier_part_no, obj.part_description, SITE_TITLE)
                     message = cleandoc(message)
-                
+
                     try:
-                        
+
                         send_mail('New urgent order', 
                                 message, 
                                     SERVER_EMAIL_ADDRESS,
@@ -898,32 +903,32 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeF
 
                     except:
                         messages.warning(request, 'Your urgent order was added to the Order list. However, the lab managers have not been informed of it.')
-            
+
         else:
-            
+
             # Existing orders
-            
+
             # Allow only Lab and Order managers to change an order
             if not (request.user.groups.filter(name='Lab manager').exists() or request.user.groups.filter(name='Order manager').exists()):
                 raise PermissionDenied
-            
+
             else:
                 order = Order.objects.get(pk=obj.pk)
-                
+
                 # If the status of an order changes to the following
                 if obj.status != order.status:
                     if not order.order_manager_created_date_time:
-                        
-                        # If an order's status changed from 'submitted' to any other, 
+
+                        # If an order's status changed from 'submitted' to any other,
                         # set the date-time for order_manager_created_date_time to the
                         # current date-time
                         if obj.status in ['open', 'arranged', 'delivered']:
                             obj.order_manager_created_date_time = timezone.now()
-                    
+
                     # If an order does not have a delivery date and its status changes
                     # to 'delivered', set the date for delivered_date to the current
                     # date. If somebody requested a delivery notification, send it and
-                    # set sent_email to true to remember that an email has already been 
+                    # set sent_email to true to remember that an email has already been
                     # sent out
                     if not order.delivered_date:
                         if obj.status == "delivered":
@@ -939,7 +944,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeF
                                     The {}
 
                                     """.format(obj.created_by.first_name, obj.pk, obj.part_description, SITE_TITLE)
-                                    
+
                                     message = cleandoc(message)
                                     try:
                                         send_mail('Delivery notification', 
@@ -951,14 +956,14 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeF
                                     except:
                                         messages.warning(request, 'Could not send delivery notification.')
             obj.save()
-            
+
             # Delete order history for used-up or cancelled items
             if obj.status in ["used up", 'cancelled'] and obj.history.exists():
                 obj_history = obj.history.all()
                 obj_history.delete()
 
     def save_related(self, request, form, formsets, change):
-        
+
         super(OrderPage, self).save_related(request, form, formsets, change)
 
         if form.instance.status not in ["used up", 'cancelled']:
@@ -983,22 +988,22 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeF
             history_obj.save()
 
     def get_queryset(self, request):
-        
+
         # Allows sorting of custom changelist_view fields by adding admin_order_field
         # property to said custom field, also excludes cancelled orders, to make things prettier"""
 
         qs = super(OrderPage, self).get_queryset(request)
         qs = qs.annotate(models.Count('id'), models.Count('part_description'), models.Count('status'))
-        
+
         if not (request.user.groups.filter(name='Lab manager').exists() or request.user.groups.filter(name='Order manager').exists() or request.user.is_superuser):
             return qs.exclude(status='cancelled')
         else:
             return qs
 
     def get_readonly_fields(self, request, obj=None):
-        
+
         # Specifies which fields should be shown as read-only and when
-        
+
         if obj:
             if self.can_change:
                 return ['urgent', 'delivery_alert', 'delivered_date', 'order_manager_created_date_time',
@@ -1013,7 +1018,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeF
             return ['order_manager_created_date_time', 'created_date_time',  'last_changed_date_time',]
 
     def add_view(self, request, extra_context=None):
-        
+
         # Specifies which fields should be shown in the add view
 
         self.raw_id_fields = ["ghs_symbols", 'msds_form', 'signal_words', 'hazard_statements',]
@@ -1047,21 +1052,20 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeF
                         'hazard_level_pregnancy',)
                         }),
                     )
-                    
+
         return super(OrderPage,self).add_view(request, extra_context=extra_context)
 
     def change_view(self, request, object_id, extra_context=None):
-        
+
         # Specifies which fields should be shown in the change view
-        
+
         self.can_change = False
 
         if object_id:
             self.autocomplete_fields = ["ghs_symbols", 'msds_form', 'signal_words', 'hazard_statements',]
             self.raw_id_fields = []
-            
-            extra_context = extra_context or {}
 
+            extra_context = extra_context or {}
 
             self.fieldsets = (
                 (None, {
@@ -1086,16 +1090,16 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeF
                             'show_save_as_new': False,
                             'show_save': True
                             }
- 
+
             else:
-                
+
                 extra_context = {'show_close': True,
                             'show_save_and_add_another': False,
                             'show_save_and_continue': False,
                             'show_save_as_new': False,
                             'show_save': False
                             }
-        
+
         else:
             self.autocomplete_fields = []
             self.raw_id_fields = ["ghs_symbols", 'msds_form', 'signal_words', 'hazard_statements',]
@@ -1103,11 +1107,11 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeF
         return super(OrderPage,self).change_view(request, object_id, extra_context=extra_context)
 
     def get_formsets_with_inlines(self, request, obj=None):
-        
+
         # Remove AddOrderExtraDocInline from add/change form if user who
         # created an Order object is not the request user a Lab manager
         # or a superuser
-        
+
         if obj:
             for inline in self.get_inline_instances(request, obj):
                 if inline.verbose_name_plural == 'Existing extra docs':
@@ -1121,7 +1125,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeF
                     continue
                 else:
                     yield inline.get_formset(request, obj), inline
-    
+
     def item_description(self, instance):
         '''Custom item description field for changelist_view'''
 
@@ -1155,7 +1159,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeF
 
     def coloured_status(self, instance):
         '''Custom coloured status field for changelist_view'''
-        
+
         if instance.status:
 
             status = "urgent" if instance.urgent and instance.status == "submitted" else instance.status
@@ -1163,7 +1167,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeF
             message_status = instance.delivered_date.strftime('%d.%m.%Y') if instance.delivered_date and status != "used up" else status.capitalize()
 
             return mark_safe(f"<span class='order-status order-status-{status.replace(' ', '-')}'>{message_status}</span>")
-        
+
         else:
             return "-"
 
@@ -1179,10 +1183,10 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeF
         else:
             None
     trimmed_comment.short_description = 'Comments'
-    
+
     def msds_link (self, instance):
         '''Custom comment field for changelist_view'''
-        
+
         if instance.msds_form:
             return mark_safe('<a class="magnific-popup-iframe-msds" href="{0}">View</a>'.format(instance.msds_form.name.url))
         else:
@@ -1205,11 +1209,11 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeF
     cost_unit_name.admin_order_field = 'cost_unit__name'
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        
+
         try:
             request.resolver_match.args[0]
         except:
-            
+
             # Exclude certain users from the 'Created by' field in the order form
 
             if db_field.name == 'created_by':
@@ -1218,7 +1222,7 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeF
                 kwargs['initial'] = request.user.id
 
             # Sort cost_unit and locations fields by name
-            
+
             if db_field.name == "cost_unit":
                 kwargs["queryset"] = CostUnit.objects.exclude(status=True).order_by('name')
 
@@ -1227,13 +1231,6 @@ class OrderPage(DjangoQLSearchMixin, SimpleHistoryWithSummaryAdmin, AdminChangeF
 
         return super(OrderPage, self).formfield_for_foreignkey(db_field, request, **kwargs)
 
-    def get_history_array_fields(self):
-
-        return {**super(OrderPage, self).get_history_array_fields(),
-                'history_ghs_symbols': GhsSymbol,
-                'history_signal_words': SignalWord,
-                'history_hazard_statements': HazardStatement,
-                }
 
 #################################################
 #                MSDS FORM PAGES                #

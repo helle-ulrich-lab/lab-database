@@ -35,6 +35,11 @@
   <ul class="object-tools">
     {% block object-tools-items %}
 
+    {% if show_obj_permission %}
+    {% url opts|admin_urlname:'permissions' original.pk|admin_urlquote as history_url %}
+    <li><a href="{% add_preserved_filters history_url %}" class="permissionslink">{% trans "Object permissions" %}</a></li>
+    {% endif %}
+
     {% if plasmid_id_list %}
       {% if plasmid_id_list|length == 1 %}
         <li><a href="/collection/plasmid/?q-l=on&q=id+=+{{plasmid_id_list.0}}">{% trans "Plasmids" %}</a></li>

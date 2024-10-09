@@ -121,8 +121,8 @@
     <script type="text/javascript" src="{% static 'admin/js/admin/plasmid_change_form.js' %}"></script>
     <script type="text/javascript" src="{% static 'admin/js/vendor/jquery.magnific-popup.min.js' %}"></script>
     <script type="text/javascript">
-      const MagnificiFrameClassIds = ['magnific-popup-iframe-plasmidmap', "magnific-popup-iframe-findoligos"];
-      const MagnificImgClassIds = ['magnific-popup-img-plasmidmap'];
+      const MagnificiFrameClassIds = ['magnific-popup-iframe-map', "magnific-popup-iframe-findoligos"];
+      const MagnificImgClassIds = ['magnific-popup-img-map'];
       {% if original.map %} const oveUrls = {map: "{{original.get_ove_url_map}}"}; {% else %} const oveUrls = {}; {% endif %}
       {% if original.map_gbk %} oveUrls['map_gbk'] = "{{original.get_ove_url_map_gbk}}"; {% endif %}
     </script>

@@ -1,6 +1,6 @@
 // For /templates/admin/collection/plasmid/change_form.html
 
-$(window).on('load', function() {
+$(window).on('load', function () {
 
     // If there is a formz feature warning uncollapse formz section and highlight formz element field
     if (document.getElementsByClassName("missing-formz-features").length > 0) {
@@ -20,17 +20,17 @@ $(window).on('load', function() {
     }
 });
 
-$(document).ready(function() {
+$(document).ready(function () {
 
     // If map field changes add ShowLoading to form onsubmit and show toggle to decide if common features should be detected
-    $("#id_map,#id_map_gbk").change(function() {
+    $("#id_map,#id_map_gbk").change(function () {
 
         $("#plasmid_form").attr('onsubmit', 'ShowLoading()');
 
         const fieldName = $(this).attr('id').replace('id_', '');
 
         if ($(`#detect-common-features-dna_${fieldName}`).length < 1) {
-            var dna_map_field_label = Array.from(document.getElementsByTagName("label")).filter(function(e){return e.htmlFor === `id_${fieldName}`})[0];
+            var dna_map_field_label = Array.from(document.getElementsByTagName("label")).filter(function (e) { return e.htmlFor === `id_${fieldName}` })[0];
             dna_map_field_label.innerHTML = dna_map_field_label.innerHTML + '<br><br>';
 
             var detect_common_features_toggle = document.createElement('input');
@@ -49,14 +49,14 @@ $(document).ready(function() {
     });
 
     // Add "button" to show plasmid map as OVE plasmid preview in a magnific popup
-    
+
     $('.field-map,.field-map_gbk').each((i, e) => {
         let mapLinkElement = $(e).find('a')[0];
         if (mapLinkElement !== undefined) {
             const fieldName = $(e).attr('class').split(' ')[1].split('-')[1];
-            if (fieldName !== undefined) { 
-                let plasmidMapBaseUrl = oveUrls[fieldName];
-                $(`<a class="magnific-popup-iframe-plasmidmap" style="padding-left:10px; padding-right:10px;" href=${plasmidMapBaseUrl}>⊙</a>`).insertAfter(mapLinkElement);
+            if (fieldName !== undefined) {
+                let mapBaseUrl = oveUrls[fieldName];
+                $(`<a class="magnific-popup-iframe-map" style="padding-left:10px; padding-right:10px;" href=${mapBaseUrl}>⊙</a>`).insertAfter(mapLinkElement);
             }
         }
     }
@@ -65,7 +65,7 @@ $(document).ready(function() {
     // Show png map as a magnific popup
 
     let png_url = $('.field-map_png',).find('a')[0];
-    if (png_url !== undefined) png_url.classList.add("magnific-popup-img-plasmidmap");
+    if (png_url !== undefined) png_url.classList.add("magnific-popup-img-map");
 
 });
 

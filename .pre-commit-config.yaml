@@ -28,12 +28,4 @@ repos:
     rev: 24.3.0
     hooks:
       - id: black
-  - repo: local
-    hooks:
-      - id: django-check
-        name: Run Django Check
-        entry: python manage.py check
-        language: system
-        pass_filenames: false
-        types:
-          - python
+

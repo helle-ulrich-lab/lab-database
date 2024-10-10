@@ -20,6 +20,7 @@ from formz.models import FormZBaseElement, FormZProject, GenTechMethod, ZkbsPlas
 
 LAB_ABBREVIATION_FOR_FILES = getattr(settings, "LAB_ABBREVIATION_FOR_FILES", "")
 OVE_URL = getattr(settings, "OVE_URL", "")
+PLASMID_AS_ECOLI_STOCK = getattr(settings, "PLASMID_AS_ECOLI_STOCK", False)
 
 
 class Plasmid(DownloadFileNameMixin, models.Model, SaveWithoutHistoricalRecord):
@@ -236,8 +237,9 @@ class Plasmid(DownloadFileNameMixin, models.Model, SaveWithoutHistoricalRecord):
         self, force_insert=False, force_update=False, using=None, update_fields=None
     ):
 
-        # If destroyed date not present, automatically set it
-        if not self.destroyed_date:
+        # If destroyed date not present, automatically set it if a plasmid is
+        # not kept as E. coli stock
+        if not PLASMID_AS_ECOLI_STOCK and not self.destroyed_date:
             self.destroyed_date = datetime.now().date() + timedelta(
                 days=random.randint(7, 21)
             )

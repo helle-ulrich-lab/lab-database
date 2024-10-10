@@ -37,6 +37,7 @@ from formz.models import FormZBaseElement, FormZProject, GenTechMethod
 
 MEDIA_ROOT = settings.MEDIA_ROOT
 LAB_ABBREVIATION_FOR_FILES = getattr(settings, "LAB_ABBREVIATION_FOR_FILES", "")
+DEFAULT_ECOLI_STRAIN_IDS = getattr(settings, "DEFAULT_ECOLI_STRAIN_IDS", [])
 
 
 class SearchFieldOptUsernamePlasmid(SearchFieldOptUsername):
@@ -590,6 +591,11 @@ class PlasmidPage(
             extra_context.update({"show_redetect_save": True})
 
         return super().change_view(request, object_id, form_url, extra_context)
+
+    def get_form(self, request, obj=None, change=False, **kwargs):
+        form = super().get_form(request, obj, change, **kwargs)
+        form.base_fields["formz_ecoli_strains"].initial = DEFAULT_ECOLI_STRAIN_IDS
+        return form
 
     @admin.display(description="Map")
     def get_map_short_name(self, instance):

@@ -12,6 +12,7 @@ from import_export import resources
 from import_export.fields import Field
 
 from collection.admin.shared import (
+    AdminOligosInMap,
     CollectionUserProtectionAdmin,
     CustomGuardedModelAdmin,
     FieldCreated,
@@ -189,7 +190,10 @@ class PlasmidAddDocInline(AddDocFileInlineMixin):
 
 
 class PlasmidPage(
-    SortAutocompleteResultsId, CustomGuardedModelAdmin, CollectionUserProtectionAdmin
+    SortAutocompleteResultsId,
+    CustomGuardedModelAdmin,
+    CollectionUserProtectionAdmin,
+    AdminOligosInMap,
 ):
 
     list_display = (

@@ -374,6 +374,3 @@ class OligoPage(
                 return instance.sequence
             else:
                 return instance.sequence[0:75] + "..."
-
-    def change_view(self, request, object_id, form_url="", extra_context=None):
-        return super().change_view(request, object_id, form_url, extra_context)

@@ -598,7 +598,7 @@ class PlasmidPage(
 
     def get_form(self, request, obj=None, change=False, **kwargs):
         form = super().get_form(request, obj, change, **kwargs)
-        if not obj:
+        if not obj and "formz_ecoli_strains" in form.base_fields:
             form.base_fields["formz_ecoli_strains"].initial = DEFAULT_ECOLI_STRAIN_IDS
         return form
 

@@ -1,3 +1,5 @@
+import logging
+
 from django.contrib.admin import helpers
 from django.contrib.admin.utils import unquote
 from django.core.exceptions import PermissionDenied
@@ -11,24 +13,20 @@ from django.utils.translation import gettext as _
 from modelclone import ClonableModelAdmin
 from modelclone.admin import InlineAdminFormSetFakeOriginal
 
-import logging
-
 logger = logging.getLogger("logfile")
 
 
 class CustomClonableModelAdmin(ClonableModelAdmin):
 
     clone_ignore_fields = []
-    add_view_fields = []
     add_view_fieldsets = []
     change_form_template = None
+    obj_unmodifiable_fields = []
 
     def clone_view(self, request, object_id, form_url="", extra_context=None):
 
-        if self.add_view_fields:
-            self.fields = self.add_view_fields
-        elif self.add_view_fieldsets:
-            self.fieldsets = self.add_view_fieldsets
+        self.fieldsets = self.add_view_fieldsets.copy()
+        self.readonly_fields = self.set_readonly_fields + self.obj_unmodifiable_fields
 
         opts = self.model._meta
 

@@ -28,6 +28,7 @@ from django.template.loader import get_template
 from django.urls import re_path, reverse
 from django.utils import timezone
 from django.utils.html import format_html
+from djangoql.admin import DjangoQLSearchMixin
 from djangoql.schema import DateTimeField, IntField, StrField
 from guardian.admin import GuardedModelAdmin, UserManage
 from guardian.shortcuts import (
@@ -38,6 +39,12 @@ from guardian.shortcuts import (
 )
 
 from collection.models import Oligo
+from common.model_clone import CustomClonableModelAdmin
+from common.shared import (
+    AdminChangeFormWithNavigation,
+    SimpleHistoryWithSummaryAdmin,
+    ToggleDocInlineMixin,
+)
 from formz.models import (
     FormZBaseElement,
     FormZHeader,
@@ -47,14 +54,6 @@ from formz.models import (
 )
 from snapgene.pyclasses.client import Client
 from snapgene.pyclasses.config import Config
-from djangoql.admin import DjangoQLSearchMixin
-from common.model_clone import CustomClonableModelAdmin
-from common.shared import (
-    AdminChangeFormWithNavigation,
-    SimpleHistoryWithSummaryAdmin,
-    ToggleDocInlineMixin,
-)
-
 
 BASE_DIR = settings.BASE_DIR
 MEDIA_ROOT = settings.MEDIA_ROOT
@@ -881,7 +880,10 @@ class AdminOligosInMap(admin.ModelAdmin):
                     response = HttpResponse(
                         file_data, content_type="application/octet-stream"
                     )
-                    file_name = f"{obj._model_abbreviation}{LAB_ABBREVIATION_FOR_FILES}{obj.id} - {obj.name} (imported oligos).dna"
+                    file_name = (
+                        f"{obj._model_abbreviation}{LAB_ABBREVIATION_FOR_FILES}{obj.id}"
+                        + f" - {obj.name} (imported oligos).dna"
+                    )
                     response["Content-Disposition"] = (
                         f"attachment; filename*=utf-8''{urllib.parse.quote(file_name)}"
                     )

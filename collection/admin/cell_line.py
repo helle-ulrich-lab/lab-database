@@ -207,7 +207,9 @@ class CellLineEpisomalPlasmidInline(admin.TabularInline):
     autocomplete_fields = ["plasmid", "formz_projects"]
     model = CellLineEpisomalPlasmid
     verbose_name_plural = mark_safe(
-        'Transiently transfected plasmids <span style="text-transform:lowercase;">(virus packaging plasmids are highlighted in <span style="color:var(--accent)">yellow</span>)</span>'
+        'Transiently transfected plasmids <span style="text-transform:lowercase;">'
+        '(virus packaging plasmids are highlighted in <span style="color:var(--accent)">'
+        "yellow</span>)</span>"
     )
     verbose_name = "Episomal Plasmid"
     extra = 0

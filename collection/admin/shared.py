@@ -609,7 +609,12 @@ class CollectionUserProtectionAdmin(Approval, CollectionBaseAdmin):
         change_view_fieldsets = self.change_view_fieldsets.copy()
         # For approval view, uncollapse FormZ section
         if request.GET.get("_approval", ""):
-            change_view_fieldsets[1][1]["classes"] = tuple()
+            formz_idx = next(
+                filter(lambda f: f[1][0] == "FormZ", enumerate(change_view_fieldsets)),
+                None,
+            )
+            if formz_idx:
+                change_view_fieldsets[formz_idx[0]][1]["classes"] = tuple()
         self.fieldsets = change_view_fieldsets
 
         # If available, add plasmids in stocked strain to context

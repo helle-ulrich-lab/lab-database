@@ -366,6 +366,7 @@ class CollectionBaseAdmin(
     m2m_save_ignore_fields = []
     set_readonly_fields = []
     readonly_fields = []
+    show_formz = False
 
     def save_history_fields(self, form, obj=None):
 
@@ -608,7 +609,7 @@ class CollectionUserProtectionAdmin(Approval, CollectionBaseAdmin):
         # Set fieldsets
         change_view_fieldsets = self.change_view_fieldsets.copy()
         # For approval view, uncollapse FormZ section
-        if request.GET.get("_approval", ""):
+        if request.GET.get("_approval", "") and self.show_formz:
             formz_idx = next(
                 filter(lambda f: f[1][0] == "FormZ", enumerate(change_view_fieldsets)),
                 None,

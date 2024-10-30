@@ -1,24 +1,39 @@
-from urllib.parse import urlencode
-
 from django.conf import settings
-from django.contrib.auth.models import User
-from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
-from django.forms import ValidationError
-from simple_history.models import HistoricalRecords
 
-from approval.models import RecordToBeApproved
 from collection.models import Oligo, Plasmid
+from collection.models.shared import (
+    ApprovalFieldsMixin,
+    CommonCollectionModelPropertiesMixin,
+    FormZFieldsMixin,
+    HistoryDocFieldMixin,
+    HistoryFieldMixin,
+    MapFileChecPropertieskMixin,
+    OwnershipFieldsMixin,
+)
 from common.models import DocFileMixin, SaveWithoutHistoricalRecord
-from formz.models import FormZBaseElement, FormZProject, GenTechMethod
+from formz.models import FormZBaseElement, GenTechMethod
 
-OVE_URL = getattr(settings, "OVE_URL", "")
 WORM_ALLELE_LAB_IDS = getattr(settings, "WORM_ALLELE_LAB_IDS", None)
 WORM_ALLELE_LAB_ID_DEFAULT = getattr(settings, "WORM_ALLELE_LAB_ID_DEFAULT", "")
 
+################################################
+#              Worm Strain Allele              #
+################################################
 
-class WormStrainAllele(models.Model):
+
+class WormStrainAllele(
+    HistoryDocFieldMixin,
+    HistoryFieldMixin,
+    MapFileChecPropertieskMixin,
+    OwnershipFieldsMixin,
+    models.Model,
+):
+
+    class Meta:
+        verbose_name = "allele - Worm"
+        verbose_name_plural = "alleles - Worm"
 
     _model_abbreviation = "wa"
     _model_upload_to = "collection/wormstrainallele/"
@@ -37,7 +52,6 @@ class WormStrainAllele(models.Model):
         max_length=5,
         blank=False,
     )
-
     transgene = models.CharField("transgene", max_length=255, blank=True)
     transgene_position = models.CharField(
         "transgene position", max_length=255, blank=True
@@ -45,32 +59,29 @@ class WormStrainAllele(models.Model):
     transgene_plasmids = models.CharField(
         "Transgene plasmids", max_length=255, blank=True
     )
-
     mutation = models.CharField("mutation", max_length=255, blank=True)
     mutation_type = models.CharField("mutation type", max_length=255, blank=True)
     mutation_position = models.CharField(
         "mutation position", max_length=255, blank=True
     )
-
     reference_strain = models.ForeignKey(
         "WormStrain",
         verbose_name="reference strain",
         on_delete=models.PROTECT,
-        related_name="allele_worm_reference_strain",
+        related_name="%(class)s_reference_strain",
         blank=False,
         null=False,
     )
     made_by_method = models.ForeignKey(
         GenTechMethod,
         verbose_name="made by method",
-        related_name="allele_worm_method",
+        related_name="%(class)s_made_by_method",
         help_text="The methods used to create the allele",
         on_delete=models.PROTECT,
         blank=False,
     )
     made_by_person = models.CharField("made by person", max_length=255, blank=False)
     note = models.CharField("note", max_length=255, blank=True)
-
     map = models.FileField(
         "map (.dna)",
         help_text="only SnapGene .dna files, max. 2 MB",
@@ -86,14 +97,6 @@ class WormStrainAllele(models.Model):
         help_text="only .gbk or .gb files, max. 2 MB",
         blank=True,
     )
-
-    created_date_time = models.DateTimeField("created", auto_now_add=True)
-    last_changed_date_time = models.DateTimeField("last changed", auto_now=True)
-    created_by = models.ForeignKey(
-        User, related_name="wormstrainallele_createdby_user", on_delete=models.PROTECT
-    )
-    history = HistoricalRecords()
-
     formz_elements = models.ManyToManyField(
         FormZBaseElement,
         verbose_name="elements",
@@ -102,8 +105,6 @@ class WormStrainAllele(models.Model):
         blank=True,
     )
 
-    # Fields to keep a record of M2M field values in the main plasmid record: IDs for formz_projects
-    # and names for formz_elements
     history_formz_elements = ArrayField(
         models.PositiveIntegerField(),
         verbose_name="formz elements",
@@ -111,81 +112,6 @@ class WormStrainAllele(models.Model):
         null=True,
         default=list,
     )
-    history_documents = ArrayField(
-        models.PositiveIntegerField(),
-        verbose_name="documents",
-        blank=True,
-        null=True,
-        default=list,
-    )
-
-    class Meta:
-        verbose_name = "allele - Worm"
-        verbose_name_plural = "alleles - Worm"
-
-    def clean(self):
-
-        errors = []
-
-        file_size_limit = 2 * 1024 * 1024
-
-        if self.map:
-
-            # Check if file is bigger than 2 MB
-            if self.map.size > file_size_limit:
-                errors.append(
-                    ValidationError("The map is too large. Size cannot exceed 2 MB.")
-                )
-
-            # Check if file's extension is '.dna'
-            try:
-                map_ext = self.map.name.split(".")[-1].lower()
-            except:
-                map_ext = None
-            if map_ext == None or map_ext != "dna":
-                errors.append(
-                    ValidationError(
-                        "Invalid file format. Please select a valid SnapGene .dna file"
-                    )
-                )
-            else:
-
-                # Check if .dna file is a real SnapGene file
-
-                dna_map_handle = self.map.open("rb")
-
-                first_byte = dna_map_handle.read(1)
-                dna_map_handle.read(4)
-                title = dna_map_handle.read(8).decode("ascii")
-                if first_byte != b"\t" and title != "SnapGene":
-                    errors.append(
-                        ValidationError(
-                            "Invalid file format. Please select a valid SnapGene .dna file"
-                        )
-                    )
-
-        if self.map_gbk:
-
-            # Check if file is bigger than 2 MB
-            if self.map_gbk.size > file_size_limit:
-                errors.append(
-                    ValidationError("The map is too large. Size cannot exceed 2 MB.")
-                )
-
-            # Check if file's extension is '.gbk'
-            try:
-                map_ext = self.map_gbk.name.split(".")[-1].lower()
-            except:
-                map_ext = None
-            if map_ext == None or map_ext not in ["gbk", "gb"]:
-                errors.append(
-                    ValidationError(
-                        "Invalid file format. Please select a valid GenBank (.gbk or .gb) file"
-                    )
-                )
-
-        if len(errors) > 0:
-            raise ValidationError(errors)
 
     def __str__(self):
         return f"{self.lab_identifier}{self.id} - {self.name}"
@@ -198,67 +124,17 @@ class WormStrainAllele(models.Model):
     def download_file_name(self):
         return self.__str__()
 
-    def get_all_uncommon_formz_elements(self):
-        """Returns all uncommon features in stocked organism"""
+    @property
+    def all_uncommon_formz_elements(self):
 
         elements = self.formz_elements.filter(common_feature=False).order_by("name")
         return elements
 
-    def get_all_common_formz_elements(self):
-        """Returns all common features in stocked organism"""
+    @property
+    def all_common_formz_elements(self):
 
         elements = self.formz_elements.filter(common_feature=True).order_by("name")
         return elements
-
-    def convert_png_map_to_base64(self):
-        import base64
-
-        """Returns html image element for map"""
-
-        png_data = base64.b64encode(open(self.map_png.path, "rb").read()).decode(
-            "ascii"
-        )
-        return str(png_data)
-
-    def utf8_encoded_gbk(self):
-        """Returns a decoded gbk plasmid map"""
-
-        return self.map_gbk.read().decode()
-
-    def get_ove_url_map(self):
-        """Returns the url to view the a SnapGene file in OVE"""
-
-        params = {
-            "file_name": self.map.url,
-            "title": self.__str__(),
-            "file_format": "dna",
-        }
-
-        return f"{OVE_URL}?{urlencode(params)}"
-
-    def get_ove_url_map_gbk(self):
-        """Returns the url to view the a gbk file in OVE"""
-
-        params = {
-            "file_name": self.map_gbk.url,
-            "title": self.__str__(),
-            "file_format": "gbk",
-        }
-
-        return f"{OVE_URL}?{urlencode(params)}"
-
-    def get_ove_url_find_oligos_map_gbk(self):
-        """Returns the url to import all oligos into the map
-        and view it in OVE"""
-
-        params = {
-            "file_name": f"/{self._meta.app_label}/{self._meta.model_name}/{self.pk}/find_oligos/",
-            "title": f"{self.__str__()} (imported oligos)",
-            "file_format": "gbk",
-            "show_oligos": "true",
-        }
-
-        return f"{OVE_URL}?{urlencode(params)}"
 
 
 WORM_SPECIES_CHOICES = (
@@ -270,7 +146,27 @@ WORM_SPECIES_CHOICES = (
 )
 
 
-class WormStrain(models.Model, SaveWithoutHistoricalRecord):
+################################################
+#                  Worm Strain                 #
+################################################
+
+
+class WormStrain(
+    SaveWithoutHistoricalRecord,
+    CommonCollectionModelPropertiesMixin,
+    FormZFieldsMixin,
+    HistoryFieldMixin,
+    HistoryDocFieldMixin,
+    ApprovalFieldsMixin,
+    OwnershipFieldsMixin,
+    models.Model,
+):
+
+    class Meta:
+        verbose_name = "strain - Worm"
+        verbose_name_plural = "strains - Worm"
+
+    _model_abbreviation = "w"
 
     name = models.CharField("name", max_length=255, blank=False)
     chromosomal_genotype = models.TextField("chromosomal genotype", blank=True)
@@ -278,7 +174,7 @@ class WormStrain(models.Model, SaveWithoutHistoricalRecord):
         "self",
         verbose_name="Parent 1",
         on_delete=models.PROTECT,
-        related_name="worm_parent_1",
+        related_name="%(class)s_parent_1",
         help_text="Main parental strain",
         blank=True,
         null=True,
@@ -287,7 +183,7 @@ class WormStrain(models.Model, SaveWithoutHistoricalRecord):
         "self",
         verbose_name="Parent 2",
         on_delete=models.PROTECT,
-        related_name="worm_parent_2",
+        related_name="%(class)s_parent_2",
         help_text="Only for crosses",
         blank=True,
         null=True,
@@ -308,11 +204,14 @@ class WormStrain(models.Model, SaveWithoutHistoricalRecord):
     integrated_dna_plasmids = models.ManyToManyField(
         Plasmid,
         verbose_name="plasmids",
-        related_name="worm_integrated_plasmid",
+        related_name="%(class)s_integrated_plasmids",
         blank=True,
     )
     integrated_dna_oligos = models.ManyToManyField(
-        Oligo, verbose_name="oligos", related_name="worm_integrated_oligo", blank=True
+        Oligo,
+        verbose_name="oligos",
+        related_name="%(class)s_integrated_oligos",
+        blank=True,
     )
 
     selection = models.CharField("selection", max_length=255, blank=True)
@@ -329,60 +228,13 @@ class WormStrain(models.Model, SaveWithoutHistoricalRecord):
         "location Freezer 2", max_length=10, blank=True
     )
     location_backup = models.CharField("location Backup", max_length=10, blank=True)
-
     alleles = models.ManyToManyField(
         WormStrainAllele,
         verbose_name="alleles",
-        related_name="worm_alleles",
+        related_name="%(class)s_alleles",
         blank=True,
     )
 
-    created_date_time = models.DateTimeField("created", auto_now_add=True)
-    created_approval_by_pi = models.BooleanField(
-        "record creation approval", default=False
-    )
-    last_changed_date_time = models.DateTimeField("last changed", auto_now=True)
-    last_changed_approval_by_pi = models.BooleanField(
-        "record change approval", default=None, null=True
-    )
-    approval_by_pi_date_time = models.DateTimeField(null=True, default=None)
-    approval = GenericRelation(RecordToBeApproved)
-    approval_user = models.ForeignKey(
-        User, related_name="worm_approval_user", on_delete=models.PROTECT, null=True
-    )
-    created_by = models.ForeignKey(
-        User, related_name="worm_createdby_user", on_delete=models.PROTECT
-    )
-    history = HistoricalRecords()
-
-    formz_projects = models.ManyToManyField(
-        FormZProject,
-        verbose_name="projects",
-        related_name="worm_formz_project",
-        blank=False,
-    )
-    formz_risk_group = models.PositiveSmallIntegerField(
-        "risk group", choices=((1, 1), (2, 2)), blank=False, null=True
-    )
-    formz_gentech_methods = models.ManyToManyField(
-        GenTechMethod,
-        verbose_name="genTech methods",
-        related_name="worm_gentech_method",
-        blank=True,
-        help_text="The methods used to create the strain",
-    )
-    formz_elements = models.ManyToManyField(
-        FormZBaseElement,
-        verbose_name="elements",
-        related_name="worm_formz_element",
-        help_text="Use only when an element is not present in the chosen plasmid(s), if any. "
-        "Searching against the aliases of an element is case-sensitive. "
-        '<a href="/formz/formzbaseelement/" target="_blank">View all/Change</a>',
-        blank=True,
-    )
-    destroyed_date = models.DateField("destroyed", blank=True, null=True)
-
-    # Fields to keep a record of M2M field values (only IDs!) in the main strain record
     history_integrated_dna_plasmids = ArrayField(
         models.PositiveIntegerField(),
         verbose_name="integrated plasmids",
@@ -397,37 +249,9 @@ class WormStrain(models.Model, SaveWithoutHistoricalRecord):
         null=True,
         default=list,
     )
-    history_formz_projects = ArrayField(
-        models.PositiveIntegerField(),
-        verbose_name="formZ projects",
-        blank=True,
-        null=True,
-        default=list,
-    )
-    history_formz_gentech_methods = ArrayField(
-        models.PositiveIntegerField(),
-        verbose_name="genTech methods",
-        blank=True,
-        null=True,
-        default=list,
-    )
-    history_formz_elements = ArrayField(
-        models.PositiveIntegerField(),
-        verbose_name="formz elements",
-        blank=True,
-        null=True,
-        default=list,
-    )
     history_genotyping_oligos = ArrayField(
         models.PositiveIntegerField(),
         verbose_name="genotyping oligos",
-        blank=True,
-        null=True,
-        default=list,
-    )
-    history_documents = ArrayField(
-        models.PositiveIntegerField(),
-        verbose_name="documents",
         blank=True,
         null=True,
         default=list,
@@ -440,16 +264,11 @@ class WormStrain(models.Model, SaveWithoutHistoricalRecord):
         default=list,
     )
 
-    _model_abbreviation = "w"
-
-    class Meta:
-        verbose_name = "strain - Worm"
-        verbose_name_plural = "strains - Worm"
-
     def __str__(self):
-        return "{} - {}".format(self.id, self.name)
+        return f"{self.id} - {self.name}"
 
-    def get_all_uncommon_formz_elements(self):
+    @property
+    def all_uncommon_formz_elements(self):
         """Returns all uncommon features in stocked organism"""
 
         elements = self.formz_elements.all()
@@ -465,7 +284,8 @@ class WormStrain(models.Model, SaveWithoutHistoricalRecord):
         elements = elements.distinct().filter(common_feature=False).order_by("name")
         return elements
 
-    def get_all_common_formz_elements(self):
+    @property
+    def all_common_formz_elements(self):
         """Returns all common features in stocked organism"""
 
         elements = self.formz_elements.all()
@@ -481,17 +301,20 @@ class WormStrain(models.Model, SaveWithoutHistoricalRecord):
         elements = elements.distinct().filter(common_feature=True).order_by("name")
         return elements
 
-    def get_all_instock_plasmids(self):
+    @property
+    def all_instock_plasmids(self):
         """Returns all plasmids present in the stocked organism"""
 
         return self.integrated_dna_plasmids.all().distinct().order_by("id")
 
-    def get_all_transient_episomal_plasmids(self):
+    @property
+    def all_transient_episomal_plasmids(self):
         """Returns all transiently transformed episomal plasmids"""
 
         return None
 
-    def get_all_maps(self):
+    @property
+    def all_plasmids_with_maps(self):
         """Returns all plasmids and alleles with a map"""
 
         return list(
@@ -501,51 +324,62 @@ class WormStrain(models.Model, SaveWithoutHistoricalRecord):
         )
 
 
+################################################
+#         Worm Strain Genotyping Assay         #
+################################################
+
+
 class WormStrainGenotypingAssay(models.Model):
-
-    _inline_foreignkey_fieldname = "worm_strain"
-
-    worm_strain = models.ForeignKey(WormStrain, on_delete=models.PROTECT)
-    locus_allele = models.CharField("locus/allele", max_length=255, blank=False)
-    oligos = models.ManyToManyField(
-        Oligo, related_name="wormstrain_genotypingassay_oligo", blank=False
-    )
 
     class Meta:
         verbose_name = "worm strain genotyping assay"
         verbose_name_plural = "worm strain genotyping assays"
 
+    _inline_foreignkey_fieldname = "worm_strain"
+
+    worm_strain = models.ForeignKey(WormStrain, on_delete=models.PROTECT)
+    locus_allele = models.CharField("locus/allele", max_length=255, blank=False)
+    oligos = models.ManyToManyField(Oligo, related_name="%(class)s_oligos", blank=False)
+
     def __str__(self):
         return str(self.id)
 
 
+################################################
+#               Worm Strain Doc                #
+################################################
+
+
 class WormStrainDoc(DocFileMixin):
 
+    class Meta:
+        verbose_name = "worm strain document"
+
     _inline_foreignkey_fieldname = "worm_strain"
-
-    worm_strain = models.ForeignKey(WormStrain, on_delete=models.PROTECT)
-
     _mixin_props = {
         "destination_dir": "collection/wormstraindoc/",
         "file_prefix": "wDoc",
         "parent_field_name": "worm_strain",
     }
 
-    class Meta:
-        verbose_name = "worm strain document"
+    worm_strain = models.ForeignKey(WormStrain, on_delete=models.PROTECT)
+
+
+################################################
+#            Worm Strain Allele Doc            #
+################################################
 
 
 class WormStrainAlleleDoc(DocFileMixin):
 
+    class Meta:
+        verbose_name = "worm strain allele document"
+
     _inline_foreignkey_fieldname = "worm_strain_allele"
-
-    worm_strain_allele = models.ForeignKey(WormStrainAllele, on_delete=models.PROTECT)
-
     _mixin_props = {
         "destination_dir": "collection/wormstrainalleledoc/",
         "file_prefix": "waDoc",
         "parent_field_name": "worm_strain_allele",
     }
 
-    class Meta:
-        verbose_name = "worm strain allele document"
+    worm_strain_allele = models.ForeignKey(WormStrainAllele, on_delete=models.PROTECT)

@@ -66,7 +66,7 @@
       <div class="find-oligo">
         <div>{% trans "Find Oligos" %}</div>
         <a title='Download result as .dna file' style="pointer-events: all;" onclick="downloadMapWithImportedOligos(event)" download_url="{% url "admin:app_list" app_label %}{{opts.model_name}}/{{object_id}}/find_oligos/?file_format=dna">🠇</a>
-        <a title='View result in OVE' style='margin-left:5px' class="magnific-popup-iframe-findoligos" href="{{original.get_ove_url_find_oligos_map_gbk}}">⊙</a>
+        <a title='View result in OVE' style='margin-left:5px' class="magnific-popup-iframe-findoligos" href="{{original.find_oligos_map_gbk_ove_url}}">⊙</a>
       </div>
     </li>
     {% endif %}
@@ -123,8 +123,8 @@
     <script type="text/javascript">
       const MagnificiFrameClassIds = ['magnific-popup-iframe-map', "magnific-popup-iframe-findoligos"];
       const MagnificImgClassIds = ['magnific-popup-img-map'];
-      {% if original.map %} const oveUrls = {map: "{{original.get_ove_url_map}}"}; {% else %} const oveUrls = {}; {% endif %}
-      {% if original.map_gbk %} oveUrls['map_gbk'] = "{{original.get_ove_url_map_gbk}}"; {% endif %}
+      {% if original.map %} const oveUrls = {map: "{{original.map_ove_url}}"}; {% else %} const oveUrls = {}; {% endif %}
+      {% if original.map_gbk %} oveUrls['map_gbk'] = "{{original.map_ove_url_gbk}}"; {% endif %}
     </script>
     <script type="text/javascript" src="{% static 'admin/js/admin/MagnificPopUpiFrame.js' %}"></script>
     <script type="text/javascript" src="{% static 'admin/js/admin/MagnificPopUpImg.js' %}"></script>

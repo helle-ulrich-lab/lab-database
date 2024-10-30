@@ -111,8 +111,8 @@
             <div><span style='font-weight: bold'>Genotyp:</span> {{object.chromosomal_genotype}}</div>
         {% elif object.genotype %}
             <div><span style='font-weight: bold'>Genotyp:</span> {{object.genotype}}</div>
-        {% elif object.get_genotype %}
-            <div><span style='font-weight: bold'>Genotyp:</span> {{object.get_genotype}}</div>
+        {% elif object.genotype %}
+            <div><span style='font-weight: bold'>Genotyp:</span> {{object.genotype}}</div>
         {% endif %}
         <div><span style='font-weight: bold'>Projekt/e:</span>
             {% if object.formz_projects.all|length == 1 %}
@@ -198,7 +198,7 @@
                 <li>
                     <a class="magnific-popup-iframe-plasmid" href="{% url 'admin:collection_plasmid_change' plasmid.id %}?_to_field=id&_popup=1" target="_blank">Plasmid #{{plasmid}}</a>
                     {% if plasmid.map %}
-                        (<a style='text-transform: none' href="{{plasmid.map_gbk.url}}">.gbk<a class="magnific-popup-iframe-plasmid-map" href={{plasmid.get_ove_url_map_gbk}}>⊙</a>,
+                        (<a style='text-transform: none' href="{{plasmid.map_gbk.url}}">.gbk<a class="magnific-popup-iframe-plasmid-map" href={{plasmid.map_ove_url_gbk}}>⊙</a>,
                         <a  class="magnific-popup-img-plasmid-map" style='text-transform: none' href="{{plasmid.map_png.url}}">.png</a>)
                     {% endif %}
                     {% if plasmid.vector_zkbs %}
@@ -330,7 +330,7 @@
                                 <a class="magnific-popup-iframe-transient-episomal-plasmid" href="{% url 'admin:collection_plasmid_change' plasmid.plasmid.id %}?_to_field=id&_popup=1" target="_blank">Plasmid #{{plasmid.plasmid}}</a>
                                 <span style="text-transform: none">
                                 {% if plasmid.plasmid.map %}
-                                       (<a href="{{plasmid.plasmid.map_gbk.url}}">.gbk</a><a class="magnific-popup-iframe-transient-episomal-plasmid-map" href={{plasmid.plasmid.get_ove_url_map_gbk}}>⊙</a>,
+                                       (<a href="{{plasmid.plasmid.map_gbk.url}}">.gbk</a><a class="magnific-popup-iframe-transient-episomal-plasmid-map" href={{plasmid.plasmid.map_ove_url_gbk}}>⊙</a>,
                                         <a class="magnific-popup-img-transient-episomal-plasmid-map" href="{{plasmid.plasmid.map_png.url}}">.png</a>)
                                     {% endif %}
                                     - Organismus {% if transfected %}transfiziert{% else %}transformiert{% endif %} am {{plasmid.created_date | date:"d.m.Y"}}, unter Projekt/e:
@@ -364,7 +364,7 @@
                         </tr>
                     </thead>
                         {% if plasmid.plasmid.formz_elements.all %}
-                            {% if plasmid.plasmid.get_all_uncommon_formz_elements %}
+                            {% if plasmid.plasmid.all_uncommon_formz_elements %}
                                 <thead>
                                     <tr>
                                         <th scope="col" class="column-name" style="text-align:center">
@@ -395,7 +395,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                        {% for formz_elem in plasmid.plasmid.get_all_uncommon_formz_elements %}
+                                        {% for formz_elem in plasmid.plasmid.all_uncommon_formz_elements %}
                                             <tr class="row">
                                                 <td class="field-name"><a class="magnific-popup-iframe-transient-episomal-plasmid-formzbaseelement-uncommon" href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}?_to_field=id&_popup=1" target="_blank">{{formz_elem.name}}</a></td>
                                                 <td class="field-donor_organism" style="text-align:center;">{% if formz_elem.get_donor_species_names %}{{formz_elem.get_donor_species_names}}{% else %}Artifiziell{% endif %}</td>
@@ -421,7 +421,7 @@
                         {% endif %}
                         </table>        
                         
-                        {% if plasmid.plasmid.get_all_common_formz_elements %}
+                        {% if plasmid.plasmid.all_common_formz_elements %}
                             <table>
                                 <thead>
                                     <th  colspan="5" scope="col" class="column-common_features">
@@ -431,7 +431,7 @@
                                 <tbody>
                                     <tr>
                                         <td  colspan="5" scope="col" class="column-common_features">
-                                            {% for formz_elem in plasmid.plasmid.get_all_common_formz_elements %}
+                                            {% for formz_elem in plasmid.plasmid.all_common_formz_elements %}
                                                 {% if not forloop.last %}
                                                     <a class="magnific-popup-iframe-transient-episomal-plasmid-formzbaseelement-common" href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}?_to_field=id&_popup=1" target="_blank">{{formz_elem.name}}</a>,
                                                 {% else %}
@@ -465,7 +465,7 @@
                                     <a class="magnific-popup-iframe-s2-plasmid" href="{% url 'admin:collection_plasmid_change' plasmid.plasmid.id %}?_to_field=id&_popup=1" target="_blank">Plasmid #{{plasmid.plasmid}}</a>
                                     <span style="text-transform: none">
                                         {% if plasmid.plasmid.map %}
-                                        (<a href="{{plasmid.plasmid.map_gbk.url}}">.gbk</a><a class="magnific-popup-iframe-s2-plasmid-map" href={{plasmid.plasmid.get_ove_url_map_gbk}}>⊙</a>,
+                                        (<a href="{{plasmid.plasmid.map_gbk.url}}">.gbk</a><a class="magnific-popup-iframe-s2-plasmid-map" href={{plasmid.plasmid.map_ove_url_gbk}}>⊙</a>,
                                          <a  class="magnific-popup-iframe-s2-plasmid-map" href="{{plasmid.plasmid.map_png.url}}">.png</a>);
                                         {% endif %}
                                         {% if not plasmid.plasmid.map and plasmid.created_date %}
@@ -505,7 +505,7 @@
                             </tr>
                         </thead>
                             {% if plasmid.plasmid.formz_elements.all %}
-                                {% if plasmid.plasmid.get_all_uncommon_formz_elements %}
+                                {% if plasmid.plasmid.all_uncommon_formz_elements %}
                                     <thead>
                                         <tr>
                                             <th scope="col" class="column-name" style="text-align:center">
@@ -536,7 +536,7 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                            {% for formz_elem in plasmid.plasmid.get_all_uncommon_formz_elements %}
+                                            {% for formz_elem in plasmid.plasmid.all_uncommon_formz_elements %}
                                                 <tr class="row">
                                                     <td class="field-name"><a class="magnific-popup-iframe-s2-formzbaseelement-uncommon" href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}?_to_field=id&_popup=1" target="_blank">{{formz_elem.name}}</a></td>
                                                     <td class="field-donor_organism" style="text-align:center;">{% if formz_elem.get_donor_species_names %}{{formz_elem.get_donor_species_names}}{% else %}Artifiziell{% endif %}</td>
@@ -562,7 +562,7 @@
                             {% endif %}
                             </table>        
                             
-                            {% if plasmid.plasmid.get_all_common_formz_elements %}
+                            {% if plasmid.plasmid.all_common_formz_elements %}
                                 <table>
                                     <thead>
                                         <th  colspan="5" scope="col" class="column-common_features">
@@ -572,7 +572,7 @@
                                     <tbody>
                                         <tr>
                                             <td  colspan="5" scope="col" class="column-common_features">
-                                                {% for formz_elem in plasmid.plasmid.get_all_common_formz_elements %}
+                                                {% for formz_elem in plasmid.plasmid.all_common_formz_elements %}
                                                     {% if not forloop.last %}
                                                         <a class="magnific-popup-iframe-s2-formzbaseelement-common" href="{% url 'admin:formz_formzbaseelement_change' formz_elem.id %}?_to_field=id&_popup=1" target="_blank">{{formz_elem.name}}</a>,
                                                     {% else %}

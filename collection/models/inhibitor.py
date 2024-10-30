@@ -1,22 +1,35 @@
-from django.contrib.auth.models import User
-from django.contrib.postgres.fields import ArrayField
 from django.db import models
-from simple_history.models import HistoricalRecords
 
-from collection.models.shared import InfoSheetMaxSizeMixin
+from collection.models.shared import (
+    HistoryDocFieldMixin,
+    HistoryFieldMixin,
+    InfoSheetMaxSizeMixin,
+    OwnershipFieldsMixin,
+)
 from common.models import (
     DocFileMixin,
     DownloadFileNameMixin,
     SaveWithoutHistoricalRecord,
 )
 
+################################################
+#                   Inhibitor                  #
+################################################
+
 
 class Inhibitor(
-    InfoSheetMaxSizeMixin,
-    DownloadFileNameMixin,
-    models.Model,
     SaveWithoutHistoricalRecord,
+    DownloadFileNameMixin,
+    InfoSheetMaxSizeMixin,
+    HistoryDocFieldMixin,
+    HistoryFieldMixin,
+    OwnershipFieldsMixin,
+    models.Model,
 ):
+
+    class Meta:
+        verbose_name = "inhibitor"
+        verbose_name_plural = "inhibitors"
 
     _model_abbreviation = "ib"
     _model_upload_to = "collection/inhibitor/"
@@ -39,35 +52,25 @@ class Inhibitor(
         null=True,
     )
 
-    created_date_time = models.DateTimeField("created", auto_now_add=True)
-    last_changed_date_time = models.DateTimeField("last changed", auto_now=True)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT)
-    history = HistoricalRecords()
-
-    history_documents = ArrayField(
-        models.PositiveIntegerField(),
-        verbose_name="documents",
-        blank=True,
-        null=True,
-        default=list,
-    )
-
-    class Meta:
-        verbose_name = "inhibitor"
-        verbose_name_plural = "inhibitors"
-
     def __str__(self):
-        return str(self.id)
+        return f"{self.id} - {self.name}"
+
+
+################################################
+#                 Inhibitor Doc                #
+################################################
 
 
 class InhibitorDoc(DocFileMixin):
-    inhibitor = models.ForeignKey(Inhibitor, on_delete=models.PROTECT)
 
+    class Meta:
+        verbose_name = "inhibitor document"
+
+    _inline_foreignkey_fieldname = "inhibitor"
     _mixin_props = {
         "destination_dir": "collection/inhibitordoc/",
         "file_prefix": "ibDoc",
         "parent_field_name": "inhibitor",
     }
 
-    class Meta:
-        verbose_name = "inhibitor document"
+    inhibitor = models.ForeignKey(Inhibitor, on_delete=models.PROTECT)

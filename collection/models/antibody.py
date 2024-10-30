@@ -1,22 +1,35 @@
-from django.contrib.auth.models import User
-from django.contrib.postgres.fields import ArrayField
 from django.db import models
-from simple_history.models import HistoricalRecords
 
-from collection.models.shared import InfoSheetMaxSizeMixin
+from collection.models.shared import (
+    HistoryDocFieldMixin,
+    HistoryFieldMixin,
+    InfoSheetMaxSizeMixin,
+    OwnershipFieldsMixin,
+)
 from common.models import (
     DocFileMixin,
     DownloadFileNameMixin,
     SaveWithoutHistoricalRecord,
 )
 
+################################################
+#                   Antibody                   #
+################################################
+
 
 class Antibody(
-    InfoSheetMaxSizeMixin,
-    DownloadFileNameMixin,
-    models.Model,
     SaveWithoutHistoricalRecord,
+    DownloadFileNameMixin,
+    InfoSheetMaxSizeMixin,
+    HistoryDocFieldMixin,
+    HistoryFieldMixin,
+    OwnershipFieldsMixin,
+    models.Model,
 ):
+
+    class Meta:
+        verbose_name = "antibody"
+        verbose_name_plural = "antibodies"
 
     _model_abbreviation = "ab"
     _model_upload_to = "collection/antibody/"
@@ -38,35 +51,25 @@ class Antibody(
     )
     availability = models.BooleanField("available?", default=True, null=False)
 
-    created_date_time = models.DateTimeField("created", auto_now_add=True)
-    last_changed_date_time = models.DateTimeField("last changed", auto_now=True)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT)
-    history = HistoricalRecords()
+    def __str__(self):
+        return f"{self.id} - {self.name}"
 
-    history_documents = ArrayField(
-        models.PositiveIntegerField(),
-        verbose_name="documents",
-        blank=True,
-        null=True,
-        default=list,
-    )
 
-    class Meta:
-        verbose_name = "antibody"
-        verbose_name_plural = "antibodies"
+################################################
+#                 Antibody Doc                 #
+################################################
 
 
 class AntibodyDoc(DocFileMixin):
 
+    class Meta:
+        verbose_name = "antibody document"
+
     _inline_foreignkey_fieldname = "antibody"
-
-    antibody = models.ForeignKey(Antibody, on_delete=models.PROTECT)
-
     _mixin_props = {
         "destination_dir": "collection/antibodydoc/",
         "file_prefix": "abDoc",
         "parent_field_name": "antibody",
     }
 
-    class Meta:
-        verbose_name = "antibody document"
+    antibody = models.ForeignKey(Antibody, on_delete=models.PROTECT)

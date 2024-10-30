@@ -1,26 +1,43 @@
 import random
 from datetime import timedelta
 
-from django.contrib.auth.models import User
-from django.contrib.contenttypes.fields import GenericRelation
-from django.contrib.postgres.fields import ArrayField
 from django.db import models
-from simple_history.models import HistoricalRecords
 
-from approval.models import RecordToBeApproved
-from common.models import DocFileMixin, SaveWithoutHistoricalRecord
-from formz.models import (
-    FormZBaseElement,
-    FormZProject,
-    GenTechMethod,
-    Species,
-    ZkbsCellLine,
+from collection.models.shared import (
+    ApprovalFieldsMixin,
+    CommonCollectionModelPropertiesMixin,
+    FormZFieldsMixin,
+    HistoryDocFieldMixin,
+    HistoryFieldMixin,
+    HistoryPlasmidsFieldsMixin,
+    OwnershipFieldsMixin,
 )
+from common.models import DocFileMixin, SaveWithoutHistoricalRecord
+from formz.models import FormZProject, Species, ZkbsCellLine
+
+################################################
+#                   Cell line                  #
+################################################
 
 
-class CellLine(models.Model, SaveWithoutHistoricalRecord):
+class CellLine(
+    SaveWithoutHistoricalRecord,
+    CommonCollectionModelPropertiesMixin,
+    FormZFieldsMixin,
+    HistoryPlasmidsFieldsMixin,
+    HistoryDocFieldMixin,
+    HistoryFieldMixin,
+    ApprovalFieldsMixin,
+    OwnershipFieldsMixin,
+    models.Model,
+):
+
+    class Meta:
+        verbose_name = "cell line"
+        verbose_name_plural = "cell lines"
 
     _model_abbreviation = "cl"
+    _related_name_base = "cellline"
 
     name = models.CharField("name", max_length=255, unique=True, blank=False)
     box_name = models.CharField("box", max_length=255, blank=False)
@@ -55,128 +72,39 @@ class CellLine(models.Model, SaveWithoutHistoricalRecord):
     )
 
     integrated_plasmids = models.ManyToManyField(
-        "Plasmid", related_name="cellline_integrated_plasmids", blank=True
+        "Plasmid", related_name="%(class)s_integrated_plasmids", blank=True
     )
     episomal_plasmids = models.ManyToManyField(
         "Plasmid",
-        related_name="cellline_episomal_plasmids",
+        related_name="%(class)s_episomal_plasmids",
         blank=True,
         through="CellLineEpisomalPlasmid",
     )
 
-    created_date_time = models.DateTimeField("created", auto_now_add=True)
-    created_approval_by_pi = models.BooleanField(
-        "record creation approval", default=False
-    )
-    last_changed_date_time = models.DateTimeField("last changed", auto_now=True)
-    last_changed_approval_by_pi = models.BooleanField(
-        "record change approval", default=None, null=True
-    )
-    approval_by_pi_date_time = models.DateTimeField(null=True, default=None)
-    approval = GenericRelation(RecordToBeApproved)
-    approval_user = models.ForeignKey(
-        User, related_name="cellline_approval_user", on_delete=models.PROTECT, null=True
-    )
-    created_by = models.ForeignKey(
-        User, related_name="cellline_createdby_user", on_delete=models.PROTECT
-    )
-    history = HistoricalRecords()
-
-    formz_projects = models.ManyToManyField(
-        FormZProject,
-        verbose_name="projects",
-        related_name="cellline_zprojects",
-        blank=False,
-    )
-    formz_risk_group = models.PositiveSmallIntegerField(
-        "risk group", choices=((1, 1), (2, 2)), blank=False, null=True
-    )
     zkbs_cell_line = models.ForeignKey(
         ZkbsCellLine,
         verbose_name="ZKBS database cell line",
         on_delete=models.PROTECT,
         null=True,
         blank=False,
-        help_text='If not applicable, choose none. <a href="/formz/zkbscellline/" target="_blank">View all</a>',
-    )
-    formz_gentech_methods = models.ManyToManyField(
-        GenTechMethod,
-        verbose_name="genTech methods",
-        related_name="cellline_gentech_method",
-        blank=True,
-        help_text="The methods used to create the cell line",
-    )
-    formz_elements = models.ManyToManyField(
-        FormZBaseElement,
-        verbose_name="elements",
-        related_name="cellline_formz_element",
-        help_text="Use only when an element is not present in the chosen plasmid(s), if any. "
-        "Searching against the aliases of an element is case-sensitive. "
-        '<a href="/formz/formzbaseelement/" target="_blank">View all/Change</a>',
-        blank=True,
+        help_text='If not applicable, choose none. <a href="/formz/zkbscellline/" '
+        'target="_blank">View all</a>',
     )
 
-    destroyed_date = models.DateField("destroyed", blank=True, null=True)
-
-    # Fields to keep a record of M2M field values (only IDs!) in the main strain record
-    history_integrated_plasmids = ArrayField(
-        models.PositiveIntegerField(),
-        verbose_name="integrated plasmid",
-        blank=True,
-        null=True,
-        default=list,
-    )
-    history_episomal_plasmids = ArrayField(
-        models.PositiveIntegerField(),
-        verbose_name="episomal plasmids",
-        blank=True,
-        null=True,
-        default=list,
-    )
-    history_formz_projects = ArrayField(
-        models.PositiveIntegerField(),
-        verbose_name="formZ projects",
-        blank=True,
-        null=True,
-        default=list,
-    )
-    history_formz_gentech_methods = ArrayField(
-        models.PositiveIntegerField(),
-        verbose_name="genTech methods",
-        blank=True,
-        null=True,
-        default=list,
-    )
-    history_formz_elements = ArrayField(
-        models.PositiveIntegerField(),
-        verbose_name="formz elements",
-        blank=True,
-        null=True,
-        default=list,
-    )
-    history_documents = ArrayField(
-        models.PositiveIntegerField(),
-        verbose_name="documents",
-        blank=True,
-        null=True,
-        default=list,
-    )
-
-    class Meta:
-        verbose_name = "cell line"
-        verbose_name_plural = "cell lines"
+    history_cassette_plasmids = None
+    history_all_plasmids_in_stocked_strain = None
 
     def __str__(self):
-        return "{} - {}".format(self.id, self.name)
+        return f"{self.id} - {self.name}"
 
-    def get_all_instock_plasmids(self):
-        """Returns all plasmids present in the stocked organism"""
+    @property
+    def all_instock_plasmids(self):
 
         all_plasmids = self.integrated_plasmids.all().distinct().order_by("id")
         return all_plasmids
 
-    def get_all_transient_episomal_plasmids(self):
-        """Returns all transiently transformed episomal plasmids"""
+    @property
+    def all_transient_episomal_plasmids(self):
 
         all_plasmids = (
             self.celllineepisomalplasmid_set.filter(s2_work_episomal_plasmid=False)
@@ -185,8 +113,9 @@ class CellLine(models.Model, SaveWithoutHistoricalRecord):
         )
         return all_plasmids
 
-    def get_all_maps(self):
-        """Returns all plasmids"""
+    @property
+    def all_plasmids_with_maps(self):
+
         return (
             (self.integrated_plasmids.all() | self.episomal_plasmids.all())
             .distinct()
@@ -194,25 +123,30 @@ class CellLine(models.Model, SaveWithoutHistoricalRecord):
             .order_by("id")
         )
 
-    def get_all_uncommon_formz_elements(self):
-        """Returns all uncommon features in stocked organism"""
+    @property
+    def all_uncommon_formz_elements(self):
 
-        elements = self.formz_elements.all()
-        all_plasmids = self.get_all_instock_plasmids()
+        elements = super().all_uncommon_formz_elements
+        all_plasmids = self.all_instock_plasmids
         for pl in all_plasmids:
             elements = elements | pl.formz_elements.all()
         elements = elements.distinct().filter(common_feature=False).order_by("name")
         return elements
 
-    def get_all_common_formz_elements(self):
-        """Returns all common features in stocked organism"""
+    @property
+    def all_common_formz_elements(self):
 
-        elements = self.formz_elements.all()
-        all_plasmids = self.get_all_instock_plasmids()
+        elements = super().all_common_formz_elements
+        all_plasmids = self.all_instock_plasmids
         for pl in all_plasmids:
             elements = elements | pl.formz_elements.all()
         elements = elements.distinct().filter(common_feature=True).order_by("name")
         return elements
+
+
+################################################
+#          Cell line Episomal Plasmid          #
+################################################
 
 
 class CellLineEpisomalPlasmid(models.Model):
@@ -224,7 +158,7 @@ class CellLineEpisomalPlasmid(models.Model):
         "Plasmid", verbose_name="Plasmid", on_delete=models.PROTECT
     )
     formz_projects = models.ManyToManyField(
-        FormZProject, related_name="cellline_episomal_plasmid_projects", blank=True
+        FormZProject, related_name="%(class)s_projects", blank=True
     )
     s2_work_episomal_plasmid = models.BooleanField(
         "Used for S2 work?",
@@ -247,16 +181,14 @@ class CellLineEpisomalPlasmid(models.Model):
                     days=random.randint(7, 28)
                 )
 
-        super(CellLineEpisomalPlasmid, self).save(
-            force_insert, force_update, using, update_fields
-        )
+        super().save(force_insert, force_update, using, update_fields)
 
     def is_highlighted(self):
         return self.s2_work_episomal_plasmid
 
 
 ################################################
-#               CELL LINE DOC                  #
+#                 Cell line Doc                #
 ################################################
 
 CELL_LINE_DOC_TYPE_CHOICES = (
@@ -269,19 +201,18 @@ CELL_LINE_DOC_TYPE_CHOICES = (
 
 class CellLineDoc(DocFileMixin):
 
+    class Meta:
+        verbose_name = "cell line document"
+
     _inline_foreignkey_fieldname = "cell_line"
-
-    description = models.CharField(
-        "doc type", max_length=255, choices=CELL_LINE_DOC_TYPE_CHOICES, blank=False
-    )
-    date_of_test = models.DateField("date of test", blank=False, null=True)
-    cell_line = models.ForeignKey(CellLine, on_delete=models.PROTECT)
-
     _mixin_props = {
         "destination_dir": "collection/celllinedoc/",
         "file_prefix": "clDoc",
         "parent_field_name": "cell_line",
     }
 
-    class Meta:
-        verbose_name = "cell line document"
+    description = models.CharField(
+        "doc type", max_length=255, choices=CELL_LINE_DOC_TYPE_CHOICES, blank=False
+    )
+    date_of_test = models.DateField("date of test", blank=False, null=True)
+    cell_line = models.ForeignKey(CellLine, on_delete=models.PROTECT)

@@ -1,21 +1,23 @@
-from django.db import models
-from django.utils.encoding import force_str
-from django.utils import timezone
 import os
-from django.forms import ValidationError
 
 from django.conf import settings
-LAB_ABBREVIATION_FOR_FILES = getattr(settings, 'LAB_ABBREVIATION_FOR_FILES', '')
-MAX_UPLOAD_FILE_SIZE_MB = getattr(settings, 'MAX_UPLOAD_FILE_SIZE_MB', 2)
-ALLOWED_DOC_FILE_EXTS = getattr(settings, 'ALLOWED_DOC_FILE_EXTS', ['pdf'])
+from django.db import models
+from django.forms import ValidationError
+from django.utils import timezone
+from django.utils.encoding import force_str
+
+LAB_ABBREVIATION_FOR_FILES = getattr(settings, "LAB_ABBREVIATION_FOR_FILES", "")
+MAX_UPLOAD_FILE_SIZE_MB = getattr(settings, "MAX_UPLOAD_FILE_SIZE_MB", 2)
+ALLOWED_DOC_FILE_EXTS = getattr(settings, "ALLOWED_DOC_FILE_EXTS", ["pdf"])
 
 
-class SaveWithoutHistoricalRecord():
+class SaveWithoutHistoricalRecord:
 
     def save_without_historical_record(self, *args, **kwargs):
         """Allows inheritance of a method to save an object without
-        saving a historical record as described in  
-        https://django-simple-history.readthedocs.io/en/2.7.2/querying_history.html?highlight=save_without_historical_record"""
+        saving a historical record as described in
+        https://django-simple-history.readthedocs.io/en/2.7.2/querying_history.html?highlight=save_without_historical_record
+        """
 
         self.skip_history_when_saving = True
         try:
@@ -23,6 +25,7 @@ class SaveWithoutHistoricalRecord():
         finally:
             del self.skip_history_when_saving
         return ret
+
 
 class DocFileMixin(models.Model):
 
@@ -41,39 +44,47 @@ class DocFileMixin(models.Model):
 
     # Override the following when inheriting DocFileMixin
     # in the final model
-    _mixin_props = {'destination_dir': 'collection/abc/',
-                    'file_prefix': 'pabc',
-                    'parent_field_name': 'abc'}
+    _mixin_props = {
+        "destination_dir": "collection/abc/",
+        "file_prefix": "pabc",
+        "parent_field_name": "abc",
+    }
 
     @property
     def download_file_name(self):
-        parent_field_name = self._mixin_props.get('parent_field_name')
+        parent_field_name = self._mixin_props.get("parent_field_name")
         parent = getattr(self, parent_field_name)
-        return f"{parent._model_abbreviation}{LAB_ABBREVIATION_FOR_FILES}{parent}, " \
-               f"Doc# {self.id}, {self.description.title()}"
+        return (
+            f"{parent._model_abbreviation}{LAB_ABBREVIATION_FOR_FILES}{parent}, "
+            f"Doc# {self.id}, {self.description.title()}"
+        )
 
-    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+    def save(
+        self, force_insert=False, force_update=False, using=None, update_fields=None
+    ):
 
         # Rename a file of any given name to standard name
         # after the corresponding entry has been created
 
         super().save(force_insert, force_update, using, update_fields)
 
-        destination_dir = self._mixin_props.get('destination_dir')
-        file_prefix = self._mixin_props.get('file_prefix')
-        parent_field_name = self._mixin_props.get('parent_field_name')
+        destination_dir = self._mixin_props.get("destination_dir")
+        file_prefix = self._mixin_props.get("file_prefix")
+        parent_field_name = self._mixin_props.get("parent_field_name")
 
         # Create new file name
-        field_name = 'name'
+        field_name = "name"
         parent = getattr(self, parent_field_name)
         field = getattr(self, field_name)
         file_name = force_str(field)
         _, ext = os.path.splitext(file_name)
         ext = ext.lower()
 
-        prefix = f'{file_prefix}{LAB_ABBREVIATION_FOR_FILES}{parent.id}'
-        timestamp = timezone.now().strftime('%Y%m%d_%H%M%S_%f')
-        final_name = os.path.join(destination_dir,  f'{prefix}_{timestamp}_{self.id}{ext}')
+        prefix = f"{file_prefix}{LAB_ABBREVIATION_FOR_FILES}{parent.id}"
+        timestamp = timezone.now().strftime("%Y%m%d_%H%M%S_%f")
+        final_name = os.path.join(
+            destination_dir, f"{prefix}_{timestamp}_{self.id}{ext}"
+        )
 
         # Essentially, rename file
         if file_name != final_name:
@@ -96,24 +107,36 @@ class DocFileMixin(models.Model):
 
         if self.name:
 
-            # Check if file is bigger than 2 MB
+            # Check if file is bigger than X MB
             if self.name.size > file_size_limit:
-                errors.append(ValidationError(f'File too large. Size cannot exceed {MAX_UPLOAD_FILE_SIZE_MB} MB.'))
+                errors.append(
+                    ValidationError(
+                        f"File too large. Size cannot exceed {MAX_UPLOAD_FILE_SIZE_MB} MB."
+                    )
+                )
 
             # Check if file has extension
             try:
-                file_ext = self.name.name.split('.')[-1].lower()
+                file_ext = self.name.name.split(".")[-1].lower()
             except:
-                errors.append(ValidationError('Invalid file format. File does not have an extension'))
+                errors.append(
+                    ValidationError(
+                        "Invalid file format. File does not have an extension"
+                    )
+                )
                 file_ext = None
             if file_ext and file_ext not in ALLOWED_DOC_FILE_EXTS:
-                errors.append(ValidationError(
-                    f'Invalid file format. Only {", ".join(ALLOWED_DOC_FILE_EXTS)} files are allowed'))
+                errors.append(
+                    ValidationError(
+                        f'Invalid file format. Only {", ".join(ALLOWED_DOC_FILE_EXTS)} files are allowed'
+                    )
+                )
 
         if len(errors) > 0:
             raise ValidationError(errors)
 
-class DownloadFileNameMixin():
+
+class DownloadFileNameMixin:
 
     @property
     def download_file_name(self):

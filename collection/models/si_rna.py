@@ -1,10 +1,12 @@
-from django.contrib.auth.models import User
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django_better_admin_arrayfield.models.fields import ArrayField as BetterArrayField
-from simple_history.models import HistoricalRecords
 
-from collection.models.shared import InfoSheetMaxSizeMixin
+from collection.models.shared import (
+    HistoryFieldMixin,
+    InfoSheetMaxSizeMixin,
+    OwnershipFieldsMixin,
+)
 from common.models import (
     DocFileMixin,
     DownloadFileNameMixin,
@@ -13,13 +15,23 @@ from common.models import (
 from formz.models import Species
 from ordering.models import Order
 
+################################################
+#                     siRNA                    #
+################################################
+
 
 class SiRna(
-    InfoSheetMaxSizeMixin,
-    DownloadFileNameMixin,
-    models.Model,
     SaveWithoutHistoricalRecord,
+    DownloadFileNameMixin,
+    InfoSheetMaxSizeMixin,
+    HistoryFieldMixin,
+    OwnershipFieldsMixin,
+    models.Model,
 ):
+
+    class Meta:
+        verbose_name = "siRNA"
+        verbose_name_plural = "siRNAs"
 
     _model_abbreviation = "siRNA"
     _model_upload_to = "collection/sirna/"
@@ -65,10 +77,9 @@ class SiRna(
         null=True,
     )
     orders = models.ManyToManyField(
-        Order, verbose_name="orders", related_name="si_rna_order", blank=True
+        Order, verbose_name="orders", related_name="%(class)s_order", blank=True
     )
 
-    # Fields to keep a record of M2M field values (only IDs!) in the main strain record
     history_orders = ArrayField(
         models.PositiveIntegerField(),
         verbose_name="order",
@@ -77,11 +88,6 @@ class SiRna(
         default=list,
     )
 
-    created_date_time = models.DateTimeField("created", auto_now_add=True)
-    last_changed_date_time = models.DateTimeField("last changed", auto_now=True)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT)
-    history = HistoricalRecords()
-
     history_documents = ArrayField(
         models.PositiveIntegerField(),
         verbose_name="documents",
@@ -89,6 +95,9 @@ class SiRna(
         null=True,
         default=list,
     )
+
+    def __str__(self):
+        return f"{self.id} - {self.name}"
 
     def save(
         self, force_insert=False, force_update=False, using=None, update_fields=None
@@ -99,25 +108,22 @@ class SiRna(
 
         super().save(force_insert, force_update, using, update_fields)
 
-    class Meta:
-        verbose_name = "siRNA"
-        verbose_name_plural = "siRNAs"
 
-    def __str__(self):
-        return f"{self.id} - {self.name}"
+################################################
+#                   siRNA Doc                  #
+################################################
 
 
 class SiRnaDoc(DocFileMixin):
 
+    class Meta:
+        verbose_name = "siRNA document"
+
     _inline_foreignkey_fieldname = "si_rna"
-
-    si_rna = models.ForeignKey(SiRna, on_delete=models.PROTECT)
-
     _mixin_props = {
         "destination_dir": "collection/sirnadoc/",
         "file_prefix": "sirnaDoc",
         "parent_field_name": "si_rna",
     }
 
-    class Meta:
-        verbose_name = "siRNA document"
+    si_rna = models.ForeignKey(SiRna, on_delete=models.PROTECT)

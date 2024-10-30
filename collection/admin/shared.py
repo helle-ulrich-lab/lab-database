@@ -62,31 +62,54 @@ SNAPGENE_COMMON_FEATURES_PATH = os.path.join(
     BASE_DIR, "snapgene/standardCommonFeatures.ftrs"
 )
 
+################################################
+#         DNA map processing functions         #
+################################################
 
-################################
-# DNA Map processing functions #
-################################
+
+def connect_snapgene_server():
+    """Create SnapGene client"""
+
+    config = Config()
+    server_ports = config.get_server_ports()
+    client = None
+
+    for port in server_ports.values():
+        try:
+            client = Client(port, zmq.Context())
+        except:
+            continue
+        else:
+            break
+
+    if not client:
+        raise Exception("Could not connect to SnapGene Server")
+
+    return client
+
+
+def mail_snapgene_error(map_path, messages):
+
+    mail_admins(
+        "Snapgene server error",
+        "There was an error with creating the preview"
+        f"for {map_path} with snapgene server.\n\n"
+        f"Errors: {messages}.",
+        fail_silently=True,
+    )
 
 
 def create_map_preview(
     obj, detect_common_features, attempt_number=3, messages=[], **kwargs
 ):
-    """Given a path to a snapgene map, use snapegene server
-    to detect common features and create map preview as png
-    and gbk"""
+    """For a .dna map, use SnapGene server to 1) detect common features,
+    2) create a .png preview of the .dna file, and 3) create a .gbk map"""
 
     if attempt_number > 0:
         try:
-            config = Config()
-            server_ports = config.get_server_ports()
-            for port in server_ports.values():
-                try:
-                    client = Client(port, zmq.Context())
-                except:
-                    continue
-                else:
-                    break
+            client = connect_snapgene_server()
 
+            # Detect common features
             if detect_common_features:
                 argument = {
                     "request": "detectFeatures",
@@ -103,11 +126,17 @@ def create_map_preview(
                     client.close()
                     raise Exception
 
+            # Create a .png preview of the .dna map
             argument = {
                 "request": "generatePNGMap",
                 "inputFile": obj.map.path,
                 "outputPng": obj.map_png.path,
-                "title": f"{kwargs['prefix'] if 'prefix' in kwargs else f'{obj._model_abbreviation}{LAB_ABBREVIATION_FOR_FILES}'}{obj.id} - {obj.name}",
+                "title": (
+                    kwargs["prefix"]
+                    if "prefix" in kwargs
+                    else f"{obj._model_abbreviation}{LAB_ABBREVIATION_FOR_FILES}"
+                    f"{obj.id} - {obj.name}"
+                ),
                 "showEnzymes": True,
                 "showFeatures": True,
                 "showPrimers": True,
@@ -122,6 +151,7 @@ def create_map_preview(
                 client.close()
                 raise Exception
 
+            # Create a .gbk map
             argument = {
                 "request": "exportDNAFile",
                 "inputFile": obj.map.path,
@@ -145,32 +175,19 @@ def create_map_preview(
             )
 
     else:
-        mail_admins(
-            "Snapgene server error",
-            "There was an error with creating the preview for {} with snapgene server.\n\nErrors: {}.".format(
-                obj.map.path, str(messages)
-            ),
-            fail_silently=True,
-        )
+        mail_snapgene_error(obj.map.path, messages)
         raise Exception
 
 
 def get_map_features(obj, attempt_number=3, messages=[]):
-    """Given a path to a snapgene map (.dna), use snapegene server
-    to return features, as json"""
+    """For a .dna  map, use SnapGene server to get its
+    features, as json"""
 
     if attempt_number > 0:
         try:
-            config = Config()
-            server_ports = config.get_server_ports()
-            for port in server_ports.values():
-                try:
-                    client = Client(port, zmq.Context())
-                except:
-                    continue
-                else:
-                    break
+            client = connect_snapgene_server()
 
+            # Get features
             argument = {"request": "reportFeatures", "inputFile": obj.map.path}
             r = client.requestResponse(argument, 10000)
             r_code = r.get("code", 1)
@@ -191,32 +208,19 @@ def get_map_features(obj, attempt_number=3, messages=[]):
             get_map_features(obj.map.path, attempt_number - 1, messages)
 
     else:
-        mail_admins(
-            "Snapgene server error",
-            "There was an error with getting plasmid features for {} with snapgene server.\n\nErrors: {}.".format(
-                obj.map.path, str(messages)
-            ),
-            fail_silently=True,
-        )
+        mail_snapgene_error(obj.map.path, messages)
         raise Exception
 
 
 def convert_map_gbk_to_dna(gbk_map_path, dna_map_path, attempt_number=3, messages=[]):
-    """Given a path to a gbk  map (.gbk), use snapegene server
+    """For a gbk  map (.gbk), use SnapGene server
     to convert it to .dna"""
 
     if attempt_number > 0:
         try:
-            config = Config()
-            server_ports = config.get_server_ports()
-            for port in server_ports.values():
-                try:
-                    client = Client(port, zmq.Context())
-                except:
-                    continue
-                else:
-                    break
+            client = connect_snapgene_server()
 
+            # Convert .dna to .gbk
             argument = {
                 "request": "importDNAFile",
                 "inputFile": gbk_map_path,
@@ -239,24 +243,19 @@ def convert_map_gbk_to_dna(gbk_map_path, dna_map_path, attempt_number=3, message
             )
 
     else:
-        mail_admins(
-            "Snapgene server error",
-            "There was an error converting a gbk map to dna for {} with snapgene server.\n\nErrors: {}.".format(
-                gbk_map_path, str(messages)
-            ),
-            fail_silently=True,
-        )
+        mail_snapgene_error(gbk_map_path, messages)
         raise Exception
 
 
-#################################################
-#                CUSTOM CLASSES                 #
-#################################################
+################################################
+#                Custom classes                #
+################################################
 
 
 class Approval:
     def approval(self, instance):
-        """Custom list_view field to show whether record has been approved or not"""
+        """Custom list_view field to show whether record
+        has been approved or not"""
 
         if instance.last_changed_approval_by_pi is not None:
             return instance.last_changed_approval_by_pi
@@ -268,12 +267,12 @@ class Approval:
 
 
 class CustomUserManage(UserManage):
-    """
-    Add drop-down menu to select user to who to give additonal permissions
-    """
+    """Add drop-down menu to select user to who to
+    give additonal permissions"""
 
     # Added this try block because if user_auth table not present in DB
-    # (e.g. very first migration) the following code runs and throws an exception
+    # (e.g. very first migration) the following code runs and throws an
+    # exception
     try:
         user = forms.ChoiceField(
             choices=[("------", "------")]
@@ -293,11 +292,12 @@ class CustomUserManage(UserManage):
 class SortAutocompleteResultsId(admin.ModelAdmin):
 
     def get_ordering(self, request):
+
         # Force sorting of autocompletion results to be by ascending id
         if request.path_info == "/autocomplete/":
             return ["id"]
         else:
-            return super(SortAutocompleteResultsId, self).get_ordering(request)
+            return super().get_ordering(request)
 
 
 @background(schedule=86400)  # Run 24 h after it is called, as "background" process
@@ -318,7 +318,8 @@ def rename_info_sheet_save_obj_update_history(obj, new_obj):
     now = timezone.now().strftime("%Y%m%d_%H%M%S_%f")
     new_file_name = os.path.join(
         obj._model_upload_to,
-        f"{obj._model_abbreviation}{LAB_ABBREVIATION_FOR_FILES}{obj.id}_{now}{ext.lower()}",
+        f"{obj._model_abbreviation}{LAB_ABBREVIATION_FOR_FILES}"
+        f"{obj.id}_{now}{ext.lower()}",
     )
     new_file_name_abs_path = os.path.join(MEDIA_ROOT, new_file_name)
 
@@ -332,10 +333,11 @@ def rename_info_sheet_save_obj_update_history(obj, new_obj):
     obj.info_sheet.name = new_file_name
     obj.save()
 
-    # For new records, delete first history record, which contains the unformatted
-    # info_sheet name, and change the newer history record's history_type from
-    # changed (~) to created (+). This gets rid of a duplicate history record created
-    # when automatically generating an info_sheet name
+    # For new records, delete first history record, which contains the
+    # unformatted info_sheet name, and change the newer history record's
+    # history_type from changed (~) to created (+). This gets rid of a
+    # duplicate history record created when automatically generating an
+    # info_sheet name
     if new_obj:
         obj.history.last().delete()
         history_obj = obj.history.first()
@@ -699,7 +701,7 @@ class CustomGuardedModelAdmin(GuardedModelAdmin):
 
     def obj_perms_manage_view(self, request, object_pk):
         """
-        Override main guardian object permissions view.
+        Override main guardian object permissions view
         Only for users, not groups
         Assign object-specific change permission to specific users
         Allow permissions to be granted for 24 h
@@ -794,9 +796,7 @@ class CustomGuardedModelAdmin(GuardedModelAdmin):
 class AdminOligosInMap(admin.ModelAdmin):
 
     def get_urls(self):
-        """
-        Add navigation url
-        """
+        """Add navigation url"""
 
         urls = super(AdminOligosInMap, self).get_urls()
 
@@ -969,8 +969,8 @@ class FormUniqueNameCheck:
 class FormTwoMapChangeCheck:
 
     def clean(self):
-        """Check if both the .dna and .gbk map is changed at the same time, which
-        is not allowed"""
+        """Check if both the .dna and .gbk map is changed at the same time,
+        which is not allowed"""
 
         map_dna = self.cleaned_data.get("map", None)
         map_gbk = self.cleaned_data.get("map_gbk", None)
@@ -979,7 +979,8 @@ class FormTwoMapChangeCheck:
             if map_dna and map_gbk:
                 self.add_error(
                     None,
-                    "You cannot add both a .dna and a .gbk map at the same time. Please choose only one",
+                    "You cannot add both a .dna and a .gbk map at the same time. "
+                    "Please choose only one",
                 )
 
         else:
@@ -990,15 +991,16 @@ class FormTwoMapChangeCheck:
             if map_dna != saved_dna_map and map_gbk != saved_gbk_map:
                 self.add_error(
                     None,
-                    "You cannot change both a .dna and a .gbk map at the same time. Please choose only one",
+                    "You cannot change both a .dna and a .gbk map at the same time. "
+                    "Please choose only one",
                 )
 
         return self.cleaned_data
 
 
-#################################################
-#             CUSTOM SEARCH OPTIONS             #
-#################################################
+################################################
+#             Custom search options             #
+################################################
 
 
 class FieldUse(StrField):
@@ -1112,7 +1114,7 @@ class FieldFormZBaseElement(StrField):
 
 
 #################################################
-#          DOWNLOAD FORMBLATT Z ACTION          #
+#          Download Formblatt Z action          #
 #################################################
 
 
@@ -1142,16 +1144,19 @@ def formz_as_html(modeladmin, request, queryset):
                 species_risk_group=None,
             )
 
+        # Get FormZ header
         if FormZHeader.objects.all().first():
             formz_header = FormZHeader.objects.all().first()
         else:
             formz_header = None
 
-        obj.common_formz_elements = obj.get_all_common_formz_elements()
-        obj.uncommon_formz_elements = obj.get_all_uncommon_formz_elements()
-        obj.instock_plasmids = obj.get_all_instock_plasmids()
-        obj.transient_episomal_plasmids = obj.get_all_transient_episomal_plasmids()
+        # Set relevant fields
+        obj.common_formz_elements = obj.all_common_formz_elements
+        obj.uncommon_formz_elements = obj.all_uncommon_formz_elements
+        obj.instock_plasmids = obj.all_instock_plasmids
+        obj.transient_episomal_plasmids = obj.all_transient_episomal_plasmids
 
+        # Fields specific for Cell line
         if model_name == "cellline":
             storage_location.species_name = obj.organism
             storage_location.species_name_str = obj.organism.name_for_search
@@ -1169,10 +1174,14 @@ def formz_as_html(modeladmin, request, queryset):
                 ).order_by("id")[0]
             except:
                 virus_packaging_cell_line = ZkbsCellLine(name="293T (HEK 293T)")
+
+        # Fields specific for Worm strain
         elif model_name == "wormstrain":
             transfected = False
             virus_packaging_cell_line = None
             storage_location.species_name_str = obj.get_organism_display()
+
+        # Everything else
         else:
             storage_location.species_name_str = (
                 storage_location.species_name.name_for_search
@@ -1202,8 +1211,7 @@ def formz_as_html(modeladmin, request, queryset):
     app_label = queryset[0]._meta.app_label
     model_name = queryset[0].__class__.__name__
 
-    # Generates zip file
-
+    # Generate zip file
     with zipfile.ZipFile(response, "w", zipfile.ZIP_DEFLATED) as zip_file:
         for obj in queryset:
             params = get_params(app_label, model_name.lower(), obj.id)

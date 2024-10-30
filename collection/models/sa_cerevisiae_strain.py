@@ -1,16 +1,24 @@
 import random
 from datetime import timedelta
 
-from django.contrib.auth.models import User
-from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.forms import ValidationError
-from simple_history.models import HistoricalRecords
 
-from approval.models import RecordToBeApproved
+from collection.models.shared import (
+    ApprovalFieldsMixin,
+    CommonCollectionModelPropertiesMixin,
+    FormZFieldsMixin,
+    HistoryFieldMixin,
+    HistoryPlasmidsFieldsMixin,
+    OwnershipFieldsMixin,
+)
 from common.models import DocFileMixin, SaveWithoutHistoricalRecord
-from formz.models import FormZBaseElement, FormZProject, GenTechMethod
+from formz.models import FormZProject
+
+################################################
+#             S. cerevisiae strain             #
+################################################
 
 CEREVISIAE_MATING_TYPE_CHOICES = (
     ("a", "a"),
@@ -23,7 +31,22 @@ CEREVISIAE_MATING_TYPE_CHOICES = (
 )
 
 
-class SaCerevisiaeStrain(models.Model, SaveWithoutHistoricalRecord):
+class SaCerevisiaeStrain(
+    SaveWithoutHistoricalRecord,
+    CommonCollectionModelPropertiesMixin,
+    FormZFieldsMixin,
+    HistoryPlasmidsFieldsMixin,
+    HistoryFieldMixin,
+    ApprovalFieldsMixin,
+    OwnershipFieldsMixin,
+    models.Model,
+):
+
+    class Meta:
+        verbose_name = "strain - Sa. cerevisiae"
+        verbose_name_plural = "strains - Sa. cerevisiae"
+
+    _model_abbreviation = "sc"
 
     name = models.CharField("name", max_length=255, blank=False)
     relevant_genotype = models.CharField(
@@ -37,7 +60,7 @@ class SaCerevisiaeStrain(models.Model, SaveWithoutHistoricalRecord):
         "self",
         verbose_name="Parent 1",
         on_delete=models.PROTECT,
-        related_name="cerevisiae_parent_1",
+        related_name="%(class)s_parent_1",
         help_text="Main parental strain",
         blank=True,
         null=True,
@@ -46,7 +69,7 @@ class SaCerevisiaeStrain(models.Model, SaveWithoutHistoricalRecord):
         "self",
         verbose_name="Parent 2",
         on_delete=models.PROTECT,
-        related_name="cerevisiae_parent_2",
+        related_name="%(class)s_parent_2",
         help_text="Only for crosses",
         blank=True,
         null=True,
@@ -59,19 +82,18 @@ class SaCerevisiaeStrain(models.Model, SaveWithoutHistoricalRecord):
     )
     construction = models.TextField("construction", blank=True)
     modification = models.CharField("modification", max_length=255, blank=True)
-
     integrated_plasmids = models.ManyToManyField(
-        "Plasmid", related_name="cerevisiae_integrated_plasmids", blank=True
+        "Plasmid", related_name="%(class)s_integrated_plasmids", blank=True
     )
     cassette_plasmids = models.ManyToManyField(
         "Plasmid",
-        related_name="cerevisiae_cassette_plasmids",
+        related_name="%(class)s_cassette_plasmids",
         help_text="Tagging and knock out plasmids",
         blank=True,
     )
     episomal_plasmids = models.ManyToManyField(
         "Plasmid",
-        related_name="cerevisiae_episomal_plasmids",
+        related_name="%(class)s_episomal_plasmids",
         blank=True,
         through="SaCerevisiaeStrainEpisomalPlasmid",
     )
@@ -81,7 +103,6 @@ class SaCerevisiaeStrain(models.Model, SaveWithoutHistoricalRecord):
         help_text="Use only when the other plasmid fields do not apply",
         blank=True,
     )
-
     selection = models.CharField("selection", max_length=255, blank=True)
     phenotype = models.CharField("phenotype", max_length=255, blank=True)
     background = models.CharField("background", max_length=255, blank=True)
@@ -90,104 +111,6 @@ class SaCerevisiaeStrain(models.Model, SaveWithoutHistoricalRecord):
     note = models.CharField("note", max_length=255, blank=True)
     reference = models.CharField("reference", max_length=255, blank=True)
 
-    created_date_time = models.DateTimeField("created", auto_now_add=True)
-    created_approval_by_pi = models.BooleanField(
-        "record creation approval", default=False
-    )
-    last_changed_date_time = models.DateTimeField("last changed", auto_now=True)
-    last_changed_approval_by_pi = models.BooleanField(
-        "record change approval", default=None, null=True
-    )
-    approval_by_pi_date_time = models.DateTimeField(null=True, default=None)
-    approval = GenericRelation(RecordToBeApproved)
-    approval_user = models.ForeignKey(
-        User,
-        related_name="cerevisiae_approval_user",
-        on_delete=models.PROTECT,
-        null=True,
-    )
-    created_by = models.ForeignKey(
-        User, related_name="cerevisiae_createdby_user", on_delete=models.PROTECT
-    )
-    history = HistoricalRecords()
-
-    formz_projects = models.ManyToManyField(
-        FormZProject,
-        verbose_name="projects",
-        related_name="cerevisiae_formz_project",
-        blank=False,
-    )
-    formz_risk_group = models.PositiveSmallIntegerField(
-        "risk group", choices=((1, 1), (2, 2)), blank=False, null=True
-    )
-    formz_gentech_methods = models.ManyToManyField(
-        GenTechMethod,
-        verbose_name="genTech methods",
-        related_name="cerevisiae_gentech_method",
-        blank=True,
-        help_text="The methods used to create the strain",
-    )
-    formz_elements = models.ManyToManyField(
-        FormZBaseElement,
-        verbose_name="elements",
-        related_name="cerevisiae_formz_element",
-        help_text="Use only when an element is not present in the chosen plasmid(s), if any. "
-        "Searching against the aliases of an element is case-sensitive. "
-        '<a href="/formz/formzbaseelement/" target="_blank">View all/Change</a>',
-        blank=True,
-    )
-    destroyed_date = models.DateField("destroyed", blank=True, null=True)
-
-    # Fields to keep a record of M2M field values (only IDs!) in the main strain record
-    history_integrated_plasmids = ArrayField(
-        models.PositiveIntegerField(),
-        verbose_name="integrated plasmid",
-        blank=True,
-        null=True,
-        default=list,
-    )
-    history_cassette_plasmids = ArrayField(
-        models.PositiveIntegerField(),
-        verbose_name="cassette plasmids",
-        blank=True,
-        null=True,
-        default=list,
-    )
-    history_episomal_plasmids = ArrayField(
-        models.PositiveIntegerField(),
-        verbose_name="episomal plasmids",
-        blank=True,
-        null=True,
-        default=list,
-    )
-    history_all_plasmids_in_stocked_strain = ArrayField(
-        models.PositiveIntegerField(),
-        verbose_name="all plasmids in stocked strain",
-        blank=True,
-        null=True,
-        default=list,
-    )  # Integrated, cassete and episomal (only if present in -80 stock)
-    history_formz_projects = ArrayField(
-        models.PositiveIntegerField(),
-        verbose_name="formZ projects",
-        blank=True,
-        null=True,
-        default=list,
-    )
-    history_formz_gentech_methods = ArrayField(
-        models.PositiveIntegerField(),
-        verbose_name="genTech methods",
-        blank=True,
-        null=True,
-        default=list,
-    )
-    history_formz_elements = ArrayField(
-        models.PositiveIntegerField(),
-        verbose_name="formz elements",
-        blank=True,
-        null=True,
-        default=list,
-    )
     history_documents = ArrayField(
         models.PositiveIntegerField(),
         verbose_name="documents",
@@ -196,16 +119,11 @@ class SaCerevisiaeStrain(models.Model, SaveWithoutHistoricalRecord):
         default=list,
     )
 
-    _model_abbreviation = "sc"
-
-    class Meta:
-        verbose_name = "strain - Sa. cerevisiae"
-        verbose_name_plural = "strains - Sa. cerevisiae"
-
     def __str__(self):
-        return "{} - {}".format(self.id, self.name)
+        return f"{self.id} - {self.name}"
 
-    def get_all_instock_plasmids(self):
+    @property
+    def all_instock_plasmids(self):
         """Returns all plasmids present in the stocked organism"""
 
         all_plasmids = (
@@ -221,7 +139,8 @@ class SaCerevisiaeStrain(models.Model, SaveWithoutHistoricalRecord):
         )
         return all_plasmids
 
-    def get_all_transient_episomal_plasmids(self):
+    @property
+    def all_transient_episomal_plasmids(self):
         """Returns all transiently transformed episomal plasmids"""
 
         all_plasmids = (
@@ -233,7 +152,8 @@ class SaCerevisiaeStrain(models.Model, SaveWithoutHistoricalRecord):
         )
         return all_plasmids
 
-    def get_all_maps(self):
+    @property
+    def all_plasmids_with_maps(self):
         """Returns all plasmids"""
         return (
             (
@@ -246,25 +166,30 @@ class SaCerevisiaeStrain(models.Model, SaveWithoutHistoricalRecord):
             .order_by("id")
         )
 
-    def get_all_uncommon_formz_elements(self):
-        """Returns all uncommon features in stocked organism"""
+    @property
+    def all_uncommon_formz_elements(self):
 
-        elements = self.formz_elements.all()
-        all_plasmids = self.get_all_instock_plasmids()
+        elements = super().all_uncommon_formz_elements
+        all_plasmids = self.all_instock_plasmids
         for pl in all_plasmids:
             elements = elements | pl.formz_elements.all()
         elements = elements.distinct().filter(common_feature=False).order_by("name")
         return elements
 
-    def get_all_common_formz_elements(self):
-        """Returns all common features in stocked organism"""
+    @property
+    def all_common_formz_elements(self):
 
-        elements = self.formz_elements.all()
-        all_plasmids = self.get_all_instock_plasmids()
+        elements = super().all_common_formz_elements
+        all_plasmids = self.all_instock_plasmids
         for pl in all_plasmids:
             elements = elements | pl.formz_elements.all()
         elements = elements.distinct().filter(common_feature=True).order_by("name")
         return elements
+
+
+################################################
+#     S. cerevisiae strain Episomal Plasmid    #
+################################################
 
 
 class SaCerevisiaeStrainEpisomalPlasmid(models.Model):
@@ -292,17 +217,15 @@ class SaCerevisiaeStrainEpisomalPlasmid(models.Model):
 
     def clean(self):
 
-        errors = []
+        errors = {}
 
         # Check that a transiently transfected plasmid has a created date
         if not self.present_in_stocked_strain and not self.created_date:
-            errors.append(
-                ValidationError(
-                    "Transiently tranformed episomal plasmids must have a created date"
-                )
-            )
+            errors["created_date"] = errors.get("created_date", []) + [
+                "Transiently tranformed episomal plasmids must have a created date"
+            ]
 
-        if len(errors) > 0:
+        if errors:
             raise ValidationError(errors)
 
     def save(
@@ -327,19 +250,23 @@ class SaCerevisiaeStrainEpisomalPlasmid(models.Model):
         return self.present_in_stocked_strain
 
 
+################################################
+#           S. cerevisiae strain Doc           #
+################################################
+
+
 class SaCerevisiaeStrainDoc(DocFileMixin):
 
     _inline_foreignkey_fieldname = "sacerevisiae_strain"
-
-    sacerevisiae_strain = models.ForeignKey(
-        SaCerevisiaeStrain, on_delete=models.PROTECT
-    )
-
     _mixin_props = {
         "destination_dir": "collection/sacerevisiaestraindoc/",
         "file_prefix": "scDoc",
         "parent_field_name": "sacerevisiae_strain",
     }
+
+    sacerevisiae_strain = models.ForeignKey(
+        SaCerevisiaeStrain, on_delete=models.PROTECT
+    )
 
     class Meta:
         verbose_name = "sa. cerevisiae strain document"

@@ -54,8 +54,8 @@
         <div><span style='font-weight: bold'>Genotyp:</span> {{object.chromosomal_genotype}}</div>
     {% elif object.genotype %}
         <div><span style='font-weight: bold'>Genotyp:</span> {{object.genotype}}</div>
-    {% elif object.get_genotype %}
-        <div><span style='font-weight: bold'>Genotyp:</span> {{object.get_genotype}}</div>
+    {% elif object.genotype %}
+        <div><span style='font-weight: bold'>Genotyp:</span> {{object.genotype}}</div>
     {% endif %}
     <div><span style='font-weight: bold'>Projekt/e:</span>
         {% if object.formz_projects.all|length == 1 %}
@@ -276,7 +276,7 @@
                     </thead>
 
                         {% if plasmid.plasmid.formz_elements.all %}
-                            {% if plasmid.plasmid.get_all_uncommon_formz_elements %}
+                            {% if plasmid.plasmid.all_uncommon_formz_elements %}
                                 <thead>
                                     <tr>
                                         <th scope="col" style="border-left: 1px solid rgb(0, 0, 0); background:lightgrey;"></th>
@@ -298,7 +298,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                        {% for formz_elem in plasmid.plasmid.get_all_uncommon_formz_elements %}
+                                        {% for formz_elem in plasmid.plasmid.all_uncommon_formz_elements %}
                                             <tr>
                                                 <td style="border-left: 1px solid rgb(0, 0, 0); border-right: 1px solid rgb(0, 0, 0);">{{formz_elem.name}}</td>
                                                 <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_names %}{{formz_elem.get_donor_species_names}}{% else %}Artifiziell{% endif %}</td>
@@ -324,12 +324,12 @@
                             </tbody>
                         {% endif %}
                         
-                        {% if plasmid.plasmid.get_all_common_formz_elements %}
+                        {% if plasmid.plasmid.all_common_formz_elements %}
                                 <tbody>
                                     <tr>
                                         <td colspan="6" style="border: 1px solid rgb(0, 0, 0); font-weight: bold; text-align:center;">Andere Merkmale, nicht relevant für die Sicherheitsbeurteilung</td>
                                     </tr>
-                                    {% for formz_elem in plasmid.plasmid.get_all_common_formz_elements %}
+                                    {% for formz_elem in plasmid.plasmid.all_common_formz_elements %}
                                         <tr>
                                             <td style="border-left: 1px solid rgb(0, 0, 0); border-right: 1px solid rgb(0, 0, 0);">{{formz_elem.name}}</td>
                                             <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_names %}{{formz_elem.get_donor_species_names}}{% else %}Artifiziell{% endif %}</td>
@@ -398,7 +398,7 @@
                             </tr>
                         </thead>
                         {% if plasmid.plasmid.formz_elements.all %}
-                        {% if plasmid.plasmid.get_all_uncommon_formz_elements %}
+                        {% if plasmid.plasmid.all_uncommon_formz_elements %}
                             <thead>
                                 <tr>
                                     <th scope="col" style="border-left: 1px solid rgb(0, 0, 0); background:lightgrey;"></th>
@@ -420,7 +420,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                    {% for formz_elem in plasmid.plasmid.get_all_uncommon_formz_elements %}
+                                    {% for formz_elem in plasmid.plasmid.all_uncommon_formz_elements %}
                                         <tr>
                                             <td style="border-left: 1px solid rgb(0, 0, 0); border-right: 1px solid rgb(0, 0, 0);">{{formz_elem.name}}</td>
                                             <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_names %}{{formz_elem.get_donor_species_names}}{% else %}Artifiziell{% endif %}</td>
@@ -446,12 +446,12 @@
                         </tbody>
                     {% endif %}
                     
-                    {% if plasmid.plasmid.get_all_common_formz_elements %}
+                    {% if plasmid.plasmid.all_common_formz_elements %}
                             <tbody>
                                 <tr>
                                     <td colspan="6" style="border: 1px solid rgb(0, 0, 0); font-weight: bold; text-align:center;">Andere Merkmale, nicht relevant für die Sicherheitsbeurteilung</td>
                                 </tr>
-                                {% for formz_elem in plasmid.plasmid.get_all_common_formz_elements %}
+                                {% for formz_elem in plasmid.plasmid.all_common_formz_elements %}
                                     <tr>
                                         <td style="border-left: 1px solid rgb(0, 0, 0); border-right: 1px solid rgb(0, 0, 0);">{{formz_elem.name}}</td>
                                         <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_names %}{{formz_elem.get_donor_species_names}}{% else %}Artifiziell{% endif %}</td>
@@ -469,18 +469,18 @@
         </div>
     {% endif %}
 
-    {% if map_attachment_type != 'none' and object.get_all_maps %}
+    {% if map_attachment_type != 'none' and object.all_plasmids_with_maps %}
     <h2>Karten (wenn verfügbar)</h2>
         {% if map_attachment_type == 'png' %}
-            {% for map in object.get_all_maps %}
+            {% for map in object.all_plasmids_with_maps %}
                 {% if map.map %}
                 <h3>{{map.german_name}} #{{map}}</h3>
                 <br>
-                    <img alt='{{map.german_name}} #{{map}}' src='data:image/png;base64,{{map.convert_png_map_to_base64}}'>
+                    <img alt='{{map.german_name}} #{{map}}' src='data:image/png;base64,{{map.png_map_as_base64}}'>
                 {% endif %}
             {% endfor %}
         {% elif map_attachment_type == 'gbk' %}
-            {% for map in object.get_all_maps %}
+            {% for map in object.all_plasmids_with_maps %}
                 {% if map.map %}
                     <h3>{{map.german_name}} #{{map}}</h3>
                     {% autoescape off %}

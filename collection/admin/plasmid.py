@@ -606,8 +606,8 @@ class PlasmidPage(
     def get_map_short_name(self, instance):
 
         if instance.map:
-            ove_dna_preview = instance.get_ove_url_map()
-            ove_gbk_preview = instance.get_ove_url_map_gbk()
+            ove_dna_preview = instance.map_ove_url
+            ove_gbk_preview = instance.map_ove_url_gbk
             return mark_safe(
                 f'<a class="magnific-popup-img-map" href="{instance.map_png.url}">png</a> | '
                 f'<a href="{instance.map.url}">dna</a> <a class="magnific-popup-iframe-map-dna" href="{ove_dna_preview}">⊙</a> | '

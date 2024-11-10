@@ -747,7 +747,6 @@ class WormStrainAllelePage(PlasmidPage):
         else:
             fields = []
 
-        self.obj_specific_fields = fields
         self.add_view_fieldsets = [
             [
                 None,
@@ -767,7 +766,6 @@ class WormStrainAllelePage(PlasmidPage):
         elif obj.typ_e == "m":
             fields = [f for f in fields if not f.startswith("transgene")]
 
-        self.obj_specific_fields = fields
         self.change_view_fieldsets = [
             [
                 None,

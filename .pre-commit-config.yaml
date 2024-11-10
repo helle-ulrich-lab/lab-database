@@ -20,13 +20,19 @@ repos:
       - id: check-merge-conflict
         types:
           - python
-  - repo: 'https://github.com/PyCQA/isort'
-    rev: 5.11.5
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.7.2
     hooks:
-      - id: isort
-        args: ["--profile", "black"]
-  - repo: 'https://github.com/psf/black'
-    rev: 24.3.0
+      - id: ruff-format
+        args: [--target-version, py311]
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.19.0
     hooks:
-      - id: black
-
+      - id: pyupgrade
+        args: [--target-version, "4.2"]
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: "v4.0.0-alpha.8"
+    hooks:
+      - id: prettier
+        args: [--trailing-comma, none, --no-error-on-unmatched-pattern]
+        types_or: [json, css, javascript]

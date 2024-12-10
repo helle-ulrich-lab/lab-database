@@ -30,7 +30,6 @@ class WormStrainAllele(
     OwnershipFieldsMixin,
     models.Model,
 ):
-
     class Meta:
         verbose_name = "allele - Worm"
         verbose_name_plural = "alleles - Worm"
@@ -126,13 +125,11 @@ class WormStrainAllele(
 
     @property
     def all_uncommon_formz_elements(self):
-
         elements = self.formz_elements.filter(common_feature=False).order_by("name")
         return elements
 
     @property
     def all_common_formz_elements(self):
-
         elements = self.formz_elements.filter(common_feature=True).order_by("name")
         return elements
 
@@ -161,7 +158,6 @@ class WormStrain(
     OwnershipFieldsMixin,
     models.Model,
 ):
-
     class Meta:
         verbose_name = "strain - Worm"
         verbose_name_plural = "strains - Worm"
@@ -222,12 +218,12 @@ class WormStrain(
     reference = models.CharField("reference", max_length=255, blank=True)
 
     location_freezer1 = models.CharField(
-        "location Freezer 1", max_length=10, blank=True
+        "location Freezer 1", max_length=255, blank=True
     )
     location_freezer2 = models.CharField(
-        "location Freezer 2", max_length=10, blank=True
+        "location Freezer 2", max_length=255, blank=True
     )
-    location_backup = models.CharField("location Backup", max_length=10, blank=True)
+    location_backup = models.CharField("location Backup", max_length=255, blank=True)
     alleles = models.ManyToManyField(
         WormStrainAllele,
         verbose_name="alleles",
@@ -330,7 +326,6 @@ class WormStrain(
 
 
 class WormStrainGenotypingAssay(models.Model):
-
     class Meta:
         verbose_name = "worm strain genotyping assay"
         verbose_name_plural = "worm strain genotyping assays"
@@ -351,7 +346,6 @@ class WormStrainGenotypingAssay(models.Model):
 
 
 class WormStrainDoc(DocFileMixin):
-
     class Meta:
         verbose_name = "worm strain document"
 
@@ -371,7 +365,6 @@ class WormStrainDoc(DocFileMixin):
 
 
 class WormStrainAlleleDoc(DocFileMixin):
-
     class Meta:
         verbose_name = "worm strain allele document"
 

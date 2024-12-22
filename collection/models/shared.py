@@ -173,15 +173,12 @@ class InfoSheetMaxSizeMixin:
     """Clean method for models that have an info sheet"""
 
     def clean(self):
-
         errors = {}
         file_size_limit = FILE_SIZE_LIMIT_MB * 1024 * 1024
 
         if self.info_sheet:
-
             # Check if file is bigger than X MB
             if self.info_sheet.size > file_size_limit:
-
                 errors["info_sheet"] = errors.get("info_sheet", []) + [
                     f"File too large. Size cannot exceed {FILE_SIZE_LIMIT_MB} MB."
                 ]
@@ -204,14 +201,12 @@ class MapFileChecPropertieskMixin:
     """Clean method and common properties for models that have a map sheet"""
 
     def clean(self):
-
         errors = {}
 
         file_size_limit = FILE_SIZE_LIMIT_MB * 1024 * 1024
 
         # Check .dna map
         if self.map:
-
             # Check if file is bigger than X MB
             if self.map.size > file_size_limit:
                 errors["map"] = errors.get("map", []) + [
@@ -228,7 +223,6 @@ class MapFileChecPropertieskMixin:
                     "Invalid file format. Please select a valid SnapGene .dna file"
                 ]
             else:
-
                 # Check if .dna file is a real SnapGene file
 
                 dna_map_handle = self.map.open("rb")
@@ -242,7 +236,6 @@ class MapFileChecPropertieskMixin:
                     ]
 
         if self.map_gbk:
-
             # Check if file is bigger than X MB
             if self.map_gbk.size > file_size_limit:
                 errors["map_gbk"] = errors.get("map_gbk", []) + [
@@ -283,7 +276,7 @@ class MapFileChecPropertieskMixin:
 
         params = {
             "file_name": self.map.url,
-            "title": f"p{LAB_ABBREVIATION_FOR_FILES}{self.__str__()}",
+            "title": f"{self._model_abbreviation}{LAB_ABBREVIATION_FOR_FILES}{self.__str__()}",
             "file_format": "dna",
         }
 
@@ -295,7 +288,7 @@ class MapFileChecPropertieskMixin:
 
         params = {
             "file_name": self.map_gbk.url,
-            "title": f"p{LAB_ABBREVIATION_FOR_FILES}{self.__str__()}",
+            "title": f"{self._model_abbreviation}{LAB_ABBREVIATION_FOR_FILES}{self.__str__()}",
             "file_format": "gbk",
         }
 
@@ -308,7 +301,7 @@ class MapFileChecPropertieskMixin:
 
         params = {
             "file_name": f"/{self._meta.app_label}/{self._meta.model_name}/{self.pk}/find_oligos/",
-            "title": f"p{LAB_ABBREVIATION_FOR_FILES}{self.__str__()} (imported oligos)",
+            "title": f"{self._model_abbreviation}{LAB_ABBREVIATION_FOR_FILES}{self.__str__()} (imported oligos)",
             "file_format": "gbk",
             "show_oligos": "true",
         }
@@ -317,7 +310,6 @@ class MapFileChecPropertieskMixin:
 
 
 class CommonCollectionModelPropertiesMixin:
-
     @property
     def all_instock_plasmids(self):
         """Returns all plasmids present in the stocked organism"""

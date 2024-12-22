@@ -54,7 +54,7 @@
         {% url opts|admin_urlname:'history' original.pk|admin_urlquote as history_url %}
         <a href="{% add_preserved_filters history_url %}" class="historylink">{% trans "History" %}</a>
     </li>
- 
+
     {% if show_formz %}
       <li>
         <a href="{% url "admin:app_list" app_label %}{{opts.model_name}}/{{object_id}}/formz">{% trans "FormZ" %}</a>
@@ -129,9 +129,11 @@
       const MagnificImgClassIds = ['magnific-popup-img-map'];
       {% if original.map %} const oveUrls = {map: "{{original.map_ove_url}}"}; {% else %} const oveUrls = {}; {% endif %}
       {% if original.map_gbk %} oveUrls['map_gbk'] = "{{original.map_ove_url_gbk}}"; {% endif %}
+      const freeTextFieldIds = [['lab_identifier', true]];
     </script>
     <script type="text/javascript" src="{% static 'admin/js/admin/MagnificPopUpiFrame.js' %}"></script>
     <script type="text/javascript" src="{% static 'admin/js/admin/MagnificPopUpImg.js' %}"></script>
+    <script type="text/javascript" src="{% static 'admin/js/admin/choice_with_freetext_field.js' %}"></script>
 {% endblock %}
 
 {# JavaScript for prepopulated fields #}

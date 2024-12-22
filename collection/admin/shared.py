@@ -25,6 +25,7 @@ from django.forms import TextInput
 from django.http import HttpResponse, HttpResponseNotFound, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import get_template
+from django.urls import path
 from django.urls import re_path, reverse
 from django.utils import timezone
 from django.utils.html import format_html
@@ -89,7 +90,6 @@ def connect_snapgene_server():
 
 
 def mail_snapgene_error(map_path, messages):
-
     mail_admins(
         "Snapgene server error",
         "There was an error with creating the preview"
@@ -253,6 +253,10 @@ def convert_map_gbk_to_dna(gbk_map_path, dna_map_path, attempt_number=3, message
 
 
 class Approval:
+    @admin.display(
+        description="Approved",
+        boolean=True,
+    )
     def approval(self, instance):
         """Custom list_view field to show whether record
         has been approved or not"""
@@ -261,9 +265,6 @@ class Approval:
             return instance.last_changed_approval_by_pi
         else:
             return instance.created_approval_by_pi
-
-    approval.boolean = True
-    approval.short_description = "Approved"
 
 
 class CustomUserManage(UserManage):
@@ -290,9 +291,7 @@ class CustomUserManage(UserManage):
 
 
 class SortAutocompleteResultsId(admin.ModelAdmin):
-
     def get_ordering(self, request):
-
         # Force sorting of autocompletion results to be by ascending id
         if request.path_info == "/autocomplete/":
             return ["id"]
@@ -311,7 +310,6 @@ def delete_obj_perm_after_24h(perm, user_id, obj_id, app_label, model_name):
 
 
 def rename_info_sheet_save_obj_update_history(obj, new_obj):
-
     doc_dir_path = os.path.join(MEDIA_ROOT, obj._model_upload_to)
     old_file_name_abs_path = os.path.join(MEDIA_ROOT, obj.info_sheet.name)
     _, ext = os.path.splitext(os.path.basename(old_file_name_abs_path))
@@ -369,9 +367,9 @@ class CollectionBaseAdmin(
     set_readonly_fields = []
     readonly_fields = []
     show_formz = False
+    can_change = False
 
     def save_history_fields(self, form, obj=None):
-
         obj = obj if obj else self.model.objects.get(pk=form.instance.id)
 
         history_array_fields = self.history_array_fields.copy()
@@ -386,7 +384,6 @@ class CollectionBaseAdmin(
         # Not pretty, but it works
 
         for m2m_history_field_name, m2m_model in history_array_fields.items():
-
             try:
                 m2m_set = getattr(obj, f"{m2m_history_field_name[8:]}")
             except:
@@ -423,13 +420,11 @@ class CollectionBaseAdmin(
         return obj, history_obj
 
     def save_related(self, request, form, formsets, change):
-
         super().save_related(request, form, formsets, change)
 
         return self.save_history_fields(form)
 
     def add_view(self, request, form_url="", extra_context=None):
-
         self.fieldsets = self.add_view_fieldsets.copy()
         self.readonly_fields = self.set_readonly_fields + self.obj_unmodifiable_fields
 
@@ -437,15 +432,12 @@ class CollectionBaseAdmin(
 
 
 class CollectionSimpleAdmin(CollectionBaseAdmin):
-
     def save_model(self, request, obj, form, change):
-
         rename_doc = False
         new_obj = False
 
         # New objects
         if obj.pk == None:
-
             # Don't rely on autoincrement value in DB table
             obj.id = (
                 self.model.objects.order_by("-id").first().id + 1
@@ -479,7 +471,6 @@ class CollectionSimpleAdmin(CollectionBaseAdmin):
             rename_info_sheet_save_obj_update_history(obj, new_obj)
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
-
         self.fieldsets = self.change_view_fieldsets.copy()
         self.readonly_fields = self.set_readonly_fields + self.obj_unmodifiable_fields
 
@@ -500,13 +491,10 @@ class CollectionSimpleAdmin(CollectionBaseAdmin):
 
 
 class CollectionUserProtectionAdmin(Approval, CollectionBaseAdmin):
-
     show_formz = True
 
     def save_model(self, request, obj, form, change):
-
         if obj.pk == None:
-
             # Don't rely on autoincrement value in DB table
             obj.id = (
                 self.model.objects.order_by("-id").first().id + 1
@@ -535,7 +523,6 @@ class CollectionUserProtectionAdmin(Approval, CollectionBaseAdmin):
                 obj.approval.create(activity_type="created", activity_user=request.user)
 
         else:
-
             # If the disapprove button was clicked, no approval
             # record for the object exists, create one
             if "_disapprove_record" in request.POST:
@@ -588,7 +575,6 @@ class CollectionUserProtectionAdmin(Approval, CollectionBaseAdmin):
                             approval_obj.save()
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
-
         obj = self.model.objects.get(pk=object_id)
         self.can_change = False
         extra_context = extra_context or {}
@@ -632,7 +618,6 @@ class CollectionUserProtectionAdmin(Approval, CollectionBaseAdmin):
             or request.user.labuser.is_principal_investigator
             or request.user.is_superuser
         ):
-
             self.can_change = True
 
             if self.is_guarded_model:
@@ -656,7 +641,6 @@ class CollectionUserProtectionAdmin(Approval, CollectionBaseAdmin):
         return super().change_view(request, object_id, form_url, extra_context)
 
     def response_change(self, request, obj):
-
         # If the disapprove button is clicked, redirect to the approval
         # record changepage
         if "_disapprove_record" in request.POST:
@@ -677,7 +661,6 @@ class CollectionUserProtectionAdmin(Approval, CollectionBaseAdmin):
 
 
 class CustomGuardedModelAdmin(GuardedModelAdmin):
-
     is_guarded_model = True
 
     def get_urls(self):
@@ -685,7 +668,7 @@ class CustomGuardedModelAdmin(GuardedModelAdmin):
         Extends standard guardian admin model urls with delete url
         """
 
-        urls = super(CustomGuardedModelAdmin, self).get_urls()
+        urls = super().get_urls()
 
         info = self.model._meta.app_label, self.model._meta.model_name
         myurls = [
@@ -730,10 +713,8 @@ class CustomGuardedModelAdmin(GuardedModelAdmin):
             raise PermissionDenied()
 
         if request.method == "POST" and "submit_manage_user" in request.POST:
-
             user_form = self.get_obj_perms_user_select_form(request)(request.POST)
             if user_form.is_valid():
-
                 perm = "{}.change_{}".format(
                     self.model._meta.app_label, self.model._meta.model_name
                 )
@@ -794,14 +775,13 @@ class CustomGuardedModelAdmin(GuardedModelAdmin):
 
 
 class AdminOligosInMap(admin.ModelAdmin):
-
     def get_urls(self):
         """Add navigation url"""
 
-        urls = super(AdminOligosInMap, self).get_urls()
+        urls = super().get_urls()
 
         urls = [
-            re_path(r"^(?P<object_id>.+)/find_oligos/$", view=self.find_oligos_in_map)
+            path("<path:object_id>/find_oligos/", view=self.find_oligos_in_map)
         ] + urls
 
         return urls
@@ -913,7 +893,7 @@ class AdminOligosInMap(admin.ModelAdmin):
                 client.close()
 
                 # Get processed .gbk map and delete temp files
-                with open(gbk_temp_path, "r") as fhandle:
+                with open(gbk_temp_path) as fhandle:
                     file_data = fhandle.read()
 
                 os.unlink(oligos_json_path)
@@ -944,7 +924,6 @@ class AdminOligosInMap(admin.ModelAdmin):
 
 
 class FormUniqueNameCheck:
-
     def clean_name(self):
         """Check if name is unique before saving"""
 
@@ -967,7 +946,6 @@ class FormUniqueNameCheck:
 
 
 class FormTwoMapChangeCheck:
-
     def clean(self):
         """Check if both the .dna and .gbk map is changed at the same time,
         which is not allowed"""
@@ -998,13 +976,59 @@ class FormTwoMapChangeCheck:
         return self.cleaned_data
 
 
+class OptionalChoiceWidget(forms.MultiWidget):
+    """Adjusted from https://stackoverflow.com/questions/24783275"""
+
+    def decompress(self, value):
+        # This works only if choice == value of a choice
+
+        # For existing object
+        if value:
+            if value in [x[0] for x in self.widgets[0].choices]:
+                # Set dropdown to choice
+                return [value, ""]
+            else:
+                # Set dropdown to blank and free text field to stored value
+                return ["", value]
+
+        # Default for new object
+        return ["", ""]
+
+
+class OptionalChoiceField(forms.MultiValueField):
+    def __init__(self, choices, max_length=80, *args, **kwargs):
+        # Set the two fields as not required, but enforce that,
+        # at least, one is set in compress
+
+        choices = choices + (("", "Other"),)
+
+        fields = (
+            forms.ChoiceField(choices=choices, required=False),
+            forms.CharField(
+                required=False,
+                widget=forms.TextInput(attrs={"style": "margin-left: 5px;"}),
+            ),
+        )
+
+        self.widget = OptionalChoiceWidget(widgets=[f.widget for f in fields])
+
+        super().__init__(required=False, fields=fields, *args, **kwargs)
+
+    def compress(self, data_list):
+        # Return the choicefield value if selected or charfield value
+        # If both are empty, raise exception
+
+        if not data_list:
+            raise forms.ValidationError("Either a choice or a custom value is required")
+        return data_list[0] or data_list[1]
+
+
 ################################################
 #             Custom search options             #
 ################################################
 
 
 class FieldUse(StrField):
-
     name = "use"
 
     def get_lookup_name(self):
@@ -1012,7 +1036,6 @@ class FieldUse(StrField):
 
 
 class FieldLocation(StrField):
-
     name = "location"
 
     def get_lookup_name(self):
@@ -1020,7 +1043,6 @@ class FieldLocation(StrField):
 
 
 class FieldApplication(StrField):
-
     name = "application"
 
     def get_lookup_name(self):
@@ -1028,7 +1050,6 @@ class FieldApplication(StrField):
 
 
 class FieldCreated(DateTimeField):
-
     name = "created_timestamp"
 
     def get_lookup_name(self):
@@ -1036,7 +1057,6 @@ class FieldCreated(DateTimeField):
 
 
 class FieldLastChanged(DateTimeField):
-
     name = "last_changed_timestamp"
 
     def get_lookup_name(self):
@@ -1044,7 +1064,6 @@ class FieldLastChanged(DateTimeField):
 
 
 class FieldIntegratedPlasmidM2M(IntField):
-
     name = "integrated_plasmids_id"
 
     def get_lookup_name(self):
@@ -1052,7 +1071,6 @@ class FieldIntegratedPlasmidM2M(IntField):
 
 
 class FieldCassettePlasmidM2M(IntField):
-
     name = "cassette_plasmids_id"
 
     def get_lookup_name(self):
@@ -1060,7 +1078,6 @@ class FieldCassettePlasmidM2M(IntField):
 
 
 class FieldEpisomalPlasmidM2M(IntField):
-
     name = "episomal_plasmids_id"
 
     def get_lookup_name(self):
@@ -1068,7 +1085,6 @@ class FieldEpisomalPlasmidM2M(IntField):
 
 
 class FieldFormZProject(StrField):
-
     name = "formz_projects_title"
     suggest_options = True
 
@@ -1080,7 +1096,6 @@ class FieldFormZProject(StrField):
 
 
 class FieldParent1(IntField):
-
     name = "parent_1_id"
 
     def get_lookup_name(self):
@@ -1088,7 +1103,6 @@ class FieldParent1(IntField):
 
 
 class FieldParent2(IntField):
-
     name = "parent_2_id"
 
     def get_lookup_name(self):
@@ -1096,12 +1110,10 @@ class FieldParent2(IntField):
 
 
 class FieldFormZBaseElement(StrField):
-
     name = "formz_elements_name"
     suggest_options = True
 
     def get_options(self, search):
-
         if len(search) < 3:
             return ["Type 3 or more characters to see suggestions"]
         else:
@@ -1123,7 +1135,6 @@ def formz_as_html(modeladmin, request, queryset):
     """Export ForblattZ as html"""
 
     def get_params(app_label, model_name, obj_id):
-
         model = apps.get_model(app_label, model_name)
         model_content_type = ContentType.objects.get(
             app_label=app_label, model=model_name

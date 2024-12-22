@@ -6,6 +6,7 @@ from django.contrib import admin, messages
 from django.contrib.auth.models import User
 from django.db.models import Q
 from django.utils import timezone
+from django.utils.html import format_html
 from djangoql.schema import DjangoQLSchema, IntField, StrField
 from import_export import resources
 from import_export.fields import Field
@@ -22,6 +23,7 @@ from collection.admin.shared import (
     FieldParent2,
     FieldUse,
     FormTwoMapChangeCheck,
+    OptionalChoiceField,
     SortAutocompleteResultsId,
     convert_map_gbk_to_dna,
     create_map_preview,
@@ -47,26 +49,26 @@ from formz.models import FormZBaseElement, FormZProject, GenTechMethod
 
 MEDIA_ROOT = settings.MEDIA_ROOT
 LAB_ABBREVIATION_FOR_FILES = getattr(settings, "LAB_ABBREVIATION_FOR_FILES", "")
+WORM_ALLELE_LAB_IDS = getattr(settings, "WORM_ALLELE_LAB_IDS", [])
+WORM_ALLELE_LAB_ID_DEFAULT = getattr(settings, "WORM_ALLELE_LAB_ID_DEFAULT", "")
+WORM_STRAIN_REGEX = getattr(settings, "WORM_STRAIN_REGEX", r"")
+WORM_STRAIN_LAB_ID_DEFAULT = getattr(settings, "WORM_STRAIN_LAB_ID_DEFAULT", "")
 
 
 class SearchFieldOptUsernameWormStrain(SearchFieldOptUsername):
-
     id_list = WormStrain.objects.all().values_list("created_by", flat=True).distinct()
 
 
 class SearchFieldOptLastnameWormStrain(SearchFieldOptLastname):
-
     id_list = WormStrain.objects.all().values_list("created_by", flat=True).distinct()
 
 
 class FieldAlleleName(StrField):
-
     model = WormStrainAllele
     name = "allele_name"
     suggest_options = True
 
     def get_options(self, search):
-
         if len(search) < 3:
             return ["Type 3 or more characters to see suggestions"]
 
@@ -76,7 +78,6 @@ class FieldAlleleName(StrField):
         return [a.name for a in qs]
 
     def get_lookup(self, path, operator, value):
-
         op, invert = self.get_operator(operator)
         value = self.get_lookup_value(value)
 
@@ -88,7 +89,6 @@ class FieldAlleleName(StrField):
 
 
 class FieldAlleleId(IntField):
-
     model = WormStrainAllele
     name = "allele_id"
     suggest_options = False
@@ -134,7 +134,7 @@ class WormStrainQLSchema(DjangoQLSchema):
                 SearchFieldOptUsernameWormStrain(),
                 SearchFieldOptLastnameWormStrain(),
             ]
-        return super(WormStrainQLSchema, self).get_fields(model)
+        return super().get_fields(model)
 
 
 class WormStrainExportResource(resources.ModelResource):
@@ -143,7 +143,6 @@ class WormStrainExportResource(resources.ModelResource):
     primers_for_genotyping = Field()
 
     def dehydrate_primers_for_genotyping(self, strain):
-
         return str(strain.history_genotyping_oligos)[1:-1]
 
     class Meta:
@@ -185,7 +184,6 @@ def export_wormstrain(modeladmin, request, queryset):
 
 
 class WormStrainForm(forms.ModelForm):
-
     class Meta:
         model = WormStrain
         fields = "__all__"
@@ -249,13 +247,13 @@ class WormStrainPage(
     CustomGuardedModelAdmin,
     CollectionUserProtectionAdmin,
 ):
-
     list_display = ("id", "name", "chromosomal_genotype", "created_by", "approval")
     list_display_links = ("id",)
     actions = [export_wormstrain, formz_as_html]
     form = WormStrainForm
     djangoql_schema = WormStrainQLSchema
     search_fields = ["id", "name"]
+    show_all_plasmids_in_stocked_strain = True
     autocomplete_fields = [
         "parent_1",
         "parent_2",
@@ -360,7 +358,6 @@ class WormStrainPage(
     }
 
     def save_related(self, request, form, formsets, change):
-
         obj, history_obj = super().save_related(request, form, formsets, change)
 
         obj.history_genotyping_oligos = (
@@ -407,23 +404,48 @@ class WormStrainPage(
 
         return filtered_inline_instances
 
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+
+        # Try to get the latest strain ID from name
+        if (
+            not obj
+            and WORM_STRAIN_REGEX
+            and WORM_STRAIN_LAB_ID_DEFAULT
+            and "name" in form.base_fields
+        ):
+            strain_greatest_id = (
+                self.model.objects.filter(name__iregex=WORM_STRAIN_REGEX)
+                .extra(
+                    select={
+                        "strain_id": f"CAST((REGEXP_MATCH(name, '{WORM_STRAIN_REGEX}'))[1] AS INTEGER)"
+                    }
+                )
+                .order_by("-strain_id")
+                .first()
+            )
+            if strain_greatest_id:
+                form.base_fields[
+                    "name"
+                ].initial = (
+                    f"{WORM_STRAIN_LAB_ID_DEFAULT}{strain_greatest_id.strain_id + 1}"
+                )
+        return form
+
 
 class SearchFieldOptUsernameWormStrainAllele(SearchFieldOptUsername):
-
     id_list = (
         WormStrainAllele.objects.all().values_list("created_by", flat=True).distinct()
     )
 
 
 class SearchFieldOptLastnameWormStrainAllele(SearchFieldOptLastname):
-
     id_list = (
         WormStrainAllele.objects.all().values_list("created_by", flat=True).distinct()
     )
 
 
 class FieldFormZBaseElementWormStrainAllele(FieldFormZBaseElement):
-
     model = WormStrainAllele
 
 
@@ -472,11 +494,9 @@ class WormStrainAlleleExportResource(resources.ModelResource):
     type = Field()
 
     def dehydrate_made_by_method(self, strain):
-
         return strain.made_by_method.english_name
 
     def dehydrate_type(self, strain):
-
         return strain.get_typ_e_display()
 
     class Meta:
@@ -522,19 +542,17 @@ class WormStrainAlleleAddDocInline(AddDocFileInlineMixin):
 
 
 class WormStrainAlleleForm(FormTwoMapChangeCheck, forms.ModelForm):
-
-    class Meta:
-        model = WormStrainAllele
-        fields = "__all__"
+    if WORM_ALLELE_LAB_IDS:
+        lab_identifier = OptionalChoiceField(
+            choices=WORM_ALLELE_LAB_IDS,
+        )
 
 
 class WormStrainAllelePage(PlasmidPage):
-
     list_display = (
         "id",
-        "lab_identifier",
         "typ_e",
-        "name",
+        "description",
         "get_map_short_name",
         "created_by",
     )
@@ -546,6 +564,7 @@ class WormStrainAllelePage(PlasmidPage):
     form = WormStrainAlleleForm
     inlines = [WormStrainAlleleDocInline, WormStrainAlleleAddDocInline]
     allele_type = ""
+    show_formz = False
     obj_specific_fields = [
         "lab_identifier",
         "typ_e",
@@ -569,7 +588,9 @@ class WormStrainAllelePage(PlasmidPage):
         "last_changed_date_time",
         "created_by",
     ]
-    set_readonly_fields = ["map_png", "lab_identifier"]
+    set_readonly_fields = [
+        "map_png",
+    ]
     history_array_fields = {
         "history_formz_elements": FormZBaseElement,
         "history_documents": WormStrainAlleleDoc,
@@ -582,7 +603,6 @@ class WormStrainAllelePage(PlasmidPage):
         return False
 
     def save_model(self, request, obj, form, change):
-
         rename_and_preview = False
         self.rename_and_preview = False
         new_obj = False
@@ -591,7 +611,6 @@ class WormStrainAllelePage(PlasmidPage):
         convert_map_to_dna = False
 
         if obj.pk == None:
-
             obj.id = (
                 self.model.objects.order_by("-id").first().id + 1
                 if self.model.objects.exists()
@@ -617,13 +636,11 @@ class WormStrainAllelePage(PlasmidPage):
                 convert_map_to_dna = True
 
         else:
-
             # Check if the request's user can change the object, if not raise PermissionDenied
 
             saved_obj = self.model.objects.get(pk=obj.pk)
 
             if obj.map != saved_obj.map or obj.map_gbk != saved_obj.map_gbk:
-
                 if (obj.map and obj.map_gbk) or (
                     not saved_obj.map and not saved_obj.map_gbk
                 ):
@@ -646,7 +663,6 @@ class WormStrainAllelePage(PlasmidPage):
 
         # Rename map
         if rename_and_preview:
-
             timestamp = timezone.now().strftime("%Y%m%d_%H%M%S_%f")
             new_file_name = f"{self.model._model_abbreviation}{LAB_ABBREVIATION_FOR_FILES}{obj.id}_{timestamp}"
 
@@ -716,27 +732,33 @@ class WormStrainAllelePage(PlasmidPage):
                 )
 
     def get_form(self, request, obj=None, **kwargs):
-
         form = super().get_form(request, obj, **kwargs)
+        allele_type = ""
+        required_fields = []
 
         if (obj and obj.typ_e == "t") or self.allele_type == "t":
-            if "typ_e" in form.base_fields:
-                form.base_fields["typ_e"].initial = "t"
-                form.base_fields["typ_e"].disabled = True
+            allele_type = "t"
             required_fields = ["transgene", "transgene_position", "transgene_plasmids"]
+        elif (obj and obj.typ_e == "m") or self.allele_type == "m":
+            allele_type = "m"
+            required_fields = ["mutation", "mutation_type", "mutation_position"]
+
+        if "typ_e" in form.base_fields:
+            form.base_fields["typ_e"].initial = allele_type
+            form.base_fields["typ_e"].disabled = True
+        if self.can_change:
             [setattr(form.base_fields[f], "required", True) for f in required_fields]
 
-        elif (obj and obj.typ_e == "m") or self.allele_type == "m":
-            if "typ_e" in form.base_fields:
-                form.base_fields["typ_e"].initial = "m"
-                form.base_fields["typ_e"].disabled = True
-            required_fields = ["mutation", "mutation_type", "mutation_position"]
-            [setattr(form.base_fields[f], "required", True) for f in required_fields]
+        if (
+            not obj
+            and WORM_ALLELE_LAB_ID_DEFAULT
+            and "lab_identifier" in form.base_fields
+        ):
+            form.base_fields["lab_identifier"].initial = WORM_ALLELE_LAB_ID_DEFAULT
 
         return form
 
     def add_view(self, request, form_url="", extra_context=None):
-
         fields = self.obj_specific_fields.copy()
         self.allele_type = request.GET.get("allele_type")
 
@@ -757,7 +779,6 @@ class WormStrainAllelePage(PlasmidPage):
         return super().add_view(request, form_url, extra_context)
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
-
         obj = self.model.objects.get(pk=object_id)
         fields = self.obj_specific_fields.copy()
 
@@ -774,3 +795,9 @@ class WormStrainAllelePage(PlasmidPage):
         ]
 
         return super().change_view(request, object_id, form_url, extra_context)
+
+    @admin.display(description="Description")
+    def description(self, instance):
+        return format_html(
+            "<b>{}{}</b> - {}", instance.lab_identifier, instance.id, instance.name
+        )

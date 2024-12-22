@@ -1,4 +1,3 @@
-from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 
@@ -14,9 +13,6 @@ from collection.models.shared import (
 )
 from common.models import DocFileMixin, SaveWithoutHistoricalRecord
 from formz.models import FormZBaseElement, GenTechMethod
-
-WORM_ALLELE_LAB_IDS = getattr(settings, "WORM_ALLELE_LAB_IDS", None)
-WORM_ALLELE_LAB_ID_DEFAULT = getattr(settings, "WORM_ALLELE_LAB_ID_DEFAULT", "")
 
 ################################################
 #              Worm Strain Allele              #
@@ -40,9 +36,7 @@ class WormStrainAllele(
 
     lab_identifier = models.CharField(
         "prefix/Lab identifier",
-        choices=WORM_ALLELE_LAB_IDS,
         max_length=15,
-        default=WORM_ALLELE_LAB_ID_DEFAULT,
         blank=False,
     )
     typ_e = models.CharField(
@@ -51,14 +45,18 @@ class WormStrainAllele(
         max_length=5,
         blank=False,
     )
-    transgene = models.CharField("transgene", max_length=255, blank=True)
+    transgene = models.CharField(
+        "transgene", help_text="Genotype", max_length=255, blank=True
+    )
     transgene_position = models.CharField(
         "transgene position", max_length=255, blank=True
     )
     transgene_plasmids = models.CharField(
         "Transgene plasmids", max_length=255, blank=True
     )
-    mutation = models.CharField("mutation", max_length=255, blank=True)
+    mutation = models.CharField(
+        "mutation", help_text="Genotype", max_length=255, blank=True
+    )
     mutation_type = models.CharField("mutation type", max_length=255, blank=True)
     mutation_position = models.CharField(
         "mutation position", max_length=255, blank=True
@@ -132,6 +130,12 @@ class WormStrainAllele(
     def all_common_formz_elements(self):
         elements = self.formz_elements.filter(common_feature=True).order_by("name")
         return elements
+
+    def save(
+        self, force_insert=False, force_update=False, using=None, update_fields=None
+    ):
+        self.lab_identifier = self.lab_identifier.strip()
+        super().save(force_insert, force_update, using, update_fields)
 
 
 WORM_SPECIES_CHOICES = (
@@ -304,6 +308,12 @@ class WormStrain(
         return self.integrated_dna_plasmids.all().distinct().order_by("id")
 
     @property
+    def history_all_plasmids_in_stocked_strain(self):
+        """Returns the IDs of the plasmids present in the stocked organism"""
+
+        return self.all_instock_plasmids.values_list("id", flat=True)
+
+    @property
     def all_transient_episomal_plasmids(self):
         """Returns all transiently transformed episomal plasmids"""
 
@@ -318,6 +328,12 @@ class WormStrain(
         ) + list(
             self.integrated_dna_plasmids.all().distinct().exclude(map="").order_by("id")
         )
+
+    def save(
+        self, force_insert=False, force_update=False, using=None, update_fields=None
+    ):
+        self.name = self.name.strip()
+        super().save(force_insert, force_update, using, update_fields)
 
 
 ################################################

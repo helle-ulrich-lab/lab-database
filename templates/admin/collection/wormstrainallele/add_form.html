@@ -98,9 +98,12 @@
                 data-model-name="{{ opts.model_name }}"
             {% endif %}>
     </script>
-
+    <script type="text/javascript">
+      const freeTextFieldIds = [['lab_identifier', true]];
+    </script>
     <script type="text/javascript" src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
     <script type="text/javascript" src="{% static 'admin/js/vendor/jqueryui/jquery-ui.js' %}"></script>
+    <script type="text/javascript" src="{% static 'admin/js/admin/choice_with_freetext_field.js' %}"></script>
 
 {% endblock %}
 

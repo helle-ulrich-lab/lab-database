@@ -6,14 +6,14 @@
 # And then run the following from the project's root
 # pip-compile-multi --no-upgrade -d requirements/ -i in -o txt
 
-beautifulsoup4==4.11.1
-Django==4.2.4
+beautifulsoup4==4.12.3
+Django==4.2.17
 django-adminactions==1.9
 django4-background-tasks==1.2.9
 django-guardian==2.4.0
-django-import-export==3.3.1
+django-import-export==4.3.3
 djangoql==0.17.1
-django-simple-history==3.4.0
+django-simple-history==3.7.0
 lxml==4.9.0
 mozilla-django-oidc==4.0.1
 openpyxl==3.1.2
@@ -24,4 +24,3 @@ zmq==0.0.0
 django-better-admin-arrayfield==1.4.2
 backports-zoneinfo==0.2.1;python_version<"3.9"
 django-modelclone @git+https://github.com/al-beton/django-modelclone/
-

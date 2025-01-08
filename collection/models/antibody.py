@@ -26,7 +26,6 @@ class Antibody(
     OwnershipFieldsMixin,
     models.Model,
 ):
-
     class Meta:
         verbose_name = "antibody"
         verbose_name_plural = "antibodies"
@@ -61,7 +60,6 @@ class Antibody(
 
 
 class AntibodyDoc(DocFileMixin):
-
     class Meta:
         verbose_name = "antibody document"
 

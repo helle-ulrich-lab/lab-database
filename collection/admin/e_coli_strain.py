@@ -25,12 +25,10 @@ from formz.models import FormZBaseElement, FormZProject
 
 
 class SearchFieldOptUsernameEColi(SearchFieldOptUsername):
-
     id_list = EColiStrain.objects.all().values_list("created_by", flat=True).distinct()
 
 
 class SearchFieldOptLastnameEColi(SearchFieldOptLastname):
-
     id_list = EColiStrain.objects.all().values_list("created_by", flat=True).distinct()
 
 
@@ -59,7 +57,7 @@ class EColiStrainQLSchema(DjangoQLSchema):
             ]
         elif model == User:
             return [SearchFieldOptUsernameEColi(), SearchFieldOptLastnameEColi()]
-        return super(EColiStrainQLSchema, self).get_fields(model)
+        return super().get_fields(model)
 
 
 class EColiStrainExportResource(resources.ModelResource):

@@ -31,7 +31,6 @@ class ScPombeStrain(
     OwnershipFieldsMixin,
     models.Model,
 ):
-
     class Meta:
         verbose_name = "strain - Sc. pombe"
         verbose_name_plural = "strains - Sc. pombe"
@@ -95,7 +94,6 @@ class ScPombeStrain(
 
     @property
     def all_instock_plasmids(self):
-
         all_plasmids = (
             (
                 self.integrated_plasmids.all()
@@ -109,7 +107,6 @@ class ScPombeStrain(
 
     @property
     def all_transient_episomal_plasmids(self):
-
         all_plasmids = (
             self.scpombestrainepisomalplasmid_set.filter(
                 present_in_stocked_strain=False
@@ -121,7 +118,6 @@ class ScPombeStrain(
 
     @property
     def all_plasmids_with_maps(self):
-
         return (
             (
                 self.integrated_plasmids.all()
@@ -135,7 +131,6 @@ class ScPombeStrain(
 
     @property
     def all_uncommon_formz_elements(self):
-
         elements = super().all_uncommon_formz_elements
         all_plasmids = self.all_instock_plasmids
         for pl in all_plasmids:
@@ -145,7 +140,6 @@ class ScPombeStrain(
 
     @property
     def all_common_formz_elements(self):
-
         elements = super().all_common_formz_elements
         all_plasmids = self.all_instock_plasmids
         for pl in all_plasmids:
@@ -166,7 +160,6 @@ class ScPombeStrain(
 
 
 class ScPombeStrainEpisomalPlasmid(models.Model):
-
     _inline_foreignkey_fieldname = "scpombe_strain"
 
     scpombe_strain = models.ForeignKey(ScPombeStrain, on_delete=models.PROTECT)
@@ -183,7 +176,6 @@ class ScPombeStrainEpisomalPlasmid(models.Model):
     destroyed_date = models.DateField("destroyed", blank=True, null=True)
 
     def clean(self):
-
         errors = {}
 
         # Check that a transiently transfected plasmid has a created date
@@ -198,7 +190,6 @@ class ScPombeStrainEpisomalPlasmid(models.Model):
     def save(
         self, force_insert=False, force_update=False, using=None, update_fields=None
     ):
-
         # If destroyed date not present and plasmid not in stocked strain,
         # automatically set destroyed date
         if self.present_in_stocked_strain:
@@ -222,7 +213,6 @@ class ScPombeStrainEpisomalPlasmid(models.Model):
 
 
 class ScPombeStrainDoc(DocFileMixin):
-
     class Meta:
         verbose_name = "sc. pombe strain document"
 

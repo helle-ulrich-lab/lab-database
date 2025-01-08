@@ -71,7 +71,6 @@ class InhibitorAddDocInline(AddDocFileInlineMixin):
 
 
 class InhibitorPage(CollectionSimpleAdmin):
-
     list_display = (
         "id",
         "name",

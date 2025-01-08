@@ -39,21 +39,18 @@ from formz.models import FormZBaseElement, FormZProject, GenTechMethod
 
 
 class SearchFieldOptUsernameSaCerStrain(SearchFieldOptUsername):
-
     id_list = (
         SaCerevisiaeStrain.objects.all().values_list("created_by", flat=True).distinct()
     )
 
 
 class SearchFieldOptLastnameSaCerStrain(SearchFieldOptLastname):
-
     id_list = (
         SaCerevisiaeStrain.objects.all().values_list("created_by", flat=True).distinct()
     )
 
 
 class FieldEpisomalPlasmidFormZProjectSaCerStrain(StrField):
-
     name = "episomal_plasmids_formz_projects_title"
     suggest_options = True
 
@@ -109,7 +106,7 @@ class SaCerevisiaeStrainQLSchema(DjangoQLSchema):
                 SearchFieldOptUsernameSaCerStrain(),
                 SearchFieldOptLastnameSaCerStrain(),
             ]
-        return super(SaCerevisiaeStrainQLSchema, self).get_fields(model)
+        return super().get_fields(model)
 
 
 class SaCerevisiaeStrainExportResource(resources.ModelResource):
@@ -173,7 +170,6 @@ def export_sacerevisiaestrain(modeladmin, request, queryset):
 
 
 class SaCerevisiaeStrainForm(forms.ModelForm):
-
     class Meta:
         model = SaCerevisiaeStrain
         fields = "__all__"
@@ -192,7 +188,6 @@ class SaCerevisiaeStrainForm(forms.ModelForm):
 
 
 class SaCerevisiaeStrainEpisomalPlasmidInline(admin.TabularInline):
-
     autocomplete_fields = ["plasmid", "formz_projects"]
     model = SaCerevisiaeStrainEpisomalPlasmid
     verbose_name_plural = mark_safe(
@@ -236,9 +231,7 @@ class SaCerevisiaeStrainEpisomalPlasmidInline(admin.TabularInline):
                 self.classes = []
         else:
             self.classes = []
-        return super(SaCerevisiaeStrainEpisomalPlasmidInline, self).get_queryset(
-            request
-        )
+        return super().get_queryset(request)
 
 
 class SaCerevisiaeStrainDocInline(DocFileInlineMixin):
@@ -258,7 +251,6 @@ class SaCerevisiaeStrainPage(
     CustomGuardedModelAdmin,
     CollectionUserProtectionAdmin,
 ):
-
     list_display = ("id", "name", "mating_type", "background", "created_by", "approval")
     list_display_links = ("id",)
     djangoql_schema = SaCerevisiaeStrainQLSchema
@@ -348,7 +340,6 @@ class SaCerevisiaeStrainPage(
     }
 
     def save_related(self, request, form, formsets, change):
-
         obj, history_obj = super().save_related(
             request,
             form,
@@ -381,7 +372,5 @@ class SaCerevisiaeStrainPage(
             in_stock_episomal_plasmid
         ) in SaCerevisiaeStrainEpisomalPlasmid.objects.filter(
             sacerevisiae_strain__id=form.instance.id
-        ).filter(
-            present_in_stocked_strain=True
-        ):
+        ).filter(present_in_stocked_strain=True):
             in_stock_episomal_plasmid.formz_projects.clear()

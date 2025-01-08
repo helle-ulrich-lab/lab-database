@@ -25,7 +25,6 @@ class EColiStrain(
     OwnershipFieldsMixin,
     models.Model,
 ):
-
     class Meta:
         verbose_name = "strain - E. coli"
         verbose_name_plural = "strains - E. coli"
@@ -67,7 +66,6 @@ class EColiStrain(
 
 
 class EColiStrainDoc(DocFileMixin):
-
     class Meta:
         verbose_name = "e. coli strain document"
 

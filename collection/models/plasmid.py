@@ -38,7 +38,6 @@ class Plasmid(
     OwnershipFieldsMixin,
     models.Model,
 ):
-
     class Meta:
         verbose_name = "plasmid"
         verbose_name_plural = "plasmids"
@@ -121,7 +120,6 @@ class Plasmid(
     def save(
         self, force_insert=False, force_update=False, using=None, update_fields=None
     ):
-
         # If destroyed date not present, automatically set it if a plasmid is
         # not kept as E. coli stock
         if not PLASMID_AS_ECOLI_STOCK and not self.destroyed_date:
@@ -133,7 +131,6 @@ class Plasmid(
 
     @property
     def all_plasmids_with_maps(self):
-
         if self.map:
             return [self]
         else:
@@ -146,7 +143,6 @@ class Plasmid(
 
 
 class PlasmidDoc(DocFileMixin):
-
     class Meta:
         verbose_name = "plasmid document"
 

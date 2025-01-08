@@ -37,21 +37,18 @@ from formz.models import FormZBaseElement, FormZProject, GenTechMethod
 
 
 class SearchFieldOptUsernameScPom(SearchFieldOptUsername):
-
     id_list = (
         ScPombeStrain.objects.all().values_list("created_by", flat=True).distinct()
     )
 
 
 class SearchFieldOptLastnameScPom(SearchFieldOptLastname):
-
     id_list = (
         ScPombeStrain.objects.all().values_list("created_by", flat=True).distinct()
     )
 
 
 class FieldEpisomalPlasmidFormZProjectScPom(StrField):
-
     name = "episomal_plasmids_formz_projects_title"
     suggest_options = True
 
@@ -94,7 +91,7 @@ class ScPombeStrainQLSchema(DjangoQLSchema):
             ]
         elif model == User:
             return [SearchFieldOptUsernameScPom(), SearchFieldOptLastnameScPom()]
-        return super(ScPombeStrainQLSchema, self).get_fields(model)
+        return super().get_fields(model)
 
 
 class ScPombeStrainExportResource(resources.ModelResource):
@@ -150,7 +147,6 @@ def export_scpombestrain(modeladmin, request, queryset):
 
 
 class ScPombeStrainForm(forms.ModelForm):
-
     def clean_name(self):
         """Check if name is unique before saving"""
 
@@ -165,7 +161,6 @@ class ScPombeStrainForm(forms.ModelForm):
 
 
 class ScPombeStrainEpisomalPlasmidInline(admin.TabularInline):
-
     autocomplete_fields = ["plasmid", "formz_projects"]
     model = ScPombeStrainEpisomalPlasmid
     verbose_name_plural = mark_safe(
@@ -206,7 +201,7 @@ class ScPombeStrainEpisomalPlasmidInline(admin.TabularInline):
                 self.classes = []
         else:
             self.classes = []
-        return super(ScPombeStrainEpisomalPlasmidInline, self).get_queryset(request)
+        return super().get_queryset(request)
 
 
 class ScPombeStrainDocInline(DocFileInlineMixin):
@@ -310,7 +305,6 @@ class ScPombeStrainPage(
     }
 
     def save_related(self, request, form, formsets, change):
-
         obj, history_obj = super().save_related(request, form, formsets, change)
 
         plasmid_id_list = (

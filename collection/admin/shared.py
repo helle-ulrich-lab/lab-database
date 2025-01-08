@@ -25,8 +25,7 @@ from django.forms import TextInput
 from django.http import HttpResponse, HttpResponseNotFound, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import get_template
-from django.urls import path
-from django.urls import re_path, reverse
+from django.urls import path, re_path, reverse
 from django.utils import timezone
 from django.utils.html import format_html
 from djangoql.admin import DjangoQLSearchMixin
@@ -78,7 +77,7 @@ def connect_snapgene_server():
     for port in server_ports.values():
         try:
             client = Client(port, zmq.Context())
-        except:
+        except Exception:
             continue
         else:
             break
@@ -169,7 +168,7 @@ def create_map_preview(
 
             client.close()
 
-        except:
+        except Exception:
             create_map_preview(
                 obj, detect_common_features, attempt_number - 1, messages, **kwargs
             )
@@ -204,7 +203,7 @@ def get_map_features(obj, attempt_number=3, messages=[]):
             feature_names = [feat["name"].strip() for feat in plasmid_features]
             return feature_names
 
-        except:
+        except Exception:
             get_map_features(obj.map.path, attempt_number - 1, messages)
 
     else:
@@ -237,7 +236,7 @@ def convert_map_gbk_to_dna(gbk_map_path, dna_map_path, attempt_number=3, message
 
             client.close()
 
-        except:
+        except Exception:
             convert_map_gbk_to_dna(
                 gbk_map_path, dna_map_path, attempt_number - 1, messages
             )
@@ -286,7 +285,7 @@ class CustomUserManage(UserManage):
             error_messages={"does_not_exist": "This user is not valid"},
         )
         is_permanent = forms.BooleanField(required=False, label="Grant indefinitely?")
-    except:
+    except Exception:
         pass
 
 
@@ -386,10 +385,10 @@ class CollectionBaseAdmin(
         for m2m_history_field_name, m2m_model in history_array_fields.items():
             try:
                 m2m_set = getattr(obj, f"{m2m_history_field_name[8:]}")
-            except:
+            except Exception:
                 try:
                     m2m_set = getattr(obj, f"{m2m_model._meta.model_name}_set")
-                except:
+                except Exception:
                     continue
             setattr(
                 obj,
@@ -437,7 +436,7 @@ class CollectionSimpleAdmin(CollectionBaseAdmin):
         new_obj = False
 
         # New objects
-        if obj.pk == None:
+        if obj.pk is None:
             # Don't rely on autoincrement value in DB table
             obj.id = (
                 self.model.objects.order_by("-id").first().id + 1
@@ -447,7 +446,7 @@ class CollectionSimpleAdmin(CollectionBaseAdmin):
 
             try:
                 obj.created_by
-            except:
+            except Exception:
                 obj.created_by = request.user
 
             if obj.info_sheet:
@@ -494,7 +493,7 @@ class CollectionUserProtectionAdmin(Approval, CollectionBaseAdmin):
     show_formz = True
 
     def save_model(self, request, obj, form, change):
-        if obj.pk == None:
+        if obj.pk is None:
             # Don't rely on autoincrement value in DB table
             obj.id = (
                 self.model.objects.order_by("-id").first().id + 1
@@ -803,7 +802,7 @@ class AdminOligosInMap(admin.ModelAdmin):
                 for port in server_ports.values():
                     try:
                         client = Client(port, zmq.Context())
-                    except:
+                    except Exception:
                         continue
                     else:
                         break
@@ -1139,7 +1138,6 @@ def formz_as_html(modeladmin, request, queryset):
         model_content_type = ContentType.objects.get(
             app_label=app_label, model=model_name
         )
-        opts = model._meta
         obj = model.objects.get(id=int(obj_id))
 
         # Get storage location object or create a new 'empty' one
@@ -1183,7 +1181,7 @@ def formz_as_html(modeladmin, request, queryset):
                 virus_packaging_cell_line = ZkbsCellLine.objects.filter(
                     name__iexact="293T (HEK 293T)"
                 ).order_by("id")[0]
-            except:
+            except Exception:
                 virus_packaging_cell_line = ZkbsCellLine(name="293T (HEK 293T)")
 
         # Fields specific for Worm strain

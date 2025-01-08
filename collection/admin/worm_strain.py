@@ -610,7 +610,7 @@ class WormStrainAllelePage(PlasmidPage):
         self.clear_formz_elements = False
         convert_map_to_dna = False
 
-        if obj.pk == None:
+        if obj.pk is None:
             obj.id = (
                 self.model.objects.order_by("-id").first().id + 1
                 if self.model.objects.exists()
@@ -684,7 +684,7 @@ class WormStrainAllelePage(PlasmidPage):
                 os.rename(old_gbk_file_path, new_gbk_file_path)
                 try:
                     convert_map_gbk_to_dna(new_gbk_file_path, new_dna_file_path)
-                except:
+                except Exception:
                     messages.error(
                         request, "There was an error with converting the map to .gbk."
                     )
@@ -725,7 +725,7 @@ class WormStrainAllelePage(PlasmidPage):
                 create_map_preview(
                     obj, detect_common_features, prefix=obj.lab_identifier
                 )
-            except:
+            except Exception:
                 messages.error(
                     request,
                     "There was an error detecting common features and/or saving the map preview",

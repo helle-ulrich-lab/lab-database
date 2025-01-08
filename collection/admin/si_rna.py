@@ -23,12 +23,10 @@ from ordering.models import Order
 
 
 class SearchFieldOptUsernameSiRna(SearchFieldOptUsername):
-
     id_list = SiRna.objects.all().values_list("created_by", flat=True).distinct()
 
 
 class SearchFieldOptLastnameSiRna(SearchFieldOptLastname):
-
     id_list = SiRna.objects.all().values_list("created_by", flat=True).distinct()
 
 
@@ -58,7 +56,7 @@ class SiRnaQLSchema(DjangoQLSchema):
             ]
         elif model == User:
             return [SearchFieldOptUsernameSiRna(), SearchFieldOptLastnameSiRna()]
-        return super(SiRnaQLSchema, self).get_fields(model)
+        return super().get_fields(model)
 
 
 class SiRnaExportResource(resources.ModelResource):
@@ -67,7 +65,6 @@ class SiRnaExportResource(resources.ModelResource):
     species_name = Field()
 
     def dehydrate_species_name(self, si_rna):
-
         return str(si_rna.species)
 
     class Meta:
@@ -116,7 +113,6 @@ class SiRnaPage(
     DynamicArrayMixin,
     CollectionSimpleAdmin,
 ):
-
     list_display = (
         "id",
         "name",
@@ -172,25 +168,21 @@ class SiRnaPage(
     history_array_fields = {"history_orders": Order, "history_documents": SiRnaDoc}
 
     def add_view(self, request, form_url="", extra_context=None):
-
         if "created_by" in self.obj_unmodifiable_fields:
             self.obj_unmodifiable_fields.remove("created_by")
 
         return super().add_view(request, form_url, extra_context)
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
-
         if "created_by" not in self.obj_unmodifiable_fields:
             self.obj_unmodifiable_fields = self.obj_unmodifiable_fields + ["created_by"]
 
         return super().change_view(request, object_id, form_url, extra_context)
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
-
         try:
             request.resolver_match.args[0]
-        except:
-
+        except Exception:
             # Exclude certain users from the 'Created by' field in the order form
             if db_field.name == "created_by":
                 if (

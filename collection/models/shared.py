@@ -186,9 +186,9 @@ class InfoSheetMaxSizeMixin:
             # Check if file's extension is '.pdf'
             try:
                 info_sheet_ext = self.info_sheet.name.split(".")[-1].lower()
-            except:
+            except Exception:
                 info_sheet_ext = None
-            if info_sheet_ext == None or info_sheet_ext != "pdf":
+            if info_sheet_ext is None or info_sheet_ext != "pdf":
                 errors["info_sheet"] = errors.get("info_sheet", []) + [
                     "Invalid file format. Please select a valid .pdf file"
                 ]
@@ -216,9 +216,9 @@ class MapFileChecPropertieskMixin:
             # Check if file's extension is '.dna'
             try:
                 map_ext = self.map.name.split(".")[-1].lower()
-            except:
+            except Exception:
                 map_ext = None
-            if map_ext == None or map_ext != "dna":
+            if map_ext is None or map_ext != "dna":
                 errors["map"] = errors.get("map", []) + [
                     "Invalid file format. Please select a valid SnapGene .dna file"
                 ]
@@ -245,9 +245,9 @@ class MapFileChecPropertieskMixin:
             # Check if file's extension is '.gbk'
             try:
                 map_ext = self.map_gbk.name.split(".")[-1].lower()
-            except:
+            except Exception:
                 map_ext = None
-            if map_ext == None or map_ext not in ["gbk", "gb"]:
+            if map_ext is None or map_ext not in ["gbk", "gb"]:
                 errors["map_gbk"] = errors.get("map_gbk", []) + [
                     "Invalid file format. Please select a valid GenBank (.gbk or .gb) file"
                 ]

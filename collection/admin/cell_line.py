@@ -30,7 +30,6 @@ from formz.models import FormZBaseElement, FormZProject, GenTechMethod, Species
 
 
 class CellLineDocPage(admin.ModelAdmin):
-
     list_display = (
         "id",
         "name",
@@ -62,7 +61,7 @@ class CellLineDocPage(admin.ModelAdmin):
         """Override default add_view to show only desired fields"""
 
         self.fields = ["name", "description", "cell_line", "comment", "date_of_test"]
-        return super(CellLineDocPage, self).add_view(request)
+        return super().add_view(request)
 
     def change_view(self, request, object_id, extra_context=None):
         """Override default change_view to show only desired fields"""
@@ -75,7 +74,7 @@ class CellLineDocPage(admin.ModelAdmin):
             "comment",
             "created_date_time",
         ]
-        return super(CellLineDocPage, self).change_view(request, object_id)
+        return super().change_view(request, object_id)
 
 
 class CellLineDocInline(DocFileInlineMixin):
@@ -99,7 +98,6 @@ class AddCellLineDocInline(AddDocFileInlineMixin):
 
 
 class FieldParentalLine(IntField):
-
     name = "parental_line_id"
 
     def get_lookup_name(self):
@@ -107,17 +105,14 @@ class FieldParentalLine(IntField):
 
 
 class SearchFieldOptUsernameCellLine(SearchFieldOptUsername):
-
     id_list = CellLine.objects.all().values_list("created_by", flat=True).distinct()
 
 
 class SearchFieldOptLastnameCellLine(SearchFieldOptLastname):
-
     id_list = CellLine.objects.all().values_list("created_by", flat=True).distinct()
 
 
 class FieldEpisomalPlasmidFormZProjectCellLine(StrField):
-
     name = "episomal_plasmids_formz_projects_title"
     suggest_options = True
 
@@ -160,7 +155,7 @@ class CellLineQLSchema(DjangoQLSchema):
             ]
         elif model == User:
             return [SearchFieldOptUsernameCellLine(), SearchFieldOptLastnameCellLine()]
-        return super(CellLineQLSchema, self).get_fields(model)
+        return super().get_fields(model)
 
 
 class CellLineExportResource(resources.ModelResource):
@@ -169,7 +164,6 @@ class CellLineExportResource(resources.ModelResource):
     organism_name = Field()
 
     def dehydrate_organism_name(self, strain):
-
         return str(strain.organism)
 
     class Meta:
@@ -203,7 +197,6 @@ def export_cellline(modeladmin, request, queryset):
 
 
 class CellLineEpisomalPlasmidInline(admin.TabularInline):
-
     autocomplete_fields = ["plasmid", "formz_projects"]
     model = CellLineEpisomalPlasmid
     verbose_name_plural = mark_safe(
@@ -239,13 +232,12 @@ class CellLineEpisomalPlasmidInline(admin.TabularInline):
                 self.classes = None
         else:
             self.classes = None
-        return super(CellLineEpisomalPlasmidInline, self).get_queryset(request)
+        return super().get_queryset(request)
 
 
 class CellLinePage(
     SortAutocompleteResultsId, CustomGuardedModelAdmin, CollectionUserProtectionAdmin
 ):
-
     list_display = ("id", "name", "box_name", "created_by", "approval")
     list_display_links = ("id",)
     djangoql_schema = CellLineQLSchema
@@ -318,11 +310,9 @@ class CellLinePage(
     }
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
-
         try:
             request.resolver_match.args[0]
-        except:
-
+        except Exception:
             # For organism field, only show those species for
             # which show_in_cell_line_collect was ticked
             if db_field.name == "organism":

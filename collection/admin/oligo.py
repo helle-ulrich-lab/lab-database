@@ -31,17 +31,14 @@ from formz.models import FormZBaseElement
 
 
 class SearchFieldOptUsernameOligo(SearchFieldOptUsername):
-
     id_list = Oligo.objects.all().values_list("created_by", flat=True).distinct()
 
 
 class SearchFieldOptLastnameOligo(SearchFieldOptLastname):
-
     id_list = Oligo.objects.all().values_list("created_by", flat=True).distinct()
 
 
 class OligoSequence(StrField):
-
     name = "sequence"
 
     def get_lookup(self, path, operator, value):
@@ -55,7 +52,7 @@ class OligoSequence(StrField):
             else search
         )
         op, invert = self.get_operator(operator)
-        q = models.Q(**{"%s%s" % (search, op): self.get_lookup_value(value)})
+        q = models.Q(**{f"{search}{op}": self.get_lookup_value(value)})
         return ~q if invert else q
 
 
@@ -84,7 +81,7 @@ class OligoQLSchema(DjangoQLSchema):
             ]
         elif model == User:
             return [SearchFieldOptUsernameOligo(), SearchFieldOptLastnameOligo()]
-        return super(OligoQLSchema, self).get_fields(model)
+        return super().get_fields(model)
 
 
 class OligoExportResource(resources.ModelResource):
@@ -116,7 +113,6 @@ def export_oligo(modeladmin, request, queryset):
 
 
 class OligoForm(forms.ModelForm):
-
     class Meta:
         model = Oligo
         fields = "__all__"
@@ -153,7 +149,6 @@ class OligoForm(forms.ModelForm):
 
 
 class OligoDjangoQLSearchMixin(DjangoQLSearchMixin):
-
     def get_search_results(self, request, queryset, search_term):
         """
         Filter sequence using a non-deterministic collaction
@@ -280,12 +275,10 @@ class OligoPage(
     }
 
     def save_model(self, request, obj, form, change):
-
         rename_doc = False
         new_obj = False
 
-        if obj.pk == None:
-
+        if obj.pk is None:
             obj.id = (
                 self.model.objects.order_by("-id").first().id + 1
                 if self.model.objects.exists()
@@ -311,7 +304,6 @@ class OligoPage(
                 obj.approval.create(activity_type="created", activity_user=request.user)
 
         else:
-
             # If the disapprove button was clicked, no approval
             # record for the object exists, create one
             if "_disapprove_record" in request.POST:
@@ -368,7 +360,6 @@ class OligoPage(
 
     @admin.display(description="Sequence")
     def get_oligo_short_sequence(self, instance):
-
         if instance.sequence:
             if len(instance.sequence) <= 75:
                 return instance.sequence

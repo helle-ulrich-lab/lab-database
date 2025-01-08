@@ -31,7 +31,6 @@ class CellLine(
     OwnershipFieldsMixin,
     models.Model,
 ):
-
     class Meta:
         verbose_name = "cell line"
         verbose_name_plural = "cell lines"
@@ -99,13 +98,11 @@ class CellLine(
 
     @property
     def all_instock_plasmids(self):
-
         all_plasmids = self.integrated_plasmids.all().distinct().order_by("id")
         return all_plasmids
 
     @property
     def all_transient_episomal_plasmids(self):
-
         all_plasmids = (
             self.celllineepisomalplasmid_set.filter(s2_work_episomal_plasmid=False)
             .distinct()
@@ -115,7 +112,6 @@ class CellLine(
 
     @property
     def all_plasmids_with_maps(self):
-
         return (
             (self.integrated_plasmids.all() | self.episomal_plasmids.all())
             .distinct()
@@ -125,7 +121,6 @@ class CellLine(
 
     @property
     def all_uncommon_formz_elements(self):
-
         elements = super().all_uncommon_formz_elements
         all_plasmids = self.all_instock_plasmids
         for pl in all_plasmids:
@@ -135,7 +130,6 @@ class CellLine(
 
     @property
     def all_common_formz_elements(self):
-
         elements = super().all_common_formz_elements
         all_plasmids = self.all_instock_plasmids
         for pl in all_plasmids:
@@ -150,7 +144,6 @@ class CellLine(
 
 
 class CellLineEpisomalPlasmid(models.Model):
-
     _inline_foreignkey_fieldname = "cell_line"
 
     cell_line = models.ForeignKey(CellLine, on_delete=models.PROTECT)
@@ -171,7 +164,6 @@ class CellLineEpisomalPlasmid(models.Model):
     def save(
         self, force_insert=False, force_update=False, using=None, update_fields=None
     ):
-
         # If destroyed date not present and plasmid not in stocked strain, automatically set destroyed date
         if not self.destroyed_date and self.created_date:
             if self.s2_work_episomal_plasmid:
@@ -200,7 +192,6 @@ CELL_LINE_DOC_TYPE_CHOICES = (
 
 
 class CellLineDoc(DocFileMixin):
-
     class Meta:
         verbose_name = "cell line document"
 

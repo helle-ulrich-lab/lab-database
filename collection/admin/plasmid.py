@@ -42,17 +42,14 @@ DEFAULT_ECOLI_STRAIN_IDS = getattr(settings, "DEFAULT_ECOLI_STRAIN_IDS", [])
 
 
 class SearchFieldOptUsernamePlasmid(SearchFieldOptUsername):
-
     id_list = Plasmid.objects.all().values_list("created_by", flat=True).distinct()
 
 
 class SearchFieldOptLastnamePlasmid(SearchFieldOptLastname):
-
     id_list = Plasmid.objects.all().values_list("created_by", flat=True).distinct()
 
 
 class FieldFormZBaseElementPlasmid(FieldFormZBaseElement):
-
     model = Plasmid
 
 
@@ -84,7 +81,7 @@ class PlasmidQLSchema(DjangoQLSchema):
             ]
         elif model == User:
             return [SearchFieldOptUsernamePlasmid(), SearchFieldOptLastnamePlasmid()]
-        return super(PlasmidQLSchema, self).get_fields(model)
+        return super().get_fields(model)
 
 
 class PlasmidExportResource(resources.ModelResource):
@@ -124,7 +121,6 @@ def export_plasmid(modeladmin, request, queryset):
 
 
 class PlasmidForm(forms.ModelForm):
-
     class Meta:
         model = Plasmid
         fields = "__all__"
@@ -195,7 +191,6 @@ class PlasmidPage(
     CollectionUserProtectionAdmin,
     AdminOligosInMap,
 ):
-
     list_display = (
         "id",
         "name",
@@ -287,7 +282,6 @@ class PlasmidPage(
     }
 
     def save_model(self, request, obj, form, change):
-
         rename_and_preview = False
         self.rename_and_preview = False
         new_obj = False
@@ -295,8 +289,7 @@ class PlasmidPage(
         self.clear_formz_elements = False
         convert_map_to_dna = False
 
-        if obj.pk == None:
-
+        if obj.pk is None:
             obj.id = (
                 self.model.objects.order_by("-id").first().id + 1
                 if self.model.objects.exists()
@@ -340,7 +333,6 @@ class PlasmidPage(
                 obj.approval.create(activity_type="created", activity_user=request.user)
 
         else:
-
             # Check if the disapprove button was clicked. If so, and no approval
             # record for the object exists, create one
             if "_disapprove_record" in request.POST:
@@ -394,7 +386,6 @@ class PlasmidPage(
             saved_obj = self.model.objects.get(pk=obj.pk)
 
             if obj.map != saved_obj.map or obj.map_gbk != saved_obj.map_gbk:
-
                 if (obj.map and obj.map_gbk) or (
                     not saved_obj.map and not saved_obj.map_gbk
                 ):
@@ -440,7 +431,7 @@ class PlasmidPage(
                 os.rename(old_gbk_file_path, new_gbk_file_path)
                 try:
                     convert_map_gbk_to_dna(new_gbk_file_path, new_dna_file_path)
-                except:
+                except Exception:
                     messages.error(
                         request,
                         "There was an error with converting the map to .gbk.",
@@ -480,7 +471,7 @@ class PlasmidPage(
                     else False
                 )
                 create_map_preview(obj, detect_common_features)
-            except:
+            except Exception:
                 messages.error(
                     request,
                     "There was an error with detection of common features and/or saving of "
@@ -488,7 +479,6 @@ class PlasmidPage(
                 )
 
     def save_related(self, request, form, formsets, change):
-
         self.redirect_to_obj_page = False
 
         admin.ModelAdmin.save_related(self, request, form, formsets, change)
@@ -502,11 +492,10 @@ class PlasmidPage(
             obj.formz_elements.clear()
 
         if self.rename_and_preview or "_redetect_formz_elements" in request.POST:
-
             unknown_feat_name_list = []
             try:
                 feature_names = get_map_features(obj)
-            except:
+            except Exception:
                 messages.error(request, "There was an error getting your map features")
                 feature_names = []
 
@@ -514,7 +503,6 @@ class PlasmidPage(
                 obj.formz_elements.clear()
 
             if feature_names:
-
                 formz_base_elems = FormZBaseElement.objects.filter(
                     extra_label__label__in=feature_names
                 ).distinct()
@@ -559,7 +547,6 @@ class PlasmidPage(
         super().save_history_fields(form, obj)
 
     def response_add(self, request, obj, post_url_continue=None):
-
         if self.redirect_to_obj_page:
             post = request.POST.copy()
             post.update({"_continue": ""})
@@ -568,7 +555,6 @@ class PlasmidPage(
         return super().response_add(request, obj, post_url_continue)
 
     def response_change(self, request, obj):
-
         if self.redirect_to_obj_page:
             post = request.POST.copy()
             post.update({"_continue": ""})
@@ -577,7 +563,6 @@ class PlasmidPage(
         return super().response_change(request, obj)
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
-
         extra_context = extra_context or {}
 
         obj = self.model.objects.get(pk=object_id)
@@ -604,7 +589,6 @@ class PlasmidPage(
 
     @admin.display(description="Map")
     def get_map_short_name(self, instance):
-
         if instance.map:
             ove_dna_preview = instance.map_ove_url
             ove_gbk_preview = instance.map_ove_url_gbk

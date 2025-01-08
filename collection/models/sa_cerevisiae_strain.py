@@ -41,7 +41,6 @@ class SaCerevisiaeStrain(
     OwnershipFieldsMixin,
     models.Model,
 ):
-
     class Meta:
         verbose_name = "strain - Sa. cerevisiae"
         verbose_name_plural = "strains - Sa. cerevisiae"
@@ -168,7 +167,6 @@ class SaCerevisiaeStrain(
 
     @property
     def all_uncommon_formz_elements(self):
-
         elements = super().all_uncommon_formz_elements
         all_plasmids = self.all_instock_plasmids
         for pl in all_plasmids:
@@ -178,7 +176,6 @@ class SaCerevisiaeStrain(
 
     @property
     def all_common_formz_elements(self):
-
         elements = super().all_common_formz_elements
         all_plasmids = self.all_instock_plasmids
         for pl in all_plasmids:
@@ -193,7 +190,6 @@ class SaCerevisiaeStrain(
 
 
 class SaCerevisiaeStrainEpisomalPlasmid(models.Model):
-
     _inline_foreignkey_fieldname = "sacerevisiae_strain"
 
     sacerevisiae_strain = models.ForeignKey(
@@ -216,7 +212,6 @@ class SaCerevisiaeStrainEpisomalPlasmid(models.Model):
     destroyed_date = models.DateField("destroyed", blank=True, null=True)
 
     def clean(self):
-
         errors = {}
 
         # Check that a transiently transfected plasmid has a created date
@@ -231,7 +226,6 @@ class SaCerevisiaeStrainEpisomalPlasmid(models.Model):
     def save(
         self, force_insert=False, force_update=False, using=None, update_fields=None
     ):
-
         # If destroyed date not present and plasmid not in stocked strain, automatically set destroyed date
         if self.present_in_stocked_strain:
             self.created_date = None
@@ -242,9 +236,7 @@ class SaCerevisiaeStrainEpisomalPlasmid(models.Model):
                     days=random.randint(7, 28)
                 )
 
-        super(SaCerevisiaeStrainEpisomalPlasmid, self).save(
-            force_insert, force_update, using, update_fields
-        )
+        super().save(force_insert, force_update, using, update_fields)
 
     def is_highlighted(self):
         return self.present_in_stocked_strain
@@ -256,7 +248,6 @@ class SaCerevisiaeStrainEpisomalPlasmid(models.Model):
 
 
 class SaCerevisiaeStrainDoc(DocFileMixin):
-
     _inline_foreignkey_fieldname = "sacerevisiae_strain"
     _mixin_props = {
         "destination_dir": "collection/sacerevisiaestraindoc/",

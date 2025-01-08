@@ -32,7 +32,7 @@ class AntibodyQLSchema(DjangoQLSchema):
                 "info_sheet",
                 "availability",
             ]
-        return super(AntibodyQLSchema, self).get_fields(model)
+        return super().get_fields(model)
 
 
 class AntibodyExportResource(resources.ModelResource):
@@ -77,7 +77,6 @@ class AntibodyAddDocInline(AddDocFileInlineMixin):
 
 
 class AntibodyPage(CollectionSimpleAdmin):
-
     list_display = (
         "id",
         "name",

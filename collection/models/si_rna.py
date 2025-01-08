@@ -28,7 +28,6 @@ class SiRna(
     OwnershipFieldsMixin,
     models.Model,
 ):
-
     class Meta:
         verbose_name = "siRNA"
         verbose_name_plural = "siRNAs"
@@ -102,7 +101,6 @@ class SiRna(
     def save(
         self, force_insert=False, force_update=False, using=None, update_fields=None
     ):
-
         # Remove all white spaces from sequence and set its length
         self.sequence = "".join(self.sequence.split())
 
@@ -115,7 +113,6 @@ class SiRna(
 
 
 class SiRnaDoc(DocFileMixin):
-
     class Meta:
         verbose_name = "siRNA document"
 

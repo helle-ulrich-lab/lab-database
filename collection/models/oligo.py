@@ -30,7 +30,6 @@ class Oligo(
     OwnershipFieldsMixin,
     models.Model,
 ):
-
     class Meta:
         verbose_name = "oligo"
         verbose_name_plural = "oligos"
@@ -82,7 +81,6 @@ class Oligo(
     def save(
         self, force_insert=False, force_update=False, using=None, update_fields=None
     ):
-
         # Remove all white spaces from sequence and set its length
         self.sequence = "".join(self.sequence.split())
         self.length = len(self.sequence)
@@ -96,7 +94,6 @@ class Oligo(
 
 
 class OligoDoc(DocFileMixin):
-
     class Meta:
         verbose_name = "oligo document"
 

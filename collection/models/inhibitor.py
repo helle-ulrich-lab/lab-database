@@ -26,7 +26,6 @@ class Inhibitor(
     OwnershipFieldsMixin,
     models.Model,
 ):
-
     class Meta:
         verbose_name = "inhibitor"
         verbose_name_plural = "inhibitors"
@@ -62,7 +61,6 @@ class Inhibitor(
 
 
 class InhibitorDoc(DocFileMixin):
-
     class Meta:
         verbose_name = "inhibitor document"
 

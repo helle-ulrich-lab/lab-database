@@ -1,6 +1,5 @@
 from django.contrib import admin
 from django.contrib.auth.models import User
-from django.db.models.fields import Field
 from django.urls import resolve
 from django.utils.safestring import mark_safe
 from djangoql.schema import DjangoQLSchema, IntField, StrField

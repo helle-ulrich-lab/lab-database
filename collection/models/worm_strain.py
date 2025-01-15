@@ -70,8 +70,8 @@ class WormStrainAllele(
         verbose_name="reference strain",
         on_delete=models.PROTECT,
         related_name="%(class)s_reference_strain",
-        blank=False,
-        null=False,
+        blank=True,
+        null=True,
     )
     made_by_method = models.ForeignKey(
         GenTechMethod,

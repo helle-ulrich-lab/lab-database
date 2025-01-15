@@ -253,7 +253,7 @@ class WormStrainPage(
     form = WormStrainForm
     djangoql_schema = WormStrainQLSchema
     search_fields = ["id", "name"]
-    show_all_plasmids_in_stocked_strain = True
+    show_plasmids_in_model = True
     autocomplete_fields = [
         "parent_1",
         "parent_2",
@@ -449,6 +449,20 @@ class FieldFormZBaseElementWormStrainAllele(FieldFormZBaseElement):
     model = WormStrainAllele
 
 
+class FieldTransgenePlasmidsWormStrainAllele(IntField):
+    name = "transgene_plasmids_id"
+
+    def get_lookup_name(self):
+        return "transgene_plasmids__id"
+
+
+class FieldMadeWithPlasmidsWormStrainAllele(IntField):
+    name = "made_with_plasmids_id"
+
+    def get_lookup_name(self):
+        return "made_with_plasmids__id"
+
+
 class WormStrainAlleleQLSchema(DjangoQLSchema):
     """Customize search functionality"""
 
@@ -467,13 +481,15 @@ class WormStrainAlleleQLSchema(DjangoQLSchema):
                 "typ_e",
                 "transgene",
                 "transgene_position",
-                "transgene_plasmids",
+                FieldTransgenePlasmidsWormStrainAllele(),
                 "mutation",
                 "mutation_type",
                 "mutation_position",
                 "reference_strain",
                 "made_by_method",
-                "note",
+                "made_by_person",
+                FieldMadeWithPlasmidsWormStrainAllele(),
+                "notes",
                 "created_by",
                 FieldCreated(),
                 FieldLastChanged(),
@@ -514,7 +530,8 @@ class WormStrainAlleleExportResource(resources.ModelResource):
             "reference_strain",
             "made_by_method",
             "made_by_person",
-            "note",
+            "made_with_plasmids",
+            "notes",
             "created_date_time",
             "created_by__username",
         )
@@ -560,11 +577,18 @@ class WormStrainAllelePage(PlasmidPage):
     djangoql_schema = WormStrainAlleleQLSchema
     actions = [export_wormstrainallele]
     search_fields = ["id", "mutation", "transgene"]
-    autocomplete_fields = ["formz_elements", "made_by_method", "reference_strain"]
+    autocomplete_fields = [
+        "formz_elements",
+        "made_by_method",
+        "reference_strain",
+        "transgene_plasmids",
+        "made_with_plasmids",
+    ]
     form = WormStrainAlleleForm
     inlines = [WormStrainAlleleDocInline, WormStrainAlleleAddDocInline]
     allele_type = ""
     show_formz = False
+    show_plasmids_in_model = True
     obj_specific_fields = [
         "lab_identifier",
         "typ_e",
@@ -577,7 +601,7 @@ class WormStrainAllelePage(PlasmidPage):
         "reference_strain",
         "made_by_method",
         "made_by_person",
-        "note",
+        "notes",
         "map",
         "map_png",
         "map_gbk",
@@ -593,6 +617,8 @@ class WormStrainAllelePage(PlasmidPage):
     ]
     history_array_fields = {
         "history_formz_elements": FormZBaseElement,
+        "history_made_with_plasmids": Plasmid,
+        "history_transgene_plasmids": Plasmid,
         "history_documents": WormStrainAlleleDoc,
     }
 

@@ -51,8 +51,12 @@ class WormStrainAllele(
     transgene_position = models.CharField(
         "transgene position", max_length=255, blank=True
     )
-    transgene_plasmids = models.CharField(
-        "Transgene plasmids", max_length=255, blank=True
+    transgene_plasmids = models.ManyToManyField(
+        Plasmid,
+        verbose_name="transgene plasmids",
+        related_name="%(class)s_transgene_plasmids",
+        help_text="The plasmid(s) in the transgene",
+        blank=True,
     )
     mutation = models.CharField(
         "mutation", help_text="Genotype", max_length=255, blank=True
@@ -73,12 +77,18 @@ class WormStrainAllele(
         GenTechMethod,
         verbose_name="made by method",
         related_name="%(class)s_made_by_method",
-        help_text="The methods used to create the allele",
+        help_text="The method(s) used to create the allele",
         on_delete=models.PROTECT,
         blank=False,
     )
     made_by_person = models.CharField("made by person", max_length=255, blank=False)
-    note = models.CharField("note", max_length=255, blank=True)
+    made_with_plasmids = models.ManyToManyField(
+        Plasmid,
+        verbose_name="made with plasmids",
+        help_text="The plasmid(s) used to create the transgene/mutation",
+        blank=True,
+    )
+    notes = models.TextField("notes", blank=True)
     map = models.FileField(
         "map (.dna)",
         help_text="only SnapGene .dna files, max. 2 MB",
@@ -109,6 +119,20 @@ class WormStrainAllele(
         null=True,
         default=list,
     )
+    history_made_with_plasmids = ArrayField(
+        models.PositiveIntegerField(),
+        verbose_name="made with plasmids",
+        blank=True,
+        null=True,
+        default=list,
+    )
+    history_transgene_plasmids = ArrayField(
+        models.PositiveIntegerField(),
+        verbose_name="transgene plasmids",
+        blank=True,
+        null=True,
+        default=list,
+    )
 
     def __str__(self):
         return f"{self.lab_identifier}{self.id} - {self.name}"
@@ -130,6 +154,12 @@ class WormStrainAllele(
     def all_common_formz_elements(self):
         elements = self.formz_elements.filter(common_feature=True).order_by("name")
         return elements
+
+    @property
+    def plasmids_in_model(self):
+        return sorted(
+            list(set(self.history_transgene_plasmids + self.history_made_with_plasmids))
+        )
 
     def save(
         self, force_insert=False, force_update=False, using=None, update_fields=None
@@ -328,6 +358,10 @@ class WormStrain(
         ) + list(
             self.integrated_dna_plasmids.all().distinct().exclude(map="").order_by("id")
         )
+
+    @property
+    def plasmids_in_model(self):
+        return self.history_all_plasmids_in_stocked_strain
 
     def save(
         self, force_insert=False, force_update=False, using=None, update_fields=None

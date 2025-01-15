@@ -12,7 +12,6 @@ ALLOWED_DOC_FILE_EXTS = getattr(settings, "ALLOWED_DOC_FILE_EXTS", ["pdf"])
 
 
 class SaveWithoutHistoricalRecord:
-
     def save_without_historical_record(self, *args, **kwargs):
         """Allows inheritance of a method to save an object without
         saving a historical record as described in
@@ -28,9 +27,10 @@ class SaveWithoutHistoricalRecord:
 
 
 class DocFileMixin(models.Model):
-
-    name = models.FileField("file name", upload_to="temp/", max_length=150, blank=False, null=True)
-    description = models.CharField("description", max_length=50, blank=False)
+    name = models.FileField(
+        "file name", upload_to="temp/", max_length=150, blank=False, null=True
+    )
+    description = models.CharField("description", max_length=75, blank=False)
     comment = models.CharField("comment", max_length=150, blank=True)
 
     created_date_time = models.DateTimeField("created", auto_now_add=True)
@@ -62,7 +62,6 @@ class DocFileMixin(models.Model):
     def save(
         self, force_insert=False, force_update=False, using=None, update_fields=None
     ):
-
         # Rename a file of any given name to standard name
         # after the corresponding entry has been created
 
@@ -95,18 +94,16 @@ class DocFileMixin(models.Model):
             setattr(self, field_name, final_name)
 
         force_insert, force_update = False, True
-        super(DocFileMixin, self).save(force_insert, force_update, using, update_fields)
+        super().save(force_insert, force_update, using, update_fields)
 
     def __str__(self):
         return str(self.id)
 
     def clean(self):
-
         errors = []
         file_size_limit = MAX_UPLOAD_FILE_SIZE_MB * 1024 * 1024
 
         if self.name:
-
             # Check if file is bigger than X MB
             if self.name.size > file_size_limit:
                 errors.append(
@@ -137,7 +134,6 @@ class DocFileMixin(models.Model):
 
 
 class DownloadFileNameMixin:
-
     @property
     def download_file_name(self):
         return f"{self._model_abbreviation}{LAB_ABBREVIATION_FOR_FILES}{self}"

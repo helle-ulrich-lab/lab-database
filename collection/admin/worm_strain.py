@@ -601,6 +601,7 @@ class WormStrainAllelePage(PlasmidPage):
         "reference_strain",
         "made_by_method",
         "made_by_person",
+        "made_with_plasmids",
         "notes",
         "map",
         "map_png",

@@ -77,7 +77,7 @@ class WormStrainAllele(
         GenTechMethod,
         verbose_name="made by method",
         related_name="%(class)s_made_by_method",
-        help_text="The method(s) used to create the allele",
+        help_text="The method used to create the allele",
         on_delete=models.PROTECT,
         blank=False,
     )

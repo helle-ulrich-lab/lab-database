@@ -384,7 +384,7 @@ class AddOrderExtraDocInline(admin.TabularInline):
 #         ORDER IMPORT/EXPORT RESOURCE          #
 #################################################
 
-class BaseOrderResource(resources.ModelResource):
+class BaseOrderResource():
     """Defines custom fields"""
 
     ghs_symbols_field = Field(column_name='ghs_symbols')
@@ -404,7 +404,7 @@ class BaseOrderResource(resources.ModelResource):
     def dehydrate_is_cmr_field(self, order):
         return 'Yes' if order.hazard_statements.filter(is_cmr=True).exists() else ''
 
-class OrderChemicalExportResource(BaseOrderResource):
+class OrderChemicalExportResource(BaseOrderResource, resources.ModelResource):
     """Defines a custom export resource class for chemicals"""
     
     class Meta:
@@ -414,7 +414,7 @@ class OrderChemicalExportResource(BaseOrderResource):
         'hazard_statements_field', 'is_cmr_field', 'hazard_level_pregnancy')
         export_order = fields
 
-class OrderExportResource(BaseOrderResource):
+class OrderExportResource(BaseOrderResource, resources.ModelResource):
     """Defines a custom export resource class for orders"""
 
     class Meta:

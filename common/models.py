@@ -29,7 +29,7 @@ class SaveWithoutHistoricalRecord:
 
 class DocFileMixin(models.Model):
 
-    name = models.FileField("file name", upload_to="temp/", blank=False, null=True)
+    name = models.FileField("file name", upload_to="temp/", max_length=150, blank=False, null=True)
     description = models.CharField("description", max_length=50, blank=False)
     comment = models.CharField("comment", max_length=150, blank=True)
 

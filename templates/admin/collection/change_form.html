@@ -23,7 +23,7 @@
 </div>
 
 {% if not add and original.id %}
-{% include "admin/navigation_floater.html" %}
+  {% include "admin/navigation_floater.html" %}
 {% endif %}
 
 {% endblock %}
@@ -35,29 +35,30 @@
   <ul class="object-tools">
     {% block object-tools-items %}
 
-    {% if show_obj_permission %}
-    {% url opts|admin_urlname:'permissions' original.pk|admin_urlquote as history_url %}
-    <li><a href="{% add_preserved_filters history_url %}" class="permissionslink">{% trans "Object permissions" %}</a></li>
-    {% endif %}
-
-    {% if plasmid_id_list %}
-      {% if plasmid_id_list|length == 1 %}
-        <li><a href="/collection/plasmid/?q-l=on&q=id+=+{{plasmid_id_list.0}}">{% trans "Plasmids" %}</a></li>
-      {% else %}
-        <li><a href="/collection/plasmid/?q-l=on&q=id+in+{{plasmid_id_list}}">{% trans "Plasmids" %}</a></li>
-      {% endif %}
-    {% endif %}
-    
     <li>
         {% url opts|admin_urlname:'history' original.pk|admin_urlquote as history_url %}
         <a href="{% add_preserved_filters history_url %}" class="historylink">{% trans "History" %}</a>
     </li>
- 
-    {% if show_formz %}
-      <li>
-        <a href="{% url "admin:app_list" app_label %}/{{opts.model_name}}/{{object_id}}/formz">{% trans "FormZ" %}</a>
-      </li>
-    {% endif %}
+
+    {% block extra-object-tools-items %}
+
+      {% if show_obj_permission %}
+        {% url opts|admin_urlname:'permissions' original.pk|admin_urlquote as permission_url %}
+        <li><a href="{% add_preserved_filters permission_url %}" class="permissionslink">{% trans "Permissions" %}</a>
+        </li>
+      {% endif %}
+
+      {% if show_formz %}
+        <li>
+          <a href="{% url "admin:app_list" app_label %}{{opts.model_name}}/{{object_id}}/formz">{% trans "FormZ" %}</a>
+        </li>
+      {% endif %}
+
+      {% if plasmid_id_list %}
+        <li><a href="/collection/plasmid/?q-l=on&q=id+in+{{plasmid_id_list}}">{% trans "Plasmids" %}</a></li>
+      {% endif %}
+
+    {% endblock %}
 
     {% if has_absolute_url %}<li><a href="{{ absolute_url }}" class="viewsitelink">{% trans "View on site" %}</a></li>{% endif %}
     {% endblock %}

@@ -360,7 +360,7 @@ class CollectionBaseAdmin(
     add_view_fieldsets = None
     change_view_fieldsets = None
     history_array_fields = {}
-    show_all_plasmids_in_stocked_strain = False
+    show_plasmids_in_model = False
     is_guarded_model = False
     m2m_save_ignore_fields = []
     set_readonly_fields = []
@@ -606,9 +606,9 @@ class CollectionUserProtectionAdmin(Approval, CollectionBaseAdmin):
         self.fieldsets = change_view_fieldsets
 
         # If available, add plasmids in stocked strain to context
-        if self.show_all_plasmids_in_stocked_strain:
-            extra_context["plasmid_id_list"] = tuple(
-                obj.history_all_plasmids_in_stocked_strain
+        if self.show_plasmids_in_model:
+            extra_context["plasmid_id_list"] = (
+                f"({','.join(str(e) for e in obj.plasmids_in_model)})"
             )
 
         if (

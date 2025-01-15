@@ -153,6 +153,10 @@ class ScPombeStrain(
 
         return " ".join([e for e in [self.auxotrophic_marker, self.name] if e])
 
+    @property
+    def plasmids_in_model(self):
+        return self.all_instock_plasmids.order_by("id").values_list("id", flat=True)
+
 
 ################################################
 #       S. pombe strain Episomal Plasmid       #

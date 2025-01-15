@@ -243,6 +243,7 @@ class CellLinePage(
     inlines = [CellLineEpisomalPlasmidInline, CellLineDocInline, AddCellLineDocInline]
     actions = [export_cellline, formz_as_html]
     search_fields = ["id", "name"]
+    show_plasmids_in_model = True
     autocomplete_fields = [
         "parental_line",
         "integrated_plasmids",

@@ -136,6 +136,10 @@ class CellLine(
             elements = elements | pl.formz_elements.all()
         elements = elements.distinct().filter(common_feature=True).order_by("name")
         return elements
+    
+    @property
+    def plasmids_in_model(self):
+        return self.all_instock_plasmids.order_by('id').values_list('id', flat=True)
 
 
 ################################################

@@ -79,7 +79,7 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql_psycopg2",
+        "ENGINE": "django.db.backends.postgresql",
         "NAME": DB_NAME,
         "USER": DB_USER,
         "PASSWORD": DB_PASSWORD,
@@ -242,5 +242,16 @@ DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 X_FRAME_OPTIONS = "SAMEORIGIN"
 OVE_URL = "/ove/"
 MAX_UPLOAD_FILE_SIZE_MB = 2
-ALLOWED_DOC_FILE_EXTS = ["pdf", "zip", "docx", "xlsx", "pptx", "odt", "ods", "odp"]
+ALLOWED_DOC_FILE_EXTS = [
+    "pdf",
+    "zip",
+    "docx",
+    "xlsx",
+    "pptx",
+    "odt",
+    "ods",
+    "odp",
+    "gbk",
+    "dna",
+]
 FILE_SIZE_LIMIT_MB = 2

@@ -316,16 +316,16 @@ class WormStrainPage(
         [
             "Integrated DNA",
             {
-                "fields": obj_specific_fields[15:17],
+                "fields": obj_specific_fields[15:18],
             },
         ],
         [
             "Location",
-            {"fields": obj_specific_fields[17:20]},
+            {"fields": obj_specific_fields[18:21]},
         ],
         [
             "FormZ",
-            {"fields": obj_specific_fields[20:]},
+            {"fields": obj_specific_fields[21:]},
         ],
     ]
     change_view_fieldsets = [
@@ -336,16 +336,16 @@ class WormStrainPage(
         [
             "Integrated DNA",
             {
-                "fields": obj_specific_fields[15:17],
+                "fields": obj_specific_fields[15:18],
             },
         ],
         [
             "Location",
-            {"fields": obj_specific_fields[17:20]},
+            {"fields": obj_specific_fields[18:21]},
         ],
         [
             "FormZ",
-            {"classes": (("collapse",)), "fields": obj_specific_fields[20:]},
+            {"classes": (("collapse",)), "fields": obj_specific_fields[21:]},
         ],
     ]
     m2m_save_ignore_fields = ["history_genotyping_oligos"]

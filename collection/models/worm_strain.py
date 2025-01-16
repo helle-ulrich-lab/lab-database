@@ -245,7 +245,7 @@ class WormStrain(
     )
 
     selection = models.CharField("selection", max_length=255, blank=True)
-    phenotype = models.CharField("phenotype", max_length=255, blank=True)
+    phenotype = models.TextField("phenotype", blank=True)
     received_from = models.CharField("received from", max_length=255, blank=True)
     us_e = models.CharField("use", max_length=255, blank=True)
     note = models.CharField("note", max_length=255, blank=True)

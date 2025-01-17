@@ -606,9 +606,9 @@ class CollectionUserProtectionAdmin(Approval, CollectionBaseAdmin):
         self.fieldsets = change_view_fieldsets
 
         # If available, add plasmids in stocked strain to context
-        if self.show_plasmids_in_model:
+        if self.show_plasmids_in_model and (plasmid_id_list := obj.plasmids_in_model):
             extra_context["plasmid_id_list"] = (
-                f"({','.join(str(e) for e in obj.plasmids_in_model)})"
+                f"({','.join(str(e) for e in plasmid_id_list)})"
             )
 
         if (

@@ -250,7 +250,9 @@ class WormStrain(
     us_e = models.CharField("use", max_length=255, blank=True)
     note = models.CharField("note", max_length=255, blank=True)
     reference = models.CharField("reference", max_length=255, blank=True)
-    at_cgc = models.BooleanField("at CGC?", blank=True, default=False)
+    at_cgc = models.BooleanField(
+        "at CGC?", help_text="Caenorhabditis Genetics Center", blank=True, default=False
+    )
 
     location_freezer1 = models.CharField(
         "location Freezer 1", max_length=255, blank=True

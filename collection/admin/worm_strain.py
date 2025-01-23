@@ -252,7 +252,14 @@ class WormStrainPage(
     CustomGuardedModelAdmin,
     CollectionUserProtectionAdmin,
 ):
-    list_display = ("id", "name", "chromosomal_genotype", "created_by", "approval")
+    list_display = (
+        "id",
+        "name",
+        "chromosomal_genotype",
+        "stocked",
+        "created_by",
+        "approval",
+    )
     list_display_links = ("id",)
     actions = [export_wormstrain, formz_as_html]
     form = WormStrainForm
@@ -362,6 +369,19 @@ class WormStrainPage(
         "history_documents": WormStrainDoc,
         "history_alleles": WormStrainAllele,
     }
+
+    @admin.display(description="Stocked", boolean=True)
+    def stocked(self, instance):
+        if any(
+            len(s.strip()) > 0
+            for s in [
+                instance.location_freezer1,
+                instance.location_freezer1,
+                instance.location_backup,
+            ]
+        ):
+            return True
+        return False
 
     def save_related(self, request, form, formsets, change):
         obj, history_obj = super().save_related(request, form, formsets, change)

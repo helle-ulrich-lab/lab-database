@@ -866,6 +866,23 @@ class WormStrainAllelePage(PlasmidPage):
     def add_view(self, request, form_url="", extra_context=None):
         fields = self.obj_specific_fields.copy()
         self.allele_type = request.GET.get("allele_type")
+        obj_unmodifiable_fields = self.obj_unmodifiable_fields.copy()
+
+        if (
+            request.user.is_superuser
+            or request.user.groups.filter(name="Lab manager").exists()
+        ):
+            obj_unmodifiable_fields = [
+                x for x in obj_unmodifiable_fields if x != "created_by"
+            ]
+            fields = fields + ["created_by"] if "created_by" not in fields else fields
+        else:
+            obj_unmodifiable_fields = set(obj_unmodifiable_fields)
+            obj_unmodifiable_fields.add("created_by")
+            obj_unmodifiable_fields = list(obj_unmodifiable_fields)
+            fields = [x for x in fields if x != "created_by"]
+
+        self.obj_unmodifiable_fields = obj_unmodifiable_fields
 
         if self.allele_type == "t":
             fields = [f for f in fields if not f.startswith("mutation")]
@@ -892,6 +909,10 @@ class WormStrainAllelePage(PlasmidPage):
         elif obj.typ_e == "m":
             fields = [f for f in fields if not f.startswith("transgene")]
 
+        obj_unmodifiable_fields = set(self.obj_unmodifiable_fields)
+        obj_unmodifiable_fields.add("created_by")
+        self.obj_unmodifiable_fields = list(list(obj_unmodifiable_fields))
+
         self.change_view_fieldsets = [
             [
                 None,
@@ -900,6 +921,23 @@ class WormStrainAllelePage(PlasmidPage):
         ]
 
         return super().change_view(request, object_id, form_url, extra_context)
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        try:
+            request.resolver_match.args[0]
+        except Exception:
+            # Exclude certain users from the 'Created by' field in the order form
+            if db_field.name == "created_by":
+                if (
+                    request.user.is_superuser
+                    or request.user.groups.filter(name="Lab manager").exists()
+                ):
+                    kwargs["queryset"] = User.objects.exclude(
+                        username__in=["admin", "guest", "AnonymousUser"]
+                    ).order_by("last_name")
+                # kwargs["initial"] = request.user.id # disable this for now
+
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
     @admin.display(description="Description")
     def description(self, instance):

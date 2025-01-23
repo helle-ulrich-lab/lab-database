@@ -458,6 +458,58 @@ class WormStrainPage(
                 )
         return form
 
+    def add_view(self, request, form_url="", extra_context=None):
+        obj_unmodifiable_fields = self.obj_unmodifiable_fields.copy()
+        add_view_main_fields = self.add_view_fieldsets[0][1]["fields"].copy()
+        if (
+            request.user.is_superuser
+            or request.user.groups.filter(name="Lab manager").exists()
+        ):
+            obj_unmodifiable_fields = [
+                x for x in obj_unmodifiable_fields if x != "created_by"
+            ]
+            add_view_main_fields = (
+                add_view_main_fields + ["created_by"]
+                if "created_by" not in add_view_main_fields
+                else add_view_main_fields
+            )
+        else:
+            obj_unmodifiable_fields = set(obj_unmodifiable_fields)
+            obj_unmodifiable_fields.add("created_by")
+            obj_unmodifiable_fields = list(obj_unmodifiable_fields)
+            add_view_main_fields = [
+                x for x in add_view_main_fields if x != "created_by"
+            ]
+
+        self.obj_unmodifiable_fields = obj_unmodifiable_fields
+        self.add_view_fieldsets[0][1]["fields"] = add_view_main_fields
+
+        return super().add_view(request, form_url, extra_context)
+
+    def change_view(self, request, object_id, form_url="", extra_context=None):
+        obj_unmodifiable_fields = set(self.obj_unmodifiable_fields)
+        obj_unmodifiable_fields.add("created_by")
+        self.obj_unmodifiable_fields = list(list(obj_unmodifiable_fields))
+
+        return super().change_view(request, object_id, form_url, extra_context)
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        try:
+            request.resolver_match.args[0]
+        except Exception:
+            # Exclude certain users from the 'Created by' field in the order form
+            if db_field.name == "created_by":
+                if (
+                    request.user.is_superuser
+                    or request.user.groups.filter(name="Lab manager").exists()
+                ):
+                    kwargs["queryset"] = User.objects.exclude(
+                        username__in=["admin", "guest", "AnonymousUser"]
+                    ).order_by("last_name")
+                # kwargs["initial"] = request.user.id # disable this for now
+
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
 
 class SearchFieldOptUsernameWormStrainAllele(SearchFieldOptUsername):
     id_list = (

@@ -500,7 +500,12 @@ class CollectionUserProtectionAdmin(Approval, CollectionBaseAdmin):
                 if self.model.objects.exists()
                 else 1
             )
-            obj.created_by = request.user
+
+            try:
+                obj.created_by
+            except Exception:
+                obj.created_by = request.user
+
             obj.save()
 
             # Approve right away if the request's user is the PI.

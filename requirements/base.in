@@ -9,7 +9,7 @@
 beautifulsoup4==4.12.3
 Django==4.2.17
 django-adminactions==1.9
-django4-background-tasks==1.2.9
+django4-background-tasks==1.2.10
 django-guardian==2.4.0
 django-import-export==4.3.3
 djangoql==0.17.1

@@ -1,0 +1,6 @@
+Dear lab manager(s),
+
+{{user.first_name}} {{user.last_name}} has just placed an urgent order for {{order.supplier}} {{order.supplier_part_no}} - {{order.part_description}}.
+
+Regards,
+The {{site_title}}

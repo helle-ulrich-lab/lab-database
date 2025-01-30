@@ -38,11 +38,13 @@ from collection.models import (
     WormStrainDoc,
     WormStrainGenotypingAssay,
 )
+from common.search import (
+    SearchCustomFieldUserLastnameWithOptions,
+    SearchCustomFieldUserUsernameWithOptions,
+)
 from common.shared import (
     AddDocFileInlineMixin,
     DocFileInlineMixin,
-    SearchFieldOptLastname,
-    SearchFieldOptUsername,
     export_objects,
 )
 from formz.models import FormZBaseElement, FormZProject, GenTechMethod
@@ -55,11 +57,11 @@ WORM_STRAIN_REGEX = getattr(settings, "WORM_STRAIN_REGEX", r"")
 WORM_STRAIN_LAB_ID_DEFAULT = getattr(settings, "WORM_STRAIN_LAB_ID_DEFAULT", "")
 
 
-class SearchFieldOptUsernameWormStrain(SearchFieldOptUsername):
+class SearchFieldOptUsernameWormStrain(SearchCustomFieldUserUsernameWithOptions):
     id_list = WormStrain.objects.all().values_list("created_by", flat=True).distinct()
 
 
-class SearchFieldOptLastnameWormStrain(SearchFieldOptLastname):
+class SearchFieldOptLastnameWormStrain(SearchCustomFieldUserLastnameWithOptions):
     id_list = WormStrain.objects.all().values_list("created_by", flat=True).distinct()
 
 
@@ -511,13 +513,13 @@ class WormStrainPage(
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
-class SearchFieldOptUsernameWormStrainAllele(SearchFieldOptUsername):
+class SearchFieldOptUsernameWormStrainAllele(SearchCustomFieldUserUsernameWithOptions):
     id_list = (
         WormStrainAllele.objects.all().values_list("created_by", flat=True).distinct()
     )
 
 
-class SearchFieldOptLastnameWormStrainAllele(SearchFieldOptLastname):
+class SearchFieldOptLastnameWormStrainAllele(SearchCustomFieldUserLastnameWithOptions):
     id_list = (
         WormStrainAllele.objects.all().values_list("created_by", flat=True).distinct()
     )

@@ -1,0 +1,6 @@
+Dear {{order.created_by.first_name}},
+
+your order #{{order.pk}} for {{order.part_description}} has just been marked as delivered.
+
+Regards,
+The {{site_title}}

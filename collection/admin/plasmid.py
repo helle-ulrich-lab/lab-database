@@ -27,11 +27,13 @@ from collection.admin.shared import (
     get_map_features,
 )
 from collection.models import EColiStrain, Plasmid, PlasmidDoc
+from common.search import (
+    SearchCustomFieldUserLastnameWithOptions,
+    SearchCustomFieldUserUsernameWithOptions,
+)
 from common.shared import (
     AddDocFileInlineMixin,
     DocFileInlineMixin,
-    SearchFieldOptLastname,
-    SearchFieldOptUsername,
     export_objects,
 )
 from formz.models import FormZBaseElement, FormZProject, GenTechMethod
@@ -41,11 +43,11 @@ LAB_ABBREVIATION_FOR_FILES = getattr(settings, "LAB_ABBREVIATION_FOR_FILES", "")
 DEFAULT_ECOLI_STRAIN_IDS = getattr(settings, "DEFAULT_ECOLI_STRAIN_IDS", [])
 
 
-class SearchFieldOptUsernamePlasmid(SearchFieldOptUsername):
+class SearchFieldOptUsernamePlasmid(SearchCustomFieldUserUsernameWithOptions):
     id_list = Plasmid.objects.all().values_list("created_by", flat=True).distinct()
 
 
-class SearchFieldOptLastnamePlasmid(SearchFieldOptLastname):
+class SearchFieldOptLastnamePlasmid(SearchCustomFieldUserLastnameWithOptions):
     id_list = Plasmid.objects.all().values_list("created_by", flat=True).distinct()
 
 

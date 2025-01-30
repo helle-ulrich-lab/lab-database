@@ -44,6 +44,7 @@ from common.shared import (
     AdminChangeFormWithNavigation,
     SimpleHistoryWithSummaryAdmin,
     ToggleDocInlineMixin,
+    save_history_fields,
 )
 from formz.models import (
     FormZBaseElement,
@@ -370,52 +371,8 @@ class CollectionBaseAdmin(
 
     def save_history_fields(self, form, obj=None):
         obj = obj if obj else self.model.objects.get(pk=form.instance.id)
-
-        history_array_fields = self.history_array_fields.copy()
-        if self.m2m_save_ignore_fields:
-            history_array_fields = {
-                k: v
-                for k, v in history_array_fields.items()
-                if k not in self.m2m_save_ignore_fields
-            }
-
-        # Keep a record of the IDs of linked M2M fields in the main obj record
-        # Not pretty, but it works
-
-        for m2m_history_field_name, m2m_model in history_array_fields.items():
-            try:
-                m2m_set = getattr(obj, f"{m2m_history_field_name[8:]}")
-            except Exception:
-                try:
-                    m2m_set = getattr(obj, f"{m2m_model._meta.model_name}_set")
-                except Exception:
-                    continue
-            setattr(
-                obj,
-                m2m_history_field_name,
-                (
-                    list(
-                        m2m_set.order_by("id")
-                        .distinct("id")
-                        .values_list("id", flat=True)
-                    )
-                    if m2m_set.exists()
-                    else []
-                ),
-            )
-
-        obj.save_without_historical_record()
-
         history_obj = obj.history.latest()
-        for m2m_history_field_name, m2m_model in self.history_array_fields.items():
-            setattr(
-                history_obj,
-                m2m_history_field_name,
-                getattr(obj, m2m_history_field_name),
-            )
-
-        history_obj.save()
-
+        save_history_fields(self, obj, history_obj)
         return obj, history_obj
 
     def save_related(self, request, form, formsets, change):

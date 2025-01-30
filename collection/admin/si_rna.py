@@ -11,22 +11,24 @@ from collection.admin.shared import (
     FieldLastChanged,
 )
 from collection.models import SiRna, SiRnaDoc
+from common.search import (
+    SearchCustomFieldUserLastnameWithOptions,
+    SearchCustomFieldUserUsernameWithOptions,
+)
 from common.shared import (
     AddDocFileInlineMixin,
     DocFileInlineMixin,
-    SearchFieldOptLastname,
-    SearchFieldOptUsername,
     export_objects,
 )
 from formz.models import Species
 from ordering.models import Order
 
 
-class SearchFieldOptUsernameSiRna(SearchFieldOptUsername):
+class SearchFieldOptUsernameSiRna(SearchCustomFieldUserUsernameWithOptions):
     id_list = SiRna.objects.all().values_list("created_by", flat=True).distinct()
 
 
-class SearchFieldOptLastnameSiRna(SearchFieldOptLastname):
+class SearchFieldOptLastnameSiRna(SearchCustomFieldUserLastnameWithOptions):
     id_list = SiRna.objects.all().values_list("created_by", flat=True).distinct()
 
 

@@ -1,3 +1,9 @@
+import mimetypes
+import os
+import re
+import urllib.parse
+import urllib.request
+
 from django.apps import apps
 from django.conf import settings
 from django.contrib import admin
@@ -7,15 +13,9 @@ from django.core.files.storage import default_storage
 from django.http import Http404, HttpResponse
 from django.urls import re_path
 
-import mimetypes
-import os
-import re
-import urllib.parse
-import urllib.request
-
 from formz.admin import FormZAdmin
 from formz.models import FormZBaseElement, FormZProject
-from ordering.admin import OrderAdmin
+from ordering.order.admin import OrderAdminSite
 
 SITE_TITLE = getattr(settings, "SITE_TITLE", "Lab DB")
 
@@ -24,7 +24,7 @@ SITE_TITLE = getattr(settings, "SITE_TITLE", "Lab DB")
 #################################################
 
 
-class MyAdminSite(OrderAdmin, FormZAdmin, admin.AdminSite):
+class MyAdminSite(OrderAdminSite, FormZAdmin, admin.AdminSite):
     """Create a custom admin site called MyAdminSite"""
 
     # Text to put at the end of each page's <title>.
@@ -40,13 +40,12 @@ class MyAdminSite(OrderAdmin, FormZAdmin, admin.AdminSite):
     site_url = "/"
 
     def get_urls(self):
-
-        urls = super(MyAdminSite, self).get_urls()
+        urls = super().get_urls()
         # Note that custom urls get pushed to the list (not appended)
         # This doesn't work with urls += ...
         urls = (
-            super(MyAdminSite, self).get_formz_urls()
-            + super(MyAdminSite, self).get_order_urls()
+            super().get_formz_urls()
+            + super().get_order_urls()
             + [
                 re_path(r"uploads/(?P<url_path>.*)$", self.admin_view(self.uploads)),
                 re_path(
@@ -64,7 +63,6 @@ class MyAdminSite(OrderAdmin, FormZAdmin, admin.AdminSite):
         url_path = str(kwargs["url_path"])
 
         if default_storage.exists(url_path):  # check if file exists
-
             # Create HttpResponse and add Content Type and, if present, Encoding
             response = HttpResponse()
             mimetype, encoding = mimetypes.guess_type(url_path)
@@ -181,14 +179,14 @@ main_admin_site.register(WormStrainAllele, WormStrainAllelePage)
 #################################################
 
 from ordering.admin import (
-    CostUnitPage,
-    GhsSymbolPage,
-    HazardStatementPage,
-    LocationPage,
-    MsdsFormPage,
+    CostUnitAdmin,
+    GhsSymbolAdmin,
+    HazardStatementAdmin,
+    LocationAdmin,
+    MsdsFormAdmin,
+    OrderAdmin,
     OrderExtraDocPage,
-    OrderPage,
-    SignalWordPage,
+    SignalWordAdmin,
 )
 from ordering.models import (
     CostUnit,
@@ -201,14 +199,14 @@ from ordering.models import (
     SignalWord,
 )
 
-main_admin_site.register(Order, OrderPage)
-main_admin_site.register(CostUnit, CostUnitPage)
-main_admin_site.register(Location, LocationPage)
-main_admin_site.register(MsdsForm, MsdsFormPage)
+main_admin_site.register(Order, OrderAdmin)
+main_admin_site.register(CostUnit, CostUnitAdmin)
+main_admin_site.register(Location, LocationAdmin)
+main_admin_site.register(MsdsForm, MsdsFormAdmin)
 main_admin_site.register(OrderExtraDoc, OrderExtraDocPage)
-main_admin_site.register(GhsSymbol, GhsSymbolPage)
-main_admin_site.register(SignalWord, SignalWordPage)
-main_admin_site.register(HazardStatement, HazardStatementPage)
+main_admin_site.register(GhsSymbol, GhsSymbolAdmin)
+main_admin_site.register(SignalWord, SignalWordAdmin)
+main_admin_site.register(HazardStatement, HazardStatementAdmin)
 
 #################################################
 #            CUSTOM USER/GROUP PAGES            #

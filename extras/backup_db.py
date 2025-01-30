@@ -30,7 +30,7 @@ from collection.models import (
     SiRna,
     WormStrain,
 )
-from ordering.admin import OrderExportResource
+from ordering.order.export import OrderExportResource
 from ordering.models import Order
 
 BASE_DIR = settings.BASE_DIR
@@ -43,7 +43,6 @@ warnings.simplefilter("ignore")
 
 
 def export_db_table_as_xlsx(model, export_resource):
-
     def convert_xlsx_to_tsv(file_name):
         xlsx_file = xlrd.open_workbook(file_name)
         sheet = xlsx_file.sheet_by_index(0)

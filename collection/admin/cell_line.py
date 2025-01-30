@@ -18,13 +18,16 @@ from collection.admin.shared import (
     formz_as_html,
 )
 from collection.models import CellLine, CellLineDoc, CellLineEpisomalPlasmid, Plasmid
+from common.search import (
+    SearchCustomFieldUserLastnameWithOptions,
+    SearchCustomFieldUserUsernameWithOptions,
+)
 from common.shared import (
     AddDocFileInlineMixin,
     DocFileInlineMixin,
-    SearchFieldOptLastname,
-    SearchFieldOptUsername,
     export_objects,
 )
+
 from formz.models import FormZBaseElement, FormZProject, GenTechMethod, Species
 
 
@@ -103,11 +106,11 @@ class FieldParentalLine(IntField):
         return "parental_line__id"
 
 
-class SearchFieldOptUsernameCellLine(SearchFieldOptUsername):
+class SearchFieldOptUsernameCellLine(SearchCustomFieldUserUsernameWithOptions):
     id_list = CellLine.objects.all().values_list("created_by", flat=True).distinct()
 
 
-class SearchFieldOptLastnameCellLine(SearchFieldOptLastname):
+class SearchFieldOptLastnameCellLine(SearchCustomFieldUserLastnameWithOptions):
     id_list = CellLine.objects.all().values_list("created_by", flat=True).distinct()
 
 

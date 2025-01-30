@@ -28,23 +28,25 @@ from collection.models import (
     SaCerevisiaeStrainDoc,
     SaCerevisiaeStrainEpisomalPlasmid,
 )
+from common.search import (
+    SearchCustomFieldUserLastnameWithOptions,
+    SearchCustomFieldUserUsernameWithOptions,
+)
 from common.shared import (
     AddDocFileInlineMixin,
     DocFileInlineMixin,
-    SearchFieldOptLastname,
-    SearchFieldOptUsername,
     export_objects,
 )
 from formz.models import FormZBaseElement, FormZProject, GenTechMethod
 
 
-class SearchFieldOptUsernameSaCerStrain(SearchFieldOptUsername):
+class SearchFieldOptUsernameSaCerStrain(SearchCustomFieldUserUsernameWithOptions):
     id_list = (
         SaCerevisiaeStrain.objects.all().values_list("created_by", flat=True).distinct()
     )
 
 
-class SearchFieldOptLastnameSaCerStrain(SearchFieldOptLastname):
+class SearchFieldOptLastnameSaCerStrain(SearchCustomFieldUserLastnameWithOptions):
     id_list = (
         SaCerevisiaeStrain.objects.all().values_list("created_by", flat=True).distinct()
     )

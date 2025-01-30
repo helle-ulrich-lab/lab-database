@@ -26,23 +26,25 @@ from collection.models import (
     ScPombeStrainDoc,
     ScPombeStrainEpisomalPlasmid,
 )
+from common.search import (
+    SearchCustomFieldUserLastnameWithOptions,
+    SearchCustomFieldUserUsernameWithOptions,
+)
 from common.shared import (
     AddDocFileInlineMixin,
     DocFileInlineMixin,
-    SearchFieldOptLastname,
-    SearchFieldOptUsername,
     export_objects,
 )
 from formz.models import FormZBaseElement, FormZProject, GenTechMethod
 
 
-class SearchFieldOptUsernameScPom(SearchFieldOptUsername):
+class SearchFieldOptUsernameScPom(SearchCustomFieldUserUsernameWithOptions):
     id_list = (
         ScPombeStrain.objects.all().values_list("created_by", flat=True).distinct()
     )
 
 
-class SearchFieldOptLastnameScPom(SearchFieldOptLastname):
+class SearchFieldOptLastnameScPom(SearchCustomFieldUserLastnameWithOptions):
     id_list = (
         ScPombeStrain.objects.all().values_list("created_by", flat=True).distinct()
     )

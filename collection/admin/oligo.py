@@ -20,21 +20,23 @@ from collection.admin.shared import (
     rename_info_sheet_save_obj_update_history,
 )
 from collection.models import Oligo, OligoDoc
+from common.search import (
+    SearchCustomFieldUserLastnameWithOptions,
+    SearchCustomFieldUserUsernameWithOptions,
+)
 from common.shared import (
     AddDocFileInlineMixin,
     DocFileInlineMixin,
-    SearchFieldOptLastname,
-    SearchFieldOptUsername,
     export_objects,
 )
 from formz.models import FormZBaseElement
 
 
-class SearchFieldOptUsernameOligo(SearchFieldOptUsername):
+class SearchFieldOptUsernameOligo(SearchCustomFieldUserUsernameWithOptions):
     id_list = Oligo.objects.all().values_list("created_by", flat=True).distinct()
 
 
-class SearchFieldOptLastnameOligo(SearchFieldOptLastname):
+class SearchFieldOptLastnameOligo(SearchCustomFieldUserLastnameWithOptions):
     id_list = Oligo.objects.all().values_list("created_by", flat=True).distinct()
 
 

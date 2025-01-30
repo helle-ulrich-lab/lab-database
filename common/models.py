@@ -26,7 +26,24 @@ class SaveWithoutHistoricalRecord:
         return ret
 
 
-class DocFileMixin(models.Model):
+class RenameFileField:
+    def rename_file(self, field_name, new_file_name, upload_to):
+        field = getattr(self, field_name)
+        file_name = force_str(field)
+        name, ext = os.path.splitext(file_name)
+        ext = ext.lower()
+        final_name = os.path.join(upload_to, f"{new_file_name}{ext}")
+
+        # Essentially, rename file
+        if file_name != final_name:
+            field.storage.delete(final_name)
+            field.storage.save(final_name, field)
+            field.close()
+            field.storage.delete(file_name)
+            setattr(self, field_name, final_name)
+
+
+class DocFileMixin(models.Model, RenameFileField):
     name = models.FileField(
         "file name", upload_to="temp/", max_length=150, blank=False, null=True
     )
@@ -62,39 +79,21 @@ class DocFileMixin(models.Model):
     def save(
         self, force_insert=False, force_update=False, using=None, update_fields=None
     ):
-        # Rename a file of any given name to standard name
+        # Rename a file of any given name to a standard name
         # after the corresponding entry has been created
-
         super().save(force_insert, force_update, using, update_fields)
-
-        destination_dir = self._mixin_props.get("destination_dir")
-        file_prefix = self._mixin_props.get("file_prefix")
-        parent_field_name = self._mixin_props.get("parent_field_name")
-
-        # Create new file name
-        field_name = "name"
-        parent = getattr(self, parent_field_name)
-        field = getattr(self, field_name)
-        file_name = force_str(field)
-        _, ext = os.path.splitext(file_name)
-        ext = ext.lower()
-
-        prefix = f"{file_prefix}{LAB_ABBREVIATION_FOR_FILES}{parent.id}"
-        timestamp = timezone.now().strftime("%Y%m%d_%H%M%S_%f")
-        final_name = os.path.join(
-            destination_dir, f"{prefix}_{timestamp}_{self.id}{ext}"
+        parent = getattr(self, self._mixin_props.get("parent_field_name"))
+        new_file_name = (
+            f"{self._mixin_props.get('file_prefix')}"
+            f"{LAB_ABBREVIATION_FOR_FILES}{parent.id}_"
+            f"{timezone.now().strftime('%Y%m%d_%H%M%S_%f')}_{self.id}"
         )
-
-        # Essentially, rename file
-        if file_name != final_name:
-            field.storage.delete(final_name)
-            field.storage.save(final_name, field)
-            field.close()
-            field.storage.delete(file_name)
-            setattr(self, field_name, final_name)
-
-        force_insert, force_update = False, True
-        super().save(force_insert, force_update, using, update_fields)
+        self.rename_file(
+            "name",
+            new_file_name,
+            self._mixin_props.get("destination_dir"),
+        )
+        super().save(False, True, using, update_fields)
 
     def __str__(self):
         return str(self.id)

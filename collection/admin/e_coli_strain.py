@@ -14,21 +14,23 @@ from collection.admin.shared import (
     formz_as_html,
 )
 from collection.models import EColiStrain, EColiStrainDoc
+from common.search import (
+    SearchCustomFieldUserLastnameWithOptions,
+    SearchCustomFieldUserUsernameWithOptions,
+)
 from common.shared import (
     AddDocFileInlineMixin,
     DocFileInlineMixin,
-    SearchFieldOptLastname,
-    SearchFieldOptUsername,
     export_objects,
 )
 from formz.models import FormZBaseElement, FormZProject
 
 
-class SearchFieldOptUsernameEColi(SearchFieldOptUsername):
+class SearchFieldOptUsernameEColi(SearchCustomFieldUserUsernameWithOptions):
     id_list = EColiStrain.objects.all().values_list("created_by", flat=True).distinct()
 
 
-class SearchFieldOptLastnameEColi(SearchFieldOptLastname):
+class SearchFieldOptLastnameEColi(SearchCustomFieldUserLastnameWithOptions):
     id_list = EColiStrain.objects.all().values_list("created_by", flat=True).distinct()
 
 

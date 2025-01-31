@@ -15,6 +15,11 @@ from common.models import (
 from formz.models import Species
 from ordering.models import Order
 
+from django.conf import settings
+
+FILE_SIZE_LIMIT_MB = getattr(settings, "FILE_SIZE_LIMIT_MB", 2)
+
+
 ################################################
 #                     siRNA                    #
 ################################################
@@ -70,7 +75,7 @@ class SiRna(
     )
     info_sheet = models.FileField(
         "info sheet",
-        help_text="only .pdf files, max. 2 MB",
+        help_text=f"only .pdf files, max. {FILE_SIZE_LIMIT_MB} MB",
         upload_to=_model_upload_to,
         blank=True,
         null=True,

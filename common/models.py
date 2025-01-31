@@ -103,7 +103,7 @@ class DocFileMixin(models.Model, RenameFileField):
         file_size_limit = MAX_UPLOAD_FILE_SIZE_MB * 1024 * 1024
 
         if self.name:
-            # Check if file is bigger than X MB
+            # Check if file is bigger than FILE_SIZE_LIMIT_MB
             if self.name.size > file_size_limit:
                 errors.append(
                     ValidationError(
@@ -124,7 +124,7 @@ class DocFileMixin(models.Model, RenameFileField):
             if file_ext and file_ext not in ALLOWED_DOC_FILE_EXTS:
                 errors.append(
                     ValidationError(
-                        f'Invalid file format. Only {", ".join(ALLOWED_DOC_FILE_EXTS)} files are allowed'
+                        f"Invalid file format. Only {', '.join(ALLOWED_DOC_FILE_EXTS)} files are allowed"
                     )
                 )
 

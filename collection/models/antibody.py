@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 
 from collection.models.shared import (
@@ -11,6 +12,9 @@ from common.models import (
     DownloadFileNameMixin,
     SaveWithoutHistoricalRecord,
 )
+
+FILE_SIZE_LIMIT_MB = getattr(settings, "FILE_SIZE_LIMIT_MB", 2)
+
 
 ################################################
 #                   Antibody                   #
@@ -43,7 +47,7 @@ class Antibody(
     description_comment = models.TextField("description/comments", blank=True)
     info_sheet = models.FileField(
         "info sheet",
-        help_text="only .pdf files, max. 2 MB",
+        help_text=f"only .pdf files, max. {FILE_SIZE_LIMIT_MB} MB",
         upload_to=_model_upload_to,
         blank=True,
         null=True,

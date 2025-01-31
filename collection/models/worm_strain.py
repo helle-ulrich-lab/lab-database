@@ -14,6 +14,11 @@ from collection.models.shared import (
 from common.models import DocFileMixin, SaveWithoutHistoricalRecord
 from formz.models import FormZBaseElement, GenTechMethod
 
+from django.conf import settings
+
+FILE_SIZE_LIMIT_MB = getattr(settings, "FILE_SIZE_LIMIT_MB", 2)
+
+
 ################################################
 #              Worm Strain Allele              #
 ################################################
@@ -91,7 +96,7 @@ class WormStrainAllele(
     notes = models.TextField("notes", blank=True)
     map = models.FileField(
         "map (.dna)",
-        help_text="only SnapGene .dna files, max. 2 MB",
+        help_text=f"only SnapGene .dna files, max. {FILE_SIZE_LIMIT_MB} MB",
         upload_to=_model_upload_to + "dna/",
         blank=True,
     )
@@ -101,7 +106,7 @@ class WormStrainAllele(
     map_gbk = models.FileField(
         "Map (.gbk)",
         upload_to=_model_upload_to + "gbk/",
-        help_text="only .gbk or .gb files, max. 2 MB",
+        help_text=f"only .gbk or .gb files, max. {FILE_SIZE_LIMIT_MB} MB",
         blank=True,
     )
     formz_elements = models.ManyToManyField(

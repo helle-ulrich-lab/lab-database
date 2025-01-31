@@ -12,6 +12,11 @@ from common.models import (
     SaveWithoutHistoricalRecord,
 )
 
+from django.conf import settings
+
+FILE_SIZE_LIMIT_MB = getattr(settings, "FILE_SIZE_LIMIT_MB", 2)
+
+
 ################################################
 #                   Inhibitor                  #
 ################################################
@@ -45,7 +50,7 @@ class Inhibitor(
     description_comment = models.TextField("description/comments", blank=True)
     info_sheet = models.FileField(
         "info sheet",
-        help_text="only .pdf files, max. 2 MB",
+        help_text=f"only .pdf files, max. {FILE_SIZE_LIMIT_MB} MB",
         upload_to=_model_upload_to,
         blank=True,
         null=True,

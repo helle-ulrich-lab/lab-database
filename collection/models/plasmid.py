@@ -20,6 +20,10 @@ from common.models import (
 )
 from formz.models import ZkbsPlasmid
 
+
+FILE_SIZE_LIMIT_MB = getattr(settings, "FILE_SIZE_LIMIT_MB", 2)
+
+
 PLASMID_AS_ECOLI_STOCK = getattr(settings, "PLASMID_AS_ECOLI_STOCK", False)
 
 ################################################
@@ -70,7 +74,7 @@ class Plasmid(
     reference = models.CharField("reference", max_length=255, blank=True)
     map = models.FileField(
         "Map (.dna)",
-        help_text="only SnapGene .dna files, max. 2 MB",
+        help_text=f"only SnapGene .dna files, max. {FILE_SIZE_LIMIT_MB} MB",
         upload_to=_model_upload_to + "dna/",
         blank=True,
     )
@@ -80,7 +84,7 @@ class Plasmid(
     map_gbk = models.FileField(
         "Map (.gbk)",
         upload_to=_model_upload_to + "gbk/",
-        help_text="only .gbk or .gb files, max. 2 MB",
+        help_text=f"only .gbk or .gb files, max. {FILE_SIZE_LIMIT_MB} MB",
         blank=True,
     )
     vector_zkbs = models.ForeignKey(

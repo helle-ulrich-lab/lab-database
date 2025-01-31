@@ -1,6 +1,9 @@
 from django.db import models
 from django.forms import ValidationError
 from common.models import RenameFileField
+from django.conf import settings
+
+FILE_SIZE_LIMIT_MB = getattr(settings, "FILE_SIZE_LIMIT_MB", 2)
 
 
 class GhsSymbol(models.Model, RenameFileField):
@@ -10,7 +13,7 @@ class GhsSymbol(models.Model, RenameFileField):
     pictogram = models.ImageField(
         "pictogram",
         upload_to="temp/",
-        help_text="only .png images, max. 2 MB",
+        help_text=f"only .png images, max. {FILE_SIZE_LIMIT_MB} MB",
         blank=False,
     )
     description = models.CharField("description", max_length=255, blank=False)
@@ -37,10 +40,10 @@ class GhsSymbol(models.Model, RenameFileField):
 
     def clean(self):
         errors = []
-        file_size_limit = 2 * 1024 * 1024
+        file_size_limit = FILE_SIZE_LIMIT_MB * 1024 * 1024
 
         if self.pictogram:
-            # Check if file is bigger than 2 MB
+            # Check if file is bigger than FILE_SIZE_LIMIT_MB
             if self.pictogram.size > file_size_limit:
                 errors.append(
                     ValidationError("File too large. Size cannot exceed 2 MB.")

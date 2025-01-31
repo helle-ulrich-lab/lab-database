@@ -177,7 +177,7 @@ class InfoSheetMaxSizeMixin:
         file_size_limit = FILE_SIZE_LIMIT_MB * 1024 * 1024
 
         if self.info_sheet:
-            # Check if file is bigger than X MB
+            # Check if file is bigger than FILE_SIZE_LIMIT_MB
             if self.info_sheet.size > file_size_limit:
                 errors["info_sheet"] = errors.get("info_sheet", []) + [
                     f"File too large. Size cannot exceed {FILE_SIZE_LIMIT_MB} MB."
@@ -207,7 +207,7 @@ class MapFileChecPropertieskMixin:
 
         # Check .dna map
         if self.map:
-            # Check if file is bigger than X MB
+            # Check if file is bigger than FILE_SIZE_LIMIT_MB
             if self.map.size > file_size_limit:
                 errors["map"] = errors.get("map", []) + [
                     f"The map is too large. Size cannot exceed {FILE_SIZE_LIMIT_MB} MB."
@@ -236,7 +236,7 @@ class MapFileChecPropertieskMixin:
                     ]
 
         if self.map_gbk:
-            # Check if file is bigger than X MB
+            # Check if file is bigger than FILE_SIZE_LIMIT_MB
             if self.map_gbk.size > file_size_limit:
                 errors["map_gbk"] = errors.get("map_gbk", []) + [
                     f"The map is too large. Size cannot exceed {FILE_SIZE_LIMIT_MB} MB."

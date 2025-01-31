@@ -10,8 +10,7 @@ from django.db import models
 from django.db.models import Subquery
 from django.http import HttpResponse, HttpResponseRedirect
 from django.template.loader import render_to_string
-from django.urls import path
-from django.urls import re_path, reverse
+from django.urls import path, re_path, reverse
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from djangoql.admin import DjangoQLSearchMixin
@@ -39,7 +38,7 @@ from .actions import (
     export_orders,
     mass_update,
 )
-from .forms import MassUpdateOrderForm, OrderForm
+from .forms import MassUpdateOrderForm, OrderAdminForm
 from .search import OrderQLSchema
 
 ORDER_EMAIL_ADDRESSES = getattr(
@@ -246,7 +245,7 @@ class OrderAdmin(
         mass_update,
     ]
     search_fields = ["id", "part_description", "supplier_part_no"]
-    form = OrderForm
+    form = OrderAdminForm
     raw_id_fields = ["ghs_symbols", "msds_form", "signal_words", "hazard_statements"]
     autocomplete_fields = []
     history_array_fields = {

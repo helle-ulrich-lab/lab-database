@@ -31,7 +31,7 @@ class GhsImageWidget(AdminFileWidget):
         return mark_safe("".join(output))
 
 
-class OrderForm(forms.ModelForm):
+class OrderAdminForm(forms.ModelForm):
     """
     Custom order form that contains a custom field to show GHS pictograms
     using GhsImageWidget

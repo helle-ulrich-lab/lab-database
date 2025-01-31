@@ -4,6 +4,8 @@ import re
 import urllib.parse
 import urllib.request
 
+from background_task.admin import CompletedTaskAdmin, TaskAdmin
+from background_task.models import CompletedTask, Task
 from django.apps import apps
 from django.conf import settings
 from django.contrib import admin
@@ -13,15 +15,83 @@ from django.core.files.storage import default_storage
 from django.http import Http404, HttpResponse
 from django.urls import re_path
 
-from formz.admin import FormZAdmin
-from formz.models import FormZBaseElement, FormZProject
-from ordering.order.admin import OrderAdminSite
+from approval.admin import RecordToBeApprovedPage
+from approval.models import RecordToBeApproved
+from collection.admin import (
+    AntibodyAdmin,
+    CellLineAdmin,
+    EColiStrainAdmin,
+    InhibitorAdmin,
+    OligoAdmin,
+    PlasmidAdmin,
+    SaCerevisiaeStrainAdmin,
+    ScPombeStrainAdmin,
+    SiRnaAdmin,
+    WormStrainAdmin,
+    WormStrainAlleleAdmin,
+)
+from collection.models import (
+    Antibody,
+    CellLine,
+    EColiStrain,
+    Inhibitor,
+    Oligo,
+    Plasmid,
+    SaCerevisiaeStrain,
+    ScPombeStrain,
+    SiRna,
+    WormStrain,
+    WormStrainAllele,
+)
+from extend_user.admin import LabUserAdmin
+from formz.admin import (
+    FormZAdmin,
+    FormZBaseElementPage,
+    FormZHeaderPage,
+    FormZProjectPage,
+    FormZStorageLocationPage,
+    GenTechMethodPage,
+    NucleicAcidPurityPage,
+    NucleicAcidRiskPage,
+    SpeciesPage,
+    ZkbsCellLinePage,
+    ZkbsOncogenePage,
+    ZkbsPlasmidPage,
+)
+from formz.models import (
+    FormZBaseElement,
+    FormZHeader,
+    FormZProject,
+    FormZStorageLocation,
+    GenTechMethod,
+    NucleicAcidPurity,
+    NucleicAcidRisk,
+    Species,
+    ZkbsCellLine,
+    ZkbsOncogene,
+    ZkbsPlasmid,
+)
+from ordering.admin import (
+    CostUnitAdmin,
+    GhsSymbolAdmin,
+    HazardStatementAdmin,
+    LocationAdmin,
+    MsdsFormAdmin,
+    OrderAdmin,
+    OrderAdminSite,
+    SignalWordAdmin,
+)
+from ordering.models import (
+    CostUnit,
+    GhsSymbol,
+    HazardStatement,
+    Location,
+    MsdsForm,
+    Order,
+    SignalWord,
+)
 
 SITE_TITLE = getattr(settings, "SITE_TITLE", "Lab DB")
-
-#################################################
-#               CUSTOM ADMIN SITE               #
-#################################################
 
 
 class MyAdminSite(OrderAdminSite, FormZAdmin, admin.AdminSite):
@@ -92,7 +162,7 @@ class MyAdminSite(OrderAdminSite, FormZAdmin, admin.AdminSite):
 
                 # Create file name
                 download_file_name = f"{obj.download_file_name}{file_ext}"
-            except:
+            except Exception:
                 pass
 
             # Needed for file names that include special, non ascii, characters
@@ -134,132 +204,13 @@ class MyAdminSite(OrderAdminSite, FormZAdmin, admin.AdminSite):
 
 # Instantiate custom admin site
 main_admin_site = MyAdminSite()
-
 # Disable delete selected action
 main_admin_site.disable_action("delete_selected")
 
-#################################################
-#          COLLECTION MANAGEMENT PAGES          #
-#################################################
-
-from collection.admin import (
-    AntibodyAdmin,
-    CellLineAdmin,
-    EColiStrainAdmin,
-    OligoAdmin,
-    PlasmidAdmin,
-    SaCerevisiaeStrainAdmin,
-    ScPombeStrainAdmin,
-    WormStrainAdmin,
-    WormStrainAlleleAdmin,
-)
-from collection.models import (
-    Antibody,
-    CellLine,
-    CellLineDoc,
-    EColiStrain,
-    Oligo,
-    Plasmid,
-    SaCerevisiaeStrain,
-    ScPombeStrain,
-    WormStrain,
-    WormStrainAllele,
-)
-
-main_admin_site.register(SaCerevisiaeStrain, SaCerevisiaeStrainAdmin)
-main_admin_site.register(Plasmid, PlasmidAdmin)
-main_admin_site.register(Oligo, OligoAdmin)
-main_admin_site.register(ScPombeStrain, ScPombeStrainAdmin)
-main_admin_site.register(EColiStrain, EColiStrainAdmin)
-main_admin_site.register(CellLine, CellLineAdmin)
-main_admin_site.register(Antibody, AntibodyAdmin)
-main_admin_site.register(WormStrain, WormStrainAdmin)
-main_admin_site.register(WormStrainAllele, WormStrainAlleleAdmin)
-
-#################################################
-#             ORDER MANAGEMENT PAGES            #
-#################################################
-
-from ordering.admin import (
-    CostUnitAdmin,
-    GhsSymbolAdmin,
-    HazardStatementAdmin,
-    LocationAdmin,
-    MsdsFormAdmin,
-    OrderAdmin,
-    OrderExtraDocPage,
-    SignalWordAdmin,
-)
-from ordering.models import (
-    CostUnit,
-    GhsSymbol,
-    HazardStatement,
-    Location,
-    MsdsForm,
-    Order,
-    OrderExtraDoc,
-    SignalWord,
-)
-
-main_admin_site.register(Order, OrderAdmin)
-main_admin_site.register(CostUnit, CostUnitAdmin)
-main_admin_site.register(Location, LocationAdmin)
-main_admin_site.register(MsdsForm, MsdsFormAdmin)
-main_admin_site.register(OrderExtraDoc, OrderExtraDocPage)
-main_admin_site.register(GhsSymbol, GhsSymbolAdmin)
-main_admin_site.register(SignalWord, SignalWordAdmin)
-main_admin_site.register(HazardStatement, HazardStatementAdmin)
-
-#################################################
-#            CUSTOM USER/GROUP PAGES            #
-#################################################
-
 main_admin_site.register(Group, GroupAdmin)
 main_admin_site.register(User, UserAdmin)
-
-from extend_user.admin import LabUserAdmin
-
 main_admin_site.unregister(User)
 main_admin_site.register(User, LabUserAdmin)
-
-#################################################
-#               BACKGROUND TASKS                #
-#################################################
-
-from background_task.admin import CompletedTaskAdmin, TaskAdmin
-from background_task.models import CompletedTask, Task
-
-main_admin_site.register(Task, TaskAdmin)
-main_admin_site.register(CompletedTask, CompletedTaskAdmin)
-
-#################################################
-#                  FORMBLATT Z                  #
-#################################################
-
-from formz.admin import (
-    FormZBaseElementPage,
-    FormZHeaderPage,
-    FormZProjectPage,
-    FormZStorageLocationPage,
-    GenTechMethodPage,
-    NucleicAcidPurityPage,
-    NucleicAcidRiskPage,
-    SpeciesPage,
-    ZkbsCellLinePage,
-    ZkbsOncogenePage,
-    ZkbsPlasmidPage,
-)
-from formz.models import (
-    FormZHeader,
-    FormZStorageLocation,
-    GenTechMethod,
-    NucleicAcidPurity,
-    NucleicAcidRisk,
-    Species,
-    ZkbsCellLine,
-    ZkbsOncogene,
-    ZkbsPlasmid,
-)
 
 main_admin_site.register(NucleicAcidPurity, NucleicAcidPurityPage)
 main_admin_site.register(NucleicAcidRisk, NucleicAcidRiskPage)
@@ -273,29 +224,27 @@ main_admin_site.register(ZkbsCellLine, ZkbsCellLinePage)
 main_admin_site.register(FormZStorageLocation, FormZStorageLocationPage)
 main_admin_site.register(Species, SpeciesPage)
 
-#################################################
-#               RECORD APPROVAL                 #
-#################################################
+main_admin_site.register(Task, TaskAdmin)
+main_admin_site.register(CompletedTask, CompletedTaskAdmin)
 
-from approval.admin import RecordToBeApprovedPage
-from approval.models import RecordToBeApproved
+main_admin_site.register(Order, OrderAdmin)
+main_admin_site.register(CostUnit, CostUnitAdmin)
+main_admin_site.register(Location, LocationAdmin)
+main_admin_site.register(MsdsForm, MsdsFormAdmin)
+main_admin_site.register(GhsSymbol, GhsSymbolAdmin)
+main_admin_site.register(SignalWord, SignalWordAdmin)
+main_admin_site.register(HazardStatement, HazardStatementAdmin)
+
+main_admin_site.register(SaCerevisiaeStrain, SaCerevisiaeStrainAdmin)
+main_admin_site.register(Plasmid, PlasmidAdmin)
+main_admin_site.register(Oligo, OligoAdmin)
+main_admin_site.register(ScPombeStrain, ScPombeStrainAdmin)
+main_admin_site.register(EColiStrain, EColiStrainAdmin)
+main_admin_site.register(CellLine, CellLineAdmin)
+main_admin_site.register(Antibody, AntibodyAdmin)
+main_admin_site.register(WormStrain, WormStrainAdmin)
+main_admin_site.register(WormStrainAllele, WormStrainAlleleAdmin)
+main_admin_site.register(Inhibitor, InhibitorAdmin)
+main_admin_site.register(SiRna, SiRnaAdmin)
 
 main_admin_site.register(RecordToBeApproved, RecordToBeApprovedPage)
-
-#################################################
-#                  INHIBITOR                    #
-#################################################
-
-from collection.admin import InhibitorAdmin
-from collection.models import Inhibitor
-
-main_admin_site.register(Inhibitor, InhibitorAdmin)
-
-#################################################
-#                    siRNA                      #
-#################################################
-
-from collection.admin import SiRnaAdmin
-from collection.models import SiRna
-
-main_admin_site.register(SiRna, SiRnaAdmin)

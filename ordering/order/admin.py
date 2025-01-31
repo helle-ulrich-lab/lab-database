@@ -751,7 +751,7 @@ class OrderAdmin(
 #################################################
 
 
-class OrderExtraDocPage(DjangoQLSearchMixin, admin.ModelAdmin):
+class OrderExtraDocAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     list_display = (
         "id",
         "name",

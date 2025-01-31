@@ -1,4 +1,5 @@
 import csv
+import importlib
 import pathlib
 import warnings
 from datetime import datetime
@@ -6,32 +7,42 @@ from os.path import dirname, join
 from subprocess import check_output
 
 import xlrd
+from django.apps import apps
 from django.conf import settings
 
-from collection.admin.antibody import AntibodyExportResource
-from collection.admin.cell_line import CellLineExportResource
-from collection.admin.e_coli_strain import EColiStrainExportResource
-from collection.admin.inhibitor import InhibitorExportResource
-from collection.admin.oligo import OligoExportResource
-from collection.admin.plasmid import PlasmidExportResource
-from collection.admin.sa_cerevisiae_strain import SaCerevisiaeStrainExportResource
-from collection.admin.sc_pombe_strain import ScPombeStrainExportResource
-from collection.admin.si_rna import SiRnaExportResource
-from collection.admin.worm_strain import WormStrainExportResource
-from collection.models import (
-    Antibody,
-    CellLine,
-    EColiStrain,
-    Inhibitor,
-    Oligo,
-    Plasmid,
-    SaCerevisiaeStrain,
-    ScPombeStrain,
-    SiRna,
-    WormStrain,
-)
-from ordering.order.export import OrderExportResource
+from collection.models import WormStrainAllele
+from collection.wormstrain.export import WormStrainAlleleExportResource
 from ordering.models import Order
+from ordering.order.export import OrderExportResource
+
+COLLECTION_MODELS = [
+    "Antibody",
+    "CellLine",
+    "EColiStrain",
+    "Inhibitor",
+    "Oligo",
+    "Plasmid",
+    "SaCerevisiaeStrain",
+    "ScPombeStrain",
+    "SiRna",
+    "WormStrain",
+]
+
+DB_TABLES = [
+    (
+        apps.get_model("collection", m),
+        getattr(
+            importlib.import_module(f"collection.{m.lower()}.export"),
+            f"{m}ExportResource",
+        ),
+    )
+    for m in COLLECTION_MODELS
+]
+
+DB_TABLES = DB_TABLES + [
+    (WormStrainAllele, WormStrainAlleleExportResource),
+    (Order, OrderExportResource),
+]
 
 BASE_DIR = settings.BASE_DIR
 DB_NAME = getattr(settings, "DB_NAME", "")
@@ -84,22 +95,6 @@ check_output(
     f'export PGPASSWORD="{DB_PASSWORD}"; /usr/bin/pg_dump {DB_NAME} -U {DB_USER} -h localhost | /bin/gzip > {BACKUP_DIR}/db_dumps/{CURRENT_DATE_TIME}.sql.gz',
     shell=True,
 )
-
-# Save db tables as Excel files
-
-DB_TABLES = [
-    (SaCerevisiaeStrain, SaCerevisiaeStrainExportResource),
-    (Plasmid, PlasmidExportResource),
-    (Oligo, OligoExportResource),
-    (ScPombeStrain, ScPombeStrainExportResource),
-    (EColiStrain, EColiStrainExportResource),
-    (CellLine, CellLineExportResource),
-    (Antibody, AntibodyExportResource),
-    (WormStrain, WormStrainExportResource),
-    (Inhibitor, InhibitorExportResource),
-    (SiRna, SiRnaExportResource),
-    (Order, OrderExportResource),
-]
 
 for model, export_resource in DB_TABLES:
     if model.objects.exists():

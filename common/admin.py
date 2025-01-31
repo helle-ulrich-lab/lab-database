@@ -142,14 +142,17 @@ main_admin_site.disable_action("delete_selected")
 #          COLLECTION MANAGEMENT PAGES          #
 #################################################
 
-from collection.admin.antibody import AntibodyPage
-from collection.admin.cell_line import CellLineDocPage, CellLinePage
-from collection.admin.e_coli_strain import EColiStrainPage
-from collection.admin.oligo import OligoPage
-from collection.admin.plasmid import PlasmidPage
-from collection.admin.sa_cerevisiae_strain import SaCerevisiaeStrainPage
-from collection.admin.sc_pombe_strain import ScPombeStrainPage
-from collection.admin.worm_strain import WormStrainAllelePage, WormStrainPage
+from collection.admin import (
+    AntibodyAdmin,
+    CellLineAdmin,
+    EColiStrainAdmin,
+    OligoAdmin,
+    PlasmidAdmin,
+    SaCerevisiaeStrainAdmin,
+    ScPombeStrainAdmin,
+    WormStrainAdmin,
+    WormStrainAlleleAdmin,
+)
 from collection.models import (
     Antibody,
     CellLine,
@@ -163,16 +166,15 @@ from collection.models import (
     WormStrainAllele,
 )
 
-main_admin_site.register(SaCerevisiaeStrain, SaCerevisiaeStrainPage)
-main_admin_site.register(Plasmid, PlasmidPage)
-main_admin_site.register(Oligo, OligoPage)
-main_admin_site.register(ScPombeStrain, ScPombeStrainPage)
-main_admin_site.register(EColiStrain, EColiStrainPage)
-main_admin_site.register(CellLineDoc, CellLineDocPage)
-main_admin_site.register(CellLine, CellLinePage)
-main_admin_site.register(Antibody, AntibodyPage)
-main_admin_site.register(WormStrain, WormStrainPage)
-main_admin_site.register(WormStrainAllele, WormStrainAllelePage)
+main_admin_site.register(SaCerevisiaeStrain, SaCerevisiaeStrainAdmin)
+main_admin_site.register(Plasmid, PlasmidAdmin)
+main_admin_site.register(Oligo, OligoAdmin)
+main_admin_site.register(ScPombeStrain, ScPombeStrainAdmin)
+main_admin_site.register(EColiStrain, EColiStrainAdmin)
+main_admin_site.register(CellLine, CellLineAdmin)
+main_admin_site.register(Antibody, AntibodyAdmin)
+main_admin_site.register(WormStrain, WormStrainAdmin)
+main_admin_site.register(WormStrainAllele, WormStrainAlleleAdmin)
 
 #################################################
 #             ORDER MANAGEMENT PAGES            #
@@ -284,16 +286,16 @@ main_admin_site.register(RecordToBeApproved, RecordToBeApprovedPage)
 #                  INHIBITOR                    #
 #################################################
 
-from collection.admin.inhibitor import InhibitorPage
+from collection.admin import InhibitorAdmin
 from collection.models import Inhibitor
 
-main_admin_site.register(Inhibitor, InhibitorPage)
+main_admin_site.register(Inhibitor, InhibitorAdmin)
 
 #################################################
 #                    siRNA                      #
 #################################################
 
-from collection.admin.si_rna import SiRnaPage
+from collection.admin import SiRnaAdmin
 from collection.models import SiRna
 
-main_admin_site.register(SiRna, SiRnaPage)
+main_admin_site.register(SiRna, SiRnaAdmin)

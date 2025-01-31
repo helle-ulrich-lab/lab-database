@@ -5,7 +5,7 @@ from django.db.models import Q
 from djangoql.schema import StrField
 
 
-class SearchCustomFieldWithOptions(StrField):
+class SearchFieldWithOptions(StrField):
     """Search field with unlimited options"""
 
     suggest_options = True
@@ -40,7 +40,7 @@ class SearchCustomFieldWithOptions(StrField):
         return f"{self.name}__{self.model_fieldname}"
 
 
-class SearchCustomFieldUserUsernameWithOptions(StrField):
+class SearchFieldUserUsernameWithOptions(StrField):
     """Create a list of unique users' usernames for search"""
 
     model = User
@@ -78,7 +78,7 @@ class SearchCustomFieldUserUsernameWithOptions(StrField):
             )
 
 
-class SearchCustomFieldUserLastnameWithOptions(StrField):
+class SearchFieldUserLastnameWithOptions(StrField):
     """Create a list of unique user's last names for search"""
 
     model = User

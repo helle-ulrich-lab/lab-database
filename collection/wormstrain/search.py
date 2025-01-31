@@ -3,8 +3,8 @@ from django.db.models import Q
 from djangoql.schema import DjangoQLSchema, IntField, StrField
 
 from common.search import (
-    SearchCustomFieldUserLastnameWithOptions,
-    SearchCustomFieldUserUsernameWithOptions,
+    SearchFieldUserLastnameWithOptions,
+    SearchFieldUserUsernameWithOptions,
 )
 
 from ..shared.admin import (
@@ -19,11 +19,11 @@ from ..shared.admin import (
 from .models import WormStrain, WormStrainAllele
 
 
-class WormStrainSearchFieldUserUsername(SearchCustomFieldUserUsernameWithOptions):
+class WormStrainSearchFieldUserUsername(SearchFieldUserUsernameWithOptions):
     id_list = WormStrain.objects.all().values_list("created_by", flat=True).distinct()
 
 
-class WormStrainSearchFieldUserLastname(SearchCustomFieldUserLastnameWithOptions):
+class WormStrainSearchFieldUserLastname(SearchFieldUserLastnameWithOptions):
     id_list = WormStrain.objects.all().values_list("created_by", flat=True).distinct()
 
 
@@ -105,13 +105,13 @@ class WormStrainQLSchema(DjangoQLSchema):
         return super().get_fields(model)
 
 
-class WormStrainAlleleSearchFieldUserUsername(SearchCustomFieldUserUsernameWithOptions):
+class WormStrainAlleleSearchFieldUserUsername(SearchFieldUserUsernameWithOptions):
     id_list = (
         WormStrainAllele.objects.all().values_list("created_by", flat=True).distinct()
     )
 
 
-class WormStrainAlleleSearchFieldUserLastname(SearchCustomFieldUserLastnameWithOptions):
+class WormStrainAlleleSearchFieldUserLastname(SearchFieldUserLastnameWithOptions):
     id_list = (
         WormStrainAllele.objects.all().values_list("created_by", flat=True).distinct()
     )

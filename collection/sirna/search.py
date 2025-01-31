@@ -2,8 +2,8 @@ from django.contrib.auth.models import User
 from djangoql.schema import DjangoQLSchema
 
 from common.search import (
-    SearchCustomFieldUserLastnameWithOptions,
-    SearchCustomFieldUserUsernameWithOptions,
+    SearchFieldUserLastnameWithOptions,
+    SearchFieldUserUsernameWithOptions,
 )
 
 from ..shared.admin import (
@@ -13,11 +13,11 @@ from ..shared.admin import (
 from .models import SiRna
 
 
-class SiRnaSearchFieldUserUsername(SearchCustomFieldUserUsernameWithOptions):
+class SiRnaSearchFieldUserUsername(SearchFieldUserUsernameWithOptions):
     id_list = SiRna.objects.all().values_list("created_by", flat=True).distinct()
 
 
-class SiRnaSearchFieldUserLastname(SearchCustomFieldUserLastnameWithOptions):
+class SiRnaSearchFieldUserLastname(SearchFieldUserLastnameWithOptions):
     id_list = SiRna.objects.all().values_list("created_by", flat=True).distinct()
 
 

@@ -2,8 +2,8 @@ from django.contrib.auth.models import User
 from djangoql.schema import DjangoQLSchema, StrField
 
 from common.search import (
-    SearchCustomFieldUserLastnameWithOptions,
-    SearchCustomFieldUserUsernameWithOptions,
+    SearchFieldUserLastnameWithOptions,
+    SearchFieldUserUsernameWithOptions,
 )
 from formz.models import FormZProject
 
@@ -20,13 +20,13 @@ from ..shared.admin import (
 from .models import ScPombeStrain
 
 
-class ScPombeStrainSearchFieldUserUsername(SearchCustomFieldUserUsernameWithOptions):
+class ScPombeStrainSearchFieldUserUsername(SearchFieldUserUsernameWithOptions):
     id_list = (
         ScPombeStrain.objects.all().values_list("created_by", flat=True).distinct()
     )
 
 
-class ScPombeStrainSearchFieldUserLastname(SearchCustomFieldUserLastnameWithOptions):
+class ScPombeStrainSearchFieldUserLastname(SearchFieldUserLastnameWithOptions):
     id_list = (
         ScPombeStrain.objects.all().values_list("created_by", flat=True).distinct()
     )

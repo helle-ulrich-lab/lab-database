@@ -2,9 +2,9 @@ from django.contrib.auth.models import User
 from djangoql.schema import BoolField, DjangoQLSchema, StrField
 
 from common.search import (
-    SearchCustomFieldUserLastnameWithOptions,
-    SearchCustomFieldUserUsernameWithOptions,
-    SearchCustomFieldWithOptions,
+    SearchFieldUserLastnameWithOptions,
+    SearchFieldUserUsernameWithOptions,
+    SearchFieldWithOptions,
 )
 
 from ..models import (
@@ -18,7 +18,7 @@ from ..models import (
 )
 
 
-class SearchFieldOrderLocation(SearchCustomFieldWithOptions):
+class OrderSearchFieldLocation(SearchFieldWithOptions):
     """Search an Order's Location with suggestions"""
 
     name = "location"
@@ -26,7 +26,7 @@ class SearchFieldOrderLocation(SearchCustomFieldWithOptions):
     model_fieldname = "name"
 
 
-class SearchFieldOrderCostUnit(SearchCustomFieldWithOptions):
+class OrderSearchFieldCostUnit(SearchFieldWithOptions):
     """Search an Order's CostUnit with suggestions"""
 
     name = "cost_unit"
@@ -34,7 +34,7 @@ class SearchFieldOrderCostUnit(SearchCustomFieldWithOptions):
     model_fieldname = "name"
 
 
-class SearchFieldOrderSupplier(SearchCustomFieldWithOptions):
+class OrderSearchFieldSupplier(SearchFieldWithOptions):
     """Search an Order's Supplier with suggestions"""
 
     name = "supplier"
@@ -43,7 +43,7 @@ class SearchFieldOrderSupplier(SearchCustomFieldWithOptions):
     limit_options = 10
 
 
-class SearchFieldOrderPartDescription(SearchCustomFieldWithOptions):
+class OrderSearchFieldPartDescription(SearchFieldWithOptions):
     """Search an Order's PartDescription with suggestions"""
 
     name = "part_description"
@@ -52,7 +52,7 @@ class SearchFieldOrderPartDescription(SearchCustomFieldWithOptions):
     limit_options = 10
 
 
-class SearchFieldOrderHazardousPregnancy(StrField):
+class OrderSearchFieldHazardousPregnancy(StrField):
     """Search an Order's Hazardous for Pregnancy with suggestions"""
 
     model = Order
@@ -60,19 +60,19 @@ class SearchFieldOrderHazardousPregnancy(StrField):
     suggest_options = True
 
 
-class SearchFieldOrderCreatedbyUsername(SearchCustomFieldUserUsernameWithOptions):
+class OrderSearchFieldCreatedbyUsername(SearchFieldUserUsernameWithOptions):
     """Search an Order's users' usernames"""
 
     id_list = Order.objects.all().values_list("created_by", flat=True).distinct()
 
 
-class SearchFieldOrderCreatedbyLastname(SearchCustomFieldUserLastnameWithOptions):
+class OrderSearchFieldCreatedbyLastname(SearchFieldUserLastnameWithOptions):
     """Search an Order's users' last names"""
 
     id_list = Order.objects.all().values_list("created_by", flat=True).distinct()
 
 
-class SearchFieldOrderGhsSymbol(SearchCustomFieldWithOptions):
+class OrderSearchFieldGhsSymbol(SearchFieldWithOptions):
     """Search an Order's GHS symbols with suggestions"""
 
     model = GhsSymbol
@@ -80,7 +80,7 @@ class SearchFieldOrderGhsSymbol(SearchCustomFieldWithOptions):
     model_fieldname = "code"
 
 
-class SearchFieldOrderSignalWord(SearchCustomFieldWithOptions):
+class OrderSearchFieldSignalWord(SearchFieldWithOptions):
     """Search an Order's Signal word with suggestions"""
 
     name = "signal_words"
@@ -88,7 +88,7 @@ class SearchFieldOrderSignalWord(SearchCustomFieldWithOptions):
     model_fieldname = "signal_word"
 
 
-class SearchFieldOrderMsdsForm(SearchCustomFieldWithOptions):
+class OrderSearchFieldMsdsForm(SearchFieldWithOptions):
     """Search an Order's MSDS form with suggestions"""
 
     name = "msds_form"
@@ -97,7 +97,7 @@ class SearchFieldOrderMsdsForm(SearchCustomFieldWithOptions):
     limit_options = 10
 
 
-class SearchFieldOrderHasGhsSymbol(BoolField):
+class OrderSearchFieldHasGhsSymbol(BoolField):
     """Search an Order for whether it has a GHS symbol"""
 
     model = Order
@@ -111,7 +111,7 @@ class SearchFieldOrderHasGhsSymbol(BoolField):
         return op, True
 
 
-class SearchFieldOrderHazardSatetement(SearchCustomFieldWithOptions):
+class OrderSearchFieldHazardSatetement(SearchFieldWithOptions):
     """Search an Order's Hazard statements with suggestions"""
 
     name = "hazard_statements"
@@ -119,7 +119,7 @@ class SearchFieldOrderHazardSatetement(SearchCustomFieldWithOptions):
     model_fieldname = "code"
 
 
-class SearchFieldOrderIsCmr(BoolField):
+class OrderSearchFieldIsCmr(BoolField):
     """Search an Order for whether is CMR"""
 
     model = Order
@@ -149,31 +149,31 @@ class OrderQLSchema(DjangoQLSchema):
         if model == Order:
             return [
                 "id",
-                SearchFieldOrderSupplier(),
+                OrderSearchFieldSupplier(),
                 "supplier_part_no",
                 "internal_order_no",
-                SearchFieldOrderPartDescription(),
-                SearchFieldOrderCostUnit(),
+                OrderSearchFieldPartDescription(),
+                OrderSearchFieldCostUnit(),
                 "status",
                 "urgent",
-                SearchFieldOrderLocation(),
+                OrderSearchFieldLocation(),
                 "comment",
                 "delivered_date",
                 "cas_number",
-                SearchFieldOrderGhsSymbol(),
-                SearchFieldOrderHasGhsSymbol(),
-                SearchFieldOrderSignalWord(),
-                SearchFieldOrderMsdsForm(),
-                SearchFieldOrderHazardSatetement(),
-                SearchFieldOrderIsCmr(),
-                SearchFieldOrderHazardousPregnancy(),
+                OrderSearchFieldGhsSymbol(),
+                OrderSearchFieldHasGhsSymbol(),
+                OrderSearchFieldSignalWord(),
+                OrderSearchFieldMsdsForm(),
+                OrderSearchFieldHazardSatetement(),
+                OrderSearchFieldIsCmr(),
+                OrderSearchFieldHazardousPregnancy(),
                 "created_date_time",
                 "last_changed_date_time",
                 "created_by",
             ]
         elif model == User:
             return [
-                SearchFieldOrderCreatedbyUsername(),
-                SearchFieldOrderCreatedbyLastname(),
+                OrderSearchFieldCreatedbyUsername(),
+                OrderSearchFieldCreatedbyLastname(),
             ]
         return super().get_fields(model)

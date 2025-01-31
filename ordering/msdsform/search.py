@@ -3,7 +3,7 @@ from djangoql.schema import DjangoQLSchema, StrField
 from .models import MsdsForm
 
 
-class SearchFieldMsdsLabel(StrField):
+class MsdsFormSearchFieldLabel(StrField):
     name = "file_name"
     model = MsdsForm
     model_fieldname = "label"
@@ -32,5 +32,5 @@ class SearchFieldMsdsLabel(StrField):
 class MsdsFormQLSchema(DjangoQLSchema):
     def get_fields(self, model):
         if model == MsdsForm:
-            return ["id", SearchFieldMsdsLabel()]
+            return ["id", MsdsFormSearchFieldLabel()]
         return super().get_fields(model)

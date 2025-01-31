@@ -2,8 +2,8 @@ from django.contrib.auth.models import User
 from djangoql.schema import DjangoQLSchema
 
 from common.search import (
-    SearchCustomFieldUserLastnameWithOptions,
-    SearchCustomFieldUserUsernameWithOptions,
+    SearchFieldUserLastnameWithOptions,
+    SearchFieldUserUsernameWithOptions,
 )
 
 from ..shared.admin import (
@@ -15,11 +15,11 @@ from ..shared.admin import (
 from .models import EColiStrain
 
 
-class EColiStrainSearchFieldUserUsername(SearchCustomFieldUserUsernameWithOptions):
+class EColiStrainSearchFieldUserUsername(SearchFieldUserUsernameWithOptions):
     id_list = EColiStrain.objects.all().values_list("created_by", flat=True).distinct()
 
 
-class EColiStrainSearchFieldUserLastname(SearchCustomFieldUserLastnameWithOptions):
+class EColiStrainSearchFieldUserLastname(SearchFieldUserLastnameWithOptions):
     id_list = EColiStrain.objects.all().values_list("created_by", flat=True).distinct()
 
 

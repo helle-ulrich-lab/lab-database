@@ -1,10 +1,9 @@
 from django.contrib.auth.models import User
 from djangoql.schema import DjangoQLSchema, IntField, StrField
 
-from .models import CellLine
 from common.search import (
-    SearchCustomFieldUserLastnameWithOptions,
-    SearchCustomFieldUserUsernameWithOptions,
+    SearchFieldUserLastnameWithOptions,
+    SearchFieldUserUsernameWithOptions,
 )
 from formz.models import FormZProject
 
@@ -15,6 +14,7 @@ from ..shared.admin import (
     FieldIntegratedPlasmidM2M,
     FieldLastChanged,
 )
+from .models import CellLine
 
 
 class CellLineSearchFieldParentalCellLineId(IntField):
@@ -24,11 +24,11 @@ class CellLineSearchFieldParentalCellLineId(IntField):
         return "parental_line__id"
 
 
-class CellLineSearchFieldUserUsername(SearchCustomFieldUserUsernameWithOptions):
+class CellLineSearchFieldUserUsername(SearchFieldUserUsernameWithOptions):
     id_list = CellLine.objects.all().values_list("created_by", flat=True).distinct()
 
 
-class CellLineSearchFieldUserLastname(SearchCustomFieldUserLastnameWithOptions):
+class CellLineSearchFieldUserLastname(SearchFieldUserLastnameWithOptions):
     id_list = CellLine.objects.all().values_list("created_by", flat=True).distinct()
 
 

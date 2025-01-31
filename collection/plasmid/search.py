@@ -2,8 +2,8 @@ from django.contrib.auth.models import User
 from djangoql.schema import DjangoQLSchema
 
 from common.search import (
-    SearchCustomFieldUserLastnameWithOptions,
-    SearchCustomFieldUserUsernameWithOptions,
+    SearchFieldUserLastnameWithOptions,
+    SearchFieldUserUsernameWithOptions,
 )
 
 from ..shared.admin import (
@@ -16,11 +16,11 @@ from ..shared.admin import (
 from .models import Plasmid
 
 
-class PlasmidSearchFieldUserUsername(SearchCustomFieldUserUsernameWithOptions):
+class PlasmidSearchFieldUserUsername(SearchFieldUserUsernameWithOptions):
     id_list = Plasmid.objects.all().values_list("created_by", flat=True).distinct()
 
 
-class PlasmidSearchFieldUserLastname(SearchCustomFieldUserLastnameWithOptions):
+class PlasmidSearchFieldUserLastname(SearchFieldUserLastnameWithOptions):
     id_list = Plasmid.objects.all().values_list("created_by", flat=True).distinct()
 
 

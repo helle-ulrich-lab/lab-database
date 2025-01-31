@@ -2,8 +2,8 @@ from django.contrib.auth.models import User
 from djangoql.schema import DjangoQLSchema, StrField
 
 from common.search import (
-    SearchCustomFieldUserLastnameWithOptions,
-    SearchCustomFieldUserUsernameWithOptions,
+    SearchFieldUserLastnameWithOptions,
+    SearchFieldUserUsernameWithOptions,
 )
 from formz.models import FormZProject
 
@@ -21,17 +21,13 @@ from ..shared.admin import (
 from .models import SaCerevisiaeStrain
 
 
-class SaCerevisiaeStrainSearchFieldUserUsername(
-    SearchCustomFieldUserUsernameWithOptions
-):
+class SaCerevisiaeStrainSearchFieldUserUsername(SearchFieldUserUsernameWithOptions):
     id_list = (
         SaCerevisiaeStrain.objects.all().values_list("created_by", flat=True).distinct()
     )
 
 
-class SaCerevisiaeStrainSearchFieldUserLastname(
-    SearchCustomFieldUserLastnameWithOptions
-):
+class SaCerevisiaeStrainSearchFieldUserLastname(SearchFieldUserLastnameWithOptions):
     id_list = (
         SaCerevisiaeStrain.objects.all().values_list("created_by", flat=True).distinct()
     )

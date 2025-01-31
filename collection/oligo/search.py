@@ -9,10 +9,9 @@ from djangoql.parser import DjangoQLParser
 from djangoql.queryset import build_filter
 from djangoql.schema import DjangoQLSchema, StrField
 
-from .models import Oligo
 from common.search import (
-    SearchCustomFieldUserLastnameWithOptions,
-    SearchCustomFieldUserUsernameWithOptions,
+    SearchFieldUserLastnameWithOptions,
+    SearchFieldUserUsernameWithOptions,
 )
 
 from ..shared.admin import (
@@ -20,13 +19,14 @@ from ..shared.admin import (
     FieldLastChanged,
     FieldUse,
 )
+from .models import Oligo
 
 
-class OligoSearchFieldUserUsername(SearchCustomFieldUserUsernameWithOptions):
+class OligoSearchFieldUserUsername(SearchFieldUserUsernameWithOptions):
     id_list = Oligo.objects.all().values_list("created_by", flat=True).distinct()
 
 
-class OligoSearchFieldUserLastname(SearchCustomFieldUserLastnameWithOptions):
+class OligoSearchFieldUserLastname(SearchFieldUserLastnameWithOptions):
     id_list = Oligo.objects.all().values_list("created_by", flat=True).distinct()
 
 

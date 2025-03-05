@@ -1,0 +1,40 @@
+<html>
+  <style>
+    table,
+    th,
+    td {
+      border: 1px solid black;
+      border-collapse: collapse;
+    }
+    td,
+    th {
+      padding: 5px;
+    }
+  </style>
+  <body>
+    Dear {{recipient.first_name}},<br />
+    <br />
+    {{sender.first_name}} {{sender.last_name}} has flagged the record(s) below to
+    be amended.
+    <br /><br />
+    Best wishes,<br />
+    The {{site_title}}
+    <br /><br />
+    <table>
+      <tr>
+        <th>Record</th>
+        <th>Message</th>
+      </tr>
+      {% for obj in objs %}
+      <tr>
+        <td>
+          <a href="{{obj.content_object.absolute_url}}"
+            >{{obj.content_type.name|title}} {{obj.content_object}}</a
+          >
+        </td>
+        <td>{{obj.message}}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </body>
+</html>

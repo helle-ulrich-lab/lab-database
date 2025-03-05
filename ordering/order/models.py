@@ -5,7 +5,7 @@ from django.db import models
 from django.forms import ValidationError
 from simple_history.models import HistoricalRecords
 
-from approval.models import RecordToBeApproved
+from approval.models import Approval
 from common.models import DocFileMixin, SaveWithoutHistoricalRecord
 
 
@@ -157,7 +157,7 @@ class Order(models.Model, SaveWithoutHistoricalRecord):
     )
     created_by = models.ForeignKey(User, on_delete=models.PROTECT)
     created_approval_by_pi = models.BooleanField(default=False, null=True)
-    approval = GenericRelation(RecordToBeApproved)
+    approval = GenericRelation(Approval)
     history = HistoricalRecords()
 
     class Meta:

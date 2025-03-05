@@ -8,7 +8,7 @@ from django.core.mail import send_mail
 from django.urls import reverse
 from django.utils import timezone
 
-from approval.models import RecordToBeApproved
+from approval.models import Approval
 from collection.models import (
     Antibody,
     CellLine,
@@ -62,14 +62,13 @@ def get_formz_project_leader_emails(qs):
     return list(project_leader_emails)
 
 
-RECORDS_TO_BE_APPROVED = RecordToBeApproved.objects.all()
+RECORDS_TO_BE_APPROVED = Approval.objects.all()
 
 if (
     RECORDS_TO_BE_APPROVED.exists()
 ):  # Check if there are records to be be approved at all
-
     PROJECT_LEADER_EMAILS = get_formz_project_leader_emails(RECORDS_TO_BE_APPROVED)
-    APPROVAL_URL = reverse("admin:approval_recordtobeapproved_changelist")
+    APPROVAL_URL = reverse("admin:approval_approval_changelist")
     EMAIL_MESSAGE_TXT = inspect.cleandoc(
         """Hello there,
 
@@ -79,9 +78,7 @@ if (
 
     Best wishes,
     The {}
-    """.format(
-            ALLOWED_HOSTS[0], APPROVAL_URL, SITE_TITLE
-        )
+    """.format(ALLOWED_HOSTS[0], APPROVAL_URL, SITE_TITLE)
     )
 
     send_mail(
@@ -118,7 +115,6 @@ def delete_dup_hist_rec_ids(model, time_delta):
         if history_records.count() > 1:
             history_pairs = pairwise(history_records)
             for history_element in history_pairs:
-
                 newer_record = history_element[0]
                 older_record = history_element[1]
                 delta = newer_record.diff_against(older_record)

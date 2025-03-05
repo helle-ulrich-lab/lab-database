@@ -15,8 +15,8 @@ from django.core.files.storage import default_storage
 from django.http import Http404, HttpResponse
 from django.urls import re_path
 
-from approval.admin import RecordToBeApprovedPage
-from approval.models import RecordToBeApproved
+from approval.admin import ApprovalAdmin
+from approval.models import Approval
 from collection.admin import (
     AntibodyAdmin,
     CellLineAdmin,
@@ -247,4 +247,4 @@ main_admin_site.register(WormStrainAllele, WormStrainAlleleAdmin)
 main_admin_site.register(Inhibitor, InhibitorAdmin)
 main_admin_site.register(SiRna, SiRnaAdmin)
 
-main_admin_site.register(RecordToBeApproved, RecordToBeApprovedPage)
+main_admin_site.register(Approval, ApprovalAdmin)

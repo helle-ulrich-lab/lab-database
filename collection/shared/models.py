@@ -9,7 +9,7 @@ from django.db import models
 from django.forms import ValidationError
 from simple_history.models import HistoricalRecords
 
-from approval.models import RecordToBeApproved
+from approval.models import Approval
 from formz.models import FormZBaseElement, FormZProject, GenTechMethod
 
 FILE_SIZE_LIMIT_MB = getattr(settings, "FILE_SIZE_LIMIT_MB", 2)
@@ -30,7 +30,7 @@ class ApprovalFieldsMixin(models.Model):
         "record change approval", default=None, null=True
     )
     approval_by_pi_date_time = models.DateTimeField(null=True, default=None)
-    approval = GenericRelation(RecordToBeApproved)
+    approval = GenericRelation(Approval)
     approval_user = models.ForeignKey(
         User,
         related_name="%(class)s_approval_user",

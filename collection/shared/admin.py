@@ -613,7 +613,7 @@ class CollectionUserProtectionAdmin(Approval, CollectionBaseAdmin):
             self.message_user(request, msg, messages.SUCCESS)
             return HttpResponseRedirect(
                 reverse(
-                    "admin:approval_recordtobeapproved_change",
+                    "admin:approval_approval_change",
                     args=(obj.approval.latest("created_date_time").id,),
                 )
             )

@@ -18,8 +18,7 @@
       <div class="find-oligo">
         <div>{% trans "Find Oligos" %}</div>
         <a title='Download result as .dna file' style="pointer-events: all;"
-          onclick="downloadMapWithImportedOligos(event)" download_url="{% url " admin:app_list" app_label
-          %}{{opts.model_name}}/{{object_id}}/find_oligos/?file_format=dna">🠇</a>
+          onclick="downloadMapWithImportedOligos(event)" download_url="{% url "admin:app_list" app_label %}{{opts.model_name}}/{{object_id}}/find_oligos/?file_format=dna">🠇</a>
         <a title='View result in OVE' style='margin-left:5px' class="magnific-popup-iframe-findoligos"
           href="{{original.find_oligos_map_gbk_ove_url}}">⊙</a>
       </div>

@@ -559,7 +559,10 @@ class OrderAdmin(
     def save_related(self, request, form, formsets, change):
         super().save_related(request, form, formsets, change)
         obj = self.model.objects.get(pk=form.instance.id)
-        history_obj = obj.history.latest()
+        try:
+            history_obj = obj.history.latest()
+        except Exception:
+            history_obj = None
         save_history_fields(self, obj, history_obj)
 
     def get_queryset(self, request):

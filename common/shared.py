@@ -418,14 +418,15 @@ def save_history_fields(admin_instance, obj, history_obj):
 
     obj.save_without_historical_record()
 
-    for (
-        m2m_history_field_name,
-        m2m_model,
-    ) in admin_instance.history_array_fields.items():
-        setattr(
-            history_obj,
+    if history_obj:
+        for (
             m2m_history_field_name,
-            getattr(obj, m2m_history_field_name),
-        )
+            m2m_model,
+        ) in admin_instance.history_array_fields.items():
+            setattr(
+                history_obj,
+                m2m_history_field_name,
+                getattr(obj, m2m_history_field_name),
+            )
 
-    history_obj.save()
+        history_obj.save()

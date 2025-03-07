@@ -1,18 +1,17 @@
 from django.db.models import CharField
 from django.forms import TextInput
 
-from .models import EColiStrainDoc
 from common.shared import (
     AddDocFileInlineMixin,
     DocFileInlineMixin,
 )
-from formz.models import FormZBaseElement, FormZProject
 
 from ..shared.admin import (
     CollectionUserProtectionAdmin,
     formz_as_html,
 )
 from .actions import export_ecolistrain
+from .models import EColiStrainDoc
 from .search import EColiStrainQLSchema
 
 
@@ -88,8 +87,3 @@ class EColiStrainAdmin(CollectionUserProtectionAdmin):
             },
         ],
     ]
-    history_array_fields = {
-        "history_formz_projects": FormZProject,
-        "history_formz_elements": FormZBaseElement,
-        "history_documents": EColiStrainDoc,
-    }

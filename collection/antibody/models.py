@@ -4,17 +4,31 @@ from django.db import models
 from common.models import (
     DocFileMixin,
     DownloadFileNameMixin,
+    HistoryFieldMixin,
     SaveWithoutHistoricalRecord,
 )
 
 from ..shared.models import (
     HistoryDocFieldMixin,
-    HistoryFieldMixin,
     InfoSheetMaxSizeMixin,
     OwnershipFieldsMixin,
 )
 
 FILE_SIZE_LIMIT_MB = getattr(settings, "FILE_SIZE_LIMIT_MB", 2)
+
+
+class AntibodyDoc(DocFileMixin):
+    class Meta:
+        verbose_name = "antibody document"
+
+    _inline_foreignkey_fieldname = "antibody"
+    _mixin_props = {
+        "destination_dir": "collection/antibodydoc/",
+        "file_prefix": "abDoc",
+        "parent_field_name": "antibody",
+    }
+
+    antibody = models.ForeignKey("Antibody", on_delete=models.PROTECT)
 
 
 class Antibody(
@@ -32,6 +46,9 @@ class Antibody(
 
     _model_abbreviation = "ab"
     _model_upload_to = "collection/antibody/"
+    _history_array_fields = {
+        "history_documents": AntibodyDoc,
+    }
 
     name = models.CharField("name", max_length=255, blank=False)
     species_isotype = models.CharField("species/isotype", max_length=255, blank=False)
@@ -52,17 +69,3 @@ class Antibody(
 
     def __str__(self):
         return f"{self.id} - {self.name}"
-
-
-class AntibodyDoc(DocFileMixin):
-    class Meta:
-        verbose_name = "antibody document"
-
-    _inline_foreignkey_fieldname = "antibody"
-    _mixin_props = {
-        "destination_dir": "collection/antibodydoc/",
-        "file_prefix": "abDoc",
-        "parent_field_name": "antibody",
-    }
-
-    antibody = models.ForeignKey(Antibody, on_delete=models.PROTECT)

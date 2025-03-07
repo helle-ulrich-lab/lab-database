@@ -2,17 +2,11 @@ from django.contrib import admin
 from django.urls import resolve
 from django.utils.safestring import mark_safe
 
-from .models import (
-    ScPombeStrainDoc,
-    ScPombeStrainEpisomalPlasmid,
-)
 from common.shared import (
     AddDocFileInlineMixin,
     DocFileInlineMixin,
 )
-from formz.models import FormZBaseElement, FormZProject, GenTechMethod
 
-from ..plasmid.models import Plasmid
 from ..shared.admin import (
     CollectionUserProtectionAdmin,
     SortAutocompleteResultsId,
@@ -20,6 +14,10 @@ from ..shared.admin import (
 )
 from .actions import export_scpombestrain
 from .forms import ScPombeStrainAdminForm
+from .models import (
+    ScPombeStrainDoc,
+    ScPombeStrainEpisomalPlasmid,
+)
 from .search import ScPombeStrainQLSchema
 
 
@@ -157,16 +155,6 @@ class ScPombeStrainAdmin(
             {"classes": (("collapse",)), "fields": obj_specific_fields[12:]},
         ],
     ]
-    history_array_fields = {
-        "history_integrated_plasmids": Plasmid,
-        "history_cassette_plasmids": Plasmid,
-        "history_episomal_plasmids": Plasmid,
-        "history_all_plasmids_in_stocked_strain": Plasmid,
-        "history_formz_projects": FormZProject,
-        "history_formz_gentech_methods": GenTechMethod,
-        "history_formz_elements": FormZBaseElement,
-        "history_documents": ScPombeStrainDoc,
-    }
 
     def save_related(self, request, form, formsets, change):
         obj, history_obj = super().save_related(request, form, formsets, change)

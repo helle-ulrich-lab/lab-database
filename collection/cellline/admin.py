@@ -6,9 +6,8 @@ from common.shared import (
     AddDocFileInlineMixin,
     DocFileInlineMixin,
 )
-from formz.models import FormZBaseElement, FormZProject, GenTechMethod, Species
+from formz.models import Species
 
-from ..plasmid.models import Plasmid
 from ..shared.admin import (
     CollectionUserProtectionAdmin,
     CustomGuardedModelAdmin,
@@ -188,14 +187,6 @@ class CellLineAdmin(
             {"classes": (("collapse",)), "fields": obj_specific_fields[13:]},
         ],
     ]
-    history_array_fields = {
-        "history_integrated_plasmids": Plasmid,
-        "history_episomal_plasmids": Plasmid,
-        "history_formz_projects": FormZProject,
-        "history_formz_gentech_methods": GenTechMethod,
-        "history_formz_elements": FormZBaseElement,
-        "history_documents": CellLineDoc,
-    }
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         try:

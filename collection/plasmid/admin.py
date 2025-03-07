@@ -133,13 +133,6 @@ class PlasmidAdmin(
             },
         ],
     ]
-    history_array_fields = {
-        "history_formz_projects": FormZProject,
-        "history_formz_gentech_methods": GenTechMethod,
-        "history_formz_elements": FormZBaseElement,
-        "history_formz_ecoli_strains": EColiStrain,
-        "history_documents": PlasmidDoc,
-    }
 
     def save_model(self, request, obj, form, change):
         rename_and_preview = False

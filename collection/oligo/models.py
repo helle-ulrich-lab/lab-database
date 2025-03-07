@@ -5,6 +5,7 @@ from django.db import models
 from common.models import (
     DocFileMixin,
     DownloadFileNameMixin,
+    HistoryFieldMixin,
     SaveWithoutHistoricalRecord,
 )
 from formz.models import FormZBaseElement
@@ -12,12 +13,25 @@ from formz.models import FormZBaseElement
 from ..shared.models import (
     ApprovalFieldsMixin,
     HistoryDocFieldMixin,
-    HistoryFieldMixin,
     InfoSheetMaxSizeMixin,
     OwnershipFieldsMixin,
 )
 
 FILE_SIZE_LIMIT_MB = getattr(settings, "FILE_SIZE_LIMIT_MB", 2)
+
+
+class OligoDoc(DocFileMixin):
+    class Meta:
+        verbose_name = "oligo document"
+
+    _inline_foreignkey_fieldname = "oligo"
+    _mixin_props = {
+        "destination_dir": "collection/oligodoc/",
+        "file_prefix": "oDoc",
+        "parent_field_name": "oligo",
+    }
+
+    oligo = models.ForeignKey("Oligo", on_delete=models.PROTECT)
 
 
 class Oligo(
@@ -36,6 +50,14 @@ class Oligo(
 
     _model_abbreviation = "o"
     _model_upload_to = "collection/oligo/"
+    _history_array_fields = {
+        "history_formz_elements": FormZBaseElement,
+        "history_documents": OligoDoc,
+    }
+    _history_view_ignore_fields = (
+        ApprovalFieldsMixin._history_view_ignore_fields
+        + OwnershipFieldsMixin._history_view_ignore_fields
+    )
 
     name = models.CharField("name", max_length=255, unique=True, blank=False)
     sequence = models.CharField(
@@ -86,17 +108,3 @@ class Oligo(
         self.length = len(self.sequence)
 
         super().save(force_insert, force_update, using, update_fields)
-
-
-class OligoDoc(DocFileMixin):
-    class Meta:
-        verbose_name = "oligo document"
-
-    _inline_foreignkey_fieldname = "oligo"
-    _mixin_props = {
-        "destination_dir": "collection/oligodoc/",
-        "file_prefix": "oDoc",
-        "parent_field_name": "oligo",
-    }
-
-    oligo = models.ForeignKey(Oligo, on_delete=models.PROTECT)

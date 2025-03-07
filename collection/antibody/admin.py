@@ -1,8 +1,8 @@
-from .models import AntibodyDoc
 from common.shared import AddDocFileInlineMixin, DocFileInlineMixin
 
 from ..shared.admin import CollectionSimpleAdmin
 from .actions import export_antibody
+from .models import AntibodyDoc
 from .search import AntibodyQLSchema
 
 
@@ -64,6 +64,3 @@ class AntibodyAdmin(CollectionSimpleAdmin):
             {"fields": obj_specific_fields + obj_unmodifiable_fields},
         ],
     ]
-    history_array_fields = {
-        "history_documents": AntibodyDoc,
-    }

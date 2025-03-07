@@ -6,18 +6,32 @@ from django_better_admin_arrayfield.models.fields import ArrayField as BetterArr
 from common.models import (
     DocFileMixin,
     DownloadFileNameMixin,
+    HistoryFieldMixin,
     SaveWithoutHistoricalRecord,
 )
 from formz.models import Species
 from ordering.models import Order
 
 from ..shared.models import (
-    HistoryFieldMixin,
     InfoSheetMaxSizeMixin,
     OwnershipFieldsMixin,
 )
 
 FILE_SIZE_LIMIT_MB = getattr(settings, "FILE_SIZE_LIMIT_MB", 2)
+
+
+class SiRnaDoc(DocFileMixin):
+    class Meta:
+        verbose_name = "siRNA document"
+
+    _inline_foreignkey_fieldname = "si_rna"
+    _mixin_props = {
+        "destination_dir": "collection/sirnadoc/",
+        "file_prefix": "sirnaDoc",
+        "parent_field_name": "si_rna",
+    }
+
+    si_rna = models.ForeignKey("SiRna", on_delete=models.PROTECT)
 
 
 class SiRna(
@@ -34,6 +48,8 @@ class SiRna(
 
     _model_abbreviation = "siRNA"
     _model_upload_to = "collection/sirna/"
+    _history_array_fields = {"history_orders": Order, "history_documents": SiRnaDoc}
+    _history_view_ignore_fields = OwnershipFieldsMixin._history_view_ignore_fields
 
     name = models.CharField("name", max_length=255, blank=False)
     sequence = models.CharField("sequence - Sense", max_length=50, blank=False)
@@ -101,21 +117,6 @@ class SiRna(
     def save(
         self, force_insert=False, force_update=False, using=None, update_fields=None
     ):
-        # Remove all white spaces from sequence and set its length
+        # Remove all white spaces from sequence
         self.sequence = "".join(self.sequence.split())
-
         super().save(force_insert, force_update, using, update_fields)
-
-
-class SiRnaDoc(DocFileMixin):
-    class Meta:
-        verbose_name = "siRNA document"
-
-    _inline_foreignkey_fieldname = "si_rna"
-    _mixin_props = {
-        "destination_dir": "collection/sirnadoc/",
-        "file_prefix": "sirnaDoc",
-        "parent_field_name": "si_rna",
-    }
-
-    si_rna = models.ForeignKey(SiRna, on_delete=models.PROTECT)

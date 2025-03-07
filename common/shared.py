@@ -1,11 +1,9 @@
 import csv
 import itertools
-import os
 
 import xlrd
 from django.contrib import admin
 from django.contrib.admin.utils import unquote
-from django.contrib.auth.models import User
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.urls import path, resolve
@@ -41,7 +39,7 @@ class SimpleHistoryWithSummaryAdmin(SimpleHistoryAdmin):
         object_id = unquote(object_id)
         action_list = history.filter(**{pk_name: object_id})
 
-        # If no history was found, see whether this object even exists.
+        # If no history was found, see whether this object even exists
         try:
             obj = self.get_queryset(request).get(**{pk_name: object_id})
         except model.DoesNotExist:
@@ -50,106 +48,7 @@ class SimpleHistoryWithSummaryAdmin(SimpleHistoryAdmin):
             except action_list.model.DoesNotExist:
                 raise Http404
 
-        ignore_fields = ("time", "_pi", "map_png", "map_gbk", "_user", "_autocomplete")
-
-        # Create data structure for history summary
-        history_summary_data = []
-
-        # If more than one history obj, create pairs of history objs
-        pairs = pairwise(obj.history.all()) if obj.history.count() > 1 else []
-
-        for newer_hist_obj, older_hist_obj in pairs:
-            # Get differences between history obj pairs and add them to a list
-            delta = newer_hist_obj.diff_against(older_hist_obj)
-
-            if delta and getattr(delta, "changes", False):
-                changes_list = []
-
-                # Do not show created/changed date/time or approval by PI fields, and png/gbk map fields
-                for change in [
-                    c for c in delta.changes if not c.field.endswith(ignore_fields)
-                ]:
-                    field = model._meta.get_field(change.field)
-                    field_name = field.verbose_name
-                    field_type = field.get_internal_type()
-
-                    if field_type == "FileField":
-                        field_name = field_name.replace(
-                            " (.dna)", ""
-                        )  # Remove unwanted characters from field name
-                        change_old = (
-                            os.path.basename(change.old).replace(".dna", "")
-                            if change.old
-                            else "None"
-                        )
-                        change_new = (
-                            os.path.basename(change.new).replace(".dna", "")
-                            if change.new
-                            else "None"
-                        )
-                    elif field_type == "ForeignKey":
-                        field_model = field.remote_field.model
-                        change_old = (
-                            str(field_model.objects.get(id=change.old))
-                            if change.old
-                            else "None"
-                        )
-                        change_new = (
-                            str(field_model.objects.get(id=change.new))
-                            if change.new
-                            else "None"
-                        )
-                    elif field_type == "ArrayField":
-                        array_field_model = self.history_array_fields.get(
-                            change.field, None
-                        )
-                        if array_field_model:
-                            change_old = (
-                                ", ".join(
-                                    map(
-                                        str,
-                                        array_field_model.objects.filter(
-                                            id__in=change.old
-                                        ),
-                                    )
-                                )
-                                if change.old
-                                else "None"
-                            )
-                            change_new = (
-                                ", ".join(
-                                    map(
-                                        str,
-                                        array_field_model.objects.filter(
-                                            id__in=change.new
-                                        ),
-                                    )
-                                )
-                                if change.new
-                                else "None"
-                            )
-                        else:
-                            change_old = ", ".join(change.old)
-                            change_new = ", ".join(change.new)
-                    else:
-                        change_old = change.old if change.old else "None"
-                        change_new = change.new if change.new else "None"
-
-                    changes_list.append((capfirst(field_name), change_old, change_new))
-
-                if changes_list:
-                    history_summary_data.append(
-                        (
-                            newer_hist_obj.last_changed_date_time,
-                            User.objects.get(id=int(newer_hist_obj.history_user_id))
-                            if newer_hist_obj.history_user_id
-                            else None,
-                            changes_list,
-                        )
-                    )
-
         context = self.admin_site.each_context(request)
-
         context.update(
             {
                 "title": _("Change history: %s") % force_str(obj),
@@ -159,7 +58,6 @@ class SimpleHistoryWithSummaryAdmin(SimpleHistoryAdmin):
                 "root_path": getattr(self.admin_site, "root_path", None),
                 "app_label": app_label,
                 "opts": opts,
-                "history_summary_data": history_summary_data,
                 "is_popup": "_popup" in request.GET,
             }
         )
@@ -387,7 +285,7 @@ def export_objects(request, queryset, export_data):
 
 
 def save_history_fields(admin_instance, obj, history_obj):
-    history_array_fields = admin_instance.history_array_fields.copy()
+    history_array_fields = obj._history_array_fields.copy()
     if admin_instance.m2m_save_ignore_fields:
         history_array_fields = {
             k: v
@@ -422,7 +320,7 @@ def save_history_fields(admin_instance, obj, history_obj):
         for (
             m2m_history_field_name,
             m2m_model,
-        ) in admin_instance.history_array_fields.items():
+        ) in obj._history_array_fields.items():
             setattr(
                 history_obj,
                 m2m_history_field_name,

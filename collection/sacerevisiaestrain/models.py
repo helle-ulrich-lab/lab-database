@@ -5,17 +5,34 @@ from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.forms import ValidationError
 
-from common.models import DocFileMixin, SaveWithoutHistoricalRecord
-from formz.models import FormZProject
+from common.models import DocFileMixin, HistoryFieldMixin, SaveWithoutHistoricalRecord
+from formz.models import FormZBaseElement, FormZProject, GenTechMethod
 
+from ..plasmid.models import Plasmid
 from ..shared.models import (
     ApprovalFieldsMixin,
     CommonCollectionModelPropertiesMixin,
     FormZFieldsMixin,
-    HistoryFieldMixin,
     HistoryPlasmidsFieldsMixin,
     OwnershipFieldsMixin,
 )
+
+
+class SaCerevisiaeStrainDoc(DocFileMixin):
+    _inline_foreignkey_fieldname = "sacerevisiae_strain"
+    _mixin_props = {
+        "destination_dir": "collection/sacerevisiaestraindoc/",
+        "file_prefix": "scDoc",
+        "parent_field_name": "sacerevisiae_strain",
+    }
+
+    sacerevisiae_strain = models.ForeignKey(
+        "SaCerevisiaeStrain", on_delete=models.PROTECT
+    )
+
+    class Meta:
+        verbose_name = "sa. cerevisiae strain document"
+
 
 CEREVISIAE_MATING_TYPE_CHOICES = (
     ("a", "a"),
@@ -43,6 +60,20 @@ class SaCerevisiaeStrain(
         verbose_name_plural = "strains - Sa. cerevisiae"
 
     _model_abbreviation = "sc"
+    _history_array_fields = {
+        "history_integrated_plasmids": Plasmid,
+        "history_cassette_plasmids": Plasmid,
+        "history_episomal_plasmids": Plasmid,
+        "history_all_plasmids_in_stocked_strain": Plasmid,
+        "history_formz_projects": FormZProject,
+        "history_formz_gentech_methods": GenTechMethod,
+        "history_formz_elements": FormZBaseElement,
+        "history_documents": SaCerevisiaeStrainDoc,
+    }
+    _history_view_ignore_fields = (
+        ApprovalFieldsMixin._history_view_ignore_fields
+        + OwnershipFieldsMixin._history_view_ignore_fields
+    )
 
     name = models.CharField("name", max_length=255, blank=False)
     relevant_genotype = models.CharField(
@@ -238,19 +269,3 @@ class SaCerevisiaeStrainEpisomalPlasmid(models.Model):
 
     def is_highlighted(self):
         return self.present_in_stocked_strain
-
-
-class SaCerevisiaeStrainDoc(DocFileMixin):
-    _inline_foreignkey_fieldname = "sacerevisiae_strain"
-    _mixin_props = {
-        "destination_dir": "collection/sacerevisiaestraindoc/",
-        "file_prefix": "scDoc",
-        "parent_field_name": "sacerevisiae_strain",
-    }
-
-    sacerevisiae_strain = models.ForeignKey(
-        SaCerevisiaeStrain, on_delete=models.PROTECT
-    )
-
-    class Meta:
-        verbose_name = "sa. cerevisiae strain document"

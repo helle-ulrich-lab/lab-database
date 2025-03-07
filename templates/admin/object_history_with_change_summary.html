@@ -4,45 +4,81 @@
 {% load admin_urls %}
 {% load display_list from simple_history_admin_list %}
 
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  .nowrap {
+    white-space: nowrap
+  }
 
-{% block content %}
-  <div id="content-main">
+  .historytablelastrowlast,
+  .historytablelastrowlast td {
+    border-bottom: 1px solid var(--body-fg) !important;
+  }
 
-  <!-- <h2>Summary of changes</h2> -->
-      {% if history_summary_data %}
+  .historytableheader {
+    text-align: center;
+    text-transform: uppercase;
+  }
 
-        <div class='results'>
-        {% for history_element in history_summary_data %}
-        <div>
-        On {{history_element.0}}{% if history_element.1 %}, {{history_element.1}} changed{% endif %}:
-        </div>
-        <ul>
-        {%for history_field in history_element.2%}
-        <li>
-        <mark style="background-color:#949dd7a1">{{history_field.0}}</mark> from <mark style="background-color:#ffb7b8de">{{history_field.1}}</mark> to <mark style="background-color: #a7c8abb5">{{history_field.2}}</mark>
-        </li>
-        {% endfor %}
-        </ul>
-        </br>
-        {% endfor %}
-      {% else %}
-      <div>
-      This record does not have a change history. </br></br>
-      </div>
-      {% endif %}
-        </div>
-  
-  <!-- <h2>Revert to a previous version of this object</h2>
-    <p>{% blocktrans %}Choose a date from the list below to revert to a previous version of this object.{% endblocktrans %}</p>
+  .historytableroweven {
+    background: var(--body-bg) !important;
+  }
 
-    <div class="module">
-      {% if action_list %}
-        {% display_list %}
-      {% else %}
-        <p>{% trans "This object doesn't have a change history." %}</p>
-      {% endif %}
-    </div> -->
-        
-  </div>
+  .historytablerowodd {
+    background: var(--darkened-bg) !important;
+
+  }
+
+</style>
 {% endblock %}
 
+
+{% block content %}
+<div id="content-main">
+  <div class='results'>
+  
+  {% if object.history_changes %}
+
+  <table id='historytable' style="width:100%">
+    <tr style="background-color: var(--primary)">
+      <th class="historytableheader">Timestamp</th>
+      <th class="historytableheader">User</th>
+      <th class="historytableheader">Field</th>
+      <th class="historytableheader">From</th>
+      <th class="historytableheader">To</th>
+    </tr>
+    {% for history_change in object.history_changes %}
+        <tr class="historytablerow{% if forloop.counter|divisibleby:2 %}even{% else %}odd{% endif %}{% if history_change.field_changes|length == 1 %} historytablelastrowlast{% endif %}">
+          <td rowspan="{{history_change.field_changes|length}}" class="nowrap historytablelastrowlast">
+            {{history_change.timestamp}}
+          </td>
+          <td rowspan="{{history_change.field_changes|length}}" class="nowrap historytablelastrowlast">{% if history_change.activity_user %}<a
+              href="{% url "admin:auth_user_change" history_change.activity_user.id %}">{{history_change.activity_user}}</a>{% else %}Unknown{% endif %}</td>
+          {% for field_change in history_change.field_changes %}
+            {% if not forloop.first %}
+              <tr class="historytablerow{% if forloop.parentloop.counter|divisibleby:2 %}even{% else %}odd{% endif %}{% if forloop.last %} historytablelastrowlast{% endif %}">
+            {% endif %}
+            <td class="nowrap">
+              {{field_change.field.verbose_name|capfirst}}
+            </td>
+            <td>
+              {{field_change.old_value_prettified}}
+            </td>
+            <td>
+              {{field_change.new_value_prettified}}
+            </td>
+          </tr>
+          {% endfor %}
+    {% endfor %}
+  </table>
+
+  {% else %}
+  <div>
+    This record does not have a change history. </br></br>
+  </div>
+  {% endif %}
+  </div>
+
+</div>
+{% endblock %}

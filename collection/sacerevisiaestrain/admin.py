@@ -6,9 +6,7 @@ from common.shared import (
     AddDocFileInlineMixin,
     DocFileInlineMixin,
 )
-from formz.models import FormZBaseElement, FormZProject, GenTechMethod
 
-from ..plasmid.models import Plasmid
 from ..sacerevisiaestrain.models import (
     SaCerevisiaeStrainDoc,
     SaCerevisiaeStrainEpisomalPlasmid,
@@ -166,16 +164,6 @@ class SaCerevisiaeStrainAdmin(
             {"classes": (("collapse",)), "fields": obj_specific_fields[19:]},
         ],
     ]
-    history_array_fields = {
-        "history_integrated_plasmids": Plasmid,
-        "history_cassette_plasmids": Plasmid,
-        "history_episomal_plasmids": Plasmid,
-        "history_all_plasmids_in_stocked_strain": Plasmid,
-        "history_formz_projects": FormZProject,
-        "history_formz_gentech_methods": GenTechMethod,
-        "history_formz_elements": FormZBaseElement,
-        "history_documents": SaCerevisiaeStrainDoc,
-    }
 
     def save_related(self, request, form, formsets, change):
         obj, history_obj = super().save_related(

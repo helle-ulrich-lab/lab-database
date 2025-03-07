@@ -84,7 +84,6 @@ class SiRnaAdmin(
         [None, {"fields": obj_specific_fields[:8] + obj_unmodifiable_fields}],
         ["Supplier information", {"fields": obj_specific_fields[8:]}],
     ]
-    history_array_fields = {"history_orders": Order, "history_documents": SiRnaDoc}
 
     def add_view(self, request, form_url="", extra_context=None):
         if "created_by" in self.obj_unmodifiable_fields:

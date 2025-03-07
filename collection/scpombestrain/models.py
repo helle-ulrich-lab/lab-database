@@ -5,21 +5,31 @@ from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.forms import ValidationError
 
-from common.models import DocFileMixin, SaveWithoutHistoricalRecord
-from formz.models import FormZProject
+from common.models import DocFileMixin, HistoryFieldMixin, SaveWithoutHistoricalRecord
+from formz.models import FormZBaseElement, FormZProject, GenTechMethod
 
+from ..plasmid.models import Plasmid
 from ..shared.models import (
     ApprovalFieldsMixin,
     CommonCollectionModelPropertiesMixin,
     FormZFieldsMixin,
-    HistoryFieldMixin,
     HistoryPlasmidsFieldsMixin,
     OwnershipFieldsMixin,
 )
 
-################################################
-#                S. pombe strain               #
-################################################
+
+class ScPombeStrainDoc(DocFileMixin):
+    class Meta:
+        verbose_name = "sc. pombe strain document"
+
+    _inline_foreignkey_fieldname = "scpombe_strain"
+    _mixin_props = {
+        "destination_dir": "collection/scpombestraindoc/",
+        "file_prefix": "spDoc",
+        "parent_field_name": "scpombe_strain",
+    }
+
+    scpombe_strain = models.ForeignKey("ScPombeStrain", on_delete=models.PROTECT)
 
 
 class ScPombeStrain(
@@ -37,6 +47,20 @@ class ScPombeStrain(
         verbose_name_plural = "strains - Sc. pombe"
 
     _model_abbreviation = "sp"
+    _history_view_ignore_fields = (
+        ApprovalFieldsMixin._history_view_ignore_fields
+        + OwnershipFieldsMixin._history_view_ignore_fields
+    )
+    _history_array_fields = {
+        "history_integrated_plasmids": Plasmid,
+        "history_cassette_plasmids": Plasmid,
+        "history_episomal_plasmids": Plasmid,
+        "history_all_plasmids_in_stocked_strain": Plasmid,
+        "history_formz_projects": FormZProject,
+        "history_formz_gentech_methods": GenTechMethod,
+        "history_formz_elements": FormZBaseElement,
+        "history_documents": ScPombeStrainDoc,
+    }
 
     box_number = models.SmallIntegerField("box number", blank=False)
     parent_1 = models.ForeignKey(
@@ -159,11 +183,6 @@ class ScPombeStrain(
         return self.all_instock_plasmids.order_by("id").values_list("id", flat=True)
 
 
-################################################
-#       S. pombe strain Episomal Plasmid       #
-################################################
-
-
 class ScPombeStrainEpisomalPlasmid(models.Model):
     _inline_foreignkey_fieldname = "scpombe_strain"
 
@@ -210,22 +229,3 @@ class ScPombeStrainEpisomalPlasmid(models.Model):
 
     def is_highlighted(self):
         return self.present_in_stocked_strain
-
-
-################################################
-#              S. pombe strain Doc             #
-################################################
-
-
-class ScPombeStrainDoc(DocFileMixin):
-    class Meta:
-        verbose_name = "sc. pombe strain document"
-
-    _inline_foreignkey_fieldname = "scpombe_strain"
-    _mixin_props = {
-        "destination_dir": "collection/scpombestraindoc/",
-        "file_prefix": "spDoc",
-        "parent_field_name": "scpombe_strain",
-    }
-
-    scpombe_strain = models.ForeignKey(ScPombeStrain, on_delete=models.PROTECT)

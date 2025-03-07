@@ -63,4 +63,3 @@ class InhibitorAdmin(CollectionSimpleAdmin):
             {"fields": obj_specific_fields + obj_unmodifiable_fields},
         ],
     ]
-    history_array_fields = {"history_documents": InhibitorDoc}

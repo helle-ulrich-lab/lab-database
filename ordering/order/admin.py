@@ -23,12 +23,9 @@ from common.shared import (
 
 from ..models import (
     CostUnit,
-    GhsSymbol,
-    HazardStatement,
     Location,
     Order,
     OrderExtraDoc,
-    SignalWord,
 )
 from .actions import (
     change_order_status_to_arranged,
@@ -248,11 +245,6 @@ class OrderAdmin(
     form = OrderAdminForm
     raw_id_fields = ["ghs_symbols", "msds_form", "signal_words", "hazard_statements"]
     autocomplete_fields = []
-    history_array_fields = {
-        "history_ghs_symbols": GhsSymbol,
-        "history_signal_words": SignalWord,
-        "history_hazard_statements": HazardStatement,
-    }
     m2m_save_ignore_fields = []
     obj_specific_fields = [
         "internal_order_no",

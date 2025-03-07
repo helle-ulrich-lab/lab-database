@@ -360,7 +360,6 @@ class CollectionBaseAdmin(
     obj_unmodifiable_fields = ()
     add_view_fieldsets = None
     change_view_fieldsets = None
-    history_array_fields = {}
     show_plasmids_in_model = False
     is_guarded_model = False
     m2m_save_ignore_fields = []

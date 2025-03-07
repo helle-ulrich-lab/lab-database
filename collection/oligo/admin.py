@@ -82,10 +82,6 @@ class OligoAdmin(
             {"fields": obj_specific_fields + obj_unmodifiable_fields},
         ],
     ]
-    history_array_fields = {
-        "history_formz_elements": FormZBaseElement,
-        "history_documents": OligoDoc,
-    }
 
     def save_model(self, request, obj, form, change):
         rename_doc = False

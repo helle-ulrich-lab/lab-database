@@ -4,17 +4,31 @@ from django.db import models
 from common.models import (
     DocFileMixin,
     DownloadFileNameMixin,
+    HistoryFieldMixin,
     SaveWithoutHistoricalRecord,
 )
 
 from ..shared.models import (
     HistoryDocFieldMixin,
-    HistoryFieldMixin,
     InfoSheetMaxSizeMixin,
     OwnershipFieldsMixin,
 )
 
 FILE_SIZE_LIMIT_MB = getattr(settings, "FILE_SIZE_LIMIT_MB", 2)
+
+
+class InhibitorDoc(DocFileMixin):
+    class Meta:
+        verbose_name = "inhibitor document"
+
+    _inline_foreignkey_fieldname = "inhibitor"
+    _mixin_props = {
+        "destination_dir": "collection/inhibitordoc/",
+        "file_prefix": "ibDoc",
+        "parent_field_name": "inhibitor",
+    }
+
+    inhibitor = models.ForeignKey("Inhibitor", on_delete=models.PROTECT)
 
 
 class Inhibitor(
@@ -32,6 +46,7 @@ class Inhibitor(
 
     _model_abbreviation = "ib"
     _model_upload_to = "collection/inhibitor/"
+    _history_array_fields = {"history_documents": InhibitorDoc}
 
     name = models.CharField("name", max_length=255, blank=False)
     other_names = models.CharField("other names", max_length=255, blank=False)
@@ -53,17 +68,3 @@ class Inhibitor(
 
     def __str__(self):
         return f"{self.id} - {self.name}"
-
-
-class InhibitorDoc(DocFileMixin):
-    class Meta:
-        verbose_name = "inhibitor document"
-
-    _inline_foreignkey_fieldname = "inhibitor"
-    _mixin_props = {
-        "destination_dir": "collection/inhibitordoc/",
-        "file_prefix": "ibDoc",
-        "parent_field_name": "inhibitor",
-    }
-
-    inhibitor = models.ForeignKey(Inhibitor, on_delete=models.PROTECT)

@@ -3,10 +3,13 @@ from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.forms import ValidationError
-from simple_history.models import HistoricalRecords
 
 from approval.models import Approval
-from common.models import DocFileMixin, SaveWithoutHistoricalRecord
+from common.models import DocFileMixin, HistoryFieldMixin, SaveWithoutHistoricalRecord
+
+from ..ghssymbol.models import GhsSymbol
+from ..hazardstatement.models import HazardStatement
+from ..signalword.models import SignalWord
 
 
 def validate_absence_airquotes(value):
@@ -34,8 +37,19 @@ HAZARD_LEVEL_PREGNANCY_CHOICES = (
 )
 
 
-class Order(models.Model, SaveWithoutHistoricalRecord):
+class Order(SaveWithoutHistoricalRecord, HistoryFieldMixin):
     _model_abbreviation = "order"
+    _history_view_ignore_fields = [
+        "created_approval_by_pi",
+        "approval",
+        "created_date_time",
+        "last_changed_date_time",
+    ]
+    _history_array_fields = {
+        "history_ghs_symbols": GhsSymbol,
+        "history_signal_words": SignalWord,
+        "history_hazard_statements": HazardStatement,
+    }
 
     supplier = models.CharField(
         "supplier", max_length=255, blank=False, validators=[validate_absence_airquotes]
@@ -158,7 +172,6 @@ class Order(models.Model, SaveWithoutHistoricalRecord):
     created_by = models.ForeignKey(User, on_delete=models.PROTECT)
     created_approval_by_pi = models.BooleanField(default=False, null=True)
     approval = GenericRelation(Approval)
-    history = HistoricalRecords()
 
     class Meta:
         verbose_name = "order"

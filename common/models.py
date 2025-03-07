@@ -1,12 +1,20 @@
+import itertools
 import os
 
 from django.conf import settings
+from django.contrib.auth.models import User
 from django.db import models
 from django.forms import ValidationError
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.encoding import force_str
+from django.utils.html import format_html
+from simple_history.models import HistoricalRecords
 
+FILE_SIZE_LIMIT_MB = getattr(settings, "FILE_SIZE_LIMIT_MB", 2)
+OVE_URL = getattr(settings, "OVE_URL", "")
 LAB_ABBREVIATION_FOR_FILES = getattr(settings, "LAB_ABBREVIATION_FOR_FILES", "")
+MEDIA_URL = settings.MEDIA_URL
 MAX_UPLOAD_FILE_SIZE_MB = getattr(settings, "MAX_UPLOAD_FILE_SIZE_MB", 2)
 ALLOWED_DOC_FILE_EXTS = getattr(settings, "ALLOWED_DOC_FILE_EXTS", ["pdf"])
 
@@ -136,3 +144,156 @@ class DownloadFileNameMixin:
     @property
     def download_file_name(self):
         return f"{self._model_abbreviation}{LAB_ABBREVIATION_FOR_FILES}{self}"
+
+
+class HistoryFieldMixin(models.Model):
+    """Common history field"""
+
+    _unified_map_field = False
+
+    class Meta:
+        abstract = True
+
+    history = HistoricalRecords(inherit=True)
+
+    @property
+    def history_changes(self):
+        def pairwise(iterable):
+            """Create pairs of consecutive items from
+            iterable"""
+
+            a, b = itertools.tee(iterable)
+            next(b, None)
+            return zip(a, b)
+
+        class FieldChange:
+            def __init__(
+                self,
+                field: None = None,
+                new_value: str = "",
+                old_value: str = "",
+            ) -> None:
+                self.field = field
+                self.new_value = new_value
+                self.old_value = old_value
+
+            @staticmethod
+            def _pretty_format_value(field, value):
+                value_out = value if value else "None"
+                field_type = field.get_internal_type()
+
+                if field_type == "FileField":
+                    link_text = os.path.basename(value)
+
+                    # # Prettify DNA map field name
+                    if getattr(field, "prettify_map_path", False):
+                        link_text = os.path.splitext(link_text)[0]
+                    value_out = (
+                        format_html(
+                            "<a href={}>{}</a>",
+                            f"{MEDIA_URL}{value}",
+                            link_text,
+                        )
+                        if value
+                        else "None"
+                    )
+
+                elif field_type == "ForeignKey":
+                    field_model = field.remote_field.model
+                    value_out = (
+                        format_html(
+                            '<a target="_blank" href={}>{}</a>',
+                            reverse(
+                                f"admin:{field_model._meta.app_label}_{field_model._meta.model_name}_change",
+                                args=(value,),
+                            ),
+                            field_model.objects.get(id=value),
+                        )
+                        if value
+                        else "None"
+                    )
+
+                elif field_type == "ArrayField":
+                    array_field_model = self._history_array_fields.get(field.name, None)
+                    if array_field_model:
+                        value_out = (
+                            ", ".join(
+                                map(
+                                    str,
+                                    array_field_model.objects.filter(id__in=value),
+                                )
+                            )
+                            if value
+                            else "None"
+                        )
+                    else:
+                        value_out = ", ".join(value)
+
+                return value_out
+
+            @property
+            def new_value_prettified(self):
+                return self._pretty_format_value(self.field, self.new_value)
+
+            @property
+            def old_value_prettified(self):
+                return self._pretty_format_value(self.field, self.old_value)
+
+        class HistoryChange:
+            def __init__(
+                self,
+                timestamp: timezone.datetime = None,
+                activity_user: User = None,
+                field_changes: list[FieldChange] = [],
+            ) -> None:
+                self.timestamp = timestamp
+                self.activity_user = activity_user
+                self.field_changes = field_changes
+
+        # Create data structure for history summary
+        history_summary_data = []
+
+        # If more than one history obj, create pairs of history objs
+        pairs = pairwise(self.history.all()) if self.history.count() > 1 else []
+
+        for newer_hist_obj, older_hist_obj in pairs:
+            # Get differences between history obj pairs and add them to a list
+            delta = newer_hist_obj.diff_against(older_hist_obj)
+
+            if delta and getattr(delta, "changes", False):
+                changes_list = []
+
+                # Do not show fields that should be ignored
+                for change in [
+                    c
+                    for c in delta.changes
+                    if c.field not in self._history_view_ignore_fields
+                ]:
+                    field = self._meta.get_field(change.field)
+
+                    # Prettify DNA map field name
+                    if self._unified_map_field and field.name.startswith("map"):
+                        field.verbose_name = field.verbose_name.replace(" (.dna)", "")
+                        field.prettify_map_path = True
+
+                    field_change = FieldChange(
+                        field=field,
+                        new_value=change.new,
+                        old_value=change.old,
+                    )
+                    changes_list.append(field_change)
+
+                if changes_list:
+                    history_change = HistoryChange(
+                        timestamp=newer_hist_obj.last_changed_date_time,
+                        activity_user=User.objects.get(
+                            id=int(newer_hist_obj.history_user_id)
+                        )
+                        if newer_hist_obj.history_user_id
+                        else None,
+                        field_changes=changes_list,
+                    )
+
+                    history_summary_data.append(history_change)
+
+        return history_summary_data

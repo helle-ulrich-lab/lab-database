@@ -7,7 +7,6 @@ from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.forms import ValidationError
-from simple_history.models import HistoricalRecords
 
 from approval.models import Approval
 from formz.models import FormZBaseElement, FormZProject, GenTechMethod
@@ -15,6 +14,7 @@ from formz.models import FormZBaseElement, FormZProject, GenTechMethod
 FILE_SIZE_LIMIT_MB = getattr(settings, "FILE_SIZE_LIMIT_MB", 2)
 OVE_URL = getattr(settings, "OVE_URL", "")
 LAB_ABBREVIATION_FOR_FILES = getattr(settings, "LAB_ABBREVIATION_FOR_FILES", "")
+MEDIA_URL = settings.MEDIA_URL
 
 
 class ApprovalFieldsMixin(models.Model):
@@ -22,6 +22,14 @@ class ApprovalFieldsMixin(models.Model):
 
     class Meta:
         abstract = True
+
+    _history_view_ignore_fields = [
+        "created_approval_by_pi",
+        "last_changed_approval_by_pi",
+        "approval_by_pi_date_time",
+        "approval",
+        "approval_user",
+    ]
 
     created_approval_by_pi = models.BooleanField(
         "record creation approval", default=False
@@ -45,20 +53,16 @@ class OwnershipFieldsMixin(models.Model):
     class Meta:
         abstract = True
 
+    _history_view_ignore_fields = [
+        "created_date_time",
+        "last_changed_date_time",
+    ]
+
     created_date_time = models.DateTimeField("created", auto_now_add=True)
     last_changed_date_time = models.DateTimeField("last changed", auto_now=True)
     created_by = models.ForeignKey(
         User, related_name="%(class)s_createdby_user", on_delete=models.PROTECT
     )
-
-
-class HistoryFieldMixin(models.Model):
-    """Common history field"""
-
-    class Meta:
-        abstract = True
-
-    history = HistoricalRecords(inherit=True)
 
 
 class HistoryDocFieldMixin(models.Model):

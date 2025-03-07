@@ -8,15 +8,16 @@ from django.db import models
 from common.models import (
     DocFileMixin,
     DownloadFileNameMixin,
+    HistoryFieldMixin,
     SaveWithoutHistoricalRecord,
 )
-from formz.models import ZkbsPlasmid
+from formz.models import FormZBaseElement, FormZProject, GenTechMethod, ZkbsPlasmid
 
+from ..ecolistrain.models import EColiStrain
 from ..shared.models import (
     ApprovalFieldsMixin,
     CommonCollectionModelPropertiesMixin,
     FormZFieldsMixin,
-    HistoryFieldMixin,
     MapFileChecPropertieskMixin,
     OwnershipFieldsMixin,
 )
@@ -25,6 +26,20 @@ FILE_SIZE_LIMIT_MB = getattr(settings, "FILE_SIZE_LIMIT_MB", 2)
 
 
 PLASMID_AS_ECOLI_STOCK = getattr(settings, "PLASMID_AS_ECOLI_STOCK", False)
+
+
+class PlasmidDoc(DocFileMixin):
+    class Meta:
+        verbose_name = "plasmid document"
+
+    _inline_foreignkey_fieldname = "plasmid"
+    _mixin_props = {
+        "destination_dir": "collection/plasmiddoc/",
+        "file_prefix": "pDoc",
+        "parent_field_name": "plasmid",
+    }
+
+    plasmid = models.ForeignKey("Plasmid", on_delete=models.PROTECT)
 
 
 class Plasmid(
@@ -44,6 +59,19 @@ class Plasmid(
 
     _model_abbreviation = "p"
     _model_upload_to = "collection/plasmid/"
+    _history_array_fields = {
+        "history_formz_projects": FormZProject,
+        "history_formz_gentech_methods": GenTechMethod,
+        "history_formz_elements": FormZBaseElement,
+        "history_formz_ecoli_strains": EColiStrain,
+        "history_documents": PlasmidDoc,
+    }
+    _history_view_ignore_fields = (
+        ApprovalFieldsMixin._history_view_ignore_fields
+        + OwnershipFieldsMixin._history_view_ignore_fields
+        + ["map_png", "map_gbk"]
+    )
+    _unified_map_field = True
     german_name = "Plasmid"
 
     name = models.CharField("name", max_length=255, unique=True, blank=False)
@@ -135,17 +163,3 @@ class Plasmid(
             return [self]
         else:
             return []
-
-
-class PlasmidDoc(DocFileMixin):
-    class Meta:
-        verbose_name = "plasmid document"
-
-    _inline_foreignkey_fieldname = "plasmid"
-    _mixin_props = {
-        "destination_dir": "collection/plasmiddoc/",
-        "file_prefix": "pDoc",
-        "parent_field_name": "plasmid",
-    }
-
-    plasmid = models.ForeignKey(Plasmid, on_delete=models.PROTECT)

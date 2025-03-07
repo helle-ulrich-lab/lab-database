@@ -2,8 +2,8 @@ from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 
-from common.models import DocFileMixin, SaveWithoutHistoricalRecord
-from formz.models import FormZBaseElement, GenTechMethod
+from common.models import DocFileMixin, HistoryFieldMixin, SaveWithoutHistoricalRecord
+from formz.models import FormZBaseElement, FormZProject, GenTechMethod
 
 from ..oligo.models import Oligo
 from ..plasmid.models import Plasmid
@@ -12,12 +12,25 @@ from ..shared.models import (
     CommonCollectionModelPropertiesMixin,
     FormZFieldsMixin,
     HistoryDocFieldMixin,
-    HistoryFieldMixin,
     MapFileChecPropertieskMixin,
     OwnershipFieldsMixin,
 )
 
 FILE_SIZE_LIMIT_MB = getattr(settings, "FILE_SIZE_LIMIT_MB", 2)
+
+
+class WormStrainAlleleDoc(DocFileMixin):
+    class Meta:
+        verbose_name = "worm strain allele document"
+
+    _inline_foreignkey_fieldname = "worm_strain_allele"
+    _mixin_props = {
+        "destination_dir": "collection/wormstrainalleledoc/",
+        "file_prefix": "waDoc",
+        "parent_field_name": "worm_strain_allele",
+    }
+
+    worm_strain_allele = models.ForeignKey("WormStrainAllele", on_delete=models.PROTECT)
 
 
 class WormStrainAllele(
@@ -34,6 +47,16 @@ class WormStrainAllele(
     _model_abbreviation = "wa"
     _model_upload_to = "collection/wormstrainallele/"
     german_name = "Allel"
+    _history_array_fields = {
+        "history_formz_elements": FormZBaseElement,
+        "history_made_with_plasmids": Plasmid,
+        "history_transgene_plasmids": Plasmid,
+        "history_documents": WormStrainAlleleDoc,
+    }
+    _history_view_ignore_fields = OwnershipFieldsMixin._history_view_ignore_fields + [
+        "map_png",
+        "map_gbk",
+    ]
 
     lab_identifier = models.CharField(
         "prefix/Lab identifier",
@@ -178,6 +201,20 @@ WORM_SPECIES_CHOICES = (
 )
 
 
+class WormStrainDoc(DocFileMixin):
+    class Meta:
+        verbose_name = "worm strain document"
+
+    _inline_foreignkey_fieldname = "worm_strain"
+    _mixin_props = {
+        "destination_dir": "collection/wormstraindoc/",
+        "file_prefix": "wDoc",
+        "parent_field_name": "worm_strain",
+    }
+
+    worm_strain = models.ForeignKey("WormStrain", on_delete=models.PROTECT)
+
+
 class WormStrain(
     SaveWithoutHistoricalRecord,
     CommonCollectionModelPropertiesMixin,
@@ -193,6 +230,20 @@ class WormStrain(
         verbose_name_plural = "strains - Worm"
 
     _model_abbreviation = "w"
+    _history_array_fields = {
+        "history_integrated_dna_plasmids": Plasmid,
+        "history_integrated_dna_oligos": Oligo,
+        "history_formz_projects": FormZProject,
+        "history_formz_gentech_methods": GenTechMethod,
+        "history_formz_elements": FormZBaseElement,
+        "history_genotyping_oligos": Oligo,
+        "history_documents": WormStrainDoc,
+        "history_alleles": WormStrainAllele,
+    }
+    _history_view_ignore_fields = (
+        ApprovalFieldsMixin._history_view_ignore_fields
+        + OwnershipFieldsMixin._history_view_ignore_fields
+    )
 
     name = models.CharField("name", max_length=255, blank=False)
     chromosomal_genotype = models.TextField("chromosomal genotype", blank=True)
@@ -369,11 +420,6 @@ class WormStrain(
         super().save(force_insert, force_update, using, update_fields)
 
 
-################################################
-#         Worm Strain Genotyping Assay         #
-################################################
-
-
 class WormStrainGenotypingAssay(models.Model):
     class Meta:
         verbose_name = "worm strain genotyping assay"
@@ -387,31 +433,3 @@ class WormStrainGenotypingAssay(models.Model):
 
     def __str__(self):
         return str(self.id)
-
-
-class WormStrainDoc(DocFileMixin):
-    class Meta:
-        verbose_name = "worm strain document"
-
-    _inline_foreignkey_fieldname = "worm_strain"
-    _mixin_props = {
-        "destination_dir": "collection/wormstraindoc/",
-        "file_prefix": "wDoc",
-        "parent_field_name": "worm_strain",
-    }
-
-    worm_strain = models.ForeignKey(WormStrain, on_delete=models.PROTECT)
-
-
-class WormStrainAlleleDoc(DocFileMixin):
-    class Meta:
-        verbose_name = "worm strain allele document"
-
-    _inline_foreignkey_fieldname = "worm_strain_allele"
-    _mixin_props = {
-        "destination_dir": "collection/wormstrainalleledoc/",
-        "file_prefix": "waDoc",
-        "parent_field_name": "worm_strain_allele",
-    }
-
-    worm_strain_allele = models.ForeignKey(WormStrainAllele, on_delete=models.PROTECT)

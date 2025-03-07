@@ -3,18 +3,49 @@ from datetime import timedelta
 
 from django.db import models
 
-from common.models import DocFileMixin, SaveWithoutHistoricalRecord
-from formz.models import FormZProject, Species, ZkbsCellLine
+from common.models import DocFileMixin, HistoryFieldMixin, SaveWithoutHistoricalRecord
+from formz.models import (
+    FormZBaseElement,
+    FormZProject,
+    GenTechMethod,
+    Species,
+    ZkbsCellLine,
+)
 
+from ..plasmid.models import Plasmid
 from ..shared.models import (
     ApprovalFieldsMixin,
     CommonCollectionModelPropertiesMixin,
     FormZFieldsMixin,
     HistoryDocFieldMixin,
-    HistoryFieldMixin,
     HistoryPlasmidsFieldsMixin,
     OwnershipFieldsMixin,
 )
+
+CELL_LINE_DOC_TYPE_CHOICES = (
+    ("virus", "Virus test"),
+    ("mycoplasma", "Mycoplasma test"),
+    ("fingerprint", "Fingerprinting"),
+    ("other", "Other"),
+)
+
+
+class CellLineDoc(DocFileMixin):
+    class Meta:
+        verbose_name = "cell line document"
+
+    _inline_foreignkey_fieldname = "cell_line"
+    _mixin_props = {
+        "destination_dir": "collection/celllinedoc/",
+        "file_prefix": "clDoc",
+        "parent_field_name": "cell_line",
+    }
+
+    description = models.CharField(
+        "doc type", max_length=255, choices=CELL_LINE_DOC_TYPE_CHOICES, blank=False
+    )
+    date_of_test = models.DateField("date of test", blank=False, null=True)
+    cell_line = models.ForeignKey("CellLine", on_delete=models.PROTECT)
 
 
 class CellLine(
@@ -34,6 +65,18 @@ class CellLine(
 
     _model_abbreviation = "cl"
     _related_name_base = "cellline"
+    _history_array_fields = {
+        "history_integrated_plasmids": Plasmid,
+        "history_episomal_plasmids": Plasmid,
+        "history_formz_projects": FormZProject,
+        "history_formz_gentech_methods": GenTechMethod,
+        "history_formz_elements": FormZBaseElement,
+        "history_documents": CellLineDoc,
+    }
+    _history_view_ignore_fields = (
+        ApprovalFieldsMixin._history_view_ignore_fields
+        + OwnershipFieldsMixin._history_view_ignore_fields
+    )
 
     name = models.CharField("name", max_length=255, unique=True, blank=False)
     box_name = models.CharField("box", max_length=255, blank=False)
@@ -173,29 +216,3 @@ class CellLineEpisomalPlasmid(models.Model):
 
     def is_highlighted(self):
         return self.s2_work_episomal_plasmid
-
-
-CELL_LINE_DOC_TYPE_CHOICES = (
-    ("virus", "Virus test"),
-    ("mycoplasma", "Mycoplasma test"),
-    ("fingerprint", "Fingerprinting"),
-    ("other", "Other"),
-)
-
-
-class CellLineDoc(DocFileMixin):
-    class Meta:
-        verbose_name = "cell line document"
-
-    _inline_foreignkey_fieldname = "cell_line"
-    _mixin_props = {
-        "destination_dir": "collection/celllinedoc/",
-        "file_prefix": "clDoc",
-        "parent_field_name": "cell_line",
-    }
-
-    description = models.CharField(
-        "doc type", max_length=255, choices=CELL_LINE_DOC_TYPE_CHOICES, blank=False
-    )
-    date_of_test = models.DateField("date of test", blank=False, null=True)
-    cell_line = models.ForeignKey(CellLine, on_delete=models.PROTECT)

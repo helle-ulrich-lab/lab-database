@@ -10,11 +10,8 @@ from common.shared import (
     AddDocFileInlineMixin,
     DocFileInlineMixin,
 )
-from formz.models import FormZBaseElement, FormZProject, GenTechMethod
 
-from ..oligo.models import Oligo
 from ..plasmid.admin import PlasmidAdmin
-from ..plasmid.models import Plasmid
 from ..shared.admin import (
     CollectionUserProtectionAdmin,
     CustomGuardedModelAdmin,
@@ -26,7 +23,6 @@ from ..shared.admin import (
 from .actions import export_wormstrain, export_wormstrainallele
 from .forms import WormStrainAdminForm, WormStrainAlleleAdminForm
 from .models import (
-    WormStrainAllele,
     WormStrainAlleleDoc,
     WormStrainDoc,
     WormStrainGenotypingAssay,
@@ -193,16 +189,6 @@ class WormStrainAdmin(
         ],
     ]
     m2m_save_ignore_fields = ["history_genotyping_oligos"]
-    history_array_fields = {
-        "history_integrated_dna_plasmids": Plasmid,
-        "history_integrated_dna_oligos": Oligo,
-        "history_formz_projects": FormZProject,
-        "history_formz_gentech_methods": GenTechMethod,
-        "history_formz_elements": FormZBaseElement,
-        "history_genotyping_oligos": Oligo,
-        "history_documents": WormStrainDoc,
-        "history_alleles": WormStrainAllele,
-    }
 
     @admin.display(description="Stocked", boolean=True)
     def stocked(self, instance):
@@ -408,12 +394,6 @@ class WormStrainAlleleAdmin(PlasmidAdmin):
     set_readonly_fields = [
         "map_png",
     ]
-    history_array_fields = {
-        "history_formz_elements": FormZBaseElement,
-        "history_made_with_plasmids": Plasmid,
-        "history_transgene_plasmids": Plasmid,
-        "history_documents": WormStrainAlleleDoc,
-    }
 
     add_form_template = "admin/collection/wormstrainallele/add_form.html"
     change_form_template = "admin/collection/wormstrainallele/change_form.html"

@@ -1,12 +1,11 @@
 from django.contrib.auth.models import User
 from django_better_admin_arrayfield.admin.mixins import DynamicArrayMixin
 
-from common.shared import (
+from common.admin import (
     AddDocFileInlineMixin,
     DocFileInlineMixin,
 )
 from formz.models import Species
-from ordering.models import Order
 
 from ..shared.admin import (
     CollectionSimpleAdmin,

@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from django.utils.html import format_html
 
-from common.shared import (
+from common.admin import (
     AddDocFileInlineMixin,
     DocFileInlineMixin,
 )

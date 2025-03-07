@@ -1,4 +1,4 @@
-from common.shared import AddDocFileInlineMixin, DocFileInlineMixin
+from common.admin import AddDocFileInlineMixin, DocFileInlineMixin
 
 from ..shared.admin import CollectionSimpleAdmin
 from .actions import export_antibody

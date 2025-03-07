@@ -1,250 +1,291 @@
-import mimetypes
-import os
-import re
-import urllib.parse
-import urllib.request
+import itertools
 
-from background_task.admin import CompletedTaskAdmin, TaskAdmin
-from background_task.models import CompletedTask, Task
-from django.apps import apps
-from django.conf import settings
 from django.contrib import admin
-from django.contrib.auth.admin import GroupAdmin, UserAdmin
-from django.contrib.auth.models import Group, User
-from django.core.files.storage import default_storage
-from django.http import Http404, HttpResponse
-from django.urls import re_path
-
-from approval.admin import ApprovalAdmin
-from approval.models import Approval
-from collection.admin import (
-    AntibodyAdmin,
-    CellLineAdmin,
-    EColiStrainAdmin,
-    InhibitorAdmin,
-    OligoAdmin,
-    PlasmidAdmin,
-    SaCerevisiaeStrainAdmin,
-    ScPombeStrainAdmin,
-    SiRnaAdmin,
-    WormStrainAdmin,
-    WormStrainAlleleAdmin,
-)
-from collection.models import (
-    Antibody,
-    CellLine,
-    EColiStrain,
-    Inhibitor,
-    Oligo,
-    Plasmid,
-    SaCerevisiaeStrain,
-    ScPombeStrain,
-    SiRna,
-    WormStrain,
-    WormStrainAllele,
-)
-from extend_user.admin import LabUserAdmin
-from formz.admin import (
-    FormZAdmin,
-    FormZBaseElementPage,
-    FormZHeaderPage,
-    FormZProjectPage,
-    FormZStorageLocationPage,
-    GenTechMethodPage,
-    NucleicAcidPurityPage,
-    NucleicAcidRiskPage,
-    SpeciesPage,
-    ZkbsCellLinePage,
-    ZkbsOncogenePage,
-    ZkbsPlasmidPage,
-)
-from formz.models import (
-    FormZBaseElement,
-    FormZHeader,
-    FormZProject,
-    FormZStorageLocation,
-    GenTechMethod,
-    NucleicAcidPurity,
-    NucleicAcidRisk,
-    Species,
-    ZkbsCellLine,
-    ZkbsOncogene,
-    ZkbsPlasmid,
-)
-from ordering.admin import (
-    CostUnitAdmin,
-    GhsSymbolAdmin,
-    HazardStatementAdmin,
-    LocationAdmin,
-    MsdsFormAdmin,
-    OrderAdmin,
-    OrderAdminSite,
-    SignalWordAdmin,
-)
-from ordering.models import (
-    CostUnit,
-    GhsSymbol,
-    HazardStatement,
-    Location,
-    MsdsForm,
-    Order,
-    SignalWord,
-)
-
-SITE_TITLE = getattr(settings, "SITE_TITLE", "Lab DB")
+from django.contrib.admin.utils import unquote
+from django.http import Http404, JsonResponse
+from django.shortcuts import render
+from django.urls import path, resolve
+from django.utils.encoding import force_str
+from django.utils.safestring import mark_safe
+from django.utils.text import capfirst
+from django.utils.translation import gettext_lazy as _
+from simple_history.admin import SimpleHistoryAdmin
 
 
-class MyAdminSite(OrderAdminSite, FormZAdmin, admin.AdminSite):
-    """Create a custom admin site called MyAdminSite"""
+class SimpleHistoryWithSummaryAdmin(SimpleHistoryAdmin):
+    object_history_template = "admin/object_history_with_change_summary.html"
+    history_array_fields = {}
 
-    # Text to put at the end of each page's <title>.
-    site_title = SITE_TITLE
+    def history_view(self, request, object_id, extra_context=None):
+        """The 'history' admin view for this model."""
 
-    # Text to put in each page's <h1>.
-    site_header = SITE_TITLE
+        def pairwise(iterable):
+            """Create pairs of consecutive items from
+            iterable"""
 
-    # Text to put at the top of the admin index page.
-    index_title = "Home"
+            a, b = itertools.tee(iterable)
+            next(b, None)
+            return zip(a, b)
 
-    # URL for the "View site" link at the top of each admin page.
-    site_url = "/"
+        request.current_app = self.admin_site.name
+        model = self.model
+        opts = model._meta
+        app_label = opts.app_label
+        pk_name = opts.pk.attname
+        history = getattr(model, model._meta.simple_history_manager_attribute)
+        object_id = unquote(object_id)
+        action_list = history.filter(**{pk_name: object_id})
 
-    def get_urls(self):
-        urls = super().get_urls()
-        # Note that custom urls get pushed to the list (not appended)
-        # This doesn't work with urls += ...
-        urls = (
-            super().get_formz_urls()
-            + super().get_order_urls()
-            + [
-                re_path(r"uploads/(?P<url_path>.*)$", self.admin_view(self.uploads)),
-                re_path(
-                    r"ove/(?P<url_path>.*)$", self.admin_view(self.ove_protected_view)
-                ),
-            ]
-            + urls
+        # If no history was found, see whether this object even exists
+        try:
+            obj = self.get_queryset(request).get(**{pk_name: object_id})
+        except model.DoesNotExist:
+            try:
+                obj = action_list.latest("history_date").instance
+            except action_list.model.DoesNotExist:
+                raise Http404
+
+        context = self.admin_site.each_context(request)
+        context.update(
+            {
+                "title": _("Change history: %s") % force_str(obj),
+                "action_list": action_list,
+                "module_name": capfirst(force_str(opts.verbose_name_plural)),
+                "object": obj,
+                "root_path": getattr(self.admin_site, "root_path", None),
+                "app_label": app_label,
+                "opts": opts,
+                "is_popup": "_popup" in request.GET,
+            }
         )
+        context.update(extra_context or {})
+        extra_kwargs = {}
+
+        return render(request, self.object_history_template, context, **extra_kwargs)
+
+
+class AdminChangeFormWithNavigation(admin.ModelAdmin):
+    def get_urls(self):
+        """
+        Add navigation url
+        """
+
+        urls = super().get_urls()
+
+        urls = [path("<path:object_id>/navigation/", view=self.navigation)] + urls
 
         return urls
 
-    def uploads(self, request, *args, **kwargs):
-        """Protected view for uploads/media files"""
+    def navigation(self, request, *args, **kwargs):
+        """Return previous or next record, if available"""
 
-        url_path = str(kwargs["url_path"])
-
-        if default_storage.exists(url_path):  # check if file exists
-            # Create HttpResponse and add Content Type and, if present, Encoding
-            response = HttpResponse()
-            mimetype, encoding = mimetypes.guess_type(url_path)
-            mimetype = mimetype if mimetype else "application/octet-stream"
-            response["Content-Type"] = mimetype
-            if encoding:
-                response["Content-Encoding"] = encoding
-
-            download_file_name = os.path.basename(url_path)
-
-            # Try creating pretty file name
+        direction = request.GET.get("direction", None)
+        obj_redirect_id = None
+        if direction:
+            obj_id = int(kwargs["object_id"])
             try:
-                # Get app and model names
-                url_path_split = url_path.split("/")
-                app_name = url_path_split[0]
-                model_name = url_path_split[1]
-
-                # Get file name and extension
-                file_name, file_ext = os.path.splitext(url_path_split[-1])
-
-                # Get object
-                if model_name.endswith("doc"):
-                    obj_id = int(file_name.split("_")[-1])
+                if direction.endswith("next"):
+                    obj_redirect_id = (
+                        self.model.objects.filter(id__gt=obj_id)
+                        .order_by("id")
+                        .first()
+                        .id
+                    )
                 else:
-                    obj_id = int(re.findall(r"\d+(?=_)", file_name + "_")[0])
-                obj = apps.get_model(app_name, model_name).objects.get(id=obj_id)
-
-                # Create file name
-                download_file_name = f"{obj.download_file_name}{file_ext}"
+                    obj_redirect_id = (
+                        self.model.objects.filter(id__lt=obj_id)
+                        .order_by("-id")
+                        .first()
+                        .id
+                    )
             except Exception:
                 pass
 
-            # Needed for file names that include special, non ascii, characters
-            file_expr = "filename*=utf-8''{}".format(
-                urllib.parse.quote(download_file_name)
+        return JsonResponse({"id": obj_redirect_id})
+
+
+class DocFileInlineMixin(admin.TabularInline):
+    """Inline to view existing documents"""
+
+    verbose_name_plural = "Existing docs"
+    extra = 0
+    fields = ["description", "get_doc_short_name", "comment", "created_date_time"]
+    readonly_fields = [
+        "description",
+        "get_doc_short_name",
+        "comment",
+        "created_date_time",
+    ]
+
+    def get_parent_object(self, request):
+        """
+        Returns the parent object from the request or None.
+
+        Note that this only works for Inlines, because the `parent_model`
+        is not available in the regular admin.ModelAdmin as an attribute.
+        """
+
+        resolved = resolve(request.path_info)
+        if resolved.kwargs:
+            return self.parent_model.objects.get(pk=resolved.kwargs["object_id"])
+        return None
+
+    def get_queryset(self, request):
+        """Show inline uncollapsed only if docs exist"""
+        self.classes = [
+            "collapse",
+        ]
+
+        qs = super().get_queryset(request)
+        parent_object = self.get_parent_object(request)
+        if parent_object:
+            filter_params = {
+                f"{self.model._mixin_props.get('parent_field_name')}__pk": parent_object.pk
+            }
+            if qs.filter(**filter_params).exists():
+                self.classes = []
+        return qs
+
+    def has_add_permission(self, request, obj):
+        return False
+
+    @admin.display(description="Document")
+    def get_doc_short_name(self, instance):
+        if instance.name and instance.name.name.endswith("pdf"):
+            return mark_safe(
+                f'<a class="magnific-popup-iframe-pdflink" href="{instance.name.url}">View PDF</a>'
             )
+        return mark_safe(f'<a href="{instance.name.url}">Download</a>')
 
-            # Set content disposition based on file type
-            if "pdf" in mimetype.lower():
-                response["Content-Disposition"] = "inline; {}".format(file_expr)
-            elif "png" in mimetype.lower():
-                response["Content-Disposition"] = "{}".format(file_expr)
-            else:
-                response["Content-Disposition"] = "attachment; {}".format(file_expr)
 
-            response["X-Accel-Redirect"] = "/secret/{url_path}".format(
-                url_path=url_path
-            )
-            return response
+class AddDocFileInlineMixin(admin.TabularInline):
+    """Inline to add new documents"""
 
+    verbose_name_plural = "New docs"
+    extra = 0
+    fields = ["description", "name", "comment"]
+
+    def get_parent_object(self, request):
+        """
+        Returns the parent object from the request or None.
+
+        Note that this only works for Inlines, because the `parent_model`
+        is not available in the regular admin.ModelAdmin as an attribute.
+        """
+
+        resolved = resolve(request.path_info)
+        if resolved.kwargs:
+            return self.parent_model.objects.get(pk=resolved.kwargs["object_id"])
+        return None
+
+    def get_queryset(self, request):
+        """show inline uncollpased only when adding a new record,
+        also return an empty qs"""
+
+        self.classes = [
+            "collapse",
+        ]
+
+        parent_object = self.get_parent_object(request)
+        if not parent_object:
+            self.classes = []
+        return self.model.objects.none()
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
+class ToggleDocInlineMixin(admin.ModelAdmin):
+    def get_inline_instances(self, request, obj=None):
+        inline_instances = super().get_inline_instances(request, obj)
+        filtered_inline_instances = []
+
+        # New objects
+        if not obj:
+            filtered_inline_instances = [
+                i for i in inline_instances if i.verbose_name_plural != "Existing docs"
+            ]
+
+        # Existing objects
         else:
-            raise Http404
+            for inline in inline_instances:
+                # Always show existing docs
+                if inline.verbose_name_plural == "Existing docs":
+                    filtered_inline_instances.append(inline)
+                else:
+                    # Do not allow guests to add docs, ever
+                    if not request.user.groups.filter(name="Guest").exists():
+                        filtered_inline_instances.append(inline)
 
-    def ove_protected_view(self, request, *args, **kwargs):
-        """Put OVE behind Django's authentication system"""
+        return filtered_inline_instances
 
-        url_path = str(kwargs["url_path"])
-        response = HttpResponse()
+    # def get_formsets_with_inlines(self, request, obj=None):
+    #     """Remove DocInline from add/change form if user who
+    #     created a  object is not the request user a lab manager
+    #     or a superuser"""
 
-        # Content-Type must be explicitely passed
-        # NGINX will not set it itself
-        mimetype, encoding = mimetypes.guess_type(url_path)
-        response["Content-Type"] = mimetype
-        response["X-Accel-Redirect"] = "/ove_secret/{url_path}".format(
-            url_path=url_path
+    #     # New objects
+    #     if not obj:
+    #         for inline in self.get_inline_instances(request, obj):
+    #             # Do not show DocFileInlineMixin for new objetcs
+    #             if inline.verbose_name_plural == 'Existing docs':
+    #                 continue
+    #             else:
+    #                 yield inline.get_formset(request, obj), inline
+
+    #     # Existing objects
+    #     else:
+    #         for inline in self.get_inline_instances(request, obj):
+    #             # Always show existing docs
+    #             if inline.verbose_name_plural == 'Existing docs':
+    #                 yield inline.get_formset(request, obj), inline
+    #             else:
+    #                 # Do not allow guests to add docs, ever
+    #                 if not request.user.groups.filter(name='Guest').exists():
+    #                     yield inline.get_formset(request, obj), inline
+
+
+def save_history_fields(admin_instance, obj, history_obj):
+    history_array_fields = obj._history_array_fields.copy()
+    if admin_instance.m2m_save_ignore_fields:
+        history_array_fields = {
+            k: v
+            for k, v in history_array_fields.items()
+            if k not in admin_instance.m2m_save_ignore_fields
+        }
+
+    # Keep a record of the IDs of linked M2M fields in the main obj record
+    # Not pretty, but it works
+
+    for m2m_history_field_name, m2m_model in history_array_fields.items():
+        try:
+            m2m_set = getattr(obj, f"{m2m_history_field_name[8:]}")
+        except Exception:
+            try:
+                m2m_set = getattr(obj, f"{m2m_model._meta.model_name}_set")
+            except Exception:
+                continue
+        setattr(
+            obj,
+            m2m_history_field_name,
+            (
+                list(m2m_set.order_by("id").distinct("id").values_list("id", flat=True))
+                if m2m_set.exists()
+                else []
+            ),
         )
-        return response
 
+    obj.save_without_historical_record()
 
-# Instantiate custom admin site
-main_admin_site = MyAdminSite()
-# Disable delete selected action
-main_admin_site.disable_action("delete_selected")
+    if history_obj:
+        for (
+            m2m_history_field_name,
+            m2m_model,
+        ) in obj._history_array_fields.items():
+            setattr(
+                history_obj,
+                m2m_history_field_name,
+                getattr(obj, m2m_history_field_name),
+            )
 
-main_admin_site.register(Group, GroupAdmin)
-main_admin_site.register(User, UserAdmin)
-main_admin_site.unregister(User)
-main_admin_site.register(User, LabUserAdmin)
-
-main_admin_site.register(NucleicAcidPurity, NucleicAcidPurityPage)
-main_admin_site.register(NucleicAcidRisk, NucleicAcidRiskPage)
-main_admin_site.register(GenTechMethod, GenTechMethodPage)
-main_admin_site.register(FormZProject, FormZProjectPage)
-main_admin_site.register(FormZBaseElement, FormZBaseElementPage)
-main_admin_site.register(FormZHeader, FormZHeaderPage)
-main_admin_site.register(ZkbsPlasmid, ZkbsPlasmidPage)
-main_admin_site.register(ZkbsOncogene, ZkbsOncogenePage)
-main_admin_site.register(ZkbsCellLine, ZkbsCellLinePage)
-main_admin_site.register(FormZStorageLocation, FormZStorageLocationPage)
-main_admin_site.register(Species, SpeciesPage)
-
-main_admin_site.register(Task, TaskAdmin)
-main_admin_site.register(CompletedTask, CompletedTaskAdmin)
-
-main_admin_site.register(Order, OrderAdmin)
-main_admin_site.register(CostUnit, CostUnitAdmin)
-main_admin_site.register(Location, LocationAdmin)
-main_admin_site.register(MsdsForm, MsdsFormAdmin)
-main_admin_site.register(GhsSymbol, GhsSymbolAdmin)
-main_admin_site.register(SignalWord, SignalWordAdmin)
-main_admin_site.register(HazardStatement, HazardStatementAdmin)
-
-main_admin_site.register(SaCerevisiaeStrain, SaCerevisiaeStrainAdmin)
-main_admin_site.register(Plasmid, PlasmidAdmin)
-main_admin_site.register(Oligo, OligoAdmin)
-main_admin_site.register(ScPombeStrain, ScPombeStrainAdmin)
-main_admin_site.register(EColiStrain, EColiStrainAdmin)
-main_admin_site.register(CellLine, CellLineAdmin)
-main_admin_site.register(Antibody, AntibodyAdmin)
-main_admin_site.register(WormStrain, WormStrainAdmin)
-main_admin_site.register(WormStrainAllele, WormStrainAlleleAdmin)
-main_admin_site.register(Inhibitor, InhibitorAdmin)
-main_admin_site.register(SiRna, SiRnaAdmin)
-
-main_admin_site.register(Approval, ApprovalAdmin)
+        history_obj.save()

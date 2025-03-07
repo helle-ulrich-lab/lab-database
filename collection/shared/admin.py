@@ -39,13 +39,13 @@ from guardian.shortcuts import (
 )
 
 from collection.models import Oligo
-from common.model_clone import CustomClonableModelAdmin
-from common.shared import (
+from common.admin import (
     AdminChangeFormWithNavigation,
     SimpleHistoryWithSummaryAdmin,
     ToggleDocInlineMixin,
     save_history_fields,
 )
+from common.model_clone import CustomClonableModelAdmin
 from formz.models import (
     FormZBaseElement,
     FormZHeader,

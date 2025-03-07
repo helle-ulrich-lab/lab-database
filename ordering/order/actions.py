@@ -20,7 +20,7 @@ from django.template.loader import render_to_string
 from django.utils.encoding import smart_str
 from django.utils.safestring import mark_safe
 
-from common.shared import export_objects
+from common.export import export_objects
 
 from .export import OrderChemicalExportResource, OrderExportResource
 from .forms import MassUpdateOrderForm

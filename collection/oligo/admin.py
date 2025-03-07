@@ -1,12 +1,10 @@
 from django.contrib import admin
 from django.utils import timezone
 
-from .models import Oligo, OligoDoc
-from common.shared import (
+from common.admin import (
     AddDocFileInlineMixin,
     DocFileInlineMixin,
 )
-from formz.models import FormZBaseElement
 
 from ..shared.admin import (
     CollectionUserProtectionAdmin,
@@ -14,6 +12,7 @@ from ..shared.admin import (
 )
 from .actions import export_oligo
 from .forms import OligoAdminForm
+from .models import Oligo, OligoDoc
 from .search import OligoDjangoQLSearchMixin, OligoQLSchema
 
 

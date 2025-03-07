@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls import resolve
 from django.utils.safestring import mark_safe
 
-from common.shared import (
+from common.admin import (
     AddDocFileInlineMixin,
     DocFileInlineMixin,
 )

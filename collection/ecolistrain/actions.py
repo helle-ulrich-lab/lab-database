@@ -1,6 +1,7 @@
 from django.contrib import admin
 
-from common.shared import export_objects
+from common.export import export_objects
+
 from .export import EColiStrainExportResource
 
 

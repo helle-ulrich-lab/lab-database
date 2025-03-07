@@ -15,7 +15,7 @@ from django.utils import timezone
 from django.utils.safestring import mark_safe
 from djangoql.admin import DjangoQLSearchMixin
 
-from common.shared import (
+from common.admin import (
     AdminChangeFormWithNavigation,
     SimpleHistoryWithSummaryAdmin,
     save_history_fields,

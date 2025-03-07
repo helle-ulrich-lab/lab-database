@@ -6,13 +6,12 @@ from django.utils import timezone
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 
-from common.shared import (
+from common.admin import (
     AddDocFileInlineMixin,
     DocFileInlineMixin,
 )
-from formz.models import FormZBaseElement, FormZProject, GenTechMethod
+from formz.models import FormZBaseElement
 
-from ..ecolistrain.models import EColiStrain
 from ..shared.admin import (
     AdminOligosInMap,
     CollectionUserProtectionAdmin,

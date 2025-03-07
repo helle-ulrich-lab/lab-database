@@ -61,6 +61,7 @@ class ScPombeStrain(
         "history_formz_elements": FormZBaseElement,
         "history_documents": ScPombeStrainDoc,
     }
+    _m2m_save_ignore_fields = ["history_all_plasmids_in_stocked_strain"]
 
     box_number = models.SmallIntegerField("box number", blank=False)
     parent_1 = models.ForeignKey(

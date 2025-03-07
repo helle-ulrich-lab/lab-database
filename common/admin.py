@@ -245,13 +245,14 @@ class ToggleDocInlineMixin(admin.ModelAdmin):
     #                     yield inline.get_formset(request, obj), inline
 
 
-def save_history_fields(admin_instance, obj, history_obj):
+def save_history_fields(obj, history_obj):
     history_array_fields = obj._history_array_fields.copy()
-    if admin_instance.m2m_save_ignore_fields:
+    m2m_save_ignore_fields = getattr(obj, "_m2m_save_ignore_fields", [])
+    if m2m_save_ignore_fields:
         history_array_fields = {
             k: v
             for k, v in history_array_fields.items()
-            if k not in admin_instance.m2m_save_ignore_fields
+            if k not in m2m_save_ignore_fields
         }
 
     # Keep a record of the IDs of linked M2M fields in the main obj record

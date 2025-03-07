@@ -244,6 +244,7 @@ class WormStrain(
         ApprovalFieldsMixin._history_view_ignore_fields
         + OwnershipFieldsMixin._history_view_ignore_fields
     )
+    _m2m_save_ignore_fields = ["history_genotyping_oligos"]
 
     name = models.CharField("name", max_length=255, blank=False)
     chromosomal_genotype = models.TextField("chromosomal genotype", blank=True)

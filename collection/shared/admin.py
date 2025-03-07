@@ -362,7 +362,6 @@ class CollectionBaseAdmin(
     change_view_fieldsets = None
     show_plasmids_in_model = False
     is_guarded_model = False
-    m2m_save_ignore_fields = []
     set_readonly_fields = []
     readonly_fields = []
     show_formz = False
@@ -371,7 +370,7 @@ class CollectionBaseAdmin(
     def save_history_fields(self, form, obj=None):
         obj = obj if obj else self.model.objects.get(pk=form.instance.id)
         history_obj = obj.history.latest()
-        save_history_fields(self, obj, history_obj)
+        save_history_fields(obj, history_obj)
         return obj, history_obj
 
     def save_related(self, request, form, formsets, change):

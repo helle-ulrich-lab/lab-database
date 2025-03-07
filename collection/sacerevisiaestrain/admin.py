@@ -92,7 +92,6 @@ class SaCerevisiaeStrainAdmin(
     actions = [export_sacerevisiaestrain, formz_as_html]
     form = SaCerevisiaeStrainAdminForm
     search_fields = ["id", "name"]
-    m2m_save_ignore_fields = ["history_all_plasmids_in_stocked_strain"]
     show_plasmids_in_model = True
     autocomplete_fields = [
         "parent_1",

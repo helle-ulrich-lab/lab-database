@@ -245,7 +245,6 @@ class OrderAdmin(
     form = OrderAdminForm
     raw_id_fields = ["ghs_symbols", "msds_form", "signal_words", "hazard_statements"]
     autocomplete_fields = []
-    m2m_save_ignore_fields = []
     obj_specific_fields = [
         "internal_order_no",
         "supplier",
@@ -555,7 +554,7 @@ class OrderAdmin(
             history_obj = obj.history.latest()
         except Exception:
             history_obj = None
-        save_history_fields(self, obj, history_obj)
+        save_history_fields(obj, history_obj)
 
     def get_queryset(self, request):
         # Allows sorting of custom changelist_view fields by adding

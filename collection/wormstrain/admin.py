@@ -188,7 +188,6 @@ class WormStrainAdmin(
             {"classes": (("collapse",)), "fields": obj_specific_fields[21:]},
         ],
     ]
-    m2m_save_ignore_fields = ["history_genotyping_oligos"]
 
     @admin.display(description="Stocked", boolean=True)
     def stocked(self, instance):

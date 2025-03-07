@@ -74,6 +74,7 @@ class SaCerevisiaeStrain(
         ApprovalFieldsMixin._history_view_ignore_fields
         + OwnershipFieldsMixin._history_view_ignore_fields
     )
+    _m2m_save_ignore_fields = ["history_all_plasmids_in_stocked_strain"]
 
     name = models.CharField("name", max_length=255, blank=False)
     relevant_genotype = models.CharField(

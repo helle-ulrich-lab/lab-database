@@ -590,14 +590,14 @@ class OrderAdmin(
     def add_view(self, request, extra_context=None):
         self.raw_id_fields = self.safety_info_fields[1:-1]
         self.autocomplete_fields = []
+        safety_info_fields = self.safety_info_fields.copy()
+        safety_info_fields.remove("ghs_pict_img")
         if (
             request.user.groups.filter(
                 name__in=["Lab manager", "Order manager"]
             ).exists()
             or request.user.is_superuser
         ):
-            safety_info_fields = self.safety_info_fields.copy()
-            safety_info_fields.remove("ghs_pict_img")
             self.fieldsets = (
                 (
                     None,

@@ -45,31 +45,43 @@ from collection.models import (
 )
 from extend_user.admin import LabUserAdmin
 from formz.admin import (
-    FormZAdmin,
-    FormZBaseElementPage,
-    FormZHeaderPage,
-    FormZProjectPage,
-    FormZStorageLocationPage,
-    GenTechMethodPage,
-    NucleicAcidPurityPage,
-    NucleicAcidRiskPage,
-    SpeciesPage,
-    ZkbsCellLinePage,
-    ZkbsOncogenePage,
-    ZkbsPlasmidPage,
+    FormZAdminSite,
+    GenTechMethodAdmin,
+    NucleicAcidPurityAdmin,
+    NucleicAcidRiskAdmin,
+    SequenceFeatureAdmin,
+    SpeciesAdmin,
+    ZkbsCellLineAdmin,
+    ZkbsOncogeneAdmin,
+    ZkbsPlasmidAdmin,
+)
+from formz.admin import (
+    HeaderAdmin as FormZHeaderAdmin,
+)
+from formz.admin import (
+    ProjectAdmin as FormZProjectAdmin,
+)
+from formz.admin import (
+    StorageLocationAdmin as FormZStorageLocationAdmin,
 )
 from formz.models import (
-    FormZBaseElement,
-    FormZHeader,
-    FormZProject,
-    FormZStorageLocation,
     GenTechMethod,
     NucleicAcidPurity,
     NucleicAcidRisk,
+    SequenceFeature,
     Species,
     ZkbsCellLine,
     ZkbsOncogene,
     ZkbsPlasmid,
+)
+from formz.models import (
+    Header as FormZHeader,
+)
+from formz.models import (
+    Project as FormZProject,
+)
+from formz.models import (
+    StorageLocation as FormZStorageLocation,
 )
 from ordering.admin import (
     CostUnitAdmin,
@@ -94,7 +106,7 @@ from ordering.models import (
 SITE_TITLE = getattr(settings, "SITE_TITLE", "Lab DB")
 
 
-class OwnAdminSite(OrderAdminSite, FormZAdmin, admin.AdminSite):
+class OwnAdminSite(OrderAdminSite, FormZAdminSite, admin.AdminSite):
     """Create a custom admin site called OwnAdminSite"""
 
     # Text to put at the end of each page's <title>.
@@ -212,17 +224,17 @@ admin_site.register(User, UserAdmin)
 admin_site.unregister(User)
 admin_site.register(User, LabUserAdmin)
 
-admin_site.register(NucleicAcidPurity, NucleicAcidPurityPage)
-admin_site.register(NucleicAcidRisk, NucleicAcidRiskPage)
-admin_site.register(GenTechMethod, GenTechMethodPage)
-admin_site.register(FormZProject, FormZProjectPage)
-admin_site.register(FormZBaseElement, FormZBaseElementPage)
-admin_site.register(FormZHeader, FormZHeaderPage)
-admin_site.register(ZkbsPlasmid, ZkbsPlasmidPage)
-admin_site.register(ZkbsOncogene, ZkbsOncogenePage)
-admin_site.register(ZkbsCellLine, ZkbsCellLinePage)
-admin_site.register(FormZStorageLocation, FormZStorageLocationPage)
-admin_site.register(Species, SpeciesPage)
+admin_site.register(NucleicAcidPurity, NucleicAcidPurityAdmin)
+admin_site.register(NucleicAcidRisk, NucleicAcidRiskAdmin)
+admin_site.register(GenTechMethod, GenTechMethodAdmin)
+admin_site.register(FormZProject, FormZProjectAdmin)
+admin_site.register(SequenceFeature, SequenceFeatureAdmin)
+admin_site.register(FormZHeader, FormZHeaderAdmin)
+admin_site.register(ZkbsPlasmid, ZkbsPlasmidAdmin)
+admin_site.register(ZkbsOncogene, ZkbsOncogeneAdmin)
+admin_site.register(ZkbsCellLine, ZkbsCellLineAdmin)
+admin_site.register(FormZStorageLocation, FormZStorageLocationAdmin)
+admin_site.register(Species, SpeciesAdmin)
 
 admin_site.register(Task, TaskAdmin)
 admin_site.register(CompletedTask, CompletedTaskAdmin)

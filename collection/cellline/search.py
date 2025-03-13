@@ -5,7 +5,7 @@ from common.search import (
     SearchFieldUserLastnameWithOptions,
     SearchFieldUserUsernameWithOptions,
 )
-from formz.models import FormZProject
+from formz.models import Project as FormZProject
 
 from ..shared.admin import (
     FieldCreated,

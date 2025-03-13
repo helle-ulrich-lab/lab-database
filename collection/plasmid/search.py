@@ -8,9 +8,9 @@ from common.search import (
 
 from ..shared.admin import (
     FieldCreated,
-    FieldFormZBaseElement,
     FieldFormZProject,
     FieldLastChanged,
+    FieldSequenceFeature,
     FieldUse,
 )
 from .models import Plasmid
@@ -24,7 +24,7 @@ class PlasmidSearchFieldUserLastname(SearchFieldUserLastnameWithOptions):
     id_list = Plasmid.objects.all().values_list("created_by", flat=True).distinct()
 
 
-class PlasmidSearchFieldFormZBaseElement(FieldFormZBaseElement):
+class PlasmidSearchFieldSequenceFeature(FieldSequenceFeature):
     model = Plasmid
 
 
@@ -51,7 +51,7 @@ class PlasmidQLSchema(DjangoQLSchema):
                 "created_by",
                 FieldCreated(),
                 FieldLastChanged(),
-                PlasmidSearchFieldFormZBaseElement(),
+                PlasmidSearchFieldSequenceFeature(),
                 FieldFormZProject(),
             ]
         elif model == User:

@@ -5,10 +5,10 @@ from common.admin import (
     AddDocFileInlineMixin,
     DocFileInlineMixin,
 )
+from formz.actions import formz_as_html
 
 from ..shared.admin import (
     CollectionUserProtectionAdmin,
-    formz_as_html,
 )
 from .actions import export_ecolistrain
 from .models import EColiStrainDoc
@@ -38,7 +38,7 @@ class EColiStrainAdmin(CollectionUserProtectionAdmin):
     djangoql_completion_enabled_by_default = False
     actions = [export_ecolistrain, formz_as_html]
     search_fields = ["id", "name"]
-    autocomplete_fields = ["formz_projects", "formz_elements"]
+    autocomplete_fields = ["formz_projects", "sequence_features"]
     inlines = [EcoliStrainDocInline, EColiStrainAddDocInline]
     obj_specific_fields = [
         "name",
@@ -51,7 +51,7 @@ class EColiStrainAdmin(CollectionUserProtectionAdmin):
         "note",
         "formz_projects",
         "formz_risk_group",
-        "formz_elements",
+        "sequence_features",
         "destroyed_date",
     ]
     obj_unmodifiable_fields = [

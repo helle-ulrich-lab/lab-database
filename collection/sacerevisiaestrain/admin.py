@@ -6,6 +6,7 @@ from common.admin import (
     AddDocFileInlineMixin,
     DocFileInlineMixin,
 )
+from formz.actions import formz_as_html
 
 from ..sacerevisiaestrain.models import (
     SaCerevisiaeStrainDoc,
@@ -15,7 +16,6 @@ from ..shared.admin import (
     CollectionUserProtectionAdmin,
     CustomGuardedModelAdmin,
     SortAutocompleteResultsId,
-    formz_as_html,
 )
 from .actions import export_sacerevisiaestrain
 from .forms import SaCerevisiaeStrainAdminForm
@@ -100,7 +100,7 @@ class SaCerevisiaeStrainAdmin(
         "cassette_plasmids",
         "formz_projects",
         "formz_gentech_methods",
-        "formz_elements",
+        "sequence_features",
     ]
     inlines = [
         SaCerevisiaeStrainEpisomalPlasmidInline,
@@ -130,7 +130,7 @@ class SaCerevisiaeStrainAdmin(
         "formz_projects",
         "formz_risk_group",
         "formz_gentech_methods",
-        "formz_elements",
+        "sequence_features",
         "destroyed_date",
     ]
     obj_unmodifiable_fields = [

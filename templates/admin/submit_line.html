@@ -9,7 +9,7 @@
 {% if show_duplicate %}<a href="clone/"><input type="button" value="Duplicate"></a>{% endif %}
 {% if show_save_and_add_another %}<input type="submit" value="{% trans 'Save and add another' %}" name="_addanother">{% endif %}
 {% if show_save_and_continue %}<input type="submit" value="{% if can_change %}{% trans 'Save and continue editing' %}{% else %}{% trans 'Save and view' %}{% endif %}" name="_continue">{% endif %}
-{% if show_redetect_save %}<input id="save-redetect" type="submit" value="Re-detect FormZ elements and save" name="_redetect_formz_elements">{% endif %}
+{% if show_redetect_save %}<input id="save-redetect" type="submit" value="Re-detect sequence features and save" name="_redetect_sequence_features">{% endif %}
 {% if show_save %}<input type="submit" value="{% trans 'Save' %}" style="background: #417690; text-transform: uppercase;" name="_save">{% endif %}
 {% if show_disapprove %}<input id="disapprove-record" type="submit" value="Disapprove" name="_disapprove_record" style="background: rgb(239, 130, 88);">{% endif %}
 {% if show_close %}<a href="{% url opts|admin_urlname:'changelist' %}" class="closelink">{% trans 'Close' %}</a>{% endif %}

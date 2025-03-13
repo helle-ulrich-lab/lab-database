@@ -10,7 +10,8 @@ from common.admin import (
     AddDocFileInlineMixin,
     DocFileInlineMixin,
 )
-from formz.models import FormZBaseElement
+from formz.actions import formz_as_html
+from formz.models import SequenceFeature
 
 from ..shared.admin import (
     AdminOligosInMap,
@@ -19,7 +20,6 @@ from ..shared.admin import (
     SortAutocompleteResultsId,
     convert_map_gbk_to_dna,
     create_map_preview,
-    formz_as_html,
     get_map_features,
 )
 from .actions import export_plasmid
@@ -65,7 +65,7 @@ class PlasmidAdmin(
     autocomplete_fields = [
         "parent_vector",
         "formz_projects",
-        "formz_elements",
+        "sequence_features",
         "vector_zkbs",
         "formz_ecoli_strains",
         "formz_gentech_methods",
@@ -99,7 +99,7 @@ class PlasmidAdmin(
         "formz_risk_group",
         "vector_zkbs",
         "formz_gentech_methods",
-        "formz_elements",
+        "sequence_features",
         "formz_ecoli_strains",
         "destroyed_date",
     ]
@@ -138,7 +138,7 @@ class PlasmidAdmin(
         self.rename_and_preview = False
         new_obj = False
         self.new_obj = False
-        self.clear_formz_elements = False
+        self.clear_sequence_features = False
         convert_map_to_dna = False
 
         if obj.pk is None:
@@ -154,7 +154,7 @@ class PlasmidAdmin(
 
             # If a plasmid is 'Saved as new', clear all form Z elements
             if "_saveasnew" in request.POST and (obj.map or obj.map_gbk):
-                self.clear_formz_elements = True
+                self.clear_sequence_features = True
 
             # Check if a map is present and if so trigger functions to create a plasmid
             # map preview and delete the resulting duplicate history record
@@ -252,7 +252,7 @@ class PlasmidAdmin(
                     obj.map.name = ""
                     obj.map_png.name = ""
                     obj.map_gbk.name = ""
-                    self.clear_formz_elements = True
+                    self.clear_sequence_features = True
                     obj.save()
 
             else:
@@ -338,12 +338,12 @@ class PlasmidAdmin(
         obj = self.model.objects.get(pk=form.instance.id)
 
         # If a map is provided, automatically add those features
-        # for which a corresponding FormZ base element is present
+        # for which a corresponding sequence feature is present
         # in the database
-        if self.clear_formz_elements:
-            obj.formz_elements.clear()
+        if self.clear_sequence_features:
+            obj.sequence_features.clear()
 
-        if self.rename_and_preview or "_redetect_formz_elements" in request.POST:
+        if self.rename_and_preview or "_redetect_sequence_features" in request.POST:
             unknown_feat_name_list = []
             try:
                 feature_names = get_map_features(obj)
@@ -352,16 +352,14 @@ class PlasmidAdmin(
                 feature_names = []
 
             if not self.new_obj:
-                obj.formz_elements.clear()
+                obj.sequence_features.clear()
 
             if feature_names:
-                formz_base_elems = FormZBaseElement.objects.filter(
-                    extra_label__label__in=feature_names
+                sequence_features = SequenceFeature.objects.filter(
+                    alias__label__in=feature_names
                 ).distinct()
-                aliases = list(
-                    formz_base_elems.values_list("extra_label__label", flat=True)
-                )
-                obj.formz_elements.add(*list(formz_base_elems))
+                aliases = list(sequence_features.values_list("alias__label", flat=True))
+                obj.sequence_features.add(*list(sequence_features))
                 unknown_feat_name_list = [
                     feat for feat in feature_names if feat not in aliases
                 ]
@@ -375,7 +373,7 @@ class PlasmidAdmin(
                         request,
                         format_html(
                             "The following map features were not added to "
-                            "<span style='background-color:rgba(0,0,0,0.1);'>FormZ Elements</span>,"
+                            "<span style='background-color:rgba(0,0,0,0.1);'>Sequence Features</span>,"
                             " because they cannot be found in the database: "
                             "<span class='missing-formz-features' style='background-color:rgba(255,0,0,0.2)'>{}</span>. "
                             "You may want to add them manually yourself below.",

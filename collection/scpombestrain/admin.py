@@ -6,11 +6,11 @@ from common.admin import (
     AddDocFileInlineMixin,
     DocFileInlineMixin,
 )
+from formz.actions import formz_as_html
 
 from ..shared.admin import (
     CollectionUserProtectionAdmin,
     SortAutocompleteResultsId,
-    formz_as_html,
 )
 from .actions import export_scpombestrain
 from .forms import ScPombeStrainAdminForm
@@ -101,7 +101,7 @@ class ScPombeStrainAdmin(
         "cassette_plasmids",
         "formz_projects",
         "formz_gentech_methods",
-        "formz_elements",
+        "sequence_features",
     ]
     inlines = [
         ScPombeStrainEpisomalPlasmidInline,
@@ -124,7 +124,7 @@ class ScPombeStrainAdmin(
         "formz_projects",
         "formz_risk_group",
         "formz_gentech_methods",
-        "formz_elements",
+        "sequence_features",
         "destroyed_date",
     ]
     obj_unmodifiable_fields = [

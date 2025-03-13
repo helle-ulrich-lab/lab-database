@@ -4,12 +4,14 @@ from urllib.parse import urlencode
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.fields import GenericRelation
+from django.contrib.contenttypes.models import ContentType
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.forms import ValidationError
 
 from approval.models import Approval
-from formz.models import FormZBaseElement, FormZProject, GenTechMethod
+from formz.models import GenTechMethod, SequenceFeature, StorageLocation
+from formz.models import Project as FormZProject
 
 FILE_SIZE_LIMIT_MB = getattr(settings, "FILE_SIZE_LIMIT_MB", 2)
 OVE_URL = getattr(settings, "OVE_URL", "")
@@ -139,13 +141,13 @@ class FormZFieldsMixin(models.Model):
         related_name="%(class)s_gentech_methods",
         blank=True,
     )
-    formz_elements = models.ManyToManyField(
-        FormZBaseElement,
-        verbose_name="elements",
-        help_text="Use only when an element is not present in the chosen plasmid(s), if any. "
-        "Searching against the aliases of an element is case-sensitive. "
-        '<a href="/formz/formzbaseelement/" target="_blank">View all/Change</a>',
-        related_name="%(class)s_formz_elements",
+    sequence_features = models.ManyToManyField(
+        SequenceFeature,
+        verbose_name="sequence features",
+        help_text="Use only when a feature is not present in the chosen plasmid(s), if any. "
+        "Searching against the aliases of a feature is case-sensitive. "
+        '<a href="/formz/sequencefeature/" target="_blank">View all/Change</a>',
+        related_name="%(class)s_sequence_features",
         blank=True,
     )
     destroyed_date = models.DateField("destroyed", blank=True, null=True)
@@ -164,13 +166,50 @@ class FormZFieldsMixin(models.Model):
         null=True,
         default=list,
     )
-    history_formz_elements = ArrayField(
+    history_sequence_features = ArrayField(
         models.PositiveIntegerField(),
         verbose_name="formz elements",
         blank=True,
         null=True,
         default=list,
     )
+
+    @property
+    def formz_species(self):
+        species = None
+        storage_location = self.formz_storage_location
+        if storage_location:
+            species = storage_location.species
+            species.risk_group = storage_location.species_risk_group
+        return species
+
+    @property
+    def formz_storage_location(self):
+        storage_location = None
+        try:
+            model_content_type = ContentType.objects.get_for_model(self)
+            storage_location = StorageLocation.objects.get(
+                collection_model=model_content_type
+            )
+        except Exception:
+            pass
+        return storage_location
+
+    @property
+    def formz_s2_plasmids(self):
+        return None
+
+    @property
+    def formz_transfected(self):
+        return False
+
+    @property
+    def formz_virus_packaging_cell_line(self):
+        return None
+
+    @property
+    def formz_genotype(self):
+        return getattr(self, "genotype", None)
 
 
 class InfoSheetMaxSizeMixin:
@@ -332,15 +371,19 @@ class CommonCollectionModelPropertiesMixin:
         return []
 
     @property
-    def all_uncommon_formz_elements(self):
-        """Returns all uncommon features in stocked organism"""
+    def all_sequence_features(self):
+        """Returns all features in stocked organism"""
 
-        elements = self.formz_elements.filter(common_feature=False).order_by("name")
-        return elements
+        return self.sequence_features.order_by("name")
 
     @property
-    def all_common_formz_elements(self):
+    def all_uncommon_sequence_features(self):
+        """Returns all uncommon features in stocked organism"""
+
+        return self.all_sequence_features.filter(common_feature=False)
+
+    @property
+    def all_common_sequence_features(self):
         """Returns all common features in stocked organism"""
 
-        elements = self.formz_elements.filter(common_feature=True).order_by("name")
-        return elements
+        return self.all_sequence_features.filter(common_feature=True)

@@ -6,7 +6,8 @@ from django.db import models
 from django.forms import ValidationError
 
 from common.models import DocFileMixin, HistoryFieldMixin, SaveWithoutHistoricalRecord
-from formz.models import FormZBaseElement, FormZProject, GenTechMethod
+from formz.models import GenTechMethod, SequenceFeature
+from formz.models import Project as FormZProject
 
 from ..plasmid.models import Plasmid
 from ..shared.models import (
@@ -67,7 +68,7 @@ class SaCerevisiaeStrain(
         "history_all_plasmids_in_stocked_strain": Plasmid,
         "history_formz_projects": FormZProject,
         "history_formz_gentech_methods": GenTechMethod,
-        "history_formz_elements": FormZBaseElement,
+        "history_sequence_features": SequenceFeature,
         "history_documents": SaCerevisiaeStrainDoc,
     }
     _history_view_ignore_fields = (
@@ -195,26 +196,20 @@ class SaCerevisiaeStrain(
         )
 
     @property
-    def all_uncommon_formz_elements(self):
-        elements = super().all_uncommon_formz_elements
+    def all_sequence_features(self):
+        elements = super().all_sequence_features
         all_plasmids = self.all_instock_plasmids
         for pl in all_plasmids:
-            elements = elements | pl.formz_elements.all()
-        elements = elements.distinct().filter(common_feature=False).order_by("name")
-        return elements
-
-    @property
-    def all_common_formz_elements(self):
-        elements = super().all_common_formz_elements
-        all_plasmids = self.all_instock_plasmids
-        for pl in all_plasmids:
-            elements = elements | pl.formz_elements.all()
-        elements = elements.distinct().filter(common_feature=True).order_by("name")
-        return elements
+            elements = elements | pl.sequence_features.all()
+        return elements.distinct().order_by("name")
 
     @property
     def plasmids_in_model(self):
         return self.all_instock_plasmids.order_by("id").values_list("id", flat=True)
+
+    @property
+    def formz_genotype(self):
+        return self.relevant_genotype
 
 
 class SaCerevisiaeStrainEpisomalPlasmid(models.Model):

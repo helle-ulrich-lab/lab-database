@@ -6,13 +6,13 @@ from common.admin import (
     AddDocFileInlineMixin,
     DocFileInlineMixin,
 )
+from formz.actions import formz_as_html
 from formz.models import Species
 
 from ..shared.admin import (
     CollectionUserProtectionAdmin,
     CustomGuardedModelAdmin,
     SortAutocompleteResultsId,
-    formz_as_html,
 )
 from .actions import export_cellline
 from .models import CellLineDoc, CellLineEpisomalPlasmid
@@ -137,7 +137,7 @@ class CellLineAdmin(
         "formz_projects",
         "zkbs_cell_line",
         "formz_gentech_methods",
-        "formz_elements",
+        "sequence_features",
     ]
     obj_specific_fields = [
         "name",
@@ -157,7 +157,7 @@ class CellLineAdmin(
         "formz_risk_group",
         "zkbs_cell_line",
         "formz_gentech_methods",
-        "formz_elements",
+        "sequence_features",
         "destroyed_date",
     ]
     obj_unmodifiable_fields = [

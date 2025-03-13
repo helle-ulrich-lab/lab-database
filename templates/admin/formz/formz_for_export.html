@@ -1,496 +1,534 @@
 <!DOCTYPE html>
 
 <html lang="de-de">
-<head>
+  <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<title>Formblatt Z: {{object}}</title>
-</head>
+    <style>
 
-<body style='font-family:"arial"'>
+      table {
+        border-collapse: collapse;
+      }
 
-    <h1>Formblatt Z: {{object}}</h1>
+      td {
+        padding: 5px;
+      }
+
+      tbody > tr:last-child {
+        border-bottom: 1px solid;
+      }
+
+      .formztableheader th {
+        text-align: center;
+        text-transform: uppercase;
+        background:lightgrey;
+        border: 1px solid black;
+        padding: 5px;
+      }
+
+      .formztextbold {
+        font-weight: bold;
+      }
+
+      .formzplasmidlistitem {
+        padding-bottom: 10px;
+      }
+
+      .formztableverticalborder {
+        border-right: 1px solid;
+      }
+
+      .column-subheader {
+        text-align: center;
+        text-transform: uppercase;
+        border: 1px solid black;
+      }
+
+      .field-donor_organism,
+      .field-donor_organism_risk,
+      .field-nuc_acid_purity,
+      .field-nuc_acid_risk {
+        text-align: center;
+      }
+
+      .field-donor_organism:first-letter,
+      .field-donor_organism_risk:first-letter,
+      .field-nuc_acid_purity:first-letter,
+      .field-nuc_acid_risk:first-letter {
+        text-transform: uppercase;
+      }
+
+      .field-nuc_acid_description {
+        border-right: 1px solid black;
+      }
+
+      .field-name {
+        border-left: 1px solid black;
+      }
+
+      .field {
+        border-left: 1px solid black;
+      }
+
+      .column-name{
+        vertical-align: middle;
         
-    {% if formz_header %}
-        <h2>Betreiber</h2>
-        <div><span style='font-weight: bold'>Bezeichnung:</span> {{formz_header.operator}}</div>
-        <div><span style='font-weight: bold'>Anschrift:</span> {{formz_header.address}}</div>
-        <div><span style='font-weight: bold'>Beauftragter für Biologische Sicherheit:</span> {{formz_header.name_biosafety_officer}}</div>
-        <div><span style='font-weight: bold'>S1 Genehmigung:</span> {{formz_header.s1_approval_file_num}}; erteilt am {{formz_header.s1_approval_date | date:"d.m.Y"}}</div>
-        {% if object.s2_work %}
-            <div><span style='font-weight: bold'>S2 Genehmigung:</span> {{formz_header.s2_approval_file_num}}; erteilt am {{formz_header.s2_approval_date | date:"d.m.Y"}}</div>
-        {% endif %}
-    {% else %}
-        <h2>Kein Betreiber</h2>
+      }
+
+    </style>
+    <title>Formblatt Z:{% if pi %} AG {{pi.first_name}} {{pi.last_name}}{% endif %} {{object.formz_species.display_name}} #{{object}}</title>
+  </head>
+
+  <body style='font-family:"arial"'>
+
+    <h1>Formblatt Z: <span style='font-style: italic'>{{object.formz_species.display_name}}</span> #{{object}}</h1>
+
+    {% if pi %}
+      <h1>AG {{pi.first_name}} {{pi.last_name}}</h1>
     {% endif %}
 
-    <h2>Details zum Organismus</h2>
-    <div><span style='font-weight: bold'>Bezeichnung:</span> {{object}} {% if object.supplier%}({{object.supplier}}){% endif %}</div>
-    <div><span style='font-weight: bold'>Risikogruppe:</span> {{object.formz_risk_group}}</div>
-    <div><span style='font-weight: bold'>Empfängerorganismus:</span> <span style='font-style: italic'>{{storage_location.species_name_str}}</span>
-    {% if object.formz_ecoli_strains %}
-        {% if object.formz_ecoli_strains.all|length == 1 %}
-                {% for ecoli in object.formz_ecoli_strains.all %}
-                    (Stamm: {{ecoli.name}} - Hintergrund {{ecoli.background}}; Risikogruppe: {{ecoli.formz_risk_group}})
-                {% endfor %}
-            {% else %}
-                {% for ecoli in object.formz_ecoli_strains.all %}
-                    {% if forloop.first %}
-                        (Stamm: {{ecoli.name}} - Hintergrund {{ecoli.background}},
-                    {% elif forloop.last %}
-                        {{ecoli.name}} - Hintergrund {{ecoli.background}}; Risikogruppe: {{ecoli.formz_risk_group}})
-                    {% else %}
-                        {{ecoli.name}} - Hintergrund {{ecoli.background}},
-                    {% endif %}
-                {% endfor %}
+    <!-- FormZ Header -->
+    <div id='formz-header-info'>
+        {% if formz_header %}
+          <h2>Betreiber</h2>
+          <div><span class="formztextbold">Bezeichnung: </span>{{formz_header.operator}}</div>
+          <div><span class="formztextbold">Anschrift: </span>{{formz_header.address}}</div>
+          <div><span class="formztextbold">Beauftragter für Biologische Sicherheit: </span>{{formz_header.name_biosafety_officer}}</div>
+          <div><span class="formztextbold">S1 Genehmigung: </span>{{formz_header.s1_approval_file_num}}; erteilt am {{formz_header.s1_approval_date | date:"d.m.Y"}}</div>
+          {% if object.s2_work %}
+            <div><span class="formztextbold">S2 Genehmigung: </span>{{formz_header.s2_approval_file_num}}; erteilt am {{formz_header.s2_approval_date | date:"d.m.Y"}}</div>
+          {% endif %}
+        {% else %}
+          <h2>Kein Betreiber</h2>
         {% endif %}
-    {% else %}
-        (Risikogruppe: {{storage_location.species_risk_group}})
-    {% endif %}</div>
-    {% if object.genotype %}
-    <div><span style='font-weight: bold'>Hintergrund:</span> {{object.background}}</div>
-    {% endif %}
+    </div>
 
-    {% if object.chromosomal_genotype %}
-        <div><span style='font-weight: bold'>Genotyp:</span> {{object.chromosomal_genotype}}</div>
-    {% elif object.genotype %}
-        <div><span style='font-weight: bold'>Genotyp:</span> {{object.genotype}}</div>
-    {% elif object.genotype %}
-        <div><span style='font-weight: bold'>Genotyp:</span> {{object.genotype}}</div>
-    {% endif %}
-    <div><span style='font-weight: bold'>Projekt/e:</span>
-        {% if object.formz_projects.all|length == 1 %}
-            {% for project in object.formz_projects.all %}
-                {{project.title}}{% if project.genetic_work_classification %} - Einstufung der gentechnischen S2-Arbeiten: {{project.genetic_work_classification}}{% endif %}
-                {% if project.parent_project%}
-                    (Hauptprojekt: {{project.parent_project.title}}{% if project.parent_project.genetic_work_classification %} - Einstufung der gentechnischen S2-Arbeiten: {{project.parent_project.genetic_work_classification}}{% endif %})
-                {% endif %}
-            {% endfor %}
-        {% else %}
-            {% for project in object.formz_projects.all %}
-                {% if forloop.last %}
-                    {{project.title}}{% if project.genetic_work_classification %} - Einstufung der gentechnischen S2-Arbeiten: {{project.genetic_work_classification}}{% endif %}
-                    {% if project.parent_project%}
-                        (Hauptprojekt: {{project.parent_project.title}}{% if project.parent_project.genetic_work_classification %} - Einstufung der gentechnischen S2-Arbeiten: {{project.parent_project.genetic_work_classification}}{% endif %})
-                    {% endif %}
-                {% else %}
-                    {{project.title}}{% if project.genetic_work_classification %} - Einstufung der gentechnischen S2-Arbeiten: {{project.genetic_work_classification}}{% endif %}
-                    {% if project.parent_project%}
-                        (Hauptprojekt: {{project.parent_project.title}}{% if project.parent_project.genetic_work_classification %} - Einstufung der gentechnischen S2-Arbeiten: {{project.parent_project.genetic_work_classification}}{% endif %}),
-                    {% else %}
-                    ,
-                    {% endif %}
-                {% endif %}
-            {% endfor %}
-        {% endif %}
-    </div>
-    {% if object.formz_gentech_methods.all %}
-    <div><span style='font-weight: bold'>Gentechnische Arbeitsmethod/en:</span>
-        {% if object.formz_gentech_methods.all|length == 1 %}
-            {% for method in object.formz_gentech_methods.all %}
-                {{method.german_name}}
-            {% endfor %}
-        {% else %}
-            {% for method in object.formz_gentech_methods.all %}
-                {% if forloop.last %}
-                    {{method.german_name}}
-                {% else %}
-                    {{method.german_name}},
-                {% endif %}
-            {% endfor %}
-        {% endif %}
-    {% endif %}
-    </div>
-    {% if object.zkbs_cell_line and object.zkbs_cell_line.name != 'none' %}
-        <div><span style='font-weight: bold'>ZKBS Datenbank Zelllinien:</span> {{object.zkbs_cell_line}}</div>
-    {% endif %}
-    <div><span style='font-weight: bold'>Erzeugt:</span> {{object.created_date_time | date:"d.m.Y"}}</div>
-    <div><span style='font-weight: bold'>Entsorgt:</span> 
-        {% if object.destroyed_date %}
-            {{object.destroyed_date | date:"d.m.Y"}}
-        {% else %}
-            Nein
-        {% endif %}
-    </div>
-    <div><span style='font-weight: bold'>Bestätigt durch Projektleiter:</span> 
-        {% if object.last_changed_approval_by_pi is not None %}
-            {% if object.last_changed_approval_by_pi %}
-                {{object.approval_by_pi_date_time | date:"d.m.Y, H:i:s"}} ({{object.approval_user.first_name}} {{object.approval_user.last_name}})
-            {% else %}
-                Nein
-            {% endif %}
-        {% else %}
-            {% if object.created_approval_by_pi %}
-                {{object.approval_by_pi_date_time | date:"d.m.Y, H:i:s"}} ({{object.approval_user.first_name}} {{object.approval_user.last_name}})
-            {% else %}
-                Nein
-            {% endif %}
-        {% endif %}
-    </div>
-    <div><span style='font-weight: bold'>Lagerort:</span> {{storage_location.storage_location}}</div>
+    <!-- Organism details -->
+    <div id='formz-organism-details'>
 
-    {% if object.instock_plasmids %}
-    <h3>Plasmid/e, die zur Erschaffung des Organismus genutzt wurden</h3>
-         <ul>
-            
-            {% for plasmid in object.instock_plasmids %}
-                <li>
-                    Plasmid #{{plasmid}}
-                    {% if plasmid.vector_zkbs %}
-                        {% if plasmid.vector_zkbs.name != 'none' %}
-                            <span style='text-transform: none'>- ZKBS Plasmid: </span>{{plasmid.vector_zkbs.name}}
-                        {% endif %}
-                    {% endif %}
-                </li>
-            {% endfor %}
-            </ul>
-    {% endif %}
+      <!-- Details about the organism -->
+      <h2>Details zum Organismus</h2>
 
-    {% if object.integrated_dna_oligos.exists %}
-        <h3>Synthetisches/e DNA-Fragment/e, die zur Erschaffung des Organismus genutzt wurden</h3>
-        <ul>
-        {% for oligo in object.integrated_dna_oligos.all %}
-            <li>
-                Oligo #{{oligo}} - {{oligo.sequence}}
-            </li>
+      <!-- Description -->
+      <div><span class="formztextbold">Bezeichnung: </span>{{object}} {% if object.supplier%}({{object.supplier}}){% endif %}</div>
+
+      <!-- Risk group -->
+      <div><span class="formztextbold">Risikogruppe: </span>{{object.formz_risk_group}}</div>
+
+      <!-- Donor organism -->
+      <div><span class="formztextbold">Empfängerorganismus: </span><span style='font-style: italic'>{{object.formz_species.display_name}}</span>
+        <!-- For plasmids, list all E. coli strains -->
+        {% if object.formz_ecoli_strains.exists %}
+          {% for ecoli in object.formz_ecoli_strains.all %}
+            {% if forloop.first %}(Stamm: {% endif %}{{ecoli.name}} - Hintergrund {{ecoli.background}}, RG{{ecoli.formz_risk_group}}{% if forloop.first and not forloop.last or not forloop.first and not forloop.last %};{% else %}){% endif %}
+          {% endfor %}
+        {% else %}
+          (Risikogruppe: {{object.formz_species.risk_group}})
+        {% endif %}
+      </div>
+
+      {% if object.background %}
+        <!-- Background -->
+        <div><span class="formztextbold">Hintergrund: </span>{{object.background}}</div>
+      {% endif %}
+
+      {% if object.formz_genotype %}
+        <!-- Genotype -->
+        <div><span class="formztextbold">Genotyp: </span>{{object.formz_genotype}}</div>
+      {% endif %}
+
+      <!-- Projects -->
+      <div><span class="formztextbold">Projekt/e: </span>
+        <!-- Ugly one-liner, otherwise extra spaces around brackets and commas -->
+        {% for project in object.formz_projects.all %}
+          {{project.title}}{% if project.genetic_work_classification %} - Einstufung der gentechnischen S2-Arbeiten: {{project.genetic_work_classification}}{% endif %}{% if project.parent_project%} (Hauptprojekt: {{project.parent_project.title}}){% if project.parent_project.genetic_work_classification %} - Einstufung der gentechnischen S2-Arbeiten: {{project.parent_project.genetic_work_classification}}{% endif %}{% endif %}{% if forloop.first and not forloop.last or not forloop.first and not forloop.last %},{% endif %}
         {% endfor %}
-        </ul>
-    {% endif %}
+      </div>
 
-    {% if object.uncommon_formz_elements or object.common_formz_elements %}
-        <div>    
-            <h3>Bezeichnung und für die Sicherheitsbeurteilung bedeutsame Merkmale des GVO</h3>
-                <table style='border-bottom: 1px solid rgb(0, 0, 0);'>
-                    <thead>
-                        <tr>
-                            <th scope="col" style="text-align:center"></th>
-                            <th colspan="2" scope="col" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">Spenderorganismus</th>
-                            <th colspan="2" scope="col" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">Nukleinsäure</th>
-                        </tr>
-                        <tr>
-                            <th scope="col" style='border: 1px solid rgb(0, 0, 0); background:lightgrey;'>Bezeichnung</th>
-                            <th scope="col" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">Bezeichnung</th>
-                            <th scope="col" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">Risikogruppe</th>
-                            <th scope="col" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">Reinheitsgrad</th>
-                            <th scope="col" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">Gefährdungspotential</th>
-                            <th scope="col" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">Beschreibung</th>
-                        </tr>
-                    </thead>
-                    {% if object.uncommon_formz_elements %}
-                        <tbody>
-                            {% for formz_elem in object.uncommon_formz_elements %}
-                                <tr>
-                                    <td style="border-left: 1px solid rgb(0, 0, 0); border-right: 1px solid rgb(0, 0, 0);">{{formz_elem.name}}</td>
-                                    <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_names %}{{formz_elem.get_donor_species_names}}{% else %}Artifiziell{% endif %}</td>
-                                    <td style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_risk_groups %}{{formz_elem.get_donor_species_risk_groups}}{% else %}Keine{% endif %}</td>
-                                    <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0); ">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
-                                    <td style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{{formz_elem.nuc_acid_risk.german_name|capfirst}}</td>
-                                    <td style="border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_risk_groups > 1 or formz_elem.nuc_acid_purity.english_name == 'synthetic fragment' %} {{formz_elem.description}} {% endif %}</td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    {% else %}
-                        <tbody>
-                        <tr>
-                            <td colspan="6" style="text-align:center; border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">Keine spezifischen Merkmale</td>
-                        </tr>
-                        </tbody>
-                    {% endif %}
-                {% if object.common_formz_elements %}
-                    <tbody>
-                        <tr>
-                            <td colspan="6" style="border: 1px solid rgb(0, 0, 0); font-weight: bold; text-align:center;">Andere Merkmale, nicht relevant für die Sicherheitsbeurteilung</td>
-                        </tr>
-                        {% for formz_elem in object.common_formz_elements %}
-                            <tr>
-                                <td style="border-left: 1px solid rgb(0, 0, 0); border-right: 1px solid rgb(0, 0, 0);">{{formz_elem.name}}</td>
-                                <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_names %}{{formz_elem.get_donor_species_names}}{% else %}Artifiziell{% endif %}</td>
-                                <td style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_risk_groups %}{{formz_elem.get_donor_species_risk_groups}}{% else %}Keine{% endif %}</td>
-                                <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0); ">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
-                                <td style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{{formz_elem.nuc_acid_risk.german_name|capfirst}}</td>
-                                <td style="border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_max_risk_group > 1 %} {{formz_elem.description}} {% endif %}</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                {% endif %}
-                </table>
+      {% if object.formz_gentech_methods.exists %}
+        <!-- GenTech methods -->
+        <div><span class="formztextbold">Gentechnische Arbeitsmethod/en: </span>
+          {% for method in object.formz_gentech_methods.all %}
+            {{method.german_name|capfirst}}{% if forloop.first and not forloop.last or not forloop.first and not forloop.last %},{% endif %}
+          {% endfor %}
         </div>
-    {% else %}
-        <br>
-        <div>Keine Information vorhanden</div>
-    {% endif %}
+      {% endif %}
 
-    {% if object.transient_episomal_plasmids %}
-        <div>
-                        
-            {% if object.s2_work %}
-                <h2>In den Organismus transduzierte Plasmide</h2>    
-                <div>Dieser Organismus wurde durch virale Transduktion des folgenden Plasmids/der folgenden Plasmide geschaffen.</div>
-            {% else %}
-                <h2> In den Organismus transient {% if transfected %}transfizierte{% else %}transformierte{% endif %} Plasmide</h2>
-                <div>Dieser Organismus wurde mit dem/n folgenen Plasmid/en transient {% if transfected %}transfiziert{% else %}transformiert{% endif %}.</div>
-            {% endif %}
-           
-            {% for plasmid in object.transient_episomal_plasmids %}
+      {% if object.zkbs_cell_line and object.zkbs_cell_line.name != 'none' %}
+        <!-- ZKBS cell line -->
+        <div><span class="formztextbold">ZKBS Datenbank Zelllinien: {{object.zkbs_cell_line}}</div>
+      {% endif %}
 
-                <br>
-                <table style='border-bottom: 1px solid rgb(0, 0, 0);'>
-                    <thead>
-                        <tr>
-                            <th colspan="6" scope="col" style="text-align:left; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
-                                Plasmid #{{plasmid.plasmid}}
-                                <span style="text-transform: none">
-                                    {% if plasmid.created_date %}
-                                        - Organismus {% if transfected %}transfiziert{% else %}transformiert{% endif %} am {{plasmid.created_date | date:"d.m.Y"}},
-                                    {% endif %}
+      <!-- Created -->
+      <div><span class="formztextbold">Erzeugt: </span>{{object.created_date_time | date:"d.m.Y"}}</div>
 
-                                    unter Projekt/e:
-
-                                    {% if plasmid.formz_projects.all|length == 1 %}
-                                        {% for project in plasmid.formz_projects.all %}
-                                            {{project.title}};
-                                        {% endfor %}
-                                    {% else %}
-                                        {% for project in plasmid.formz_projects.all %}
-                                            {% if forloop.last %}
-                                                {{project.title}};
-                                            {% else %}
-                                                {{project.title}},
-                                            {% endif %}
-                                        {% endfor %}
-                                    {% endif %}
-
-                                    {% if plasmid.destroyed_date %}
-                                        entsorgt am {{plasmid.destroyed_date | date:"d.m.Y"}}
-                                    {% else %}
-                                        noch nicht entsorgt
-                                    {% endif %}
-                                </span>
-                                
-                                {% if plasmid.plasmid.vector_zkbs %}
-                                    {% if plasmid.plasmid.vector_zkbs.name != 'none' %}
-                                        <span style='text-transform: none'>- ZKBS Plasmid: </span>{{plasmid.plasmid.vector_zkbs.name}}
-                                    {% endif %}
-                                {% endif %}
-                            </th>
-                        </tr>
-                    </thead>
-
-                        {% if plasmid.plasmid.formz_elements.all %}
-                            {% if plasmid.plasmid.all_uncommon_formz_elements %}
-                                <thead>
-                                    <tr>
-                                        <th scope="col" style="border-left: 1px solid rgb(0, 0, 0); background:lightgrey;"></th>
-                                        <th colspan="2" scope="col" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
-                                            <div >Spenderorganismus</div>
-                                        </th>
-                                        <th colspan="2" scope="col" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
-                                            <div>Nukleinsäure</div>
-                                        </th>
-                                        <th scope="col" style="border-right: 1px solid rgb(0, 0, 0); background:lightgrey;"></th>
-                                    </tr>
-                                    <tr>
-                                        <th scope="col" style='border: 1px solid rgb(0, 0, 0); background:lightgrey;'>Bezeichnung</th>
-                                        <th scope="col" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">Bezeichnung</th>
-                                        <th scope="col" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">Risikogruppe</th>
-                                        <th scope="col" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">Reinheitsgrad</th>
-                                        <th scope="col" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">Gefährdungspotential</th>
-                                        <th scope="col" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">Beschreibung</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                        {% for formz_elem in plasmid.plasmid.all_uncommon_formz_elements %}
-                                            <tr>
-                                                <td style="border-left: 1px solid rgb(0, 0, 0); border-right: 1px solid rgb(0, 0, 0);">{{formz_elem.name}}</td>
-                                                <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_names %}{{formz_elem.get_donor_species_names}}{% else %}Artifiziell{% endif %}</td>
-                                                <td style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_risk_groups %}{{formz_elem.get_donor_species_risk_groups}}{% else %}Keine{% endif %}</td>
-                                                <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0); ">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
-                                                <td style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{{formz_elem.nuc_acid_risk.german_name|capfirst}}</td>
-                                                <td style="border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_max_risk_group > 1 or formz_elem.nuc_acid_purity.english_name == 'synthetic fragment' %} {{formz_elem.description}} {% endif %}</td>
-                                            </tr>
-                                        {% endfor %}
-                                </tbody>
-                            {% else %}
-                                <tbody>
-                                    <tr>
-                                        <td colspan="6" style="text-align:center; border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">Keine spezifischen Merkmale</td>
-                                    </tr>
-                                </tbody>
-                            {% endif %}
-                        {% else %}
-                            <tbody>
-                                <tr>
-                                    <td colspan="6" style="text-align:center; border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">Keine Merkmale</td>
-                                </tr>
-                            </tbody>
-                        {% endif %}
-                        
-                        {% if plasmid.plasmid.all_common_formz_elements %}
-                                <tbody>
-                                    <tr>
-                                        <td colspan="6" style="border: 1px solid rgb(0, 0, 0); font-weight: bold; text-align:center;">Andere Merkmale, nicht relevant für die Sicherheitsbeurteilung</td>
-                                    </tr>
-                                    {% for formz_elem in plasmid.plasmid.all_common_formz_elements %}
-                                        <tr>
-                                            <td style="border-left: 1px solid rgb(0, 0, 0); border-right: 1px solid rgb(0, 0, 0);">{{formz_elem.name}}</td>
-                                            <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_names %}{{formz_elem.get_donor_species_names}}{% else %}Artifiziell{% endif %}</td>
-                                            <td style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_risk_groups %}{{formz_elem.get_donor_species_risk_groups}}{% else %}Keine{% endif %}</td>
-                                            <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0); ">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
-                                            <td style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{{formz_elem.nuc_acid_risk.german_name|capfirst}}</td>
-                                            <td style="border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_max_risk_group > 1 %} {{formz_elem.description}} {% endif %}</td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                        {% endif %}
-                    </table>
-            {% endfor %}
-        </div>
-    {% endif %}
-
-    {% if object.s2_plasmids %}
-
-        <div>      
-            
-            <h4>Virusverpackung</h4>
-            <div>Das oben genannten Plasmid/die oben genannten Plasmide wurden mit dem/den unten genannten Plasmid/Plasmiden zum Verpacken viraler Partikel in {{virus_packaging_cell_line.name}} Zellen genutzt.</div>
-                
-            {% for plasmid in object.s2_plasmids %}
-
-                    <br>
-                    <table style='border-bottom: 1px solid rgb(0, 0, 0);'>
-                        <thead>
-                            <tr>
-                                <th colspan="6" scope="col" style="text-align:left; border: 1px solid rgb(0, 0, 0); background:grey;">
-                                    Plasmid #{{plasmid.plasmid}}
-                                    <span style="text-transform: none">
-                                        {% if plasmid.created_date %}
-                                            -  Organismus transfiziert am {{plasmid.created_date | date:"d.m.Y"}},
-                                        {% endif %}
-    
-                                        unter Projekt/e:
-    
-                                        {% if plasmid.formz_projects.all|length == 1 %}
-                                            {% for project in plasmid.formz_projects.all %}
-                                                {{project.title}};
-                                            {% endfor %}
-                                        {% else %}
-                                            {% for project in plasmid.formz_projects.all %}
-                                                {% if forloop.last %}
-                                                    {{project.title}};
-                                                {% else %}
-                                                    {{project.title}},
-                                                {% endif %}
-                                            {% endfor %}
-                                        {% endif %}
-    
-                                        {% if plasmid.destroyed_date %}
-                                            entsorgt am {{plasmid.destroyed_date | date:"d.m.Y"}}
-                                        {% else %}
-                                            noch nicht entsorgt
-                                        {% endif %}
-                                    </span>
-                                    
-                                    {% if plasmid.plasmid.vector_zkbs %}
-                                        {% if plasmid.plasmid.vector_zkbs.name != 'none' %}
-                                            <span style='text-transform: none'>- ZKBS Plasmid: </span>{{plasmid.plasmid.vector_zkbs.name}}
-                                        {% endif %}
-                                    {% endif %}
-                                </th>
-                            </tr>
-                        </thead>
-                        {% if plasmid.plasmid.formz_elements.all %}
-                        {% if plasmid.plasmid.all_uncommon_formz_elements %}
-                            <thead>
-                                <tr>
-                                    <th scope="col" style="border-left: 1px solid rgb(0, 0, 0); background:lightgrey;"></th>
-                                    <th colspan="2" scope="col" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
-                                        <div >Spenderorganismus</div>
-                                    </th>
-                                    <th colspan="2" scope="col" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">
-                                        <div>Nukleinsäure</div>
-                                    </th>
-                                    <th scope="col" style="border-right: 1px solid rgb(0, 0, 0); background:lightgrey;"></th>
-                                </tr>
-                                <tr>
-                                    <th scope="col" style='border: 1px solid rgb(0, 0, 0); background:lightgrey;'>Bezeichnung</th>
-                                    <th scope="col" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">Bezeichnung</th>
-                                    <th scope="col" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">Risikogruppe</th>
-                                    <th scope="col" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">Reinheitsgrad</th>
-                                    <th scope="col" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">Gefährdungspotential</th>
-                                    <th scope="col" style="text-align:center; border: 1px solid rgb(0, 0, 0); background:lightgrey;">Beschreibung</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                    {% for formz_elem in plasmid.plasmid.all_uncommon_formz_elements %}
-                                        <tr>
-                                            <td style="border-left: 1px solid rgb(0, 0, 0); border-right: 1px solid rgb(0, 0, 0);">{{formz_elem.name}}</td>
-                                            <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_names %}{{formz_elem.get_donor_species_names}}{% else %}Artifiziell{% endif %}</td>
-                                            <td style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_risk_groups %}{{formz_elem.get_donor_species_risk_groups}}{% else %}Keine{% endif %}</td>
-                                            <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0); ">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
-                                            <td style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{{formz_elem.nuc_acid_risk.german_name|capfirst}}</td>
-                                            <td style="border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_max_risk_group > 1 or formz_elem.nuc_acid_purity.english_name == 'synthetic fragment' %} {{formz_elem.description}} {% endif %}</td>
-                                        </tr>
-                                    {% endfor %}
-                            </tbody>
-                        {% else %}
-                            <tbody>
-                                <tr>
-                                    <td colspan="6" style="text-align:center; border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">Keine spezifischen Merkmale</td>
-                                </tr>
-                            </tbody>
-                        {% endif %}
-                    {% else %}
-                        <tbody>
-                            <tr>
-                                <td colspan="6" style="text-align:center; border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">Keine Merkmale</td>
-                            </tr>
-                        </tbody>
-                    {% endif %}
-                    
-                    {% if plasmid.plasmid.all_common_formz_elements %}
-                            <tbody>
-                                <tr>
-                                    <td colspan="6" style="border: 1px solid rgb(0, 0, 0); font-weight: bold; text-align:center;">Andere Merkmale, nicht relevant für die Sicherheitsbeurteilung</td>
-                                </tr>
-                                {% for formz_elem in plasmid.plasmid.all_common_formz_elements %}
-                                    <tr>
-                                        <td style="border-left: 1px solid rgb(0, 0, 0); border-right: 1px solid rgb(0, 0, 0);">{{formz_elem.name}}</td>
-                                        <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_names %}{{formz_elem.get_donor_species_names}}{% else %}Artifiziell{% endif %}</td>
-                                        <td style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_risk_groups %}{{formz_elem.get_donor_species_risk_groups}}{% else %}Keine{% endif %}</td>
-                                        <td style="text-align:center; border-left: 1px solid rgb(0, 0, 0); ">{{formz_elem.nuc_acid_purity.german_name|capfirst}}</td>
-                                        <td style="text-align:center; border-right: 1px solid rgb(0, 0, 0);">{{formz_elem.nuc_acid_risk.german_name|capfirst}}</td>
-                                        <td style="border-right: 1px solid rgb(0, 0, 0); border-left: 1px solid rgb(0, 0, 0);">{% if formz_elem.get_donor_species_max_risk_group > 1 %} {{formz_elem.description}} {% endif %}</td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                    {% endif %}
-                </table>
-                        
-            {% endfor %}
-        </div>
-    {% endif %}
-
-    {% if map_attachment_type != 'none' and object.all_plasmids_with_maps %}
-    <h2>Karten (wenn verfügbar)</h2>
-        {% if map_attachment_type == 'png' %}
-            {% for map in object.all_plasmids_with_maps %}
-                {% if map.map %}
-                <h3>{{map.german_name}} #{{map}}</h3>
-                <br>
-                    <img alt='{{map.german_name}} #{{map}}' src='data:image/png;base64,{{map.png_map_as_base64}}'>
-                {% endif %}
-            {% endfor %}
-        {% elif map_attachment_type == 'gbk' %}
-            {% for map in object.all_plasmids_with_maps %}
-                {% if map.map %}
-                    <h3>{{map.german_name}} #{{map}}</h3>
-                    {% autoescape off %}
-                    <p><pre>{{map.utf8_encoded_gbk}}</pre></p>
-                    {% endautoescape %}
-                {% endif %}
-            {% endfor %}
+      <!-- Destroyed -->
+      <div><span class="formztextbold">Entsorgt: </span>
+        {% if object.destroyed_date %}
+          {{object.destroyed_date | date:"d.m.Y"}}
+        {% else %}
+          Nein
         {% endif %}
+      </div>
+
+      <!-- Approval -->
+      <div><span class="formztextbold">Bestätigt durch Projektleiter: </span>
+        {% if object.created_approval_by_pi and object.last_changed_approval_by_pi is None or object.last_changed_approval_by_pi and object.created_approval_by_pi %}
+          {{object.approval_by_pi_date_time | date:"d.m.Y, H:i:s"}} ({{object.approval_user.first_name}} {{object.approval_user.last_name}})
+        {% else %}
+          Nein
+        {% endif %}
+      </div>
+
+      <!-- Storage location -->
+      <div><span class="formztextbold">Lagerort: </span>{{object.formz_storage_location.storage_location}}</div>
+
+      {% if object.all_instock_plasmids %}
+        <!-- Plasmids used to create the organism -->
+        <div id='instock-plasmids'>
+          <h3>Plasmid/e, die zur Erschaffung des Organismus genutzt wurden</h3>
+          <ul>
+            {% for plasmid in object.all_instock_plasmids %}
+              <li>
+                Plasmid #{{plasmid}}
+                {% if plasmid.vector_zkbs %}
+                  {% if plasmid.vector_zkbs.name != 'none' %}
+                    <span>- ZKBS Plasmid </span>{{plasmid.vector_zkbs.name}}
+                  {% endif %}
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+
+      {% if object.integrated_dna_oligos.exists %}
+        <!-- Integrated oligos -->
+        <div id='instock-oligos'>
+          <h3>Synthetisches/e DNA-Fragment/e, die zur Erschaffung des Organismus genutzt wurden</h3>
+          <ul>
+            {% for oligo in object.integrated_dna_oligos.all %}
+              <li>
+                Oligo #{{oligo}}
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+
+      <!-- Sequence features -->
+      <div id='formz-organism-sequence-features'>
+        <h3>Bezeichnung und für die Sicherheitsbeurteilung bedeutsame Merkmale des GVO</h3>
+
+        <!-- Sequence features table -->
+        <table>
+          <thead class="formztableheader">
+            <tr>
+              <th colspan="1" scope="col" rowspan="2" class="column-name formztableverticalborder">Bezeichnung</th>
+              <th colspan="2" scope="col" class="column-donor_organism formztableverticalborder">Spenderorganismus</th>
+              <th colspan="3" scope="col" class="column-nuc_acid">Nukleinsäure</th>
+            </tr>
+            <tr>
+                <th scope="col" class="column-donor_organism_name">Bezeichnung</th>
+                <th scope="col" class="column-donor_organism_risk formztableverticalborder">Risikogruppe</th>
+                <th scope="col" class="column-nuc_acid_purity">Reinheitsgrad</th>
+                <th scope="col" class="column-nuc_acid_risk">Gefährdungspotential</th>
+                <th scope="col" class="column-nuc_acis_description">Beschreibung</th>
+            </tr>
+          </thead>
+
+          <!-- Uncommon features -->
+          <tbody>
+            <tr class="row">
+                <td class="column-subheader formztextbold" colspan="6">Spezifische Merkmale</td>
+            </tr>
+            {% if object.all_uncommon_sequence_features.exists %}
+              {% for feat in object.all_uncommon_sequence_features %}
+                <tr class="row">
+                  <td class="field-name formztableverticalborder">{{feat.name}}</td>
+                  <td class="field-donor_organism">{% if feat.donor_species_names_format_html %}{{feat.donor_species_names_format_html}}{% else %}Artifiziell{% endif %}</td>
+                  <td class="field-donor_organism_risk formztableverticalborder">{% if feat.get_donor_species_risk_groups %}{{feat.get_donor_species_risk_groups}}{% else %}Keine{% endif %}</td>
+                  <td class="field-nuc_acid_purity">{{feat.nuc_acid_purity.german_name}}</td>
+                  <td class="field-nuc_acid_risk">{{feat.nuc_acid_risk.german_name}}</td>
+                  <td class="field-nuc_acid_description">{% if feat.get_donor_species_risk_groups > 1 or feat.nuc_acid_purity.english_name == 'synthetic fragment' %}{{feat.description}}{% endif %}</td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr class="row">
+                <td colspan="6" class="field">Keine</td>
+              </tr>
+            {% endif %}
+          </tbody>
+
+          <!-- Common features -->
+          <tbody>
+            <tr class="row">
+              <td class="column-subheader formztextbold" colspan="6">Andere Merkmale, nicht relevant für die Sicherheitsbeurteilung</td>
+            </tr>
+            {% if object.all_common_sequence_features %}
+              {% for feat in object.all_common_sequence_features %}
+              <tr class="row">
+                <td class="field-name formztableverticalborder">{{feat.name}}</td>
+                <td class="field-donor_organism">{% if feat.donor_species_names_format_html %}{{feat.donor_species_names_format_html}}{% else %}Artifiziell{% endif %}</td>
+                <td class="field-donor_organism_risk formztableverticalborder">{% if feat.get_donor_species_risk_groups %}{{feat.get_donor_species_risk_groups}}{% else %}Keine{% endif %}</td>
+                <td class="field-nuc_acid_purity">{{feat.nuc_acid_purity.german_name}}</td>
+                <td class="field-nuc_acid_risk">{{feat.nuc_acid_risk.german_name}}</td>
+                <td class="field-nuc_acid_description">{% if feat.get_donor_species_max_risk_group > 1 %}{{feat.description}}{% endif %}</td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr class="row">
+                <td colspan="6" class="field">Keine</td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+    {% if object.all_transient_episomal_plasmids.exists %}
+      <!-- Transient episomal plasmids -->
+
+      <div id='transient-plasmids'>
+
+        <!-- Distinguish between transfection, transformation and transduction -->
+        <div style="padding-bottom: 10px;">
+          {% if object.s2_work %}
+            <h2>In den Organismus transduzierte Plasmide</h2>
+            <div>Dieser Organismus wurde durch virale Transduktion des folgenden Plasmids/der folgenden Plasmide geschaffen.</div>
+          {% else %}
+            <h2> In den Organismus transient {% if object.formz_transfected %}transfizierte{% else %}transformierte{% endif %} Plasmide</h2>
+            <div>Dieser Organismus wurde mit dem/n folgenen Plasmid/en transient {% if object.formz_transfected %}transfiziert{% else %}transformiert{% endif %}.</div>
+          {% endif %}
+        </div>
+
+        <!-- Transient episomal plasmids -->
+        {% for plasmid in object.all_transient_episomal_plasmids %}
+
+          <div class="formzplasmidlistitem">
+
+            <!-- Transient episomal plasmid title -->
+            <div>
+              <!-- Transient episomal plasmid details -->
+              <span class="formztextbold">Plasmid #{{plasmid.plasmid.id}}</span> - {{plasmid.plasmid.name}}
+            </div>
+
+            <div>
+              Organismus {% if transfected %}transfiziert{% else %}transformiert{% endif %} am {{plasmid.created_date | date:"d.m.Y"}}, unter Projekt/e:
+
+              <!-- Transient episomal plasmid projects -->
+              {% for project in plasmid.formz_projects.all %}
+                {{project.title}}{% if forloop.first and not forloop.last or not forloop.first and not forloop.last %},{% else %};{% endif %}
+              {% endfor %}
+
+              {% if plasmid.destroyed_date %}
+              <!-- Transient episomal plasmid destroyed date -->
+                entsorgt am {{plasmid.destroyed_date | date:"d.m.Y"}}
+              {% else %}
+                noch nicht entsorgt
+              {% endif %}
+
+              {% if plasmid.plasmid.vector_zkbs %}
+              <!-- Transient episomal plasmid ZKBS vector -->
+                {% if plasmid.plasmid.vector_zkbs.name != 'none' %}
+                  <span>- ZKBS Plasmid </span>{{plasmid.plasmid.vector_zkbs.name}}
+                {% endif %}
+              {% endif %}
+            </div>
+            
+            <!-- Transient episomal plasmid sequence features -->
+            <table>
+              <thead class="formztableheader">
+                <tr>
+                  <th colspan="1" scope="col" rowspan="2" class="column-name formztableverticalborder">Bezeichnung</th>
+                  <th colspan="2" scope="col" class="column-donor_organism formztableverticalborder">Spenderorganismus</th>
+                  <th colspan="3" scope="col" class="column-nuc_acid">Nukleinsäure</th>
+                </tr>
+                <tr>
+                  <th scope="col" class="column-donor_organism_name">Bezeichnung</th>
+                  <th scope="col" class="column-donor_organism_risk formztableverticalborder">Risikogruppe</th>
+                  <th scope="col" class="column-nuc_acid_purity">Reinheitsgrad</th>
+                  <th scope="col" class="column-nuc_acid_risk">Gefährdungspotential</th>
+                  <th scope="col" class="column-nuc_acis_description">Beschreibung</th>
+                </tr>
+              <thead>
+
+              <!-- Transient episomal plasmid uncommon features -->
+              <tbody>
+                <tr class="row">
+                    <td class="column-subheader formztextbold" colspan="6">Spezifische Merkmale</td>
+                </tr>
+                {% if plasmid.plasmid.all_uncommon_sequence_features.exists %}
+                  {% for feat in plasmid.plasmid.all_uncommon_sequence_features %}
+                    <tr class="row">
+                      <td class="field-name formztableverticalborder">{{feat.name}}</td>
+                      <td class="field-donor_organism">{% if feat.donor_species_names_format_html %}{{feat.donor_species_names_format_html}}{% else %}Artifiziell{% endif %}</td>
+                      <td class="field-donor_organism_risk formztableverticalborder">{% if feat.get_donor_species_risk_groups %}{{feat.get_donor_species_risk_groups}}{% else %}Keine{% endif %}</td>
+                      <td class="field-nuc_acid_purity">{{feat.nuc_acid_purity.german_name}}</td>
+                      <td class="field-nuc_acid_risk">{{feat.nuc_acid_risk.german_name}}</td>
+                      <td class="field-nuc_acid_description">{% if feat.get_donor_species_max_risk_group > 1 or feat.nuc_acid_purity.english_name == 'synthetic fragment' %}{{feat.description}}{% endif %}</td>
+                    </tr>
+                  {% endfor %}
+                {% else %}
+                  <tr class="row">
+                    <td colspan="6" class="field">Keine</td>
+                  </tr>
+                {% endif %}
+              </tbody>
+
+              <!-- Transient episomal plasmid common features -->
+              <tbody>
+                <tr class="row">
+                  <td class="column-subheader formztextbold" colspan="6">Andere Merkmale, nicht relevant für die Sicherheitsbeurteilung</td>
+                </tr>
+                {% if plasmid.plasmid.all_common_sequence_features %}
+                  {% for feat in plasmid.plasmid.all_common_sequence_features %}
+                  <tr class="row">
+                    <td class="field-name formztableverticalborder">{{feat.name}}</td>
+                    <td class="field-donor_organism">{% if feat.donor_species_names_format_html %}{{feat.donor_species_names_format_html}}{% else %}Artifiziell{% endif %}</td>
+                    <td class="field-donor_organism_risk formztableverticalborder">{% if feat.get_donor_species_risk_groups %}{{feat.get_donor_species_risk_groups}}{% else %}Keine{% endif %}</td>
+                    <td class="field-nuc_acid_purity">{{feat.nuc_acid_purity.german_name}}</td>
+                    <td class="field-nuc_acid_risk">{{feat.nuc_acid_risk.german_name}}</td>
+                    <td class="field-nuc_acid_description">{% if feat.get_donor_species_max_risk_group > 1 %}{{feat.description}}{% endif %}</td>
+                  </tr>
+                  {% endfor %}
+                {% else %}
+                  <tr class="row">
+                    <td colspan="6" class="field">Keine</td>
+                  </tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+        {% endfor %}
+      </div>
     {% endif %}
 
-</body>
+    {% if object.formz_s2_plasmids %}
+    <!-- S2 work -->
 
+      <div id='s2-plasmids'>
+
+        <div style="padding-bottom: 10px;">
+          <h4>Virusverpackung</h4>
+          <div>Das oben genannten Plasmid/die oben genannten Plasmide wurden mit dem/den unten genannten Plasmid/Plasmiden zum Verpacken viraler Partikel in {% if object.formz_virus_packaging_cell_line.id %}{{object.formz_virus_packaging_cell_line.name}}{% else %}{{object.formz_virus_packaging_cell_line.name}}{% endif %} Zellen genutzt.</div>
+        </div>
+    
+        <!-- S2 plasmids -->
+        {% for plasmid in object.formz_s2_plasmids %}
+
+          <div class="formzplasmidlistitem">
+
+            <div>
+              <span class="formztextbold">Plasmid #{{plasmid.plasmid.id}}</span> - {{plasmid.plasmid.name}}
+            </div>
+
+            <div>
+              Organismus transfiziert am {{plasmid.created_date | date:"d.m.Y"}}, unter Projekt/e:
+
+              <!-- S2 plasmid projects -->
+              {% for project in plasmid.formz_projects.all %}
+                {{project.title}}{% if forloop.first and not forloop.last or not forloop.first and not forloop.last %},{% else %};{% endif %}
+              {% endfor %}
+
+              {% if plasmid.destroyed_date %}
+              <!-- S2 plasmid destroyed date -->
+                entsorgt am {{plasmid.destroyed_date | date:"d.m.Y"}}
+              {% else %}
+                noch nicht entsorgt
+              {% endif %}
+
+              {% if plasmid.plasmid.vector_zkbs %}
+              <!-- S2 plasmid ZKBS vector -->
+                {% if plasmid.plasmid.vector_zkbs.name != 'none' %}
+                  <span>- ZKBS Plasmid </span>{{plasmid.plasmid.vector_zkbs.name}}
+                {% endif %}
+              {% endif %}
+            </div>
+
+            <!-- S2 plasmid sequence features -->
+            <table>
+              <thead class="formztableheader">
+                <tr>
+                  <th colspan="1" scope="col" rowspan="2" class="column-name formztableverticalborder">Bezeichnung</th>
+                  <th colspan="2" scope="col" class="column-donor_organism formztableverticalborder">Spenderorganismus</th>
+                  <th colspan="3" scope="col" class="column-nuc_acid">Nukleinsäure</th>
+                </tr>
+                <tr>
+                  <th scope="col" class="column-donor_organism_name">Bezeichnung</th>
+                  <th scope="col" class="column-donor_organism_risk formztableverticalborder">Risikogruppe</th>
+                  <th scope="col" class="column-nuc_acid_purity">Reinheitsgrad</th>
+                  <th scope="col" class="column-nuc_acid_risk">Gefährdungspotential</th>
+                  <th scope="col" class="column-nuc_acid_description">Beschreibung</th>
+                </tr>
+              <thead>
+
+              <!-- S2 plasmid uncommon features -->
+              <tbody>
+                <tr class="row">
+                    <td class="column-subheader formztextbold" colspan="6">Spezifische Merkmale</td>
+                </tr>
+                {% if plasmid.plasmid.all_uncommon_sequence_features.exists %}
+                  {% for feat in plasmid.plasmid.all_uncommon_sequence_features %}
+                    <tr class="row">
+                      <td class="field-name formztableverticalborder">{{feat.name}}</td>
+                      <td class="field-donor_organism">{% if feat.donor_species_names_format_html %}{{feat.donor_species_names_format_html}}{% else %}Artifiziell{% endif %}</td>
+                      <td class="field-donor_organism_risk formztableverticalborder">{% if feat.get_donor_species_risk_groups %}{{feat.get_donor_species_risk_groups}}{% else %}Keine{% endif %}</td>
+                      <td class="field-nuc_acid_purity">{{feat.nuc_acid_purity.german_name}}</td>
+                      <td class="field-nuc_acid_risk">{{feat.nuc_acid_risk.german_name}}</td>
+                      <td class="field-nuc_acid_description">{% if feat.get_donor_species_max_risk_group > 1 or feat.nuc_acid_purity.english_name == 'synthetic fragment' %} {{feat.description}} {% endif %}</td>
+                    </tr>
+                  {% endfor %}
+                {% else %}
+                  <tr class="row">
+                    <td colspan="6" class="field">Keine</td>
+                  </tr>
+                {% endif %}
+              </tbody>
+
+              <!-- S2 plasmid common features -->
+              <tbody>
+                <tr class="row">
+                  <td class="column-subheader formztextbold" colspan="6">Andere Merkmale, nicht relevant für die Sicherheitsbeurteilung</td>
+                </tr>
+                {% if plasmid.plasmid.all_common_sequence_features %}
+                  {% for feat in plasmid.plasmid.all_common_sequence_features %}
+                  <tr class="row">
+                    <td class="field-name formztableverticalborder">{{feat.name}}</td>
+                    <td class="field-donor_organism">{% if feat.donor_species_names_format_html %}{{feat.donor_species_names_format_html}}{% else %}Artifiziell{% endif %}</td>
+                    <td class="field-donor_organism_risk formztableverticalborder">{% if feat.get_donor_species_risk_groups %}{{feat.get_donor_species_risk_groups}}{% else %}Keine{% endif %}</td>
+                    <td class="field-nuc_acid_purity">{{feat.nuc_acid_purity.german_name}}</td>
+                    <td class="field-nuc_acid_risk">{{feat.nuc_acid_risk.german_name}}</td>
+                    <td class="field-nuc_acid_description">{% if feat.get_donor_species_max_risk_group > 1 %} {{feat.description}} {% endif %}</td>
+                  </tr>
+                  {% endfor %}
+                {% else %}
+                  <tr class="row">
+                    <td colspan="6" class="field">Keine</td>
+                  </tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <!-- Maps -->
+    {% if map_attachment_type != 'none' and object.all_plasmids_with_maps %}
+      <h2>Karten (wenn verfügbar)</h2>
+      {% for map in object.all_plasmids_with_maps %}
+        {% if map.map %}
+          <h3>{{map.german_name}} #{{map}}</h3>
+          {% if map_attachment_type == 'png' %}
+            <img alt='{{map.german_name}} #{{map}}' src='data:image/png;base64,{{map.png_map_as_base64}}'>
+          {% elif map_attachment_type == 'gbk' %}
+            {% autoescape off %}
+            <p><pre>{{map.utf8_encoded_gbk}}</pre></p>
+            {% endautoescape %}
+          {% endif %}
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+  </body>
 </html>

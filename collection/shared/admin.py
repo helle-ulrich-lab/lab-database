@@ -1,22 +1,18 @@
 import json
 import os
-import time
 import urllib.parse
-import zipfile
 from collections import OrderedDict
 from urllib.parse import quote as urlquote
 from uuid import uuid4
 
 import zmq
 from background_task import background
-from bs4 import BeautifulSoup
 from django import forms
 from django.apps import apps
 from django.conf import settings
 from django.contrib import admin, messages
 from django.contrib.admin.utils import unquote
 from django.contrib.auth.models import User
-from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import PermissionDenied
 from django.core.mail import mail_admins
 from django.db.models import CharField
@@ -24,7 +20,6 @@ from django.db.models.functions import Collate
 from django.forms import TextInput
 from django.http import HttpResponse, HttpResponseNotFound, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
-from django.template.loader import get_template
 from django.urls import path, re_path, reverse
 from django.utils import timezone
 from django.utils.html import format_html
@@ -47,11 +42,10 @@ from common.admin import (
 )
 from common.model_clone import CustomClonableModelAdmin
 from formz.models import (
-    FormZBaseElement,
-    FormZHeader,
-    FormZProject,
-    FormZStorageLocation,
-    ZkbsCellLine,
+    Project as FormZProject,
+)
+from formz.models import (
+    SequenceFeature,
 )
 from snapgene.pyclasses.client import Client
 from snapgene.pyclasses.config import Config
@@ -1068,128 +1062,17 @@ class FieldParent2(IntField):
         return "parent_2__id"
 
 
-class FieldFormZBaseElement(StrField):
-    name = "formz_elements_name"
+class FieldSequenceFeature(StrField):
+    name = "sequence_features_name"
     suggest_options = True
 
     def get_options(self, search):
         if len(search) < 3:
             return ["Type 3 or more characters to see suggestions"]
         else:
-            return FormZBaseElement.objects.filter(name__icontains=search).values_list(
+            return SequenceFeature.objects.filter(name__icontains=search).values_list(
                 "name", flat=True
             )
 
     def get_lookup_name(self):
-        return "formz_elements__name"
-
-
-#################################################
-#          Download Formblatt Z action          #
-#################################################
-
-
-@admin.action(description="Export Formblatt Z for selected items")
-def formz_as_html(modeladmin, request, queryset):
-    """Export ForblattZ as html"""
-
-    def get_params(app_label, model_name, obj_id):
-        model = apps.get_model(app_label, model_name)
-        model_content_type = ContentType.objects.get(
-            app_label=app_label, model=model_name
-        )
-        obj = model.objects.get(id=int(obj_id))
-
-        # Get storage location object or create a new 'empty' one
-        if FormZStorageLocation.objects.get(collection_model=model_content_type):
-            storage_location = FormZStorageLocation.objects.get(
-                collection_model=model_content_type
-            )
-        else:
-            storage_location = FormZStorageLocation(
-                collection_model=None,
-                storage_location=None,
-                species_name=None,
-                species_risk_group=None,
-            )
-
-        # Get FormZ header
-        if FormZHeader.objects.all().first():
-            formz_header = FormZHeader.objects.all().first()
-        else:
-            formz_header = None
-
-        # Set relevant fields
-        obj.common_formz_elements = obj.all_common_formz_elements
-        obj.uncommon_formz_elements = obj.all_uncommon_formz_elements
-        obj.instock_plasmids = obj.all_instock_plasmids
-        obj.transient_episomal_plasmids = obj.all_transient_episomal_plasmids
-
-        # Fields specific for Cell line
-        if model_name == "cellline":
-            storage_location.species_name = obj.organism
-            storage_location.species_name_str = obj.organism.name_for_search
-            storage_location.species_risk_group = obj.organism.risk_group
-            obj.s2_plasmids = (
-                obj.celllineepisomalplasmid_set.all()
-                .filter(s2_work_episomal_plasmid=True)
-                .distinct()
-                .order_by("id")
-            )
-            transfected = True
-            try:
-                virus_packaging_cell_line = ZkbsCellLine.objects.filter(
-                    name__iexact="293T (HEK 293T)"
-                ).order_by("id")[0]
-            except Exception:
-                virus_packaging_cell_line = ZkbsCellLine(name="293T (HEK 293T)")
-
-        # Fields specific for Worm strain
-        elif model_name == "wormstrain":
-            transfected = False
-            virus_packaging_cell_line = None
-            storage_location.species_name_str = obj.get_organism_display()
-
-        # Everything else
-        else:
-            storage_location.species_name_str = (
-                storage_location.species_name.name_for_search
-            )
-            obj.s2_plasmids = None
-            transfected = False
-            virus_packaging_cell_line = None
-
-        params = {
-            "object": obj,
-            "storage_location": storage_location,
-            "formz_header": formz_header,
-            "transfected": transfected,
-            "virus_packaging_cell_line": virus_packaging_cell_line,
-        }
-
-        return params
-
-    response = HttpResponse(content_type="application/zip")
-    response["Content-Disposition"] = (
-        'attachment; filename="formblattz_{}_{}.zip'.format(
-            time.strftime("%Y%m%d"), time.strftime("%H%M%S")
-        )
-    )
-
-    template = get_template("admin/formz/formz_for_export.html")
-    app_label = queryset[0]._meta.app_label
-    model_name = queryset[0].__class__.__name__
-
-    # Generate zip file
-    with zipfile.ZipFile(response, "w", zipfile.ZIP_DEFLATED) as zip_file:
-        for obj in queryset:
-            params = get_params(app_label, model_name.lower(), obj.id)
-            params["map_attachment_type"] = request.POST.get(
-                "map_attachment_type", default="none"
-            )
-            html = template.render(params)
-            html = BeautifulSoup(html, features="lxml")
-            html = html.prettify("utf-8")
-            zip_file.writestr("{}_{}.html".format(model_name, obj.id), html)
-
-    return response
+        return "sequence_features__name"

@@ -5,11 +5,13 @@ from django.db import models
 
 from common.models import DocFileMixin, HistoryFieldMixin, SaveWithoutHistoricalRecord
 from formz.models import (
-    FormZBaseElement,
-    FormZProject,
     GenTechMethod,
+    SequenceFeature,
     Species,
     ZkbsCellLine,
+)
+from formz.models import (
+    Project as FormZProject,
 )
 
 from ..plasmid.models import Plasmid
@@ -70,7 +72,7 @@ class CellLine(
         "history_episomal_plasmids": Plasmid,
         "history_formz_projects": FormZProject,
         "history_formz_gentech_methods": GenTechMethod,
-        "history_formz_elements": FormZBaseElement,
+        "history_sequence_features": SequenceFeature,
         "history_documents": CellLineDoc,
     }
     _history_view_ignore_fields = (
@@ -160,26 +162,45 @@ class CellLine(
         )
 
     @property
-    def all_uncommon_formz_elements(self):
-        elements = super().all_uncommon_formz_elements
+    def all_sequence_features(self):
+        elements = super().all_sequence_features
         all_plasmids = self.all_instock_plasmids
         for pl in all_plasmids:
-            elements = elements | pl.formz_elements.all()
-        elements = elements.distinct().filter(common_feature=False).order_by("name")
-        return elements
-
-    @property
-    def all_common_formz_elements(self):
-        elements = super().all_common_formz_elements
-        all_plasmids = self.all_instock_plasmids
-        for pl in all_plasmids:
-            elements = elements | pl.formz_elements.all()
-        elements = elements.distinct().filter(common_feature=True).order_by("name")
-        return elements
+            elements = elements | pl.sequence_features.all()
+        return elements.distinct().order_by("name")
 
     @property
     def plasmids_in_model(self):
         return self.all_instock_plasmids.order_by("id").values_list("id", flat=True)
+
+    @property
+    def formz_species(self):
+        species = self.organism
+        species.risk_group = self.formz_risk_group
+        return species
+
+    @property
+    def formz_s2_plasmids(self):
+        return (
+            self.celllineepisomalplasmid_set.filter(s2_work_episomal_plasmid=True)
+            .distinct()
+            .order_by("id")
+        )
+
+    @property
+    def formz_transfected(self):
+        return True
+
+    @property
+    def formz_virus_packaging_cell_line(self):
+        try:
+            virus_packaging_cell_line = ZkbsCellLine.objects.filter(
+                name__iexact="293T (HEK 293T)"
+            ).order_by("id")[0]
+        except Exception:
+            virus_packaging_cell_line = ZkbsCellLine(name="293T (HEK 293T)")
+
+        return virus_packaging_cell_line
 
 
 class CellLineEpisomalPlasmid(models.Model):

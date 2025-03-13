@@ -8,7 +8,7 @@ from common.models import (
     HistoryFieldMixin,
     SaveWithoutHistoricalRecord,
 )
-from formz.models import FormZBaseElement
+from formz.models import SequenceFeature
 
 from ..shared.models import (
     ApprovalFieldsMixin,
@@ -51,7 +51,7 @@ class Oligo(
     _model_abbreviation = "o"
     _model_upload_to = "collection/oligo/"
     _history_array_fields = {
-        "history_formz_elements": FormZBaseElement,
+        "history_sequence_features": SequenceFeature,
         "history_documents": OligoDoc,
     }
     _history_view_ignore_fields = (
@@ -81,13 +81,13 @@ class Oligo(
         null=True,
     )
 
-    formz_elements = models.ManyToManyField(
-        FormZBaseElement,
+    sequence_features = models.ManyToManyField(
+        SequenceFeature,
         verbose_name="elements",
-        related_name="%(class)s_formz_elements",
+        related_name="%(class)s_sequence_features",
         blank=True,
     )
-    history_formz_elements = ArrayField(
+    history_sequence_features = ArrayField(
         models.PositiveIntegerField(),
         verbose_name="formz elements",
         blank=True,

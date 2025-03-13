@@ -1,8 +1,3 @@
-#################################################
-#    DJANGO 'CORE' FUNCTIONALITIES IMPORTS      #
-#################################################
-
-# Other imports
 import time
 
 from django import forms
@@ -18,29 +13,27 @@ from django.urls import path, re_path
 from django.utils.encoding import force_str
 from django.utils.safestring import mark_safe
 from django.utils.text import capfirst
-
-# Import/Export functionalities from django-import-export
 from import_export import resources
 from import_export.fields import Field
 
-from formz.models import FormZHeader, FormZStorageLocation, ZkbsCellLine
-from formz.update_zkbs_records import (
+from .models import (
+    Header,
+    Project,
+    ProjectUsers,
+    SequenceFeature,
+    SequenceFeatureAlias,
+    Species,
+    StorageLocation,
+)
+from .update_zkbs_records import (
     update_zkbs_celllines,
     update_zkbs_oncogenes,
     update_zkbs_plasmids,
 )
 
-from .models import FormZHeader
 
-#################################################
-#                 FORMZ ADMIN                   #
-#################################################
-
-
-class FormZAdmin(admin.AdminSite):
-
+class FormZAdminSite(admin.AdminSite):
     def get_formz_urls(self):
-
         urls = [
             path("<path:object_id>/formz/", self.admin_view(self.formz_view)),
             re_path(
@@ -56,69 +49,17 @@ class FormZAdmin(admin.AdminSite):
 
         app_label, model_name, obj_id = kwargs["object_id"].split("/")
         model = apps.get_model(app_label, model_name)
-        model_content_type = ContentType.objects.get(
-            app_label=app_label, model=model_name
-        )
         opts = model._meta
         obj = model.objects.get(id=int(obj_id))
 
-        # Get storage location object or create a new 'empty' one
-        if FormZStorageLocation.objects.get(collection_model=model_content_type):
-            storage_location = FormZStorageLocation.objects.get(
-                collection_model=model_content_type
-            )
-        else:
-            storage_location = FormZStorageLocation(
-                collection_model=None,
-                storage_location=None,
-                species_name=None,
-                species_risk_group=None,
-            )
-
         # Get FormZ header
-        if FormZHeader.objects.all().first():
-            formz_header = FormZHeader.objects.all().first()
+        if Header.objects.all().first():
+            formz_header = Header.objects.all().first()
         else:
             formz_header = None
 
-        # Get all sequence elements
-        obj.common_formz_elements = obj.all_common_formz_elements
-        obj.uncommon_formz_elements = obj.all_uncommon_formz_elements
-        obj.instock_plasmids = obj.all_instock_plasmids
-        obj.transient_episomal_plasmids = obj.all_transient_episomal_plasmids
-
-        # If object is a cell line, get info that is specific for cell lines
-        # only, such as S2 plasmids and virus packaking line
-        if model_name == "cellline":
-            storage_location.species_name = obj.organism
-            storage_location.species_name_str = obj.organism.name_for_search
-            obj.s2_plasmids = (
-                obj.celllineepisomalplasmid_set.all()
-                .filter(s2_work_episomal_plasmid=True)
-                .distinct()
-                .order_by("id")
-            )
-            transfected = True
-            try:
-                virus_packaging_cell_line = ZkbsCellLine.objects.filter(
-                    name__iexact="293T (HEK 293T)"
-                ).order_by("id")[0]
-            except:
-                virus_packaging_cell_line = ZkbsCellLine(name="293T (HEK 293T)")
-        elif model_name == "wormstrain":
-            transfected = False
-            virus_packaging_cell_line = None
-            storage_location.species_name_str = obj.get_organism_display()
-        else:
-            storage_location.species_name_str = (
-                storage_location.species_name.name_for_search
-            )
-            obj.s2_plasmids = None
-            transfected = False
-            virus_packaging_cell_line = None
-
         context = {
-            "title": "FormZ: {}".format(obj),
+            "title": f"FormZ: {obj}",
             "module_name": capfirst(force_str(opts.verbose_name_plural)),
             "site_header": self.site_header,
             "has_permission": self.has_permission(request),
@@ -126,10 +67,7 @@ class FormZAdmin(admin.AdminSite):
             "opts": opts,
             "site_url": self.site_url,
             "object": obj,
-            "storage_location": storage_location,
             "formz_header": formz_header,
-            "transfected": transfected,
-            "virus_packaging_cell_line": virus_packaging_cell_line,
         }
 
         return render(request, "admin/formz/formz.html", context)
@@ -158,7 +96,6 @@ class FormZAdmin(admin.AdminSite):
 
         # Check that that the page is rendered only for the models specified above
         if model_name in [m_name for m_name, url in allowed_models.items()]:
-
             # Set some variables for the admin view
             app_label = "formz"
             model = apps.get_model(app_label, model_name)
@@ -169,12 +106,10 @@ class FormZAdmin(admin.AdminSite):
 
             # If the form has been posted
             if request.method == "POST":
-
                 file_processing_errors = []
 
                 # Check that a file is present
                 if "file" in request.FILES:
-
                     # Based on model, call relative function
                     if model_name == "zkbscellline":
                         file_processing_errors = update_zkbs_celllines(
@@ -224,29 +159,21 @@ class FormZAdmin(admin.AdminSite):
             raise Http404()
 
 
-#################################################
-#             MODEL ADMIN CLASSES               #
-#################################################
-
-
-class NucleicAcidPurityPage(admin.ModelAdmin):
-
+class NucleicAcidPurityAdmin(admin.ModelAdmin):
     list_display = ("english_name", "german_name")
     list_display_links = ("english_name",)
     list_per_page = 25
     ordering = ["english_name"]
 
 
-class NucleicAcidRiskPage(admin.ModelAdmin):
-
+class NucleicAcidRiskAdmin(admin.ModelAdmin):
     list_display = ("english_name", "german_name")
     list_display_links = ("english_name",)
     list_per_page = 25
     ordering = ["english_name"]
 
 
-class GenTechMethodPage(admin.ModelAdmin):
-
+class GenTechMethodAdmin(admin.ModelAdmin):
     list_display = ("english_name", "german_name")
     list_display_links = ("english_name",)
     list_per_page = 25
@@ -254,25 +181,15 @@ class GenTechMethodPage(admin.ModelAdmin):
     search_fields = ["english_name"]
 
 
-from .models import (
-    FormZBaseElement,
-    FormZBaseElementExtraLabel,
-    FormZProject,
-    FormZUsers,
-    Species,
-)
-
-
-class FormZUsersInline(admin.TabularInline):
+class ProjectUsersInline(admin.TabularInline):
     # autocomplete_fields = ['user']
-    model = FormZUsers
+    model = ProjectUsers
     verbose_name_plural = "users"
     verbose_name = "user"
     extra = 0
     template = "admin/tabular.html"
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
-
         # Exclude certain users from the 'User' field
 
         if db_field.name == "user":
@@ -280,15 +197,11 @@ class FormZUsersInline(admin.TabularInline):
                 username__in=["admin", "guest", "AnonymousUser"]
             ).order_by("last_name")
 
-        return super(FormZUsersInline, self).formfield_for_foreignkey(
-            db_field, request, **kwargs
-        )
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
-class FormZProjectForm(forms.ModelForm):
-
+class ProjectForm(forms.ModelForm):
     def clean(self):
-
         # For main S2 projects, check whether any information has been added to
         # genetic_work_classification
         if self.cleaned_data.get("safety_level", 0) == 2:
@@ -305,32 +218,30 @@ class FormZProjectForm(forms.ModelForm):
         return self.cleaned_data
 
 
-class FormZProjectPage(admin.ModelAdmin):
-
+class ProjectAdmin(admin.ModelAdmin):
     list_display = ("title", "short_title_english", "main_project", "model_search_link")
     list_display_links = ("title",)
     list_per_page = 25
     search_fields = ["id", "short_title"]
     autocomplete_fields = ["project_leader", "deputy_project_leader"]
-    form = FormZProjectForm
+    form = ProjectForm
 
     def add_view(self, request, extra_context=None):
-
         # Do not show any inlines in add_view
 
         self.inlines = []
 
-        return super(FormZProjectPage, self).add_view(request)
+        return super().add_view(request)
 
     def change_view(self, request, object_id, extra_context=None):
         """Override default change_view to show only desired fields"""
 
         # Show Users inline only if project has safety level 2
         if object_id:
-            obj = FormZProject.objects.get(pk=object_id)
+            obj = Project.objects.get(pk=object_id)
             if obj:
                 if obj.safety_level == 2:
-                    self.inlines = [FormZUsersInline]
+                    self.inlines = [ProjectUsersInline]
                 else:
                     self.inlines = []
 
@@ -355,15 +266,16 @@ class FormZProjectPage(admin.ModelAdmin):
             "end_work_date",
             "genetic_work_classification",
         )
-        return super(FormZProjectPage, self).change_view(request, object_id)
+        return super().change_view(request, object_id)
 
+    @admin.display(description="")
     def model_search_link(self, instance):
         projects = (
             str(
                 tuple(
                     [instance.short_title]
                     + list(
-                        FormZProject.objects.filter(
+                        Project.objects.filter(
                             parent_project_id=instance.id
                         ).values_list("short_title", flat=True)
                     )
@@ -375,9 +287,7 @@ class FormZProjectPage(admin.ModelAdmin):
 
         html_str = ""
 
-        for loc in FormZStorageLocation.objects.all().order_by(
-            "collection_model__model"
-        ):
+        for loc in StorageLocation.objects.all().order_by("collection_model__model"):
             model = loc.collection_model.model_class()
             if model.objects.filter(
                 Q(formz_projects__id=instance.id)
@@ -397,16 +307,13 @@ class FormZProjectPage(admin.ModelAdmin):
 
         return mark_safe(html_str)
 
-    model_search_link.short_description = ""
-
+    @admin.display(description="Main project")
     def main_project(self, instance):
         return instance.parent_project
 
-    main_project.short_description = "Main project"
 
-
-class FormZBaseElementExtraLabelPage(admin.TabularInline):
-    model = FormZBaseElementExtraLabel
+class SequenceFeatureAliasAdmin(admin.TabularInline):
+    model = SequenceFeatureAlias
     verbose_name_plural = mark_safe(
         "aliases <span style='text-transform:none;'>- Must be identical (CASE-SENSITIVE!) to a feature name in a plasmid map for auto-detection to work</span>"
     )
@@ -417,17 +324,15 @@ class FormZBaseElementExtraLabelPage(admin.TabularInline):
     min_num = 1
 
     def get_formset(self, request, obj=None, **kwargs):
-
         #  Check that the minimum number of aliases is indeed 1
         formset = super().get_formset(request, obj=None, **kwargs)
         formset.validate_min = True
         return formset
 
 
-class FormZBaseElementForm(forms.ModelForm):
-
+class SequenceFeatureForm(forms.ModelForm):
     class Meta:
-        model = FormZBaseElement
+        model = SequenceFeature
         fields = "__all__"
 
     def clean(self):
@@ -469,14 +374,14 @@ class FormZBaseElementForm(forms.ModelForm):
             ):
                 self.add_error(
                     "description",
-                    "If an element is a synthetic fragment, a description must be provided",
+                    "If a sequence feature is a synthetic fragment, a description must be provided",
                 )
 
         return self.cleaned_data
 
 
-class FormZBaseElementResource(resources.ModelResource):
-    """Defines a custom export resource class for FormZBaseElement"""
+class SequenceFeatureResource(resources.ModelResource):
+    """Defines a custom export resource class for SequenceFeature"""
 
     donor_organism_name_rg = Field()
     aliases = Field()
@@ -488,10 +393,10 @@ class FormZBaseElementResource(resources.ModelResource):
         )
 
     def dehydrate_aliases(self, e):
-        return ", ".join(e.extra_label.values_list("label", flat=True))
+        return ", ".join(e.alias.values_list("label", flat=True))
 
     class Meta:
-        model = FormZBaseElement
+        model = SequenceFeature
         fields = (
             "id",
             "name",
@@ -514,10 +419,11 @@ class FormZBaseElementResource(resources.ModelResource):
         )
 
 
-def export_formzbaseelement(modeladmin, request, queryset):
-    """Export Sequence element"""
+@admin.action(description="Export selected sequence elements as XLSX")
+def export_sequence_features(modeladmin, request, queryset):
+    """Export Sequence feature"""
 
-    export_data = FormZBaseElementResource().export(queryset)
+    export_data = SequenceFeatureResource().export(queryset)
 
     response = HttpResponse(
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -530,28 +436,23 @@ def export_formzbaseelement(modeladmin, request, queryset):
     return response
 
 
-export_formzbaseelement.short_description = "Export selected sequence elements as XLSX"
-
-
-class FormZBaseElementPage(admin.ModelAdmin):
-
-    list_display = ("name", "get_donor_organism", "description", "get_extra_labels")
+class SequenceFeatureAdmin(admin.ModelAdmin):
+    list_display = ("name", "get_donor_organism", "description", "get_aliass")
     list_display_links = ("name",)
     list_per_page = 25
-    search_fields = ["name", "extra_label__label"]
+    search_fields = ["name", "alias__label"]
     ordering = ["name"]
     autocomplete_fields = ["zkbs_oncogene", "donor_organism"]
-    inlines = [FormZBaseElementExtraLabelPage]
-    form = FormZBaseElementForm
-    actions = [export_formzbaseelement]
+    inlines = [SequenceFeatureAliasAdmin]
+    form = SequenceFeatureForm
+    actions = [export_sequence_features]
 
-    def get_extra_labels(self, instance):
-        return ", ".join(instance.extra_label.all().values_list("label", flat=True))
+    @admin.display(description="aliases")
+    def get_aliass(self, instance):
+        return ", ".join(instance.alias.all().values_list("label", flat=True))
 
-    get_extra_labels.short_description = "aliases"
-
+    @admin.display(description="donor organism")
     def get_donor_organism(self, instance):
-
         species_names = []
         for species in instance.donor_organism.all():
             species_names.append(
@@ -559,10 +460,8 @@ class FormZBaseElementPage(admin.ModelAdmin):
             )
         return ", ".join(species_names)
 
-    get_donor_organism.short_description = "donor organism"
 
-
-class ZkbsPlasmidPage(admin.ModelAdmin):
+class ZkbsPlasmidAdmin(admin.ModelAdmin):
     list_display = ("name", "source", "purpose")
     list_display_links = ("name",)
     list_per_page = 25
@@ -570,7 +469,6 @@ class ZkbsPlasmidPage(admin.ModelAdmin):
     ordering = ["name"]
 
     def changelist_view(self, request, extra_context=None):
-
         # Check which user is request the page and if Lab Manager, FormZ Manager or superuser
         # show update record button
 
@@ -585,12 +483,10 @@ class ZkbsPlasmidPage(admin.ModelAdmin):
         else:
             extra_context["has_update_from_excel_permission"] = False
 
-        return super(ZkbsPlasmidPage, self).changelist_view(
-            request, extra_context=extra_context
-        )
+        return super().changelist_view(request, extra_context=extra_context)
 
 
-class ZkbsOncogenePage(admin.ModelAdmin):
+class ZkbsOncogeneAdmin(admin.ModelAdmin):
     list_display = ("name", "synonym", "species", "risk_potential")
     list_display_links = ("name",)
     list_per_page = 25
@@ -598,7 +494,6 @@ class ZkbsOncogenePage(admin.ModelAdmin):
     ordering = ["name", "synonym"]
 
     def changelist_view(self, request, extra_context=None):
-
         # Check which user is request the page and if Lab Manager, FormZ Manager or superuser
         # show update record button
 
@@ -613,12 +508,10 @@ class ZkbsOncogenePage(admin.ModelAdmin):
         else:
             extra_context["has_update_from_excel_permission"] = False
 
-        return super(ZkbsOncogenePage, self).changelist_view(
-            request, extra_context=extra_context
-        )
+        return super().changelist_view(request, extra_context=extra_context)
 
 
-class ZkbsCellLinePage(admin.ModelAdmin):
+class ZkbsCellLineAdmin(admin.ModelAdmin):
     list_display = (
         "name",
         "synonym",
@@ -634,7 +527,6 @@ class ZkbsCellLinePage(admin.ModelAdmin):
     ordering = ["name"]
 
     def changelist_view(self, request, extra_context=None):
-
         # Check which user is request the page and if Lab Manager, FormZ Manager or superuser
         # show update record button
 
@@ -649,36 +541,36 @@ class ZkbsCellLinePage(admin.ModelAdmin):
         else:
             extra_context["has_update_from_excel_permission"] = False
 
-        return super(ZkbsCellLinePage, self).changelist_view(
-            request, extra_context=extra_context
-        )
+        return super().changelist_view(request, extra_context=extra_context)
 
 
-class FormZHeaderPage(admin.ModelAdmin):
-
+class HeaderAdmin(admin.ModelAdmin):
     list_display = ("operator",)
     list_display_links = ("operator",)
     list_per_page = 25
 
     def add_view(self, request, extra_context=None):
-
-        if FormZHeader.objects.all().exists():
+        if Header.objects.all().exists():
             # Override default add_view to prevent addition of new records, one is enough!
             messages.error(request, "Nice try, you can only have one header")
             return HttpResponseRedirect("..")
         else:
-            return super(FormZHeaderPage, self).add_view(request)
+            return super().add_view(request)
 
 
-class FormZStorageLocationPage(admin.ModelAdmin):
-
-    list_display = ("collection_model", "storage_location", "species_name")
-    list_display_links = ("collection_model",)
+class StorageLocationAdmin(admin.ModelAdmin):
+    list_display = ("collection_model_prettified", "storage_location", "species")
+    list_display_links = ("collection_model_prettified",)
     list_per_page = 25
-    autocomplete_fields = ["species_name"]
+    autocomplete_fields = ["species"]
+
+    @admin.display(description="Collection")
+    def collection_model_prettified(self, instance):
+        return str(
+            instance.collection_model.model_class()._meta.verbose_name.capitalize()
+        )
 
     def has_module_permission(self, request):
-
         # Show this model on the admin home page only for superusers and
         # lab managers
         if (
@@ -690,11 +582,9 @@ class FormZStorageLocationPage(admin.ModelAdmin):
             return False
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
-
         try:
             request.resolver_match.args[0]
-        except:
-
+        except Exception:
             # Include only relevant models from collection app
 
             if db_field.name == "collection_model":
@@ -707,19 +597,15 @@ class FormZStorageLocationPage(admin.ModelAdmin):
                     | ContentType.objects.filter(model="cellline")
                 )
 
-        return super(FormZStorageLocationPage, self).formfield_for_foreignkey(
-            db_field, request, **kwargs
-        )
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
 class SpeciesForm(forms.ModelForm):
-
     class Meta:
         model = Species
         fields = "__all__"
 
     def clean_latin_name(self):
-
         if not self.instance.pk:
             qs = Species.objects.filter(name_for_search=self.cleaned_data["latin_name"])
 
@@ -736,7 +622,6 @@ class SpeciesForm(forms.ModelForm):
             return self.cleaned_data["latin_name"]
 
     def clean_common_name(self):
-
         if not self.instance.pk:
             qs = Species.objects.filter(
                 name_for_search=self.cleaned_data["common_name"]
@@ -755,17 +640,15 @@ class SpeciesForm(forms.ModelForm):
             return self.cleaned_data["common_name"]
 
 
-class SpeciesPage(admin.ModelAdmin):
-
-    list_display = ("species_name", "risk_group")
-    list_display_links = ("species_name",)
+class SpeciesAdmin(admin.ModelAdmin):
+    list_display = ("name", "risk_group")
+    list_display_links = ("name",)
     list_per_page = 25
     search_fields = ["name_for_search"]
     ordering = ["name_for_search"]
     fields = ["latin_name", "common_name", "risk_group", "show_in_cell_line_collection"]
     form = SpeciesForm
 
-    def species_name(self, instance):
+    @admin.display(description="name")
+    def name(self, instance):
         return instance.name_for_search
-
-    species_name.short_description = "organism name"

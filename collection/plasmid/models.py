@@ -11,7 +11,8 @@ from common.models import (
     HistoryFieldMixin,
     SaveWithoutHistoricalRecord,
 )
-from formz.models import FormZBaseElement, FormZProject, GenTechMethod, ZkbsPlasmid
+from formz.models import GenTechMethod, SequenceFeature, ZkbsPlasmid
+from formz.models import Project as FormZProject
 
 from ..ecolistrain.models import EColiStrain
 from ..shared.models import (
@@ -62,7 +63,7 @@ class Plasmid(
     _history_array_fields = {
         "history_formz_projects": FormZProject,
         "history_formz_gentech_methods": GenTechMethod,
-        "history_formz_elements": FormZBaseElement,
+        "history_sequence_features": SequenceFeature,
         "history_formz_ecoli_strains": EColiStrain,
         "history_documents": PlasmidDoc,
     }

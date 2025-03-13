@@ -9,11 +9,11 @@ from common.search import (
 
 from ..shared.admin import (
     FieldCreated,
-    FieldFormZBaseElement,
     FieldFormZProject,
     FieldLastChanged,
     FieldParent1,
     FieldParent2,
+    FieldSequenceFeature,
     FieldUse,
 )
 from .models import WormStrain, WormStrainAllele
@@ -117,7 +117,7 @@ class WormStrainAlleleSearchFieldUserLastname(SearchFieldUserLastnameWithOptions
     )
 
 
-class WormStrainAlleleSearchFieldFormZBaseElement(FieldFormZBaseElement):
+class WormStrainAlleleSearchFieldSequenceFeature(FieldSequenceFeature):
     model = WormStrainAllele
 
 
@@ -165,7 +165,7 @@ class WormStrainAlleleQLSchema(DjangoQLSchema):
                 "created_by",
                 FieldCreated(),
                 FieldLastChanged(),
-                FieldFormZBaseElement(),
+                FieldSequenceFeature(),
             ]
         elif model == self.include[1]:
             return [

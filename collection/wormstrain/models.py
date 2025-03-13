@@ -3,7 +3,8 @@ from django.contrib.postgres.fields import ArrayField
 from django.db import models
 
 from common.models import DocFileMixin, HistoryFieldMixin, SaveWithoutHistoricalRecord
-from formz.models import FormZBaseElement, FormZProject, GenTechMethod
+from formz.models import GenTechMethod, SequenceFeature, Species
+from formz.models import Project as FormZProject
 
 from ..oligo.models import Oligo
 from ..plasmid.models import Plasmid
@@ -48,7 +49,7 @@ class WormStrainAllele(
     _model_upload_to = "collection/wormstrainallele/"
     german_name = "Allel"
     _history_array_fields = {
-        "history_formz_elements": FormZBaseElement,
+        "history_sequence_features": SequenceFeature,
         "history_made_with_plasmids": Plasmid,
         "history_transgene_plasmids": Plasmid,
         "history_documents": WormStrainAlleleDoc,
@@ -128,15 +129,15 @@ class WormStrainAllele(
         help_text=f"only .gbk or .gb files, max. {FILE_SIZE_LIMIT_MB} MB",
         blank=True,
     )
-    formz_elements = models.ManyToManyField(
-        FormZBaseElement,
+    sequence_features = models.ManyToManyField(
+        SequenceFeature,
         verbose_name="elements",
-        help_text="Searching against the aliases of an element is case-sensitive. "
-        '<a href="/formz/formzbaseelement/" target="_blank">View all/Change</a>',
+        help_text="Searching against the aliases of a sequence feature is case-sensitive. "
+        '<a href="/formz/sequencefeature/" target="_blank">View all/Change</a>',
         blank=True,
     )
 
-    history_formz_elements = ArrayField(
+    history_sequence_features = ArrayField(
         models.PositiveIntegerField(),
         verbose_name="formz elements",
         blank=True,
@@ -168,16 +169,6 @@ class WormStrainAllele(
     @property
     def download_file_name(self):
         return self.__str__()
-
-    @property
-    def all_uncommon_formz_elements(self):
-        elements = self.formz_elements.filter(common_feature=False).order_by("name")
-        return elements
-
-    @property
-    def all_common_formz_elements(self):
-        elements = self.formz_elements.filter(common_feature=True).order_by("name")
-        return elements
 
     @property
     def plasmids_in_model(self):
@@ -235,7 +226,7 @@ class WormStrain(
         "history_integrated_dna_oligos": Oligo,
         "history_formz_projects": FormZProject,
         "history_formz_gentech_methods": GenTechMethod,
-        "history_formz_elements": FormZBaseElement,
+        "history_sequence_features": SequenceFeature,
         "history_genotyping_oligos": Oligo,
         "history_documents": WormStrainDoc,
         "history_alleles": WormStrainAllele,
@@ -349,38 +340,20 @@ class WormStrain(
         return f"{self.id} - {self.name}"
 
     @property
-    def all_uncommon_formz_elements(self):
-        """Returns all uncommon features in stocked organism"""
+    def all_sequence_features(self):
+        """Returns all features in stocked organism"""
 
-        elements = self.formz_elements.all()
+        elements = self.sequence_features.all()
         all_plasmids = self.integrated_dna_plasmids.all()
         all_oligos = self.integrated_dna_oligos.all()
         all_alleles = self.alleles.all()
         for pl in all_plasmids:
-            elements = elements | pl.formz_elements.all()
+            elements = elements | pl.sequence_features.all()
         for ol in all_oligos:
-            elements = elements | ol.formz_elements.all()
+            elements = elements | ol.sequence_features.all()
         for al in all_alleles:
-            elements = elements | al.formz_elements.all()
-        elements = elements.distinct().filter(common_feature=False).order_by("name")
-        return elements
-
-    @property
-    def all_common_formz_elements(self):
-        """Returns all common features in stocked organism"""
-
-        elements = self.formz_elements.all()
-        all_plasmids = self.integrated_dna_plasmids.all()
-        all_oligos = self.integrated_dna_oligos.all()
-        all_alleles = self.alleles.all()
-        for pl in all_plasmids:
-            elements = elements | pl.formz_elements.all()
-        for ol in all_oligos:
-            elements = elements | ol.formz_elements.all()
-        for al in all_alleles:
-            elements = elements | al.formz_elements.all()
-        elements = elements.distinct().filter(common_feature=True).order_by("name")
-        return elements
+            elements = elements | al.sequence_features.all()
+        return self.elements.distinct().order_by("name")
 
     @property
     def all_instock_plasmids(self):
@@ -413,6 +386,17 @@ class WormStrain(
     @property
     def plasmids_in_model(self):
         return self.history_all_plasmids_in_stocked_strain
+
+    @property
+    def formz_species(self):
+        species = Species(
+            latin_name=self.get_organism_display(), risk_group=self.formz_risk_group
+        )
+        return species
+
+    @property
+    def formz_genotype(self):
+        return self.chromosomal_genotype
 
     def save(
         self, force_insert=False, force_update=False, using=None, update_fields=None

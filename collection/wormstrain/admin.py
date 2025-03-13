@@ -10,6 +10,7 @@ from common.admin import (
     AddDocFileInlineMixin,
     DocFileInlineMixin,
 )
+from formz.actions import formz_as_html
 
 from ..plasmid.admin import PlasmidAdmin
 from ..shared.admin import (
@@ -18,7 +19,6 @@ from ..shared.admin import (
     SortAutocompleteResultsId,
     convert_map_gbk_to_dna,
     create_map_preview,
-    formz_as_html,
 )
 from .actions import export_wormstrain, export_wormstrainallele
 from .forms import WormStrainAdminForm, WormStrainAlleleAdminForm
@@ -101,7 +101,7 @@ class WormStrainAdmin(
         "parent_2",
         "formz_projects",
         "formz_gentech_methods",
-        "formz_elements",
+        "sequence_features",
         "alleles",
         "integrated_dna_plasmids",
         "integrated_dna_oligos",
@@ -138,7 +138,7 @@ class WormStrainAdmin(
         "formz_projects",
         "formz_risk_group",
         "formz_gentech_methods",
-        "formz_elements",
+        "sequence_features",
         "destroyed_date",
     ]
     obj_unmodifiable_fields = [
@@ -355,7 +355,7 @@ class WormStrainAlleleAdmin(PlasmidAdmin):
     actions = [export_wormstrainallele]
     search_fields = ["id", "mutation", "transgene"]
     autocomplete_fields = [
-        "formz_elements",
+        "sequence_features",
         "made_by_method",
         "reference_strain",
         "transgene_plasmids",
@@ -383,7 +383,7 @@ class WormStrainAlleleAdmin(PlasmidAdmin):
         "map",
         "map_png",
         "map_gbk",
-        "formz_elements",
+        "sequence_features",
     ]
     obj_unmodifiable_fields = [
         "created_date_time",
@@ -405,7 +405,7 @@ class WormStrainAlleleAdmin(PlasmidAdmin):
         self.rename_and_preview = False
         new_obj = False
         self.new_obj = False
-        self.clear_formz_elements = False
+        self.clear_sequence_features = False
         convert_map_to_dna = False
 
         if obj.pk is None:
@@ -421,7 +421,7 @@ class WormStrainAlleleAdmin(PlasmidAdmin):
 
             # If an object is 'Saved as new', clear all form Z elements
             if "_saveasnew" in request.POST and (obj.map or obj.map_gbk):
-                self.clear_formz_elements = True
+                self.clear_sequence_features = True
 
             # Check if a map is present and if so trigger functions to create a
             # map preview and delete the resulting duplicate history record
@@ -453,7 +453,7 @@ class WormStrainAlleleAdmin(PlasmidAdmin):
                     obj.map.name = ""
                     obj.map_png.name = ""
                     obj.map_gbk.name = ""
-                    self.clear_formz_elements = True
+                    self.clear_sequence_features = True
                     obj.save()
 
             else:

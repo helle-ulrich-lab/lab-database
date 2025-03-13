@@ -44,7 +44,7 @@ class OligoAdmin(
     djangoql_schema = OligoQLSchema
     actions = [export_oligo]
     search_fields = ["id", "name"]
-    autocomplete_fields = ["formz_elements"]
+    autocomplete_fields = ["sequence_features"]
     form = OligoAdminForm
     inlines = [OligoDocInline, OligoAddDocInline]
     show_formz = False
@@ -60,7 +60,7 @@ class OligoAdmin(
         "description",
         "comment",
         "info_sheet",
-        "formz_elements",
+        "sequence_features",
     ]
     obj_unmodifiable_fields = [
         "created_date_time",

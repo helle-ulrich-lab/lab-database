@@ -37,7 +37,7 @@ def formz_as_html(modeladmin, request, queryset):
         )
     )
 
-    template = get_template("admin/formz/formz_for_export_new.html")
+    template = get_template("admin/formz/formz_for_export.html")
     # Generate zip file
     with zipfile.ZipFile(response, "w", zipfile.ZIP_DEFLATED) as zip_file:
         for obj in queryset:

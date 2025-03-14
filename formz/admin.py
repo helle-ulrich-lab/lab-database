@@ -19,7 +19,7 @@ from import_export.fields import Field
 from .models import (
     Header,
     Project,
-    ProjectUsers,
+    ProjectUser,
     SequenceFeature,
     SequenceFeatureAlias,
     Species,
@@ -181,9 +181,9 @@ class GenTechMethodAdmin(admin.ModelAdmin):
     search_fields = ["english_name"]
 
 
-class ProjectUsersInline(admin.TabularInline):
+class ProjectUserInline(admin.TabularInline):
     # autocomplete_fields = ['user']
-    model = ProjectUsers
+    model = ProjectUser
     verbose_name_plural = "users"
     verbose_name = "user"
     extra = 0
@@ -241,7 +241,7 @@ class ProjectAdmin(admin.ModelAdmin):
             obj = Project.objects.get(pk=object_id)
             if obj:
                 if obj.safety_level == 2:
-                    self.inlines = [ProjectUsersInline]
+                    self.inlines = [ProjectUserInline]
                 else:
                     self.inlines = []
 

@@ -163,14 +163,14 @@ class Project(models.Model):
         blank=True,
     )
     users = models.ManyToManyField(
-        User, related_name="formz_project_users", blank=True, through="ProjectUsers"
+        User, related_name="formz_project_users", blank=True, through="ProjectUser"
     )
 
     def __str__(self):
         return str(self.short_title_english)
 
 
-class ProjectUsers(models.Model):
+class ProjectUser(models.Model):
     formz_project = models.ForeignKey(
         Project, verbose_name="formZ project", on_delete=models.PROTECT
     )

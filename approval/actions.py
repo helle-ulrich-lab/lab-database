@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.contrib import admin, messages
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 from django.http import HttpResponseRedirect
 from django.template.loader import render_to_string
@@ -11,6 +11,7 @@ from ordering.models import Order
 
 from .models import Approval
 
+User = get_user_model()
 SITE_TITLE = getattr(settings, "SITE_TITLE", "Lab DB")
 SERVER_EMAIL_ADDRESS = getattr(settings, "SERVER_EMAIL_ADDRESS", "email@example.com")
 
@@ -89,7 +90,7 @@ def approve_records(modeladmin, request, queryset):
     ]
 
     # Oligos
-    if request.user.labuser.is_principal_investigator:
+    if request.user.is_pi:
         oligo_approvals = collection_approvals.filter(content_type__model="oligo")
         if oligo_approvals.exists():
             [approve_oligo(oligo_approval) for oligo_approval in oligo_approvals]
@@ -99,7 +100,7 @@ def approve_records(modeladmin, request, queryset):
         messages.error(request, "You are not allowed to approve oligos")
 
     # Orders
-    if request.user.labuser.is_principal_investigator:
+    if request.user.is_pi:
         order_approval_records = queryset.filter(content_type__app_label="ordering")
         if order_approval_records:
             order_ids = order_approval_records.values_list("object_id", flat=True)
@@ -201,7 +202,7 @@ def notify_user_edits_required(modeladmin, request, queryset):
 def approve_all_new_orders(modeladmin, request, queryset):
     """Approve all new orders"""
 
-    if request.user.labuser.is_principal_investigator:
+    if request.user.is_pi:
         orders = Order.objects.filter(created_approval_by_pi=False)
         if orders.exists():
             orders.update(created_approval_by_pi=True)

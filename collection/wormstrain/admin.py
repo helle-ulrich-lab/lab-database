@@ -2,7 +2,7 @@ import os
 
 from django.conf import settings
 from django.contrib import admin, messages
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.utils.html import format_html
 
@@ -29,6 +29,7 @@ from .models import (
 )
 from .search import WormStrainAlleleQLSchema, WormStrainQLSchema
 
+User = get_user_model()
 MEDIA_ROOT = settings.MEDIA_ROOT
 LAB_ABBREVIATION_FOR_FILES = getattr(settings, "LAB_ABBREVIATION_FOR_FILES", "")
 WORM_ALLELE_LAB_ID_DEFAULT = getattr(settings, "WORM_ALLELE_LAB_ID_DEFAULT", "")

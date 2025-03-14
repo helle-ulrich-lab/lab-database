@@ -1,4 +1,4 @@
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
@@ -20,6 +20,8 @@ def validate_absence_airquotes(value):
             )
         )
 
+
+User = get_user_model()
 
 ORDER_STATUS_CHOICES = (
     ("submitted", "submitted"),

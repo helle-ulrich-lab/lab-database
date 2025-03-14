@@ -3,7 +3,7 @@ from datetime import timedelta
 
 from background_task.models import CompletedTask
 from django.conf import settings
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 from django.urls import reverse
 from django.utils import timezone
@@ -29,6 +29,7 @@ from collection.models import (
 )
 from ordering.models import HistoricalOrder, Order
 
+User = get_user_model()
 SITE_TITLE = getattr(settings, "SITE_TITLE", "Lab DB")
 ALLOWED_HOSTS = getattr(settings, "ALLOWED_HOSTS", [])
 SERVER_EMAIL_ADDRESS = getattr(settings, "SERVER_EMAIL_ADDRESS", "noreply@example.com")
@@ -50,7 +51,7 @@ def get_formz_project_leader_emails(qs):
         )
         ids.extend(project_leader_ids)
 
-    pi_user_id = User.objects.get(labuser__is_principal_investigator=True).id
+    pi_user_id = User.objects.get(is_pi=True).id
 
     if pi_user_id not in ids:
         ids.append(pi_user_id)

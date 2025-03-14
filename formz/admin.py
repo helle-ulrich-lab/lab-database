@@ -3,7 +3,7 @@ import time
 from django import forms
 from django.apps import apps
 from django.contrib import admin, messages
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
@@ -30,6 +30,8 @@ from .update_zkbs_records import (
     update_zkbs_oncogenes,
     update_zkbs_plasmids,
 )
+
+User = get_user_model()
 
 
 class FormZAdminSite(admin.AdminSite):

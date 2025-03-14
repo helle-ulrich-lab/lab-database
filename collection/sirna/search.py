@@ -1,4 +1,4 @@
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from djangoql.schema import DjangoQLSchema
 
 from common.search import (
@@ -11,6 +11,8 @@ from ..shared.admin import (
     FieldLastChanged,
 )
 from .models import SiRna
+
+User = get_user_model()
 
 
 class SiRnaSearchFieldUserUsername(SearchFieldUserUsernameWithOptions):

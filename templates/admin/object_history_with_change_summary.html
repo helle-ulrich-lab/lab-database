@@ -54,7 +54,7 @@
             {{history_change.timestamp}}
           </td>
           <td rowspan="{{history_change.field_changes|length}}" class="nowrap historytablelastrowlast">{% if history_change.activity_user %}<a
-              href="{% url "admin:auth_user_change" history_change.activity_user.id %}">{{history_change.activity_user}}</a>{% else %}Unknown{% endif %}</td>
+              href="{% url "admin:common_user_change" history_change.activity_user.id %}">{{history_change.activity_user}}</a>{% else %}Unknown{% endif %}</td>
           {% for field_change in history_change.field_changes %}
             {% if not forloop.first %}
               <tr class="historytablerow{% if forloop.parentloop.counter|divisibleby:2 %}even{% else %}odd{% endif %}{% if forloop.last %} historytablelastrowlast{% endif %}">

@@ -2,12 +2,14 @@ import zipfile
 
 from bs4 import BeautifulSoup
 from django.contrib import admin
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.http import HttpResponse
 from django.template.loader import get_template
 from django.utils import timezone
 
 from formz.models import Header
+
+User = get_user_model()
 
 
 @admin.action(description="Export Formblatt Z for selected items")
@@ -22,7 +24,7 @@ def formz_as_html(modeladmin, request, queryset):
 
     # Get PI
     try:
-        pi = User.objects.get(labuser__is_principal_investigator=True)
+        pi = User.objects.get(is_pi=True)
     except Exception:
         pi = None
 

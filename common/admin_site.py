@@ -9,8 +9,9 @@ from background_task.models import CompletedTask, Task
 from django.apps import apps
 from django.conf import settings
 from django.contrib import admin
-from django.contrib.auth.admin import GroupAdmin, UserAdmin
-from django.contrib.auth.models import Group, User
+from django.contrib.auth import get_user_model
+from django.contrib.auth.admin import GroupAdmin
+from django.contrib.auth.models import Group
 from django.core.files.storage import default_storage
 from django.http import Http404, HttpResponse
 from django.urls import re_path
@@ -43,7 +44,6 @@ from collection.models import (
     WormStrain,
     WormStrainAllele,
 )
-from extend_user.admin import LabUserAdmin
 from formz.admin import (
     FormZAdminSite,
     GenTechMethodAdmin,
@@ -103,6 +103,9 @@ from ordering.models import (
     SignalWord,
 )
 
+from .admin import OwnUserAdmin
+
+User = get_user_model()
 SITE_TITLE = getattr(settings, "SITE_TITLE", "Lab DB")
 
 
@@ -220,9 +223,7 @@ admin_site = OwnAdminSite()
 admin_site.disable_action("delete_selected")
 
 admin_site.register(Group, GroupAdmin)
-admin_site.register(User, UserAdmin)
-admin_site.unregister(User)
-admin_site.register(User, LabUserAdmin)
+admin_site.register(User, OwnUserAdmin)
 
 admin_site.register(NucleicAcidPurity, NucleicAcidPurityAdmin)
 admin_site.register(NucleicAcidRisk, NucleicAcidRiskAdmin)

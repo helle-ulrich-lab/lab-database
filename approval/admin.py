@@ -78,7 +78,7 @@ class ApprovalAdmin(admin.ModelAdmin):
         # show only collection items, not orders
 
         if (
-            request.user.labuser.is_principal_investigator
+            request.user.is_pi
             or request.user.is_superuser
             or request.user.groups.filter(name="Lab manager").exists()
         ):

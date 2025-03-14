@@ -1,4 +1,4 @@
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from djangoql.schema import DjangoQLSchema, StrField
 
 from common.search import (
@@ -18,6 +18,8 @@ from ..shared.admin import (
     FieldParent2,
 )
 from .models import ScPombeStrain
+
+User = get_user_model()
 
 
 class ScPombeStrainSearchFieldUserUsername(SearchFieldUserUsernameWithOptions):

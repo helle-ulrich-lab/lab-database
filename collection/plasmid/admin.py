@@ -169,7 +169,7 @@ class PlasmidAdmin(
             # If the request's user is the principal investigator, approve the record
             # right away. If not, create an approval record
             if (
-                request.user.labuser.is_principal_investigator
+                request.user.is_pi
                 and request.user.id
                 in obj.formz_projects.all().values_list("project_leader__id", flat=True)
             ):
@@ -204,7 +204,7 @@ class PlasmidAdmin(
             # Approve right away if the request's user is the principal investigator. If not,
             # create an approval record
             if (
-                request.user.labuser.is_principal_investigator
+                request.user.is_pi
                 and request.user.id
                 in obj.formz_projects.all().values_list("project_leader__id", flat=True)
             ):
@@ -419,7 +419,7 @@ class PlasmidAdmin(
         if (
             request.user == obj.created_by
             or request.user.groups.filter(name="Lab manager").exists()
-            or request.user.labuser.is_principal_investigator
+            or request.user.is_pi
             or request.user.is_superuser
             or request.user.has_perm(
                 f"{self.model._meta.app_label}.change_{self.model._meta.model_name}",

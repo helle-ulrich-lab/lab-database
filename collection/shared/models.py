@@ -2,7 +2,7 @@ import base64
 from urllib.parse import urlencode
 
 from django.conf import settings
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.postgres.fields import ArrayField
@@ -13,6 +13,7 @@ from approval.models import Approval
 from formz.models import GenTechMethod, SequenceFeature, StorageLocation
 from formz.models import Project as FormZProject
 
+User = get_user_model()
 FILE_SIZE_LIMIT_MB = getattr(settings, "FILE_SIZE_LIMIT_MB", 2)
 OVE_URL = getattr(settings, "OVE_URL", "")
 LAB_ABBREVIATION_FOR_FILES = getattr(settings, "LAB_ABBREVIATION_FOR_FILES", "")

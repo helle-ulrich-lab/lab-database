@@ -3,7 +3,7 @@ import json
 import requests
 from django.conf import settings
 from django.contrib import admin, messages
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied
 from django.core.mail import send_mail
 from django.db import models
@@ -38,6 +38,7 @@ from .actions import (
 from .forms import MassUpdateOrderForm, OrderAdminForm
 from .search import OrderQLSchema
 
+User = get_user_model()
 ORDER_EMAIL_ADDRESSES = getattr(
     settings, "ORDER_EMAIL_ADDRESSES", ["noreply@example.com"]
 )
@@ -423,7 +424,7 @@ class OrderAdmin(
             history_obj.history_type = "+"
             history_obj.save()
             # Create approval record
-            if not request.user.labuser.is_principal_investigator:
+            if not request.user.is_pi:
                 obj.approval.create(
                     activity_type="created",
                     activity_user=obj.history.latest().created_by,

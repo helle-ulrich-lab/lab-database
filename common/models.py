@@ -2,7 +2,7 @@ import itertools
 import os
 
 from django.conf import settings
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.forms import ValidationError
 from django.urls import reverse
@@ -17,6 +17,21 @@ LAB_ABBREVIATION_FOR_FILES = getattr(settings, "LAB_ABBREVIATION_FOR_FILES", "")
 MEDIA_URL = settings.MEDIA_URL
 MAX_UPLOAD_FILE_SIZE_MB = getattr(settings, "MAX_UPLOAD_FILE_SIZE_MB", 2)
 ALLOWED_DOC_FILE_EXTS = getattr(settings, "ALLOWED_DOC_FILE_EXTS", ["pdf"])
+
+
+class User(AbstractUser):
+    is_pi = models.BooleanField("is principal investigator?", default=False)
+    oidc_id = models.CharField(
+        "OIDC identifier",
+        max_length=255,
+        null=True,
+        unique=True,
+        default=None,
+        blank=True,
+    )
+
+    class Meta:
+        db_table = "auth_user"
 
 
 class SaveWithoutHistoricalRecord:

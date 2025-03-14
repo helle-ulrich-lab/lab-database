@@ -1,4 +1,4 @@
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from djangoql.schema import BoolField, DjangoQLSchema, StrField
 
 from common.search import (
@@ -16,6 +16,8 @@ from ..models import (
     Order,
     SignalWord,
 )
+
+User = get_user_model()
 
 
 class OrderSearchFieldLocation(SearchFieldWithOptions):

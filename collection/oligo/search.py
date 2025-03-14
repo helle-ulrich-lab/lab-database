@@ -1,5 +1,5 @@
 from django.contrib import messages
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.core.exceptions import FieldError, ValidationError
 from django.db import DataError, models
 from django.db.models.functions import Collate
@@ -20,6 +20,8 @@ from ..shared.admin import (
     FieldUse,
 )
 from .models import Oligo
+
+User = get_user_model()
 
 
 class OligoSearchFieldUserUsername(SearchFieldUserUsernameWithOptions):

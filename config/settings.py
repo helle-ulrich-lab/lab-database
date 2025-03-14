@@ -23,7 +23,6 @@ INSTALLED_APPS = [
     "simple_history",
     "import_export",
     "collection",
-    "extend_user",
     "ordering",
     "guardian",
     "background_task",
@@ -211,7 +210,7 @@ LOGGING = {
 LOGIN_REDIRECT_URL = "/login/"
 LOGOUT_REDIRECT_URL = "/logout/"
 if ALLOW_OIDC:
-    AUTHENTICATION_BACKENDS = ["extend_user.oidc.MyOIDCAB"] + AUTHENTICATION_BACKENDS
+    AUTHENTICATION_BACKENDS = ["common.oidc.MyOIDCAB"] + AUTHENTICATION_BACKENDS
     MIDDLEWARE += ["mozilla_django_oidc.middleware.SessionRefresh"]
 OIDC_RENEW_ID_TOKEN_EXPIRY_SECONDS = 86400  # 24 h
 
@@ -235,3 +234,4 @@ ALLOWED_DOC_FILE_EXTS = [
     "dna",
 ]
 FILE_SIZE_LIMIT_MB = 2
+AUTH_USER_MODEL = "common.User"

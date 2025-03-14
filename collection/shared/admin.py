@@ -12,7 +12,7 @@ from django.apps import apps
 from django.conf import settings
 from django.contrib import admin, messages
 from django.contrib.admin.utils import unquote
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied
 from django.core.mail import mail_admins
 from django.db.models import CharField
@@ -50,6 +50,7 @@ from formz.models import (
 from snapgene.pyclasses.client import Client
 from snapgene.pyclasses.config import Config
 
+User = get_user_model()
 BASE_DIR = settings.BASE_DIR
 MEDIA_ROOT = settings.MEDIA_ROOT
 LAB_ABBREVIATION_FOR_FILES = getattr(settings, "LAB_ABBREVIATION_FOR_FILES", "")
@@ -460,7 +461,7 @@ class CollectionUserProtectionAdmin(Approval, CollectionBaseAdmin):
             # Approve right away if the request's user is the PI.
             # If not, create an approval record
             if (
-                request.user.labuser.is_principal_investigator
+                request.user.is_pi
                 and request.user.id
                 in obj.formz_projects.all().values_list("project_leader__id", flat=True)
             ):
@@ -494,7 +495,7 @@ class CollectionUserProtectionAdmin(Approval, CollectionBaseAdmin):
             # Approve right away if the request's user is the principal investigator.
             #  If not, create an approval record
             if (
-                request.user.labuser.is_principal_investigator
+                request.user.is_pi
                 and request.user.id
                 in obj.formz_projects.all().values_list("project_leader__id", flat=True)
             ):
@@ -568,7 +569,7 @@ class CollectionUserProtectionAdmin(Approval, CollectionBaseAdmin):
         if (
             request.user == obj.created_by
             or request.user.groups.filter(name="Lab manager").exists()
-            or request.user.labuser.is_principal_investigator
+            or request.user.is_pi
             or request.user.is_superuser
         ):
             self.can_change = True
@@ -661,7 +662,7 @@ class CustomGuardedModelAdmin(GuardedModelAdmin):
             request.user.is_superuser
             or request.user.groups.filter(name="Lab manager").exists()
             or request.user == obj.created_by
-            or request.user.labuser.is_principal_investigator
+            or request.user.is_pi
         ):
             raise PermissionDenied()
 

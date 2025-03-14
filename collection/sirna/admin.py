@@ -1,4 +1,4 @@
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django_better_admin_arrayfield.admin.mixins import DynamicArrayMixin
 
 from common.admin import (
@@ -13,6 +13,8 @@ from ..shared.admin import (
 from .actions import export_si_rna
 from .models import SiRnaDoc
 from .search import SiRnaQLSchema
+
+User = get_user_model()
 
 
 class InhibitorDocInline(DocFileInlineMixin):

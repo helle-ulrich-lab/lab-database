@@ -1,8 +1,10 @@
 from functools import reduce
 
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.db.models import Q
 from djangoql.schema import StrField
+
+User = get_user_model()
 
 
 class SearchFieldWithOptions(StrField):

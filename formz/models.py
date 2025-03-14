@@ -1,8 +1,10 @@
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.forms import ValidationError
 from django.utils.html import format_html, mark_safe
+
+User = get_user_model()
 
 
 class NucleicAcidPurity(models.Model):

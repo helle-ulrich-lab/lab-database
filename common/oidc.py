@@ -2,11 +2,13 @@ from inspect import cleandoc
 
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth.models import Group, User
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.core.mail import send_mail
 from django.urls import reverse
 from mozilla_django_oidc.auth import OIDCAuthenticationBackend
 
+User = get_user_model()
 OIDC_ALLOWED_GROUPS = getattr(settings, "OIDC_ALLOWED_GROUPS", [])
 OIDC_ALLOWED_USER_UPNS = getattr(settings, "OIDC_ALLOWED_USER_UPNS", [])
 SITE_TITLE = getattr(settings, "SITE_TITLE", "Lab DB")
@@ -40,9 +42,9 @@ class MyOIDCAB(OIDCAuthenticationBackend):
         sub = claims.get("sub")
 
         # If a unique identifier (= sub) is available use it to try getting the User
-        # sub should match the oidc_identifier field for labuser
+        # sub should match the oidc_id field for user
         if sub:
-            users = self.UserModel.objects.filter(labuser__oidc_identifier=sub)
+            users = self.UserModel.objects.filter(oidc_id=sub)
             if users:
                 return users
 
@@ -55,7 +57,7 @@ class MyOIDCAB(OIDCAuthenticationBackend):
                 if len(users) == 0:
                     raise Exception
                 return users
-            except:
+            except Exception:
                 # If everything fails, try the regular filter_users_by_claims
                 return super().filter_users_by_claims(claims)
 
@@ -66,7 +68,7 @@ class MyOIDCAB(OIDCAuthenticationBackend):
         automatically via the OIDC backend"""
 
         # URL for the change page of the newly created users
-        user_admin_change_url = reverse("admin:auth_user_change", args=(user.id,))
+        user_admin_change_url = reverse("admin:common_user_change", args=(user.id,))
         message = f"""Dear lab manager(s),
 
                     A new user was just automatically created.
@@ -87,7 +89,7 @@ class MyOIDCAB(OIDCAuthenticationBackend):
         recipients = User.objects.filter(
             is_active=True,
             is_superuser=False,
-            labuser__is_principal_investigator=False,
+            is_pi=False,
             groups__name="Lab manager",
         ).values_list("first_name", "email")
         recipients = list(recipients) + SITE_ADMIN_EMAIL_ADDRESSES
@@ -112,7 +114,7 @@ class MyOIDCAB(OIDCAuthenticationBackend):
         # Create username
         username = self.get_username(claims)
 
-        # Create user and update the corresponding labuser's identifier
+        # Create user and update the corresponding user's identifier
         # with the value of sub
         user = self.UserModel.objects.create_user(
             username=username, email=email, first_name=first_name, last_name=last_name
@@ -123,9 +125,8 @@ class MyOIDCAB(OIDCAuthenticationBackend):
         user.set_unusable_password()
         user.save()
 
-        labuser = user.labuser
-        labuser.oidc_identifier = sub if sub else None
-        labuser.save()
+        user.oidc_id = sub if sub else None
+        user.save()
 
         # A user must have at least one group. Therefore assign
         # the group with the stricest permissions, guest, to the user
@@ -152,10 +153,9 @@ class MyOIDCAB(OIDCAuthenticationBackend):
         user.set_unusable_password()  # Set password to unusable, just in case
         user.save()
 
-        if not user.labuser.oidc_identifier and sub:
-            labuser = user.labuser
-            labuser.oidc_identifier = sub
-            labuser.save()
+        if not user.oidc_id and sub:
+            user.oidc_id = sub
+            user.save()
 
         return user
 

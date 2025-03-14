@@ -100,7 +100,7 @@ class OligoAdmin(
 
             # If the request's user is the principal investigator, approve
             # the record right away. If not, create an approval record
-            if request.user.labuser.is_principal_investigator:
+            if request.user.is_pi:
                 original_last_changed_date_time = obj.last_changed_date_time
                 obj.created_approval_by_pi = True
                 obj.approval_by_pi_date_time = timezone.now()
@@ -129,7 +129,7 @@ class OligoAdmin(
 
             # Approve right away if the request's user is the PI.
             # If not, create an approval record
-            if request.user.labuser.is_principal_investigator:
+            if request.user.is_pi:
                 obj.last_changed_approval_by_pi = True
                 if not obj.created_approval_by_pi:
                     obj.created_approval_by_pi = True

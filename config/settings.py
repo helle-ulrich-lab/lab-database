@@ -1,12 +1,14 @@
 from pathlib import Path
 
+from django.conf.locale.en import formats as en_formats
+from django.conf.locale.en_GB import formats as en_gb_formats
+
 from .private_settings import *
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Application definition
-
 INSTALLED_APPS = [
     "modelclone",
     "adminactions",
@@ -74,9 +76,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-
 # Database
-
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
@@ -88,9 +88,7 @@ DATABASES = {
     }
 }
 
-
 # Password validation
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
@@ -106,49 +104,35 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
-
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "Europe/Berlin"
 USE_I18N = True
 USE_TZ = True
 
 # Force specific datetime formats
-from django.conf.locale.en import formats as en_formats
-
 en_formats.DATETIME_FORMAT = "j N Y, H:i:s"
 en_formats.DATE_FORMAT = "j N Y"
-
-from django.conf.locale.en_GB import formats as en_gb_formats
-
 en_gb_formats.DATETIME_FORMAT = "j N Y, H:i:s"
 en_gb_formats.DATE_FORMAT = "j N Y"
 
-
 # Static files (CSS, JavaScript, Images)
-
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
 
-
 # Media files
-
 MEDIA_URL = "/uploads/"
 MEDIA_ROOT = BASE_DIR / "uploads"
-
 
 # Email/SMTP settings
 DEFAULT_FROM_EMAIL = SERVER_EMAIL_ADDRESS
 
 # Email settings for error messages
-
 SERVER_EMAIL = SERVER_EMAIL_ADDRESS
 ADMINS = SITE_ADMIN_EMAIL_ADDRESSES
-
 
 # Plainly stolen from Parkour LIMS :)
 # Make sure the 'logs' directory exists. If not, create it
@@ -223,9 +207,7 @@ LOGGING = {
     },
 }
 
-
 # OIDC settings
-
 LOGIN_REDIRECT_URL = "/login/"
 LOGOUT_REDIRECT_URL = "/logout/"
 if ALLOW_OIDC:
@@ -233,9 +215,7 @@ if ALLOW_OIDC:
     MIDDLEWARE += ["mozilla_django_oidc.middleware.SessionRefresh"]
 OIDC_RENEW_ID_TOKEN_EXPIRY_SECONDS = 86400  # 24 h
 
-
 # Other settings
-
 FILE_UPLOAD_PERMISSIONS = 0o664
 LOGIN_URL = "/login/"
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"

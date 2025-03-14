@@ -1,8 +1,10 @@
-import sys
-import zmq
-import time
-import json
 import copy
+import json
+import sys
+import time
+
+import zmq
+
 
 class ClientInstance:
     def __init__(self, index, port, context, poller):
@@ -52,14 +54,13 @@ class ClientInstance:
     def get_pending_list(self):
         return self.pending_list
 
+
 # class to send requests to multiple snapgene server daemons.
 # the caller must supply a list of tcp ports (one for each daemon) and
 # a json object with the list of requests.
 class MutliClient:
-
     # create a new client bound to a particular tcp port.
     def __init__(self, tcp_ports, zmq_context, verbosity):
-
         self.verbosity = verbosity
         self.max_ports = sys.maxsize
 
@@ -70,7 +71,9 @@ class MutliClient:
         self.clients = []
         self.socket_to_clients = {}
         for server_index in tcp_ports:
-            client = ClientInstance(server_index, tcp_ports[server_index], self.zmq_context, self.poller)
+            client = ClientInstance(
+                server_index, tcp_ports[server_index], self.zmq_context, self.poller
+            )
             self.clients.append(client)
             self.socket_to_clients[client.get_socket()] = client
 
@@ -81,7 +84,6 @@ class MutliClient:
     #
     # returns each command in a list
     def doBatch(self, commandList, all, timeout):
-
         responseList = []
 
         # keep a count of the total number of commands to send out.
@@ -106,11 +108,9 @@ class MutliClient:
 
         # loop until everything was sent or
         while unfinishedCommandCount != 0:
-
             # send commands for clients that are available
             for client in self.clients:
                 if client.get_command() is None:
-
                     # first try a client specific command
                     cmd = None
                     if client.get_pending_list():
@@ -133,10 +133,14 @@ class MutliClient:
                 unfinishedCommandCount -= 1
 
                 response = s.recv_json()
-                response["responseTime"] = "{:0.2f}".format(responseTime*1000)
+                response["responseTime"] = "{:0.2f}".format(responseTime * 1000)
                 responseList.append(response)
                 if self.verbosity >= 1:
-                    print(json.dumps(response, sort_keys=True, indent=4, separators=(',',':')))
+                    print(
+                        json.dumps(
+                            response, sort_keys=True, indent=4, separators=(",", ":")
+                        )
+                    )
 
             # check for timeouts --- this indicates no progress was made.
             if len(pollerSockets) == 0:
@@ -150,7 +154,14 @@ class MutliClient:
                         errorCmd["response"] = "error"
                         errorCmd["reason"] = "timeout"
                         if self.verbosity >= 1:
-                            print(json.dumps(errorCmd, sort_keys=True, indent=4, separators=(',',':')))
+                            print(
+                                json.dumps(
+                                    errorCmd,
+                                    sort_keys=True,
+                                    indent=4,
+                                    separators=(",", ":"),
+                                )
+                            )
                         responseList.append(errorCmd)
 
                 return responseList
@@ -160,4 +171,3 @@ class MutliClient:
     def close(self):
         for client in self.clients:
             client.close()
-

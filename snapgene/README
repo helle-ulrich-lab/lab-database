@@ -1,9 +1,0 @@
-Tools to control snapgene server
-
-start [index]        starts all snapgene server daemeons (or just a single index specified)
-stop [index]         stops all snapgene server daemeons (or just a single index specified)
-info                 checks the status of all servers
-info-one.py          checks the status of one server
-request.py           sends request to one or more servers
-
-pyclasses/           directory with common python classes uses in these scripts
